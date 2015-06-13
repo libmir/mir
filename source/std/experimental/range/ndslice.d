@@ -5,7 +5,7 @@ License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors:   Ilya Yaroshenko
 Source:    $(PHOBOSSRC std/_experemental/_range_ndslice.d)
 +/
-module std.experemental.range.ndslice;
+module std.experimental.range.ndslice;
 
 import std.traits;
 import std.typecons;
