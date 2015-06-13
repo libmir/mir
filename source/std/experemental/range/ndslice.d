@@ -599,7 +599,7 @@ auto createSlice(T, Lengths...)(Lengths lengths)
     size_t length = 1;
     foreach(len; lengths)
         length *= len;
-    return new T[length].sliced(lengths);
+    return (new T[length]).sliced(lengths);
 }
 
 /++
@@ -638,8 +638,8 @@ template transposed(permutation...)
     auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice)
     {
         import std.compiler;
-        static if (version_minor >= 68)
-            mixin("pragma(inline, true);");
+        //static if (version_minor >= 68)
+        //    mixin("pragma(inline, true);");
         mixin(transposedStr);
     }
 }
@@ -670,8 +670,8 @@ unittest {
 auto transposed(Range)(auto ref Slice!(2, Range) slice)
 {
     import std.compiler;
-    static if (version_minor >= 68)
-        mixin("pragma(inline, true);");
+    //static if (version_minor >= 68)
+    //    mixin("pragma(inline, true);");
     return .transposed!(1, 0)(slice);
 }
 
