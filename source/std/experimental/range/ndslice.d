@@ -8,10 +8,9 @@ Source:    $(PHOBOSSRC std/_experemental/_range_ndslice.d)
 module std.experimental.range.ndslice;
 
 import std.traits;
-import std.typecons;
 import std.typetuple;
 import std.range.primitives;
-import core.exception;
+import core.exception: RangeError;
 
 
 /++
@@ -56,13 +55,13 @@ private:
         return strides[pos] * (lengths[pos] - 1);
     }
 
-    size_t indexStride(Indexes...)(Indexes indexes) @safe pure nothrow @nogc
+    size_t indexStride(Indexes...)(Indexes indexes) @safe pure
         if (isFullPureIndex!Indexes)
     {
         size_t stride;
         foreach(i, index; indexes) //static
         {
-            assert(index < lengths[i]);
+            version(assert) if(index >= lengths[i]) throw new RangeError();
             stride += strides[i] * index;
         }
         return stride;
@@ -272,7 +271,7 @@ public:
                 {
                     static if (isIndex!(Slices[i]))
                     {
-                        assert(slice < lengths[i]);
+                        version(assert) if(slice >= lengths[i]) throw new RangeError();
                         stride += strides[i] * slice;
                     }
                     else
@@ -309,34 +308,32 @@ public:
                     version(assert) if (sl.lengths != value.lengths) throw new RangeError();
                 static if (M == 1)
                 {
-                    static if(is(T : Slice!(M, _), _))
+                    for(; sl.length; sl.popFront)
                     {
-                        for(; sl.length; sl.popFront)
+                        static if(is(T : Slice!(M, _), _))
                         {
                             sl.front = value.front;
                             value.popFront;
                         }
-                    }
-                    else
-                    {
-                        for(; sl.length; sl.popFront)
+                        else
+                        {
                              sl.front = value;
+                        }
                     }
                 }
                 else
                 {
-                    static if(is(T : Slice!(M, _), _))
+                    foreach(v; sl)
                     {
-                        foreach(v; sl)
+                        static if(is(T : Slice!(M, _), _))
                         {
                             v[] = value.front;
                             value.popFront;
                         }
-                    }
-                    else
-                    {
-                        foreach(v; sl)
-                            v.opIndexAssign(value);
+                        else
+                        {
+                            v[] = value;
+                        }
                     }
                 }
             }
@@ -408,13 +405,13 @@ auto sliced(Range, Lengths...)(Range range, Lengths lengths)
         && allSatisfy!(isIndex, Lengths) && Lengths.length)
 in {
     foreach(len; lengths)
-        assert(len > 0);
+        if(len <= 0) throw new RangeError();
     static if (hasLength!Range)
     {
         size_t length = 1;
         foreach(len; lengths)
             length *= len;
-        assert(length <= range.length);
+        if(length > range.length) throw new RangeError();
     }
 }
 body {
