@@ -72,8 +72,14 @@ private:
 
 public:
 
-    @property Tuple!(size_t[N], "lengths", size_t[N], "strides")
+    @property size_t[N]
     shape() @safe pure nothrow @nogc const
+    {
+        return lengths;
+    }
+
+    @property Tuple!(size_t[N], "lengths", size_t[N], "strides")
+    structure() @safe pure nothrow @nogc const
     {
         return typeof(return)(lengths, strides);
     }
@@ -81,9 +87,9 @@ public:
     @property auto save()
     {
         static if (isPointer!Range)
-            return Slice!(N, typeof(_range))(strides, lengths, _range);
+            return Slice!(N, Range)(strides, lengths, _range);
         else
-            return Slice!(N, typeof(_range.save))(strides, lengths, _range.save);
+            return Slice!(N, typeof(_range.save()))(strides, lengths, _range.save);
     }
 
     @property bool empty(size_t pos = 0)() @safe pure nothrow @nogc const
@@ -192,8 +198,19 @@ public:
         }
     }
 
-    static if (isPointer!Range || is(typeof(_range) == typeof(_range[0..$])))
+    static if (isPointer!Range || is(Range == typeof(_range[0..$])))
     {
+        auto byElement() @property
+        {
+            static struct ByElementRange
+            {
+                static if (isPointer!Range)
+                    Slice!(N, Range) slice;
+                else
+                    Slice!(N, typeof(range.save())) slice;
+            }
+        }
+
         void popFront(size_t pos = 0)()
             if (pos < N)
         {
@@ -234,7 +251,7 @@ public:
                 }
             };
 
-            @property Slice!(N-1, typeof(_range)) front(size_t pos = 0)()
+            @property Slice!(N-1, Range) front(size_t pos = 0)()
                 if (pos < N)
             {
                 version (assert) if (empty!pos) throw new RangeError();
@@ -242,7 +259,7 @@ public:
                 return typeof(return)(slLengths, slStrides, _range);
             }
 
-            @property Slice!(N-1, typeof(_range)) back(size_t pos = 0)()
+            @property Slice!(N-1, Range) back(size_t pos = 0)()
                 if (pos < N)
             {
                 version (assert) if (empty!pos) throw new RangeError();
@@ -296,13 +313,13 @@ public:
                     slStrides[i-F] = strides[i];
                 }        
                 static if (isPointer!Range)
-                    return Slice!(N-F, typeof(_range))(slLengths, slStrides, _range + stride);
+                    return Slice!(N-F, Range)(slLengths, slStrides, _range + stride);
                 else
-                    return Slice!(N-F, typeof(_range))(slLengths, slStrides, _range[stride .. $]);
+                    return Slice!(N-F, Range)(slLengths, slStrides, _range[stride .. $]);
             }
             else
             {
-                return cast(Slice!(N, typeof(_range))) this;
+                return cast(Slice!(N, Range)) this;
             }
         }
 
@@ -563,13 +580,16 @@ unittest {
     assert(matrix.stride   == 20);
     assert(matrix.stride!1 ==  5);
 
-    // `shape` property
-    auto shape = tensor.shape;
-    assert(tensor.length!2 == shape.lengths[2]);
-    assert(tensor.stride!1 == shape.strides[1]);
+    // `structure` property
+    auto structure = tensor.structure;
+    assert(tensor.length!2 == structure.lengths[2]);
+    assert(tensor.stride!1 == structure.strides[1]);
     import std.typecons: Tuple;
-    alias Shape = Tuple!(size_t[3], "lengths", size_t[3], "strides");
-    static assert(is(typeof(shape) == Shape));
+    alias Structure = Tuple!(size_t[3], "lengths", size_t[3], "strides");
+    static assert(is(typeof(structure) == Structure));
+
+    // `shape` property
+    assert(tensor.shape == structure.lengths);
 
     // `range` method
     // Calls `range.save`.
