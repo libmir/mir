@@ -18,6 +18,9 @@ N-dimensional slice-shell over the range.
 +/
 struct Slice(size_t N, Range)
 {
+
+    import std.typecons: Tuple;
+
 private:
 
     size_t[N] lengths;
@@ -68,6 +71,12 @@ private:
     }
 
 public:
+
+    @property Tuple!(size_t[N], "lengths", size_t[N], "strides")
+    shape() @safe pure nothrow @nogc const
+    {
+        return typeof(return)(lengths, strides);
+    }
 
     @property auto save()
     {
@@ -553,6 +562,14 @@ unittest {
     matrix = tensor.back!2;
     assert(matrix.stride   == 20);
     assert(matrix.stride!1 ==  5);
+
+    // `shape` property
+    auto shape = tensor.shape;
+    assert(tensor.length!2 == shape.lengths[2]);
+    assert(tensor.stride!1 == shape.strides[1]);
+    import std.typecons: Tuple;
+    alias Shape = Tuple!(size_t[3], "lengths", size_t[3], "strides");
+    static assert(is(typeof(shape) == Shape));
 
     // `range` method
     // Calls `range.save`.
