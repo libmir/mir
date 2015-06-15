@@ -599,20 +599,6 @@ auto createSlice(T, Lengths...)(Lengths lengths)
     return (new T[length]).sliced(lengths);
 }
 
-/++
-Creates ref counted $(XREF std.container.array, Array) and n-dimensional slice over it.
-+/
-auto createRefCountedSlice(T, Lengths...)(Lengths lengths)
-{
-    import std.container.array : Array;
-    size_t length = 1;
-    foreach(len; lengths)
-        length *= len;
-    auto ar = Array!T();
-    ar.length = length;
-    return ar[].sliced(lengths);
-}
-
 private enum transposedStr = 
 q{
     size_t[N] tLengths = void;
@@ -624,7 +610,6 @@ q{
     }
     return Slice!(N, Range)(tLengths, tStrides, slice._range.save);
 };
-
 
 /++
 N-dimenstional transpose operator.
