@@ -128,7 +128,7 @@ public:
     {
         @property auto range()
         {
-            return _range.save;
+            return _range;
         }
     }
 
@@ -198,6 +198,29 @@ public:
         }
     }
 
+
+    T opCast(T : E[], E)()
+    {
+        static if (version_minor >= 68)
+            mixin("pragma(inline);");
+
+        import std.array: uninitializedArray;
+        alias U = Unqual!E[];
+        U ret = void;
+        if(__ctfe)
+            ret = new U(lengths[0]);
+        else
+            ret = uninitializedArray!U(lengths[0]);
+        auto sl = this[];
+        foreach(ref e; ret)
+        {
+            e = cast(Unqual!E) sl.front;
+            sl.popFront;
+        }
+        return cast(T)ret;
+    }
+
+
     static if (isPointer!Range || is(Range == typeof(_range[0..$])))
     {
         auto byElement() @property
@@ -207,7 +230,7 @@ public:
                 static if (isPointer!Range)
                     Slice!(N, Range) slice;
                 else
-                    Slice!(N, typeof(range.save())) slice;
+                    Slice!(N, typeof(range)) slice;
             }
         }
 
@@ -319,7 +342,10 @@ public:
             }
             else
             {
-                return cast(Slice!(N, Range)) this;
+                static if(isPointer!Range)
+                    return cast(Slice!(N, Range)) this;
+                else
+                    return Slice!(N, Range)(lengths, strides, _range[]);
             }
         }
 
@@ -592,7 +618,6 @@ unittest {
     assert(tensor.shape == structure.lengths);
 
     // `range` method
-    // Calls `range.save`.
     auto theIota0 = tensor.range;
     assert(theIota0.front == 0);
     tensor.popFront;
@@ -604,6 +629,17 @@ unittest {
     auto ar = 100.iota.array;
     auto ts = ar.sliced(3, 4, 5)[1..$, 2..$, 3..$];
     assert(ts.ptr is ar.ptr + 1*20+2*5+3*1);
+}
+
+/// Conversion
+unittest {
+    import std.range: iota;
+    auto matrix = 4.iota.sliced(2, 2);
+    auto arrays = cast(float[][]) matrix;
+    assert(arrays == [[0f, 1f], [2f, 3f]]);
+
+    import std.conv;
+    auto ars = matrix.to!(immutable double[][]); //calls opCast
 }
 
 /// Type conversion
@@ -636,38 +672,42 @@ auto createSlice(T, Lengths...)(Lengths lengths)
     return (new T[length]).sliced(lengths);
 }
 
-private enum transposedStr = 
-q{
-    size_t[N] tLengths = void;
-    size_t[N] tStrides  = void;
-    with(slice) foreach(i, p; permutation) //static
-    {
-        tLengths[i] = lengths[p];
-        tStrides[i] = strides[p];
-    }
-    return Slice!(N, Range)(tLengths, tStrides, slice._range.save);
-};
 
 /++
 N-dimenstional transpose operator.
 +/
-template transposed(permutation...)
-    if (permutation.length && isPermutation(permutation))
+template transposed(Permutation...)
+    if (Permutation.length)
 {
     auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice)
     {
-        import std.compiler;
+        //import std.compiler;
         //static if (version_minor >= 68)
         //    mixin("pragma(inline, true);");
-        mixin(transposedStr);
+        
+        size_t[N] tLengths = void;
+        size_t[N] tStrides  = void;
+        with(slice) foreach(i, p; completeTranspose!N([Permutation])) //TODO: static foreach
+        {
+            tLengths[i] = lengths[p];
+            tStrides[i] = strides[p];
+        }
+        return Slice!(N, Range)(tLengths, tStrides, slice._range);
     }
 }
 
 ///ditto
-auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t[] permutation...)
+auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] permutation...)
 {
-    version (assert) if(permutation.length != N && !permutation.isPermutation) throw new RangeError();
-    mixin(transposedStr);
+    version (assert) if(permutation.length > N) throw new RangeError();
+    size_t[N] tLengths = void;
+    size_t[N] tStrides  = void;
+    with(slice) foreach(i, p; completeTranspose!N(permutation))
+    {
+        tLengths[i] = lengths[p];
+        tStrides[i] = strides[p];
+    }
+    return Slice!(N, Range)(tLengths, tStrides, slice._range);
 }
 
 ///
@@ -682,6 +722,15 @@ unittest {
     static assert(is(typeof(t0) == typeof(t2)));
 }
 
+/// Partially defined transpose
+unittest {
+    import std.range: iota;
+    auto tensor0 = 1000.iota.sliced(3, 4, 5, 6);
+    auto tensor1 = tensor0.transposed!(3, 1); // CTFE
+    auto tensor2 = tensor0.transposed (1, 3); // Runtime
+    assert(tensor1.shape == [6, 4, 3, 5]);
+    assert(tensor2.shape == [4, 6, 3, 5]);
+}
 
 /++
 2-dimenstional transpose operator.
@@ -693,7 +742,6 @@ auto transposed(Range)(auto ref Slice!(2, Range) slice)
     //    mixin("pragma(inline, true);");
     return .transposed!(1, 0)(slice);
 }
-
 
 ///
 unittest {
@@ -707,24 +755,97 @@ unittest {
     static assert(is(typeof(t0) == typeof(t2)));
 }
 
-private bool isPermutation(size_t[] perm...) @safe pure nothrow
+private size_t[N] completeTranspose(size_t N)(in size_t[] tr)
+out(res){
+    assert(isPermutation(res));
+}
+body {
+    assert(tr.length <= N);
+    size_t[N] ctr = void;
+    bool[N] mask;
+    foreach(i, ref e; tr)
+    {
+        mask[e] = true;
+        ctr[i] = e;
+    }
+    size_t j = ctr.length - tr.length;
+    foreach(i, e; mask)
+        if(e == false)
+            ctr[j++] = i;
+    return ctr;
+}
+
+
+private enum swappedStr = q{
+    auto ret = slice;
+    with(ret)
+    {
+        auto tl = lengths[i];
+        auto ts = strides[i];
+        lengths[i] = lengths[j];    
+        strides[i] = strides[j];
+        lengths[j] = tl;
+        strides[j] = ts;
+    }
+    return ret;
+};
+
+/// Swap dimensions
+template swapped(size_t i, size_t j)
+{
+    auto swapped(size_t N, Range)(auto ref Slice!(N, Range) slice)
+    {
+        mixin(swappedStr);
+    }
+}
+
+/// ditto
+auto swapped(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t i, size_t j)
+{
+    mixin(swappedStr);
+}
+
+
+/// Creates common N-dimensional array
+auto ndarray(size_t N, Range)(auto ref Slice!(N, Range) slice)
+{
+    import std.array: array;
+    static if(N == 1)
+        return slice.array;
+    else
+    {
+        import std.algorithm: map;
+        return slice.map!(.ndarray).array;
+    }
+}
+
+///
+unittest {
+    import std.range: iota;
+    auto ar = 1000.iota.sliced(3, 4).ndarray;
+    static assert(is(typeof(ar) == int[][]));
+    assert(ar == [[0,1,2,3], [4,5,6,7], [8,9,10,11]]);
+}
+
+private bool isPermutation(size_t N)(in size_t[N] perm...) @safe pure nothrow
 {
     if(perm.empty)
         return false;
-    import std.algorithm: all;
     immutable n = perm.length;
-    auto mask = new bool[n];
+    bool[N] mask;
     foreach(j; perm)
     {
         if (j >= n)
             return false;
         mask[j] = true;
     }
-    return mask.all;
+    foreach(e; mask)
+        if(e == false)
+            return false;
+    return true;
 }
 private enum isIndex(I) = is(I : size_t);
 private alias ImplicitlyUnqual(T) = Select!(isImplicitlyConvertible!(T, Unqual!T), Unqual!T, T);
-
 
 
 unittest
