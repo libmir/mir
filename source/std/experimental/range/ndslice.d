@@ -805,6 +805,16 @@ auto swapped(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t i, size_t 
     mixin(swappedStr);
 }
 
+///
+unittest {
+    import std.range: iota;
+    auto tensor0 = 1000.iota.sliced(3, 4, 5, 6);
+    auto tensor1 = tensor0.swapped!(3, 1); // CTFE
+    auto tensor2 = tensor0.swapped (1, 3); // Runtime
+    assert(tensor1.shape == [3, 6, 5, 4]);
+    assert(tensor2.shape == [3, 6, 5, 4]);
+}
+
 
 /// Creates common N-dimensional array
 auto ndarray(size_t N, Range)(auto ref Slice!(N, Range) slice)
