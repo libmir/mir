@@ -17,15 +17,31 @@ import core.exception: RangeError;
 N-dimensional slice-shell over the range.
 +/
 struct Slice(size_t N, Range)
+    if(!is(Unqual!Range : Slice!(_N, _Range), size_t _N, _Range)
+        ||
+        is(Range == Slice!(_N, _Range), size_t _N, _Range))
 {
 
     import std.typecons: Tuple;
 
 private:
 
-    size_t[N] lengths;
-    size_t[N] strides;
-    Range _range;
+    static if(is(Range == Slice!(_N, _Range), size_t _N, _Range))
+    {
+        enum size_t D = N + Range.D - 1;
+        alias PureRange = Range.PureRange;
+    }
+    else
+    {
+        alias D = N;
+        alias PureRange = Range;
+    }
+
+    static assert(D < 256);
+
+    size_t[D] lengths;
+    size_t[D] strides;
+    PureRange _range;
 
     import std.compiler: version_minor;
     static if (version_minor >= 68)
@@ -75,21 +91,21 @@ public:
     @property size_t[N]
     shape() @safe pure nothrow @nogc const
     {
-        return lengths;
+        return lengths[0..N];
     }
 
     @property Tuple!(size_t[N], "lengths", size_t[N], "strides")
     structure() @safe pure nothrow @nogc const
     {
-        return typeof(return)(lengths, strides);
+        return typeof(return)(lengths[0..N], strides[0..N]);
     }
 
     @property auto save()
     {
         static if (isPointer!Range)
-            return Slice!(N, Range)(strides, lengths, _range);
+            return typeof(this)(strides, lengths, _range);
         else
-            return Slice!(N, typeof(_range.save()))(strides, lengths, _range.save);
+            return typeof(this)(strides, lengths, _range.save);
     }
 
     @property bool empty(size_t pos = 0)() @safe pure nothrow @nogc const
@@ -117,21 +133,24 @@ public:
         return _range[indexStride(indexes)];
     }
 
-    static if(isPointer!Range)
+    static if(N == D)
     {
-        @property inout(Range) ptr() @safe pure nothrow @nogc inout
+        static if(isPointer!Range)
         {
-            return _range;
+            @property inout(Range) ptr() @safe pure nothrow @nogc inout
+            {
+                return _range;
+            }
         }
-    }
-    else
-    {
-        @property auto range()
+        else
         {
-            return _range;
-        }
+            @property auto range()
+            {
+                return _range;
+            }
+        }    
     }
-
+    
     static if (N == 1)
     {
         @property auto ref front(size_t pos = 0)()
@@ -260,14 +279,14 @@ public:
         {
             private enum sideStr = 
             q{
-                size_t[N-1] slLengths = void;
-                size_t[N-1] slStrides = void;
+                size_t[D-1] slLengths = void;
+                size_t[D-1] slStrides = void;
                 foreach(i; 0 .. pos) //TODO: static foreach
                 {
                     slLengths[i] = lengths[i];
                     slStrides[i] = strides[i];
                 }
-                foreach(i; pos .. N-1) //TODO: static foreach
+                foreach(i; pos .. D-1) //TODO: static foreach
                 {
                     slLengths[i] = lengths[i + 1];
                     slStrides[i] = strides[i + 1];
@@ -314,8 +333,8 @@ public:
                 enum size_t S = Slices.length;
                 static assert(N-F > 0);
                 size_t stride;
-                size_t[N-F] slLengths = void;
-                size_t[N-F] slStrides = void;
+                size_t[D-F] slLengths = void;
+                size_t[D-F] slStrides = void;
                 foreach(i, slice; slices) //static
                 {
                     static if (isIndex!(Slices[i]))
@@ -330,7 +349,7 @@ public:
                         slStrides[j!i] = strides[i];
                     }
                 }
-                foreach(i; S .. N) //TODO: static foreach
+                foreach(i; S .. D) //TODO: static foreach
                 {
                     slLengths[i-F] = lengths[i];
                     slStrides[i-F] = strides[i];
@@ -343,9 +362,9 @@ public:
             else
             {
                 static if(isPointer!Range)
-                    return cast(Slice!(N, Range)) this;
+                    return this;
                 else
-                    return Slice!(N, Range)(lengths, strides, _range[]);
+                    return typeof(this)(lengths, strides, _range[]);
             }
         }
 
@@ -681,18 +700,22 @@ template transposed(Permutation...)
 {
     auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice)
     {
-        //import std.compiler;
-        //static if (version_minor >= 68)
-        //    mixin("pragma(inline, true);");
-        
-        size_t[N] tLengths = void;
-        size_t[N] tStrides  = void;
-        with(slice) foreach(i, p; completeTranspose!N([Permutation])) //TODO: static foreach
+        with(slice)
         {
-            tLengths[i] = lengths[p];
-            tStrides[i] = strides[p];
+            size_t[D] tLengths = void;
+            size_t[D] tStrides = void;
+            foreach(i, p; completeTranspose!N([Permutation])) //TODO: static foreach
+            {
+                tLengths[i] = lengths[p];
+                tStrides[i] = strides[p];
+            }
+            foreach(i; N .. D) //TODO: static foreach
+            {
+                tLengths[i] = lengths[i];
+                tStrides[i] = strides[i];
+            }
+            return Slice!(N, Range)(tLengths, tStrides, slice._range);
         }
-        return Slice!(N, Range)(tLengths, tStrides, slice._range);
     }
 }
 
@@ -700,14 +723,22 @@ template transposed(Permutation...)
 auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] permutation...)
 {
     version (assert) if(permutation.length > N) throw new RangeError();
-    size_t[N] tLengths = void;
-    size_t[N] tStrides  = void;
-    with(slice) foreach(i, p; completeTranspose!N(permutation))
+    with(slice)
     {
-        tLengths[i] = lengths[p];
-        tStrides[i] = strides[p];
+        size_t[D] tLengths = void;
+        size_t[D] tStrides = void;
+        foreach(i, p; completeTranspose!N(permutation))
+        {
+            tLengths[i] = lengths[p];
+            tStrides[i] = strides[p];
+        }
+        foreach(i; N .. D) //TODO: static foreach
+        {
+            tLengths[i] = lengths[i];
+            tStrides[i] = strides[i];
+        }
+        return Slice!(N, Range)(tLengths, tStrides, slice._range);
     }
-    return Slice!(N, Range)(tLengths, tStrides, slice._range);
 }
 
 ///
@@ -726,7 +757,7 @@ unittest {
 unittest {
     import std.range: iota;
     auto tensor0 = 1000.iota.sliced(3, 4, 5, 6);
-    auto tensor1 = tensor0.transposed!(3, 1); // CTFE
+    auto tensor1 = tensor0.transposed!(3, 1); // CTFE - recommended
     auto tensor2 = tensor0.transposed (1, 3); // Runtime
     assert(tensor1.shape == [6, 4, 3, 5]);
     assert(tensor2.shape == [4, 6, 3, 5]);
@@ -737,9 +768,6 @@ unittest {
 +/
 auto transposed(Range)(auto ref Slice!(2, Range) slice)
 {
-    import std.compiler;
-    //static if (version_minor >= 68)
-    //    mixin("pragma(inline, true);");
     return .transposed!(1, 0)(slice);
 }
 
@@ -747,8 +775,8 @@ auto transposed(Range)(auto ref Slice!(2, Range) slice)
 unittest {
     import std.range: iota;
     auto t0 = 1000.iota.sliced(3, 4);
-    auto t1 = t0.transposed();      //CTFE
-    auto t2 = t0.transposed!(1, 0); //CTFE
+    auto t1 = t0.transposed();
+    auto t2 = t0.transposed!(1, 0);
     assert(t0[1, 2] == t1[2, 1]);
     assert(t0[1, 2] == t2[2, 1]);
     static assert(is(typeof(t0) == typeof(t1)));
@@ -775,6 +803,34 @@ body {
     return ctr;
 }
 
+/// Everts dimensions in the reverse order.
+auto everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
+{
+    with(slice)
+    {
+        size_t[D] tLengths = void;
+        size_t[D] tStrides = void;
+        foreach(i; 0..N) //TODO: static foreach
+        {
+            tLengths[N-1-i] = lengths[i];
+            tStrides[N-1-i] = strides[i];
+        }
+        foreach(i; N .. D) //TODO: static foreach
+        {
+            tLengths[i] = lengths[i];
+            tStrides[i] = strides[i];
+        }
+        return Slice!(N, Range)(tLengths, tStrides, slice._range);
+    }
+}
+
+/// Partially defined transpose
+unittest {
+    import std.range: iota;
+    auto tensor0 = 1000.iota.sliced(3, 4, 5, 6);
+    auto tensor1 = tensor0.everted;
+    assert(tensor1.shape == [6, 5, 4, 3]);
+}
 
 private enum swappedStr = q{
     auto ret = slice;
@@ -790,10 +846,11 @@ private enum swappedStr = q{
     return ret;
 };
 
-/// Swap dimensions
+/// Swaps dimensions
 template swapped(size_t i, size_t j)
 {
     auto swapped(size_t N, Range)(auto ref Slice!(N, Range) slice)
+        if(i < N && j < N)
     {
         mixin(swappedStr);
     }
@@ -802,6 +859,7 @@ template swapped(size_t i, size_t j)
 /// ditto
 auto swapped(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t i, size_t j)
 {
+    version (assert) if(i >= N || j >= N) throw new RangeError();
     mixin(swappedStr);
 }
 
