@@ -1127,8 +1127,8 @@ unittest {
 }
 
 /++
-Packs a slice into composed slice.
-See_also: $(MREF packed), $(MREF packEverted)
+Packs a slice into the composed slice.
+See_also:  $(LREF unpacked), $(LREF packEverted).
 +/
 template packed(Indexes...)
 {
@@ -1191,7 +1191,7 @@ unittest {
 
 /++
 Unpacks a composed $(D slice).
-See_also: $(MREF packed), $(MREF packEverted)
+See_also: $(LREF packed), $(LREF packEverted)
 +/
 auto unpacked(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
@@ -1212,7 +1212,7 @@ unittest
 
 /++
 Inverse composition of a $(D slice).
-See_also: $(MREF packed), $(MREF unpacked)
+See_also: $(LREF packed), $(LREF unpacked)
 +/
 auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
