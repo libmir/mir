@@ -41,13 +41,16 @@ body {
     return true;
 }
 
+
 /++
 $(D _N)-dimensional slice-shell over the $(D _Range).
 +/
 struct Slice(size_t _N, _Range)
     if (!(is(Unqual!_Range : Slice!(_N0, _Range0), size_t _N0, _Range0)
-            && (isPointer!_Range || is(_Range == typeof(_Range.init[0..$])))
-            )
+            && (isPointer!_Range
+                || isInputRange!_Range
+                    && is(typeof(_Range.init[size_t.init]) == ElementType!_Range)
+                    && is(_Range == typeof(_Range.init[size_t.init .. $]))))
         || is(_Range == Slice!(_N1, _Range1), size_t _N1, _Range1))
 {
 
@@ -62,11 +65,13 @@ private:
     {
         enum size_t PureN = N + Range.PureN - 1;
         alias PureRange = Range.PureRange;
+        alias NSeq = TypeTuple!(N, Range.NSeq);
     }
     else
     {
         alias PureN = N;
         alias PureRange = Range;
+        alias NSeq = N;
     }
     alias PureThis = Slice!(PureN, PureRange);
 
@@ -117,7 +122,8 @@ private:
         || Slices.length == N
         && PureIndexLength!Slices < N;
 
-    @property size_t backIndex(size_t pos = 0)() @safe pure nothrow @nogc const
+    size_t backIndex(size_t pos = 0)()
+    @property @safe pure nothrow @nogc const
         if (pos < N)
     {
         return _strides[pos] * (_lengths[pos] - 1);
@@ -135,7 +141,8 @@ private:
         return stride;
     }
 
-    size_t elementsCount() @safe pure nothrow @nogc const
+    size_t elementsCount()
+    @safe pure nothrow @nogc const
     {
         size_t len = 1;
         foreach(l; _lengths[0..N]) //TODO: static foreach
@@ -145,21 +152,23 @@ private:
 
 public:
 
-    @property @safe pure nothrow @nogc const size_t[N]
-    shape()
+    ///
+    size_t[N] shape()
+    @property @safe pure nothrow @nogc const
     {
         return _lengths[0..N];
     }
 
-    @property @safe pure nothrow @nogc const Tuple!(size_t[N], "lengths", size_t[N], "strides")
+    ///
+    Tuple!(size_t[N], "lengths", size_t[N], "strides")
     structure()
+    @property @safe pure nothrow @nogc const
     {
         return typeof(return)(_lengths[0..N], _strides[0..N]);
     }
 
     static if (isPointer!PureRange || isForwardRange!PureRange)
-    @property auto
-    save()
+    auto save() @property
     {
         static if (isPointer!Range)
             return typeof(this)(_strides, _lengths, _range);
@@ -167,16 +176,17 @@ public:
             return typeof(this)(_strides, _lengths, _range.save);
     }
 
-    @property @safe pure nothrow @nogc const size_t
-    length(size_t pos = 0)()
+    size_t length(size_t pos = 0)()
+    @property @safe pure nothrow @nogc const
         if (pos < N)
     {
         return _lengths[pos];
     }
     alias opDollar = length;
 
-    @property @safe pure nothrow @nogc const size_t
-    stride(size_t pos = 0)()
+    ///
+    size_t stride(size_t pos = 0)()
+    @property @safe pure nothrow @nogc const
         if (pos < N)
     {
         return _strides[pos];
@@ -193,15 +203,15 @@ public:
         }
         else
         {
-            auto range() @propertys
+            auto range() @property
             {
                 return _range;
             }
         }
     }
 
-    @property @safe pure nothrow @nogc const bool
-    empty(size_t pos = 0)()
+    bool empty(size_t pos = 0)()
+    @property @safe pure nothrow @nogc const
         if (pos < N)
     {
         return _lengths[pos] == 0;
@@ -292,6 +302,7 @@ public:
             _range.popFrontN(_strides[pos]);
     }
 
+    ///
     void popFrontN(size_t pos = 0)(size_t n)
         if (pos < N)
     {
@@ -310,6 +321,7 @@ public:
         _lengths[pos]--;
     }
 
+    ///
     void popBackN(size_t pos = 0)(size_t n)
         if (pos < N)
     {
@@ -535,6 +547,7 @@ public:
         return opEqualsImpl(this, rslice);
     }
 
+    ///
     T opCast(T : E[], E)()
     {
         static if (version_minor >= 68)
@@ -560,6 +573,7 @@ public:
         return cast(T)ret;
     }
 
+    ///
     auto byElement()
     {
         static struct ByElement
@@ -646,9 +660,6 @@ Creates $(D n)-dimensional slice-shell over the $(D range).
 +/
 auto sliced(Range, Lengths...)(Range range, Lengths _lengths)
     if (!isStaticArray!Range && !isNarrowString!Range
-        && (isPointer!Range
-            || hasSlicing!(ImplicitlyUnqual!Range)
-            && isRandomAccessRange!(ImplicitlyUnqual!Range))
         && allSatisfy!(isIndex, Lengths) && Lengths.length)
 in {
     foreach(len; _lengths)
@@ -1116,8 +1127,8 @@ unittest {
 }
 
 /++
-Packs slice into composed slice.
-See_also: $(MREF packed)
+Packs a slice into composed slice.
+See_also: $(MREF packed), $(MREF packEverted)
 +/
 template packed(Indexes...)
 {
@@ -1179,24 +1190,12 @@ unittest {
 }
 
 /++
-Unpacks composed slice.
-See_also: $(MREF packed)
+Unpacks a composed $(D slice).
+See_also: $(MREF packed), $(MREF packEverted)
 +/
 auto unpacked(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
-    alias T = Slice!(N, Range);
-    static if (T.PureN == N)
-    {
-        return slice;
-    }
-    else
-    {
-        Slice!(T.PureN, T.PureRange) ret = void;
-        ret._lengths = slice._lengths;
-        ret._strides = slice._strides;
-        ret._range = slice._range;
-        return ret;
-    }
+    with(slice) return PureThis(_lengths, _strides, _range);
 }
 
 ///
@@ -1211,6 +1210,95 @@ unittest
     assert(a == b);
 }
 
+/++
+Inverse composition of a $(D slice).
+See_also: $(MREF packed), $(MREF unpacked)
++/
+auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
+{
+    with(slice)
+    {
+        static assert(NSeq.length > 0);
+        SliceFromSeq!(PureRange, NSeqEvert!(NSeq)) ret = void;
+        alias C = Snowball!(Parts!NSeq);
+        alias D = Reverse!(Snowball!(Reverse!(Parts!NSeq)));
+        foreach(i, _; NSeq)
+        {
+            ret._lengths[D[i+1]..D[i]] = _lengths[C[i]..C[i+1]];
+            ret._strides[D[i+1]..D[i]] = _strides[C[i]..C[i+1]];
+        }
+        ret._range = _range;
+        return ret;
+    }
+}
+
+///
+unittest
+{
+    import std.range: iota;
+    import std.algorithm.comparison: equal;
+    auto r = 10000000000.iota;
+    auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
+    auto b = a
+        .packed!(2, 3)
+        .packEverted;
+    auto c = b[8, 9];
+    auto d = c[5, 6, 7];
+    auto e = d[1, 2, 3, 4];
+    auto g = a[1, 2, 3, 4, 5, 6, 7, 8, 9];
+    assert(e == g);
+    assert(a == b.packEverted);
+    assert(c == a.transposed!(7, 8, 4, 5, 6)[8, 9]);
+    alias R = typeof(r);
+    static assert(is(typeof(b) == Slice!(2, Slice!(4, Slice!(5, R)))));
+    static assert(is(typeof(c) == Slice!(3, Slice!(5, R))));
+    static assert(is(typeof(d) == Slice!(4, R)));
+    static assert(is(typeof(e) == ElementType!R));
+}
+
+unittest {
+    import std.range: iota;
+    auto r = 10000000000.iota;
+    auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
+    auto b = a.packed!(2, 3).packEverted;
+    static assert(b.shape.length == 2);
+    static assert(b.structure.lengths.length == 2);
+    static assert(b.structure.strides.length == 2);
+    static assert(b
+        .byElement.front
+        .shape.length == 3);
+    static assert(b
+        .byElement.front
+        .byElement.front
+        .shape.length == 4);
+}
+
+private alias IncFront(Seq...) = TypeTuple!(Seq[0] + 1, Seq[1..$]);
+private alias DecFront(Seq...) = TypeTuple!(Seq[0] - 1, Seq[1..$]);
+private alias NSeqEvert(Seq...) = DecFront!(Reverse!(IncFront!Seq));
+private alias Parts(Seq...) = DecAll!(IncFront!Seq);
+private alias Snowball(Seq...) = TypeTuple!(0, SnowballImpl!(0, Seq));
+private template SnowballImpl(size_t val, Seq...)
+{
+    static if (Seq.length == 0)
+        alias SnowballImpl = TypeTuple!();
+    else
+        alias SnowballImpl = TypeTuple!(Seq[0]+val, SnowballImpl!(Seq[0]+val, Seq[1..$]));
+}
+private template DecAll(Seq...)
+{
+    static if (Seq.length == 0)
+        alias DecAll = TypeTuple!();
+    else
+        alias DecAll = TypeTuple!(Seq[0] - 1, DecAll!(Seq[1..$]));
+}
+private template SliceFromSeq(Range, Seq...)
+{
+    static if(Seq.length == 0)
+        alias SliceFromSeq = Range;
+    else
+        alias SliceFromSeq = SliceFromSeq!(Slice!(Seq[$-1], Range), Seq[0..$-1]);
+}
 
 private bool isPermutation(size_t N)(in size_t[N] perm...) @safe pure nothrow
 {
