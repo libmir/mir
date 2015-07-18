@@ -15,7 +15,7 @@ import core.exception: RangeError;
 
 private bool opEqualsImpl
     (size_t NL, RangeL, size_t NR, RangeR)(
-    auto ref Slice!(NL, RangeL) lslice, 
+    auto ref Slice!(NL, RangeL) lslice,
     auto ref Slice!(NR, RangeR) rslice)
 in {
     assert(lslice._lengths == rslice._lengths);
@@ -45,9 +45,10 @@ body {
 $(D _N)-dimensional slice-shell over the $(D _Range).
 +/
 struct Slice(size_t _N, _Range)
-    if (!is(Unqual!_Range : Slice!(_N0, _Range0), size_t _N0, _Range0)
-        ||
-        is(_Range == Slice!(_N1, _Range1), size_t _N1, _Range1))
+    if (!(is(Unqual!_Range : Slice!(_N0, _Range0), size_t _N0, _Range0)
+            && (isPointer!_Range || is(_Range == typeof(_Range.init[0..$])))
+            )
+        || is(_Range == Slice!(_N1, _Range1), size_t _N1, _Range1))
 {
 
     import std.typecons: Tuple;
@@ -166,13 +167,6 @@ public:
             return typeof(this)(_strides, _lengths, _range.save);
     }
 
-    @property @safe pure nothrow @nogc const bool
-    empty(size_t pos = 0)()
-        if (pos < N)
-    {
-        return _lengths[pos] == 0;
-    }
-
     @property @safe pure nothrow @nogc const size_t
     length(size_t pos = 0)()
         if (pos < N)
@@ -192,77 +186,144 @@ public:
     {
         static if (isPointer!Range)
         {
-            @property inout(Range) ptr() @safe pure nothrow @nogc inout
+            inout(Range) ptr() @safe pure nothrow @nogc @property inout
             {
                 return _range;
             }
         }
         else
         {
-            @property auto range()
+            auto range() @propertys
             {
                 return _range;
             }
         }
     }
 
-    bool opEquals(size_t NR, RangeR)(auto ref Slice!(NR, RangeR) rslice)
-        if (Slice!(NR, RangeR).PureN == PureN)
+    @property @safe pure nothrow @nogc const bool
+    empty(size_t pos = 0)()
+        if (pos < N)
     {
-        if (this._lengths != rslice._lengths)
-            return false;
-        static if (
-               !hasReference!(typeof(this))
-            && !hasReference!(typeof(rslice))
-            && __traits(compiles, this._range == rslice._range)
-            )
-        {
-            if (this._strides == rslice._strides && this._range == rslice._range)
-                return true;
-        }
-        return opEqualsImpl(this, rslice);
+        return _lengths[pos] == 0;
     }
 
-    static if (N == 1)
+    static if (PureN == 1)
     {
-        @property auto ref front(size_t pos = 0)()
+        auto ref front(size_t pos = 0)() @property
             if (pos == 0)
         {
             version (assert) if (empty) throw new RangeError();
-            static if (PureN == 1)
-            {
-                static if (isPointer!Range)
-                    return *_range;
-                else
-                    return range.front;
-            }
+            static if (isPointer!Range)
+                return *_range;
             else
-            {
-                DeepElemType ret = void;
-                ret._lengths = _lengths[1..$];
-                ret._strides = _strides[1..$];
-                ret._range = _range;
-                return ret;
-            }
+                return range.front;
         }
 
-        @property auto ref back(size_t pos = 0)()
+        auto ref back(size_t pos = 0)() @property
             if (pos == 0)
         {
             version (assert) if (empty) throw new RangeError();
-            static if (PureN == 1)
+            return _range[backIndex];
+        }
+
+        static if (rangeHasMutableElements && !hasAccessByRef)
+        {
+            auto ref front(size_t pos = 0, T)(T value) @property
+                if (pos == 0)
             {
-                return _range[backIndex];
+                version (assert) if (empty) throw new RangeError();
+                return _range.front = value;
             }
-            else
+
+            auto ref back(size_t pos = 0, T)(T value) @property
+                if (pos == 0)
             {
-                DeepElemType ret = void;
-                ret._lengths = _lengths[1..$];
-                ret._strides = _strides[1..$];
-                ret._range = _range[backIndex..$];
-                return ret;
+                version (assert) if (empty) throw new RangeError();
+                return _range[backIndex] = value;
             }
         }
+    }
+    else
+    {
+        private enum sideStr =
+        q{
+            size_t[PureN-1] slLengths = void;
+            size_t[PureN-1] slStrides = void;
+            foreach(i; 0 .. pos) //TODO: static foreach
+            {
+                slLengths[i] = _lengths[i];
+                slStrides[i] = _strides[i];
+            }
+            foreach(i; pos .. PureN-1) //TODO: static foreach
+            {
+                slLengths[i] = _lengths[i + 1];
+                slStrides[i] = _strides[i + 1];
+            }
+        };
+
+        auto front(size_t pos = 0)() @property
+            if (pos < N)
+        {
+            version (assert) if (empty!pos) throw new RangeError();
+            mixin(sideStr);
+            return ElemType(slLengths, slStrides, _range);
+        }
+
+        auto back(size_t pos = 0)() @property
+            if (pos < N)
+        {
+            version (assert) if (empty!pos) throw new RangeError();
+            mixin(sideStr);
+            static if (isPointer!Range)
+                return ElemType(slLengths, slStrides, _range + backIndex!pos);
+            else
+                return ElemType(slLengths, slStrides, _range[backIndex!pos..$]);
+        }
+    }
+
+    void popFront(size_t pos = 0)()
+        if (pos < N)
+    {
+        version (assert) if (empty!pos) throw new RangeError();
+        _lengths[pos]--;
+        static if (isPointer!Range)
+            _range += _strides[pos];
+        else
+            _range.popFrontN(_strides[pos]);
+    }
+
+    void popFrontN(size_t pos = 0)(size_t n)
+        if (pos < N)
+    {
+        version (assert) if (n > _lengths[pos]) throw new RangeError();
+        _lengths[pos] -= n;
+        static if (isPointer!Range)
+            _range += _strides[pos] * n;
+        else
+            _range.popFrontN(_strides[pos] * n);
+    }
+
+    void popBack(size_t pos = 0)()
+        if (pos < N)
+    {
+        version (assert) if (empty!pos) throw new RangeError();
+        _lengths[pos]--;
+    }
+
+    void popBackN(size_t pos = 0)(size_t n)
+        if (pos < N)
+    {
+        version (assert) if (n > _lengths[pos]) throw new RangeError();
+        _lengths[pos] -= n;
+    }
+
+    size_t[2] opSlice(size_t pos)(size_t i, size_t j) @safe pure
+        if (pos < N)
+    in   {
+        if (i > j || j - i > _lengths[pos]) throw new RangeError();
+    }
+    body {
+        return [i, j];
     }
 
     auto ref opIndex(Indexes...)(Indexes _indexes)
@@ -282,22 +343,93 @@ public:
         }
     }
 
-    void popBack(size_t pos = 0)()
-        if (pos < N)
+    auto opIndex(Slices...)(Slices slices)
+        if (isPureSlice!Slices)
     {
-        version (assert) if (empty!pos) throw new RangeError();
-        _lengths[pos]--;
-    }
+        static if (Slices.length)
+        {
 
-    void popBackN(size_t pos = 0)(size_t n)
-        if (pos < N)
-    {
-        version (assert) if (n > _lengths[pos]) throw new RangeError();
-        _lengths[pos] -= n;
+            enum size_t j(size_t n) = n - Filter!(isIndex, Slices[0..n+1]).length;
+            enum size_t F = PureIndexLength!Slices;
+            enum size_t S = Slices.length;
+            static assert(N-F > 0);
+            size_t stride;
+            size_t[PureN-F] slLengths = void;
+            size_t[PureN-F] slStrides = void;
+            foreach(i, slice; slices) //static
+            {
+                static if (isIndex!(Slices[i]))
+                {
+                    version(assert) if (slice >= _lengths[i]) throw new RangeError();
+                    stride += _strides[i] * slice;
+                }
+                else
+                {
+                    stride += _strides[i] * slice[0];
+                    slLengths[j!i] = slice[1] - slice[0];
+                    slStrides[j!i] = _strides[i];
+                }
+            }
+            foreach(i; S .. PureN) //TODO: static foreach
+            {
+                slLengths[i-F] = _lengths[i];
+                slStrides[i-F] = _strides[i];
+            }
+            static if (isPointer!Range)
+                return Slice!(N-F, Range)(slLengths, slStrides, _range + stride);
+            else
+                return Slice!(N-F, Range)(slLengths, slStrides, _range[stride .. $]);
+        }
+        else
+        {
+            static if (isPointer!Range)
+                return this;
+            else
+                return typeof(this)(_lengths, _strides, _range[]);
+        }
     }
 
     static if (rangeHasMutableElements)
     {
+        void opIndexAssign(T, Slices...)(T value, Slices slices)
+            if (isFullPureSlice!Slices)
+        {
+            auto sl = this[slices];
+            enum M = sl._lengths.length;
+            static if (is(T : Slice!(M, _t), _t))
+                version(assert) if (sl._lengths != value._lengths) throw new RangeError();
+            static if (M == 1)
+            {
+                for(; sl.length; sl.popFront)
+                {
+                    static if (is(T : Slice!(M, _), _))
+                    {
+                        sl.front = value.front;
+                        value.popFront;
+                    }
+                    else
+                    {
+                         sl.front = value;
+                    }
+                }
+            }
+            else
+            {
+                foreach(v; sl)
+                {
+                    static if (is(T : Slice!(M, _), _))
+                    {
+                        v[] = value.front;
+                        value.popFront;
+                    }
+                    else
+                    {
+                        v[] = value;
+                    }
+                }
+            }
+        }
+
         auto ref opIndexAssign(T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
         {
@@ -332,46 +464,76 @@ public:
             }
         }
 
-        static if (!hasAccessByRef && N == 1)
+        static if (hasAccessByRef)
         {
-            @property void front(size_t pos = 0, T)(T value)
-                if (pos == 0)
+            void opIndexUnary(string op, Slices...)(Slices slices)
+                if (isFullPureSlice!Slices && op == "++" || op == "--")
             {
-                version (assert) if (empty) throw new RangeError();
-                static if (N == PureN)
-                {
-                    _range.front = value;
-                }
+                static if (N - PureIndexLength!Slices == 1)
+                    foreach(ref v; this[slices])
+                        mixin(op ~ "v;");
                 else
-                {
-                    DeepElemType ret = void;
-                    ret._lengths = _lengths[N-1..$];
-                    ret._strides = _strides[N-1..$];
-                    ret._range = _range;
-                    return ret[] = value;
-                }
+                    foreach(v; this[slices])
+                        mixin(op ~ "v[];");
             }
 
-            @property void back(size_t pos = 0, T)(T value)
-                if (pos == 0)
+            void opIndexOpAssign(string op, T, Slices...)(T value, Slices slices)
+                if (isFullPureSlice!Slices)
             {
-                version (assert) if (empty) throw new RangeError();
-                static if (N == PureN)
+                auto sl = this[slices];
+                enum M = sl._lengths.length;
+                static if (is(T : Slice!(M, _t), _t))
+                    version(assert) if (sl._lengths != value._lengths) throw new RangeError();
+                static if (M == 1)
                 {
-                    _range[backIndex] = value;
+                    foreach(ref v; sl)
+                    {
+                        static if (is(T : Slice!(M, _), _))
+                        {
+                            mixin("v " ~ op ~ "= value.front;");
+                            value.popFront;
+                        }
+                        else
+                        {
+                            mixin("v " ~ op ~ "= value;");
+                        }
+                    }
                 }
                 else
                 {
-                    DeepElemType ret = void;
-                    ret._lengths = _lengths[1..$];
-                    ret._strides = _strides[1..$];
-                    ret._range = _range[backIndex..$];
-                    return ret[] = value;
+                    foreach(v; sl)
+                    {
+                        static if (is(T : Slice!(M, _), _))
+                        {
+                            mixin("v[] " ~ op ~ "= value.front;");
+                            value.popFront;
+                        }
+                        else
+                        {
+                            mixin("v[] " ~ op ~ "= value;");
+                        }
+                    }
                 }
             }
         }
     }
 
+    bool opEquals(size_t NR, RangeR)(auto ref Slice!(NR, RangeR) rslice)
+        if (Slice!(NR, RangeR).PureN == PureN)
+    {
+        if (this._lengths != rslice._lengths)
+            return false;
+        static if (
+               !hasReference!(typeof(this))
+            && !hasReference!(typeof(rslice))
+            && __traits(compiles, this._range == rslice._range)
+            )
+        {
+            if (this._strides == rslice._strides && this._range == rslice._range)
+                return true;
+        }
+        return opEqualsImpl(this, rslice);
+    }
 
     T opCast(T : E[], E)()
     {
@@ -396,220 +558,6 @@ public:
             sl.popFront;
         }
         return cast(T)ret;
-    }
-
-
-    static if (isPointer!Range || is(typeof(_range) == typeof(_range[0..$])))
-    {
-        void popFront(size_t pos = 0)()
-            if (pos < N)
-        {
-            version (assert) if (empty!pos) throw new RangeError();
-            _lengths[pos]--;
-            static if (isPointer!Range)
-                _range += _strides[pos];
-            else
-                _range.popFrontN(_strides[pos]);
-        }
-
-        void popFrontN(size_t pos = 0)(size_t n)
-            if (pos < N)
-        {
-            version (assert) if (n > _lengths[pos]) throw new RangeError();
-            _lengths[pos] -= n;
-            static if (isPointer!Range)
-                _range += _strides[pos] * n;
-            else
-                _range.popFrontN(_strides[pos] * n);
-        }
-
-        static if (N > 1)
-        {
-            private enum sideStr =
-            q{
-                size_t[PureN-1] slLengths = void;
-                size_t[PureN-1] slStrides = void;
-                foreach(i; 0 .. pos) //TODO: static foreach
-                {
-                    slLengths[i] = _lengths[i];
-                    slStrides[i] = _strides[i];
-                }
-                foreach(i; pos .. PureN-1) //TODO: static foreach
-                {
-                    slLengths[i] = _lengths[i + 1];
-                    slStrides[i] = _strides[i + 1];
-                }
-            };
-
-            @property ElemType front(size_t pos = 0)()
-                if (pos < N)
-            {
-                version (assert) if (empty!pos) throw new RangeError();
-                mixin(sideStr);
-                return typeof(return)(slLengths, slStrides, _range);
-            }
-
-            @property ElemType back(size_t pos = 0)()
-                if (pos < N)
-            {
-                version (assert) if (empty!pos) throw new RangeError();
-                mixin(sideStr);
-                static if (isPointer!Range)
-                    return typeof(return)(slLengths, slStrides, _range + backIndex!pos);
-                else
-                    return typeof(return)(slLengths, slStrides, _range[backIndex!pos..$]);
-            }
-        }
-
-        size_t[2] opSlice(size_t pos)(size_t i, size_t j) @safe pure
-            if (pos < N)
-        in   {
-            if (i > j || j - i > _lengths[pos]) throw new RangeError();
-        }
-        body {
-            return [i, j];
-        }
-
-        auto opIndex(Slices...)(Slices slices)
-            if (isPureSlice!Slices)
-        {
-            static if (Slices.length)
-            {
-
-                enum size_t j(size_t n) = n - Filter!(isIndex, Slices[0..n+1]).length;
-                enum size_t F = PureIndexLength!Slices;
-                enum size_t S = Slices.length;
-                static assert(N-F > 0);
-                size_t stride;
-                size_t[PureN-F] slLengths = void;
-                size_t[PureN-F] slStrides = void;
-                foreach(i, slice; slices) //static
-                {
-                    static if (isIndex!(Slices[i]))
-                    {
-                        version(assert) if (slice >= _lengths[i]) throw new RangeError();
-                        stride += _strides[i] * slice;
-                    }
-                    else
-                    {
-                        stride += _strides[i] * slice[0];
-                        slLengths[j!i] = slice[1] - slice[0];
-                        slStrides[j!i] = _strides[i];
-                    }
-                }
-                foreach(i; S .. PureN) //TODO: static foreach
-                {
-                    slLengths[i-F] = _lengths[i];
-                    slStrides[i-F] = _strides[i];
-                }
-                static if (isPointer!Range)
-                    return Slice!(N-F, Range)(slLengths, slStrides, _range + stride);
-                else
-                    return Slice!(N-F, Range)(slLengths, slStrides, _range[stride .. $]);
-            }
-            else
-            {
-                static if (isPointer!Range)
-                    return this;
-                else
-                    return typeof(this)(_lengths, _strides, _range[]);
-            }
-        }
-
-        static if (rangeHasMutableElements)
-        {
-            void opIndexAssign(T, Slices...)(T value, Slices slices)
-                if (isFullPureSlice!Slices)
-            {
-                auto sl = this[slices];
-                enum M = sl._lengths.length;
-                static if (is(T : Slice!(M, _t), _t))
-                    version(assert) if (sl._lengths != value._lengths) throw new RangeError();
-                static if (M == 1)
-                {
-                    for(; sl.length; sl.popFront)
-                    {
-                        static if (is(T : Slice!(M, _), _))
-                        {
-                            sl.front = value.front;
-                            value.popFront;
-                        }
-                        else
-                        {
-                             sl.front = value;
-                        }
-                    }
-                }
-                else
-                {
-                    foreach(v; sl)
-                    {
-                        static if (is(T : Slice!(M, _), _))
-                        {
-                            v[] = value.front;
-                            value.popFront;
-                        }
-                        else
-                        {
-                            v[] = value;
-                        }
-                    }
-                }
-            }
-
-            static if (hasAccessByRef)
-            {
-                void opIndexUnary(string op, Slices...)(Slices slices)
-                    if (isFullPureSlice!Slices && op == "++" || op == "--")
-                {
-                    static if (N - PureIndexLength!Slices == 1)
-                        foreach(ref v; this[slices])
-                            mixin(op ~ "v;");
-                    else
-                        foreach(v; this[slices])
-                            mixin(op ~ "v[];");
-                }
-
-                void opIndexOpAssign(string op, T, Slices...)(T value, Slices slices)
-                    if (isFullPureSlice!Slices)
-                {
-                    auto sl = this[slices];
-                    enum M = sl._lengths.length;
-                    static if (is(T : Slice!(M, _t), _t))
-                        version(assert) if (sl._lengths != value._lengths) throw new RangeError();
-                    static if (M == 1)
-                    {
-                        foreach(ref v; sl)
-                        {
-                            static if (is(T : Slice!(M, _), _))
-                            {
-                                mixin("v " ~ op ~ "= value.front;");
-                                value.popFront;
-                            }
-                            else
-                            {
-                                mixin("v " ~ op ~ "= value;");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        foreach(v; sl)
-                        {
-                            static if (is(T : Slice!(M, _), _))
-                            {
-                                mixin("v[] " ~ op ~ "= value.front;");
-                                value.popFront;
-                            }
-                            else
-                            {
-                                mixin("v[] " ~ op ~ "= value;");
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     auto byElement()
@@ -682,7 +630,7 @@ public:
                 }
             }
 
-            static if (N == PureN && !hasAccessByRef && rangeHasMutableElements)
+            static if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef)
             auto front(DeepElemType elem) @property
             {
                 assert(!this.empty);
