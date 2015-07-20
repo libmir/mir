@@ -185,6 +185,7 @@ public:
         return typeof(return)(_lengths[0..N], _strides[0..N]);
     }
 
+    ///
     static if (isPointer!PureRange || isForwardRange!PureRange)
     auto save() @property
     {
@@ -194,6 +195,7 @@ public:
             return typeof(this)(_strides, _lengths, _range.save);
     }
 
+    ///
     size_t length(size_t pos = 0)()
     @property @safe pure nothrow @nogc const
         if (pos < N)
@@ -214,20 +216,23 @@ public:
     {
         static if (isPointer!PureRange)
         {
-            inout(Range) ptr() @safe pure nothrow @nogc @property inout
+            ///
+            inout(PureRange) ptr() @safe pure nothrow @nogc @property inout
             {
                 return _range;
             }
         }
         else
         {
-            auto range() @property
+            ///
+            PureRange range() @property
             {
                 return _range;
             }
         }
     }
 
+    ///
     bool empty(size_t pos = 0)()
     @property @safe pure nothrow @nogc const
         if (pos < N)
@@ -235,46 +240,20 @@ public:
         return _lengths[pos] == 0;
     }
 
-    static if (PureN == 1)
+    ///    
+    auto ref front(size_t pos = 0)() @property
+        if (pos < N)
     {
-        auto ref front(size_t pos = 0)() @property
-            if (pos == 0)
+        version (assert) if (empty) throw new RangeError();
+        static if (PureN == 1)
         {
-            version (assert) if (empty) throw new RangeError();
             static if (isPointer!PureRange)
                 return *_range;
             else
                 return range.front;
         }
-
-        auto ref back(size_t pos = 0)() @property
-            if (pos == 0)
+        else
         {
-            version (assert) if (empty) throw new RangeError();
-            return _range[backIndex];
-        }
-
-        static if (rangeHasMutableElements && !hasAccessByRef)
-        {
-            auto ref front(size_t pos = 0, T)(T value) @property
-                if (pos == 0)
-            {
-                version (assert) if (empty) throw new RangeError();
-                return _range.front = value;
-            }
-
-            auto ref back(size_t pos = 0, T)(T value) @property
-                if (pos == 0)
-            {
-                version (assert) if (empty) throw new RangeError();
-                return _range[backIndex] = value;
-            }
-        }
-    }
-    else
-    {
-        private enum sideStr =
-        q{
             ElemType ret = void;
             foreach(i; 0 .. pos) //TODO: static foreach
             {
@@ -286,27 +265,56 @@ public:
                 ret._lengths[i] = _lengths[i + 1];
                 ret._strides[i] = _strides[i + 1];
             }
-        };
-
-        auto front(size_t pos = 0)() @property
-            if (pos < N)
-        {
-            version (assert) if (empty!pos) throw new RangeError();
-            mixin(sideStr);
             ret._range = _range;
             return ret;
         }
 
-        auto back(size_t pos = 0)() @property
-            if (pos < N)
+    }
+
+    ///
+    auto ref back(size_t pos = 0)() @property
+        if (pos < N)
+    {
+        version (assert) if (empty) throw new RangeError();
+        static if (PureN == 1)
         {
-            version (assert) if (empty!pos) throw new RangeError();
-            mixin(sideStr);
+            return _range[backIndex];
+        }
+        else
+        {
+            ElemType ret = void;
+            foreach(i; 0 .. pos) //TODO: static foreach
+            {
+                ret._lengths[i] = _lengths[i];
+                ret._strides[i] = _strides[i];
+            }
+            foreach(i; pos .. PureN-1) //TODO: static foreach
+            {
+                ret._lengths[i] = _lengths[i + 1];
+                ret._strides[i] = _strides[i + 1];
+            }
             ret._range = shiftedRange(backIndex!pos);
             return ret;
         }
     }
 
+    ///
+    auto ref front(size_t pos = 0, T)(T value) @property
+        if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef && pos == 0)
+    {
+        version (assert) if (empty) throw new RangeError();
+        return _range.front = value;
+    }
+
+    ///
+    auto ref back(size_t pos = 0, T)(T value) @property
+        if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef && pos == 0)
+    {
+        version (assert) if (empty) throw new RangeError();
+        return _range[backIndex] = value;
+    }
+
+    ///
     void popFront(size_t pos = 0)()
         if (pos < N)
     {
@@ -330,6 +338,7 @@ public:
             _range.popFrontN(_strides[pos] * n);
     }
 
+    ///
     void popBack(size_t pos = 0)()
         if (pos < N)
     {
