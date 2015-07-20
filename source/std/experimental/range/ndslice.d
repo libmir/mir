@@ -93,18 +93,10 @@ private:
     else
         alias DeepElemType = Slice!(Range.N - 1, Range.Range);
 
-    size_t[PureN] _lengths;
-    size_t[PureN] _strides;
-    PureRange _range;
-
-    import std.compiler: version_minor;
-    static if (version_minor >= 68)
-        mixin("pragma(inline, true):");
-
-    enum rangeHasMutableElements = isPointer!Range ||
+    enum rangeHasMutableElements = isPointer!PureRange ||
         __traits(compiles, { _range.front = _range.front.init; } );
 
-    enum hasAccessByRef = isPointer!Range ||
+    enum hasAccessByRef = isPointer!PureRange ||
         __traits(compiles, { auto a = &(_range.front()); } );
 
     enum PureIndexLength(Slices...) = Filter!(isIndex, Slices).length;
@@ -121,6 +113,14 @@ private:
            Slices.length == 0
         || Slices.length == N
         && PureIndexLength!Slices < N;
+
+    size_t[PureN] _lengths;
+    size_t[PureN] _strides;
+    PureRange _range;
+
+    import std.compiler: version_minor;
+    static if (version_minor >= 68)
+        mixin("pragma(inline, true):");
 
     size_t backIndex(size_t pos = 0)()
     @property @safe pure nothrow @nogc const
@@ -150,7 +150,25 @@ private:
         return len;
     }
 
+    PureRange shiftedRange(size_t shift)
+    {
+        static if (isPointer!PureRange)
+            return _range + shift;
+        else
+            return _range[shift .. $];
+    }
+
 public:
+
+    ///
+    this(ref size_t[PureN] lengths, ref size_t[PureN] strides, PureRange range)
+    {
+        foreach(i; 0..PureN) //TODO: static foreach
+            _lengths[i] = lengths[i];
+        foreach(i; 0..PureN) //TODO: static foreach
+            _strides[i] = strides[i];
+        _range = range;
+    }
 
     ///
     size_t[N] shape()
@@ -170,7 +188,7 @@ public:
     static if (isPointer!PureRange || isForwardRange!PureRange)
     auto save() @property
     {
-        static if (isPointer!Range)
+        static if (isPointer!PureRange)
             return typeof(this)(_strides, _lengths, _range);
         else
             return typeof(this)(_strides, _lengths, _range.save);
@@ -194,7 +212,7 @@ public:
 
     static if (N == PureN)
     {
-        static if (isPointer!Range)
+        static if (isPointer!PureRange)
         {
             inout(Range) ptr() @safe pure nothrow @nogc @property inout
             {
@@ -223,7 +241,7 @@ public:
             if (pos == 0)
         {
             version (assert) if (empty) throw new RangeError();
-            static if (isPointer!Range)
+            static if (isPointer!PureRange)
                 return *_range;
             else
                 return range.front;
@@ -257,17 +275,16 @@ public:
     {
         private enum sideStr =
         q{
-            size_t[PureN-1] slLengths = void;
-            size_t[PureN-1] slStrides = void;
+            ElemType ret = void;
             foreach(i; 0 .. pos) //TODO: static foreach
             {
-                slLengths[i] = _lengths[i];
-                slStrides[i] = _strides[i];
+                ret._lengths[i] = _lengths[i];
+                ret._strides[i] = _strides[i];
             }
             foreach(i; pos .. PureN-1) //TODO: static foreach
             {
-                slLengths[i] = _lengths[i + 1];
-                slStrides[i] = _strides[i + 1];
+                ret._lengths[i] = _lengths[i + 1];
+                ret._strides[i] = _strides[i + 1];
             }
         };
 
@@ -276,7 +293,8 @@ public:
         {
             version (assert) if (empty!pos) throw new RangeError();
             mixin(sideStr);
-            return ElemType(slLengths, slStrides, _range);
+            ret._range = _range;
+            return ret;
         }
 
         auto back(size_t pos = 0)() @property
@@ -284,10 +302,8 @@ public:
         {
             version (assert) if (empty!pos) throw new RangeError();
             mixin(sideStr);
-            static if (isPointer!Range)
-                return ElemType(slLengths, slStrides, _range + backIndex!pos);
-            else
-                return ElemType(slLengths, slStrides, _range[backIndex!pos..$]);
+            ret._range = shiftedRange(backIndex!pos);
+            return ret;
         }
     }
 
@@ -296,7 +312,7 @@ public:
     {
         version (assert) if (empty!pos) throw new RangeError();
         _lengths[pos]--;
-        static if (isPointer!Range)
+        static if (isPointer!PureRange)
             _range += _strides[pos];
         else
             _range.popFrontN(_strides[pos]);
@@ -308,7 +324,7 @@ public:
     {
         version (assert) if (n > _lengths[pos]) throw new RangeError();
         _lengths[pos] -= n;
-        static if (isPointer!Range)
+        static if (isPointer!PureRange)
             _range += _strides[pos] * n;
         else
             _range.popFrontN(_strides[pos] * n);
@@ -342,17 +358,9 @@ public:
         if (isFullPureIndex!Indexes)
     {
         static if (N == PureN)
-        {
             return _range[indexStride(_indexes)];
-        }
         else
-        {
-            DeepElemType ret = void;
-            ret._lengths = _lengths[N..$];
-            ret._strides = _strides[N..$];
-            ret._range = _range[indexStride(_indexes)..$];
-            return ret;
-        }
+            return DeepElemType(_lengths[N..$], _strides[N..$], shiftedRange(indexStride(_indexes)));
     }
 
     auto opIndex(Slices...)(Slices slices)
@@ -366,8 +374,7 @@ public:
             enum size_t S = Slices.length;
             static assert(N-F > 0);
             size_t stride;
-            size_t[PureN-F] slLengths = void;
-            size_t[PureN-F] slStrides = void;
+            Slice!(N-F, Range) ret = void;
             foreach(i, slice; slices) //static
             {
                 static if (isIndex!(Slices[i]))
@@ -378,23 +385,21 @@ public:
                 else
                 {
                     stride += _strides[i] * slice[0];
-                    slLengths[j!i] = slice[1] - slice[0];
-                    slStrides[j!i] = _strides[i];
+                    ret._lengths[j!i] = slice[1] - slice[0];
+                    ret._strides[j!i] = _strides[i];
                 }
             }
             foreach(i; S .. PureN) //TODO: static foreach
             {
-                slLengths[i-F] = _lengths[i];
-                slStrides[i-F] = _strides[i];
+                ret._lengths[i-F] = _lengths[i];
+                ret._strides[i-F] = _strides[i];
             }
-            static if (isPointer!Range)
-                return Slice!(N-F, Range)(slLengths, slStrides, _range + stride);
-            else
-                return Slice!(N-F, Range)(slLengths, slStrides, _range[stride .. $]);
+            ret._range = shiftedRange(stride);
+            return ret;
         }
         else
         {
-            static if (isPointer!Range)
+            static if (isPointer!PureRange)
                 return this;
             else
                 return typeof(this)(_lengths, _strides, _range[]);
@@ -446,34 +451,18 @@ public:
             if (isFullPureIndex!Indexes)
         {
             static if (N == PureN)
-            {
                 return _range[indexStride(_indexes)] = value;
-            }
             else
-            {
-                DeepElemType ret = void;
-                ret._lengths = _lengths[N..$];
-                ret._strides = _strides[N..$];
-                ret._range = _range[indexStride(_indexes)..$];
-                return ret[] = value;
-            }
+                return DeepElemType(_lengths[N..$], _strides[N..$], shiftedRange(indexStride(_indexes)))[] = value;
         }
 
         auto ref opIndexOpAssign(string op, T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
         {
             static if (N == PureN)
-            {
                 mixin("return _range[indexStride(_indexes)] " ~ op ~ "= value;");
-            }
             else
-            {
-                DeepElemType ret = void;
-                ret._lengths = _lengths[N-1..$];
-                ret._strides = _strides[N-1..$];
-                ret._range = _range[indexStride(_indexes)..$];
-                mixin("return ret[] " ~ op ~ "= value;");
-            }
+                mixin("return DeepElemType(_lengths[N..$], _strides[N..$], shiftedRange(indexStride(_indexes)))[] " ~ op ~ "= value;");
         }
 
         static if (hasAccessByRef)
@@ -637,10 +626,7 @@ public:
                 else with(_slice)
                 {
                     alias M = DeepElemType.PureN;
-                    static if (isPointer!Range)
-                        return DeepElemType(_lengths[$-M .. $], _strides[$-M .. $], _range + _shift);
-                    else
-                        return DeepElemType(_lengths[$-M .. $], _strides[$-M .. $], _range[_shift .. $]);
+                    return DeepElemType(_lengths[$-M .. $], _strides[$-M .. $], shiftedRange(_shift));
                 }
             }
 
@@ -658,35 +644,35 @@ public:
 /++
 Creates $(D n)-dimensional slice-shell over the $(D range).
 +/
-auto sliced(Range, Lengths...)(Range range, Lengths _lengths)
+auto sliced(Range, Lengths...)(Range range, Lengths lengths)
     if (!isStaticArray!Range && !isNarrowString!Range
         && allSatisfy!(isIndex, Lengths) && Lengths.length)
 in {
-    foreach(len; _lengths)
+    foreach(len; lengths)
         if (len <= 0) throw new RangeError();
     static if (hasLength!Range)
     {
         size_t length = 1;
-        foreach(len; _lengths)
+        foreach(len; lengths)
             length *= len;
         if (length > range.length) throw new RangeError();
     }
 }
 body {
     enum N = Lengths.length;
-    size_t[N] __lengths = void;
+    size_t[N] _lengths = void;
     size_t[N] _strides = void;
     size_t stride = 1;
-    foreach_reverse(i, length; _lengths) //static
+    foreach_reverse(i, length; lengths) //static
     {
-        __lengths[i] = length;
+        _lengths[i] = length;
         _strides[i] = stride;
         stride *= length;
     }
     static if (isDynamicArray!Range)
-        return Slice!(N, typeof(range.ptr))(__lengths, _strides, range.ptr);
+        return Slice!(N, typeof(range.ptr))(_lengths, _strides, range.ptr);
     else
-        return Slice!(N, ImplicitlyUnqual!(typeof(range)))(__lengths, _strides, range);
+        return Slice!(N, ImplicitlyUnqual!(typeof(range)))(_lengths, _strides, range);
 }
 
 /// Slicing
@@ -888,21 +874,23 @@ unittest {
     auto ars = matrix.to!(immutable double[][]); //calls opCast
 }
 
-/// Type conversion
+/// Type deduction
 unittest {
+    //Arrays
     foreach(T; TypeTuple!(int, const int, immutable int))
         static assert(is(typeof((T[]).init.sliced(3, 4)) == Slice!(2, T*)));
 
+    //Container Array
     import std.container.array;
     Array!int ar;
     static assert(is(typeof(ar[].sliced(3, 4)) == Slice!(2, typeof(ar[]))));
 
+    //An implicitly convertable types to it's unqualified type.
     import std.range: iota;
     auto      i0 = 100.iota;
     const     i1 = 100.iota;
     immutable i2 = 100.iota;
-    alias S = Slice!(3, typeof(iota(0))); //unqualified range
-    // const/immutable Iota is implicitly convertable to unqualified type
+    alias S = Slice!(3, typeof(iota(0)));
     foreach(i; TypeTuple!(i0, i1, i2))
         static assert(is(typeof(i.sliced(3, 4, 5)) == S));
 }
@@ -930,19 +918,20 @@ template transposed(Permutation...)
     {
         with(slice)
         {
-            size_t[PureN] tLengths = void;
-            size_t[PureN] tStrides = void;
-            foreach(i, p; completeTranspose!N([Permutation])) //TODO: static foreach
+            This ret = void;
+            enum perm = completeTranspose!N([Permutation]);
+            foreach(i, p; perm) //TODO: static foreach
             {
-                tLengths[i] = _lengths[p];
-                tStrides[i] = _strides[p];
+                ret._lengths[i] = _lengths[p];
+                ret._strides[i] = _strides[p];
             }
             foreach(i; N .. PureN) //TODO: static foreach
             {
-                tLengths[i] = _lengths[i];
-                tStrides[i] = _strides[i];
+                ret._lengths[i] = _lengths[i];
+                ret._strides[i] = _strides[i];
             }
-            return Slice!(N, Range)(tLengths, tStrides, slice._range);
+            ret._range = _range;
+            return ret;
         }
     }
 }
@@ -953,19 +942,19 @@ auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] pe
     version (assert) if (permutation.length > N) throw new RangeError();
     with(slice)
     {
-        size_t[PureN] tLengths = void;
-        size_t[PureN] tStrides = void;
+        This ret = void;
         foreach(i, p; completeTranspose!N(permutation))
         {
-            tLengths[i] = _lengths[p];
-            tStrides[i] = _strides[p];
+            ret._lengths[i] = _lengths[p];
+            ret._strides[i] = _strides[p];
         }
         foreach(i; N .. PureN) //TODO: static foreach
         {
-            tLengths[i] = _lengths[i];
-            tStrides[i] = _strides[i];
+            ret._lengths[i] = _lengths[i];
+            ret._strides[i] = _strides[i];
         }
-        return Slice!(N, Range)(tLengths, tStrides, slice._range);
+        ret._range = _range;
+        return ret;
     }
 }
 
@@ -1036,19 +1025,19 @@ auto everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     with(slice)
     {
-        size_t[PureN] tLengths = void;
-        size_t[PureN] tStrides = void;
+        This ret = void;
         foreach(i; 0..N) //TODO: static foreach
         {
-            tLengths[N-1-i] = _lengths[i];
-            tStrides[N-1-i] = _strides[i];
+            ret._lengths[N-1-i] = _lengths[i];
+            ret._strides[N-1-i] = _strides[i];
         }
         foreach(i; N .. PureN) //TODO: static foreach
         {
-            tLengths[i] = _lengths[i];
-            tStrides[i] = _strides[i];
+            ret._lengths[i] = _lengths[i];
+            ret._strides[i] = _strides[i];
         }
-        return Slice!(N, Range)(tLengths, tStrides, slice._range);
+        ret._range = _range;
+        return ret;
     }
 }
 
@@ -1224,8 +1213,11 @@ auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
         alias D = Reverse!(Snowball!(Reverse!(Parts!NSeq)));
         foreach(i, _; NSeq)
         {
-            ret._lengths[D[i+1]..D[i]] = _lengths[C[i]..C[i+1]];
-            ret._strides[D[i+1]..D[i]] = _strides[C[i]..C[i+1]];
+            foreach(j; 0..C[i+1] - C[i]) //TODO: static foreach
+            {
+                ret._lengths[j+D[i+1]] = _lengths[j+C[i]];
+                ret._strides[j+D[i+1]] = _strides[j+C[i]];
+            }
         }
         ret._range = _range;
         return ret;
@@ -1277,7 +1269,7 @@ private alias IncFront(Seq...) = TypeTuple!(Seq[0] + 1, Seq[1..$]);
 private alias DecFront(Seq...) = TypeTuple!(Seq[0] - 1, Seq[1..$]);
 private alias NSeqEvert(Seq...) = DecFront!(Reverse!(IncFront!Seq));
 private alias Parts(Seq...) = DecAll!(IncFront!Seq);
-private alias Snowball(Seq...) = TypeTuple!(0, SnowballImpl!(0, Seq));
+private alias Snowball(Seq...) = TypeTuple!(size_t.init, SnowballImpl!(size_t.init, Seq));
 private template SnowballImpl(size_t val, Seq...)
 {
     static if (Seq.length == 0)
@@ -1475,6 +1467,14 @@ unittest {
     auto tensor = createSlice!int(3, 4, 8);
     assert(&(tensor.back.back.back()) is &tensor[2, 3, 7]);
     assert(&(tensor.front.front.front()) is &tensor[0, 0, 0]);
+}
+
+unittest {
+    auto slice = createSlice!int(2, 3, 4);
+    auto r0 = slice.packed!1[1, 2];
+    slice.packed!1[1, 2] = 4;
+    auto r1 = slice[1, 2];
+    assert(slice[1, 2, 3] == 4);
 }
 
 unittest {
