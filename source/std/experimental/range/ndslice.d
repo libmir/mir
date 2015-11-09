@@ -3,7 +3,7 @@ This module provides basic utilities for creating n-dimensional random access ra
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors:   Ilya Yaroshenko
-Source:    $(PHOBOSSRC std/_experemental/_range_ndslice.d)
+Source:    $(PHOBOSSRC std/_experemental/_range/_ndslice.d)
 +/
 module std.experimental.range.ndslice;
 
@@ -44,6 +44,7 @@ body {
 
 /++
 $(D _N)-dimensional slice-shell over the $(D _Range).
+See_also: $(LREF sliced), $(LREF createSlice), $(LREF ndarray)
 +/
 struct Slice(size_t _N, _Range)
     if (!(is(Unqual!_Range : Slice!(_N0, _Range0), size_t _N0, _Range0)
@@ -115,7 +116,7 @@ private:
         && PureIndexLength!Slices < N;
 
     size_t[PureN] _lengths;
-    size_t[PureN] _strides;
+    sizediff_t[PureN] _strides;
     PureRange _range;
 
     import std.compiler: version_minor;
@@ -161,7 +162,7 @@ private:
 public:
 
     ///
-    this(ref size_t[PureN] lengths, ref size_t[PureN] strides, PureRange range)
+    this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PureRange range)
     {
         foreach(i; 0..PureN) //TODO: static foreach
             _lengths[i] = lengths[i];
@@ -178,7 +179,7 @@ public:
     }
 
     ///
-    Tuple!(size_t[N], "lengths", size_t[N], "strides")
+    Tuple!(size_t[N], "lengths", sizediff_t[N], "strides")
     structure()
     @property @safe pure nothrow @nogc const
     {
@@ -190,9 +191,9 @@ public:
     auto save() @property
     {
         static if (isPointer!PureRange)
-            return typeof(this)(_strides, _lengths, _range);
+            return typeof(this)(_lengths, _strides, _range);
         else
-            return typeof(this)(_strides, _lengths, _range.save);
+            return typeof(this)(_lengths, _strides, _range.save);
     }
 
     ///
@@ -222,7 +223,7 @@ public:
                 return _range;
             }
         }
-        else
+        static if (!isPointer!PureRange)
         {
             ///
             PureRange range() @property
@@ -240,7 +241,7 @@ public:
         return _lengths[pos] == 0;
     }
 
-    ///    
+    ///
     auto ref front(size_t pos = 0)() @property
         if (pos < N)
     {
@@ -545,6 +546,24 @@ public:
         return opEqualsImpl(this, rslice);
     }
 
+    import std.format: FormatSpec, formatValue; //TODO add more format options
+    void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
+    {
+        sink("[");
+        if(this.length)
+        {
+            auto r = this.save;
+            sink.formatValue(r.front, fmt);
+            r.popFront;
+            foreach(e; r)
+            {
+                sink(", ");
+                sink.formatValue(e, fmt);
+            }
+        }
+        sink("]");
+    }
+
     ///
     T opCast(T : E[], E)()
     {
@@ -670,7 +689,7 @@ in {
 body {
     enum N = Lengths.length;
     size_t[N] _lengths = void;
-    size_t[N] _strides = void;
+    sizediff_t[N] _strides = void;
     size_t stride = 1;
     foreach_reverse(i, length; lengths) //static
     {
@@ -811,7 +830,7 @@ unittest {
     assert(tensor.length!2 == structure.lengths[2]);
     assert(tensor.stride!1 == structure.strides[1]);
     import std.typecons: Tuple;
-    alias Structure = Tuple!(size_t[3], "lengths", size_t[3], "strides");
+    alias Structure = Tuple!(size_t[3], "lengths", sizediff_t[3], "strides");
     static assert(is(typeof(structure) == Structure));
 
     // `shape` property
@@ -858,8 +877,8 @@ unittest {
         foreach(w; q)
             foreach(e; w)
             {
-                assert(e == elems2.front);
                 assert(!elems2.empty);
+                assert(e == elems2.front);
                 elems2.popFront;
             }
     assert(elems2.empty);
@@ -907,6 +926,7 @@ unittest {
 
 /++
 Creates array and n-dimensional slice over it.
+See_also: $(LREF ndarray)
 +/
 auto createSlice(T, Lengths...)(Lengths _lengths)
 {
@@ -916,9 +936,149 @@ auto createSlice(T, Lengths...)(Lengths _lengths)
     return (new T[length]).sliced(_lengths);
 }
 
+/++
+Creates a common N-dimensional array.
+See_also: $(LREF createSlice)
++/
+auto ndarray(size_t N, Range)(auto ref Slice!(N, Range) slice)
+{
+    import std.array: array;
+    static if (N == 1)
+    {
+        return slice.array;
+    }
+    else
+    {
+        import std.algorithm: map;
+        return slice.map!(.ndarray).array;
+    }
+}
+
+///
+unittest {
+    import std.range: iota;
+    auto ar = 1000.iota.sliced(3, 4).ndarray;
+    static assert(is(typeof(ar) == int[][]));
+    assert(ar == [[0,1,2,3], [4,5,6,7], [8,9,10,11]]);
+}
+
+/++
+Revers the direction of the iteration for a `Slice`.
++/
+template reversed(Indexes...)
+    if (Indexes.length)
+{
+    ///`Range` should be a pointer type.
+    auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice)
+        if (isPointer!(Slice!(N, Range).PureRange))
+    {
+
+        auto ret = slice;
+        foreach(index; Indexes) 
+        {
+            static assert(index < N, "reversed: index(" ~ index.stringof ~ ") should be less then N(" ~ N.stringof ~ ")");
+            with(ret)  
+            {
+                _range += _strides[index] * (_lengths[index] - 1);
+                _strides[index] = -_strides[index];
+            }
+        }
+        return ret;
+    }
+}
+
+///
+unittest {
+    import std.array: array;
+    import std.range: iota;
+    
+    auto a = 1000.iota.array.sliced(3, 4);
+    assert(a.ndarray == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
+    
+    a = a.reversed!0;
+    assert(a.ndarray == [[8, 9, 10, 11], [4, 5, 6, 7], [0, 1, 2, 3]]);
+    
+    a = a.reversed!(0, 1);
+    assert(a.ndarray == [[3, 2, 1, 0], [7, 6, 5, 4], [11, 10, 9, 8]]);
+    
+    a = a.reversed!(1, 1, 0, 0, 0, 0);
+    assert(a.ndarray == [[3, 2, 1, 0], [7, 6, 5, 4], [11, 10, 9, 8]]);
+}
+
+/++
+ditto
++/
+auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] indexes...)
+    if (isPointer!(Slice!(N, Range).PureRange))
+{
+    auto ret = slice;
+    foreach(index; indexes) 
+    {
+        assert(index < N, "reversed: index should be less then N");
+        with(ret)  
+        {
+            _range += _strides[index] * (_lengths[index] - 1);
+            _strides[index] = -_strides[index];
+        }
+    }
+    return ret;
+}
+
+///
+unittest {
+    import std.array: array;
+    import std.range: iota;
+    
+    auto a = 1000.iota.array.sliced(3, 4);
+    assert(a.ndarray == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
+   
+    a = a.reversed(0);
+    assert(a.ndarray == [[8, 9, 10, 11], [4, 5, 6, 7], [0, 1, 2, 3]]);
+   
+    a = a.reversed(0, 1);
+    assert(a.ndarray == [[3, 2, 1, 0], [7, 6, 5, 4], [11, 10, 9, 8]]);
+   
+    a = a.reversed(1, 1, 0, 0, 0, 0);
+    assert(a.ndarray == [[3, 2, 1, 0], [7, 6, 5, 4], [11, 10, 9, 8]]);
+}
+
+/++
+ditto
++/
+auto allIndexesReversed(size_t N, Range)(auto ref Slice!(N, Range) slice)
+    if (isPointer!(Slice!(N, Range).PureRange))
+{
+    auto ret = slice;
+    foreach(index; 0..N) //TODO static foreach 
+    {
+        with(ret)  
+        {
+            _range += _strides[index] * (_lengths[index] - 1);
+            _strides[index] = -_strides[index];
+        }
+    }
+    return ret;
+}
+
+///
+unittest {
+    import std.array: array;
+    import std.range: iota;
+
+    auto a = 1000.iota.array.sliced(3, 4);
+    a = a.allIndexesReversed;
+    assert(a.ndarray == [[11, 10, 9, 8], [7, 6, 5, 4], [3, 2, 1, 0]]);
+
+    auto p = a.packed!1;
+    p = p.allIndexesReversed;
+    a = p.unpacked;
+    assert(a.ndarray == [[3, 2, 1, 0], [7, 6, 5, 4], [11, 10, 9, 8]]);
+}
+
 
 /++
 N-dimensional transpose operator.
+See_also: $(LREF swapped), $(LREF everted)
 +/
 template transposed(Permutation...)
     if (Permutation.length)
@@ -991,6 +1151,7 @@ unittest {
 
 /++
 2-dimenstional transpose operator.
+See_also: $(LREF swapped), $(LREF everted)
 +/
 auto transposed(Range)(auto ref Slice!(2, Range) slice)
 {
@@ -1029,7 +1190,10 @@ body {
     return ctr;
 }
 
-/// Everts dimensions in the reverse order.
+/++
+Everts dimensions in the reverse order.
+See_also: $(LREF swapped), $(LREF transposed)
++/
 auto everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     with(slice)
@@ -1073,7 +1237,10 @@ private enum swappedStr = q{
     return ret;
 };
 
-/// Swaps dimensions
+/++
+Swaps dimensions.
+See_also: $(LREF swapped), $(LREF transposed)
++/
 template swapped(size_t i, size_t j)
 {
     auto swapped(size_t N, Range)(auto ref Slice!(N, Range) slice)
@@ -1100,29 +1267,6 @@ unittest {
     assert(tensor2.shape == [3, 6, 5, 4]);
 }
 
-
-/// Creates common N-dimensional array
-auto ndarray(size_t N, Range)(auto ref Slice!(N, Range) slice)
-{
-    import std.array: array;
-    static if (N == 1)
-    {
-        return slice.array;
-    }
-    else
-    {
-        import std.algorithm: map;
-        return slice.map!(.ndarray).array;
-    }
-}
-
-///
-unittest {
-    import std.range: iota;
-    auto ar = 1000.iota.sliced(3, 4).ndarray;
-    static assert(is(typeof(ar) == int[][]));
-    assert(ar == [[0,1,2,3], [4,5,6,7], [8,9,10,11]]);
-}
 
 /++
 Packs a slice into the composed slice.
