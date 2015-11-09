@@ -957,7 +957,7 @@ auto ndarray(size_t N, Range)(auto ref Slice!(N, Range) slice)
 ///
 unittest {
     import std.range: iota;
-    auto ar = 1000.iota.sliced(3, 4).ndarray;
+    auto ar = 100.iota.sliced(3, 4).ndarray;
     static assert(is(typeof(ar) == int[][]));
     assert(ar == [[0,1,2,3], [4,5,6,7], [8,9,10,11]]);
 }
@@ -992,7 +992,7 @@ unittest {
     import std.array: array;
     import std.range: iota;
     
-    auto a = 1000.iota.array.sliced(3, 4);
+    auto a = 100.iota.array.sliced(3, 4);
     assert(a.ndarray == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
     
     a = a.reversed!0;
@@ -1029,7 +1029,7 @@ unittest {
     import std.array: array;
     import std.range: iota;
     
-    auto a = 1000.iota.array.sliced(3, 4);
+    auto a = 100.iota.array.sliced(3, 4);
     assert(a.ndarray == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
    
     a = a.reversed(0);
@@ -1065,7 +1065,7 @@ unittest {
     import std.array: array;
     import std.range: iota;
 
-    auto a = 1000.iota.array.sliced(3, 4);
+    auto a = 100.iota.array.sliced(3, 4);
     a = a.allIndexesReversed;
     assert(a.ndarray == [[11, 10, 9, 8], [7, 6, 5, 4], [3, 2, 1, 0]]);
 
@@ -1073,6 +1073,40 @@ unittest {
     p = p.allIndexesReversed;
     a = p.unpacked;
     assert(a.ndarray == [[3, 2, 1, 0], [7, 6, 5, 4], [11, 10, 9, 8]]);
+}
+
+/++
+Iterates range r with stride n. 
++/
+auto strided(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dim, size_t n)
+in {
+    assert(dim < N, "stride: dim should be less then N");
+}
+body {
+    auto ret = slice;
+    with(ret)
+    {
+        const rem =_lengths[dim] % n;
+        _lengths[dim] /= n;
+        _strides[dim] *= n;        
+        if(rem)
+            _lengths[dim]++;
+    }
+    return ret;
+}
+
+///
+unittest {
+    import std.range: iota;
+    
+    auto a = 100.iota.sliced(3, 4);
+    assert(a.ndarray == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
+   
+    a = a.strided(0, 2);
+    assert(a.ndarray == [[0, 1, 2, 3], [8, 9, 10, 11]]);
+   
+    a = a.strided(1, 3);
+    assert(a.ndarray == [[0, 3], [8, 11]]);
 }
 
 
