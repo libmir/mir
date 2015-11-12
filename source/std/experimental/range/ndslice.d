@@ -41,6 +41,101 @@ body {
     return true;
 }
 
+private struct PtrShell(Range)
+{
+    sizediff_t _shift;
+    Range _range;
+
+    enum hasAccessByRef = isPointer!Range ||
+        __traits(compiles, { auto a = &(_range[0]); } );
+
+    //alias _range this;
+
+    void opOpAssign(string op)(sizediff_t shift)
+        if (op == "+" || op == "-")
+    {
+        mixin("_shift " ~ op ~ "= shift;");
+    }
+
+    auto opBinary(string op)(sizediff_t shift)
+        if (op == "+" || op == "-")
+    {
+        mixin("return typeof(this)(_shift " ~ op ~ " shift, _range);");
+    }
+
+    auto ref opIndex(size_t index)
+    in {
+        assert(_shift + index >= 0);
+        static if(!isInfinite!Range)
+            assert(_shift + index <= _range.length);
+    }
+    body {
+        return _range[_shift + index];
+    }
+
+    static if(!hasAccessByRef)
+    {
+        auto ref opIndexAssign(T)(T value, size_t index)
+        in {
+            assert(_shift + index >= 0);
+            static if(!isInfinite!Range)
+                assert(_shift + index <= _range.length);
+        }
+        body {
+            return _range[_shift + index] = value;
+        }
+
+        auto ref opIndexOpAssign(string op, T)(T value, size_t index)
+        in {
+            assert(_shift + index >= 0);
+            static if(!isInfinite!Range)
+                assert(_shift + index <= _range.length);
+        }
+        body {
+            mixin("return _range[_shift + index] " ~ op ~ "= value;");
+        }
+
+        auto ref opIndexUnary(string op)(size_t index)
+            if (op == "++" || op == "--")
+         in {
+            assert(_shift + index >= 0);
+            static if(!isInfinite!Range)
+                assert(_shift + index <= _range.length);
+        }
+        body {
+            mixin("return " ~ op ~ "_range[_shift + index];");
+        }
+    }
+
+    static if (isForwardRange!Range)
+    auto save() @property
+    {
+        return typeof(this)(_shift, _range.save);
+    }
+}
+
+private auto ptrShell(Range)(Range range, sizediff_t shift = 0)
+{
+    return PtrShell!Range(shift, range);
+}
+
+version(none)
+unittest {
+    import std.internal.test.dummyrange;
+    foreach(RB; TypeTuple!(ReturnBy.Reference, ReturnBy.Value))
+    {
+        DummyRange!(RB, Length.Yes, RangeType.Random) range;
+        assert(range.length >= 10);
+        auto ptr = range.ptrShell;
+        assert(ptr[0] == range[0]);
+        auto save0 = range[0];
+        ptr[0] += 10;
+        ++ptr[0];
+        assert(ptr[0] == save0 + 11);
+        (ptr + 5)[2] = 333;
+        assert(range[7] == 333);
+    }
+}
 
 /++
 $(D _N)-dimensional slice-shell over the $(D _Range).
@@ -49,9 +144,8 @@ See_also: $(LREF sliced), $(LREF createSlice), $(LREF ndarray)
 struct Slice(size_t _N, _Range)
     if (!(is(Unqual!_Range : Slice!(_N0, _Range0), size_t _N0, _Range0)
             && (isPointer!_Range
-                || isInputRange!_Range
-                    && is(typeof(_Range.init[size_t.init]) == ElementType!_Range)
-                    && is(_Range == typeof(_Range.init[size_t.init .. $]))))
+                || isInputRange!_Range 
+                    && is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
         || is(_Range == Slice!(_N1, _Range1), size_t _N1, _Range1))
 {
 
@@ -95,10 +189,10 @@ private:
         alias DeepElemType = Slice!(Range.N - 1, Range.Range);
 
     enum rangeHasMutableElements = isPointer!PureRange ||
-        __traits(compiles, { _range.front = _range.front.init; } );
+        __traits(compiles, { _ptr[0] = _ptr[0].init; } );
 
     enum hasAccessByRef = isPointer!PureRange ||
-        __traits(compiles, { auto a = &(_range.front()); } );
+        __traits(compiles, { auto a = &(_ptr[0]); } );
 
     enum PureIndexLength(Slices...) = Filter!(isIndex, Slices).length;
 
@@ -117,7 +211,10 @@ private:
 
     size_t[PureN] _lengths;
     sizediff_t[PureN] _strides;
-    PureRange _range;
+    static if(isPointer!PureRange)
+        PureRange _ptr;
+    else
+        PtrShell!PureRange _ptr;
 
     import std.compiler: version_minor;
     static if (version_minor >= 68)
@@ -151,14 +248,6 @@ private:
         return len;
     }
 
-    PureRange shiftedRange(size_t shift)
-    {
-        static if (isPointer!PureRange)
-            return _range + shift;
-        else
-            return _range[shift .. $];
-    }
-
 public:
 
     ///
@@ -168,7 +257,21 @@ public:
             _lengths[i] = lengths[i];
         foreach(i; 0..PureN) //TODO: static foreach
             _strides[i] = strides[i];
-        _range = range;
+        static if(isPointer!PureRange)
+            _ptr = range;
+        else
+            _ptr._range = range;
+
+    }
+
+    static if(!isPointer!PureRange)
+    private this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PtrShell!PureRange shell)
+    {
+        foreach(i; 0..PureN) //TODO: static foreach
+            _lengths[i] = lengths[i];
+        foreach(i; 0..PureN) //TODO: static foreach
+            _strides[i] = strides[i];
+        _ptr = shell;
     }
 
     ///
@@ -191,9 +294,9 @@ public:
     auto save() @property
     {
         static if (isPointer!PureRange)
-            return typeof(this)(_lengths, _strides, _range);
+            return typeof(this)(_lengths, _strides, _ptr);
         else
-            return typeof(this)(_lengths, _strides, _range.save);
+            return typeof(this)(_lengths, _strides, _ptr.save);
     }
 
     ///
@@ -220,7 +323,7 @@ public:
             ///
             inout(PureRange) ptr() @safe pure nothrow @nogc @property inout
             {
-                return _range;
+                return _ptr;
             }
         }
         static if (!isPointer!PureRange)
@@ -228,7 +331,7 @@ public:
             ///
             PureRange range() @property
             {
-                return _range;
+                return _ptr._range;
             }
         }
     }
@@ -248,10 +351,7 @@ public:
         version (assert) if (empty) throw new RangeError();
         static if (PureN == 1)
         {
-            static if (isPointer!PureRange)
-                return *_range;
-            else
-                return range.front;
+            return _ptr[0];
         }
         else
         {
@@ -266,10 +366,9 @@ public:
                 ret._lengths[i] = _lengths[i + 1];
                 ret._strides[i] = _strides[i + 1];
             }
-            ret._range = _range;
+            ret._ptr = _ptr;
             return ret;
         }
-
     }
 
     ///
@@ -279,7 +378,7 @@ public:
         version (assert) if (empty) throw new RangeError();
         static if (PureN == 1)
         {
-            return _range[backIndex];
+            return _ptr[backIndex];
         }
         else
         {
@@ -294,7 +393,7 @@ public:
                 ret._lengths[i] = _lengths[i + 1];
                 ret._strides[i] = _strides[i + 1];
             }
-            ret._range = shiftedRange(backIndex!pos);
+            ret._ptr = _ptr + backIndex!pos;
             return ret;
         }
     }
@@ -304,7 +403,7 @@ public:
         if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef && pos == 0)
     {
         version (assert) if (empty) throw new RangeError();
-        return _range.front = value;
+        return _ptr.front = value;
     }
 
     ///
@@ -312,7 +411,7 @@ public:
         if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef && pos == 0)
     {
         version (assert) if (empty) throw new RangeError();
-        return _range[backIndex] = value;
+        return _ptr[backIndex] = value;
     }
 
     ///
@@ -321,10 +420,7 @@ public:
     {
         version (assert) if (empty!pos) throw new RangeError();
         _lengths[pos]--;
-        static if (isPointer!PureRange)
-            _range += _strides[pos];
-        else
-            _range.popFrontN(_strides[pos]);
+        _ptr += _strides[pos];
     }
 
     ///
@@ -333,10 +429,7 @@ public:
     {
         version (assert) if (n > _lengths[pos]) throw new RangeError();
         _lengths[pos] -= n;
-        static if (isPointer!PureRange)
-            _range += _strides[pos] * n;
-        else
-            _range.popFrontN(_strides[pos] * n);
+        _ptr += _strides[pos] * n;
     }
 
     ///
@@ -368,9 +461,9 @@ public:
         if (isFullPureIndex!Indexes)
     {
         static if (N == PureN)
-            return _range[indexStride(_indexes)];
+            return _ptr[indexStride(_indexes)];
         else
-            return DeepElemType(_lengths[N..$], _strides[N..$], shiftedRange(indexStride(_indexes)));
+            return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes));
     }
 
     auto opIndex(Slices...)(Slices slices)
@@ -404,15 +497,12 @@ public:
                 ret._lengths[i-F] = _lengths[i];
                 ret._strides[i-F] = _strides[i];
             }
-            ret._range = shiftedRange(stride);
+            ret._ptr = _ptr + stride;
             return ret;
         }
         else
         {
-            static if (isPointer!PureRange)
-                return this;
-            else
-                return typeof(this)(_lengths, _strides, _range[]);
+            return this;
         }
     }
 
@@ -461,18 +551,18 @@ public:
             if (isFullPureIndex!Indexes)
         {
             static if (N == PureN)
-                return _range[indexStride(_indexes)] = value;
+                return _ptr[indexStride(_indexes)] = value;
             else
-                return DeepElemType(_lengths[N..$], _strides[N..$], shiftedRange(indexStride(_indexes)))[] = value;
+                return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes))[] = value;
         }
 
         auto ref opIndexOpAssign(string op, T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
         {
             static if (N == PureN)
-                mixin("return _range[indexStride(_indexes)] " ~ op ~ "= value;");
+                mixin("return _ptr[indexStride(_indexes)] " ~ op ~ "= value;");
             else
-                mixin("return DeepElemType(_lengths[N..$], _strides[N..$], shiftedRange(indexStride(_indexes)))[] " ~ op ~ "= value;");
+                mixin("return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes))[] " ~ op ~ "= value;");
         }
 
         static if (hasAccessByRef)
@@ -537,10 +627,10 @@ public:
         static if (
                !hasReference!(typeof(this))
             && !hasReference!(typeof(rslice))
-            && __traits(compiles, this._range == rslice._range)
+            && __traits(compiles, this._ptr == rslice._ptr)
             )
         {
-            if (this._strides == rslice._strides && this._range == rslice._range)
+            if (this._strides == rslice._strides && this._ptr == rslice._ptr)
                 return true;
         }
         return opEqualsImpl(this, rslice);
@@ -569,18 +659,13 @@ public:
     {
         static if (version_minor >= 68)
             mixin("pragma(inline);");
-
         import std.array: uninitializedArray;
         alias U = Unqual!E[];
         U ret = void;
         if (__ctfe)
-        {
             ret = new U(_lengths[0]);
-        }
         else
-        {
             ret = uninitializedArray!U(_lengths[0]);
-        }
         auto sl = this[];
         foreach(ref e; ret)
         {
@@ -597,13 +682,12 @@ public:
         {
             This _slice;
             size_t _length;
-            size_t _shift;
             size_t[N] _indexes;
 
             static if (isPointer!PureRange || isForwardRange!PureRange)
             auto save() @property
             {
-                return typeof(this)(_slice.save, _length, _shift, _indexes);
+                return typeof(this)(_slice.save, _length, _indexes);
             }
 
             bool empty() const @property @safe pure nothrow
@@ -622,27 +706,13 @@ public:
                 _length--;
                 foreach_reverse(i; 0..N) with(_slice) //TODO: static foreach
                 {
-                    _shift += _strides[i];
+                    _slice._ptr += _strides[i];
                     _indexes[i]++;
                     if (_indexes[i] < _lengths[i])
                         break;
                     assert(_indexes[i] == _lengths[i]);
-                    _shift -= _lengths[i] * _strides[i];
+                    _slice._ptr -= _lengths[i] * _strides[i];
                     _indexes[i] = 0;
-                }
-            }
-
-            void popFrontN(size_t n)
-            {
-                assert(n <= _length);
-                _length -= n;
-                size_t diff = _slice.elementsCount - _length;
-                _shift = 0;
-                foreach_reverse(i; 0..N) with(_slice) //TODO: static foreach
-                {
-                    _indexes[i] = diff % _lengths[i];
-                    diff /= _lengths[i];
-                    _shift += _indexes[i] * _strides[i];
                 }
             }
 
@@ -650,11 +720,11 @@ public:
             {
                 assert(!this.empty);
                 static if (N == PureN)
-                    return _slice._range[_shift];
+                    return _slice._ptr[0];
                 else with(_slice)
                 {
                     alias M = DeepElemType.PureN;
-                    return DeepElemType(_lengths[$-M .. $], _strides[$-M .. $], shiftedRange(_shift));
+                    return DeepElemType(_lengths[$-M .. $], _strides[$-M .. $], _ptr);
                 }
             }
 
@@ -662,7 +732,7 @@ public:
             auto front(DeepElemType elem) @property
             {
                 assert(!this.empty);
-                return _slice._range[_shift] = elem;
+                return _slice._ptr[0] = elem;
             }
         }
         return ByElement(this, this.elementsCount);
@@ -841,7 +911,7 @@ unittest {
     assert(theIota0.front == 0);
     tensor.popFront;
     auto theIota1 = tensor.range;
-    assert(theIota1.front == 20);
+    assert(theIota1.front == 0);
 
     // `ptr` property
     import std.array: array;
@@ -866,7 +936,6 @@ unittest {
     {
         static assert(isForwardRange!S);
         static assert(hasLength!S);
-        static assert(hasMember!(S, "popFrontN"));
     }
 
     assert(elems0.length == L);
@@ -968,9 +1037,7 @@ Revers the direction of the iteration for a `Slice`.
 template reversed(Indexes...)
     if (Indexes.length)
 {
-    ///`Range` should be a pointer type.
     auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice)
-        if (isPointer!(Slice!(N, Range).PureRange))
     {
 
         auto ret = slice;
@@ -979,7 +1046,7 @@ template reversed(Indexes...)
             static assert(index < N, "reversed: index(" ~ index.stringof ~ ") should be less then N(" ~ N.stringof ~ ")");
             with(ret)  
             {
-                _range += _strides[index] * (_lengths[index] - 1);
+                _ptr += _strides[index] * (_lengths[index] - 1);
                 _strides[index] = -_strides[index];
             }
         }
@@ -989,10 +1056,9 @@ template reversed(Indexes...)
 
 ///
 unittest {
-    import std.array: array;
     import std.range: iota;
     
-    auto a = 100.iota.array.sliced(3, 4);
+    auto a = 100.iota.sliced(3, 4);
     assert(a.ndarray == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
     
     a = a.reversed!0;
@@ -1009,7 +1075,6 @@ unittest {
 ditto
 +/
 auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] indexes...)
-    if (isPointer!(Slice!(N, Range).PureRange))
 {
     auto ret = slice;
     foreach(index; indexes) 
@@ -1017,7 +1082,7 @@ auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] inde
         assert(index < N, "reversed: index should be less then N");
         with(ret)  
         {
-            _range += _strides[index] * (_lengths[index] - 1);
+            _ptr += _strides[index] * (_lengths[index] - 1);
             _strides[index] = -_strides[index];
         }
     }
@@ -1026,10 +1091,9 @@ auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] inde
 
 ///
 unittest {
-    import std.array: array;
     import std.range: iota;
     
-    auto a = 100.iota.array.sliced(3, 4);
+    auto a = 100.iota.sliced(3, 4);
     assert(a.ndarray == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
    
     a = a.reversed(0);
@@ -1046,14 +1110,13 @@ unittest {
 ditto
 +/
 auto allIndexesReversed(size_t N, Range)(auto ref Slice!(N, Range) slice)
-    if (isPointer!(Slice!(N, Range).PureRange))
 {
     auto ret = slice;
     foreach(index; 0..N) //TODO static foreach 
     {
         with(ret)  
         {
-            _range += _strides[index] * (_lengths[index] - 1);
+            _ptr += _strides[index] * (_lengths[index] - 1);
             _strides[index] = -_strides[index];
         }
     }
@@ -1062,10 +1125,9 @@ auto allIndexesReversed(size_t N, Range)(auto ref Slice!(N, Range) slice)
 
 ///
 unittest {
-    import std.array: array;
     import std.range: iota;
 
-    auto a = 100.iota.array.sliced(3, 4);
+    auto a = 100.iota.sliced(3, 4);
     a = a.allIndexesReversed;
     assert(a.ndarray == [[11, 10, 9, 8], [7, 6, 5, 4], [3, 2, 1, 0]]);
 
@@ -1133,7 +1195,7 @@ template transposed(Permutation...)
                 ret._lengths[i] = _lengths[i];
                 ret._strides[i] = _strides[i];
             }
-            ret._range = _range;
+            ret._ptr = _ptr;
             return ret;
         }
     }
@@ -1156,7 +1218,7 @@ auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] pe
             ret._lengths[i] = _lengths[i];
             ret._strides[i] = _strides[i];
         }
-        ret._range = _range;
+        ret._ptr = _ptr;
         return ret;
     }
 }
@@ -1243,7 +1305,7 @@ auto everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
             ret._lengths[i] = _lengths[i];
             ret._strides[i] = _strides[i];
         }
-        ret._range = _range;
+        ret._ptr = _ptr;
         return ret;
     }
 }
@@ -1322,7 +1384,7 @@ template packed(Indexes...)
                 alias Template = Slice!(NInner, Range);
             }
         }
-        return Template!(N, Range, Indexes)(slice._lengths, slice._strides, slice._range);
+        return Template!(N, Range, Indexes)(slice._lengths, slice._strides, slice._ptr);
     }
 }
 
@@ -1371,7 +1433,7 @@ See_also: $(LREF packed), $(LREF packEverted)
 +/
 auto unpacked(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
-    with(slice) return PureThis(_lengths, _strides, _range);
+    with(slice) return PureThis(_lengths, _strides, _ptr);
 }
 
 ///
@@ -1406,7 +1468,7 @@ auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 ret._strides[j+D[i+1]] = _strides[j+C[i]];
             }
         }
-        ret._range = _range;
+        ret._ptr = _ptr;
         return ret;
     }
 }
