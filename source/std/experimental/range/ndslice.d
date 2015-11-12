@@ -144,8 +144,7 @@ See_also: $(LREF sliced), $(LREF createSlice), $(LREF ndarray)
 struct Slice(size_t _N, _Range)
     if (!(is(Unqual!_Range : Slice!(_N0, _Range0), size_t _N0, _Range0)
             && (isPointer!_Range
-                || isInputRange!_Range 
-                    && is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
+                    || is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
         || is(_Range == Slice!(_N1, _Range1), size_t _N1, _Range1))
 {
 
