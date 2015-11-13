@@ -13,6 +13,16 @@ import std.range.primitives;
 import core.exception: RangeError;
 
 
+//TODO: replace with static foreach
+private template Iota(size_t i, size_t j)
+{
+    static assert(i <= j, "Iota: i>j");
+    static if(i == j)
+        alias Iota = AliasSeq!();
+    else
+        alias Iota = AliasSeq!(i, Iota!(i+1, j));
+}
+
 private bool opEqualsImpl
     (size_t NL, RangeL, size_t NR, RangeR)(
     auto ref Slice!(NL, RangeL) lslice,
@@ -49,18 +59,16 @@ private struct PtrShell(Range)
     enum hasAccessByRef = isPointer!Range ||
         __traits(compiles, { auto a = &(_range[0]); } );
 
-    //alias _range this;
-
     void opOpAssign(string op)(sizediff_t shift)
         if (op == "+" || op == "-")
     {
-        mixin("_shift " ~ op ~ "= shift;");
+        mixin(`_shift ` ~ op ~ `= shift;`);
     }
 
     auto opBinary(string op)(sizediff_t shift)
         if (op == "+" || op == "-")
     {
-        mixin("return typeof(this)(_shift " ~ op ~ " shift, _range);");
+        mixin(`return typeof(this)(_shift ` ~ op ~ ` shift, _range);`);
     }
 
     auto ref opIndex(size_t index)
@@ -92,7 +100,7 @@ private struct PtrShell(Range)
                 assert(_shift + index <= _range.length);
         }
         body {
-            mixin("return _range[_shift + index] " ~ op ~ "= value;");
+            mixin(`return _range[_shift + index] ` ~ op ~ `= value;`);
         }
 
         auto ref opIndexUnary(string op)(size_t index)
@@ -103,7 +111,7 @@ private struct PtrShell(Range)
                 assert(_shift + index <= _range.length);
         }
         body {
-            mixin("return " ~ op ~ "_range[_shift + index];");
+            mixin(`return ` ~ op ~ `_range[_shift + index];`);
         }
     }
 
@@ -215,9 +223,7 @@ private:
     else
         PtrShell!PureRange _ptr;
 
-    import std.compiler: version_minor;
-    static if (version_minor >= 68)
-        mixin("pragma(inline, true):");
+    pragma(inline, true):
 
     size_t backIndex(size_t pos = 0)()
     @property @safe pure nothrow @nogc const
@@ -242,8 +248,8 @@ private:
     @safe pure nothrow @nogc const
     {
         size_t len = 1;
-        foreach(l; _lengths[0..N]) //TODO: static foreach
-            len *= l;
+        foreach(i; Iota!(0, N))
+            len *= _lengths[i];
         return len;
     }
 
@@ -252,9 +258,9 @@ public:
     ///
     this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PureRange range)
     {
-        foreach(i; 0..PureN) //TODO: static foreach
+        foreach(i; Iota!(0, PureN))
             _lengths[i] = lengths[i];
-        foreach(i; 0..PureN) //TODO: static foreach
+        foreach(i; Iota!(0, PureN))
             _strides[i] = strides[i];
         static if(isPointer!PureRange)
             _ptr = range;
@@ -266,9 +272,9 @@ public:
     static if(!isPointer!PureRange)
     private this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PtrShell!PureRange shell)
     {
-        foreach(i; 0..PureN) //TODO: static foreach
+        foreach(i; Iota!(0, PureN))
             _lengths[i] = lengths[i];
-        foreach(i; 0..PureN) //TODO: static foreach
+        foreach(i; Iota!(0, PureN))
             _strides[i] = strides[i];
         _ptr = shell;
     }
@@ -355,12 +361,12 @@ public:
         else
         {
             ElemType ret = void;
-            foreach(i; 0 .. pos) //TODO: static foreach
+            foreach(i; Iota!(0, pos))
             {
                 ret._lengths[i] = _lengths[i];
                 ret._strides[i] = _strides[i];
             }
-            foreach(i; pos .. PureN-1) //TODO: static foreach
+            foreach(i; Iota!(pos, PureN-1))
             {
                 ret._lengths[i] = _lengths[i + 1];
                 ret._strides[i] = _strides[i + 1];
@@ -382,12 +388,12 @@ public:
         else
         {
             ElemType ret = void;
-            foreach(i; 0 .. pos) //TODO: static foreach
+            foreach(i; Iota!(0, pos))
             {
                 ret._lengths[i] = _lengths[i];
                 ret._strides[i] = _strides[i];
             }
-            foreach(i; pos .. PureN-1) //TODO: static foreach
+            foreach(i; Iota!(pos, PureN-1))
             {
                 ret._lengths[i] = _lengths[i + 1];
                 ret._strides[i] = _strides[i + 1];
@@ -491,7 +497,7 @@ public:
                     ret._strides[j!i] = _strides[i];
                 }
             }
-            foreach(i; S .. PureN) //TODO: static foreach
+            foreach(i; Iota!(S, PureN))
             {
                 ret._lengths[i-F] = _lengths[i];
                 ret._strides[i-F] = _strides[i];
@@ -559,9 +565,9 @@ public:
             if (isFullPureIndex!Indexes)
         {
             static if (N == PureN)
-                mixin("return _ptr[indexStride(_indexes)] " ~ op ~ "= value;");
+                mixin(`return _ptr[indexStride(_indexes)] ` ~ op ~ `= value;`);
             else
-                mixin("return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes))[] " ~ op ~ "= value;");
+                mixin(`return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes))[] ` ~ op ~ `= value;`);
         }
 
         static if (hasAccessByRef)
@@ -571,10 +577,10 @@ public:
             {
                 static if (N - PureIndexLength!Slices == 1)
                     foreach(ref v; this[slices])
-                        mixin(op ~ "v;");
+                        mixin(op ~ `v;`);
                 else
                     foreach(v; this[slices])
-                        mixin(op ~ "v[];");
+                        mixin(op ~ `v[];`);
             }
 
             void opIndexOpAssign(string op, T, Slices...)(T value, Slices slices)
@@ -590,12 +596,12 @@ public:
                     {
                         static if (is(T : Slice!(M, _), _))
                         {
-                            mixin("v " ~ op ~ "= value.front;");
+                            mixin(`v ` ~ op ~ `= value.front;`);
                             value.popFront;
                         }
                         else
                         {
-                            mixin("v " ~ op ~ "= value;");
+                            mixin(`v ` ~ op ~ `= value;`);
                         }
                     }
                 }
@@ -605,12 +611,12 @@ public:
                     {
                         static if (is(T : Slice!(M, _), _))
                         {
-                            mixin("v[] " ~ op ~ "= value.front;");
+                            mixin(`v[] ` ~ op ~ `= value.front;`);
                             value.popFront;
                         }
                         else
                         {
-                            mixin("v[] " ~ op ~ "= value;");
+                            mixin(`v[] ` ~ op ~ `= value;`);
                         }
                     }
                 }
@@ -635,29 +641,10 @@ public:
         return opEqualsImpl(this, rslice);
     }
 
-    import std.format: FormatSpec, formatValue; //TODO add more format options
-    void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt)
-    {
-        sink("[");
-        if(this.length)
-        {
-            auto r = this.save;
-            sink.formatValue(r.front, fmt);
-            r.popFront;
-            foreach(e; r)
-            {
-                sink(", ");
-                sink.formatValue(e, fmt);
-            }
-        }
-        sink("]");
-    }
-
     ///
     T opCast(T : E[], E)()
     {
-        static if (version_minor >= 68)
-            mixin("pragma(inline);");
+        pragma(inline);
         import std.array: uninitializedArray;
         alias U = Unqual!E[];
         U ret = void;
@@ -703,7 +690,7 @@ public:
             {
                 assert(!empty);
                 _length--;
-                foreach_reverse(i; 0..N) with(_slice) //TODO: static foreach
+                foreach_reverse(i; Iota!(0, N)) with(_slice)
                 {
                     _slice._ptr += _strides[i];
                     _indexes[i]++;
@@ -1111,7 +1098,7 @@ ditto
 auto allIndexesReversed(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     auto ret = slice;
-    foreach(index; 0..N) //TODO static foreach 
+    foreach(index; Iota!(0, N))
     {
         with(ret)  
         {
@@ -1184,12 +1171,12 @@ template transposed(Permutation...)
         {
             This ret = void;
             enum perm = completeTranspose!N([Permutation]);
-            foreach(i, p; perm) //TODO: static foreach
+            foreach(i; Iota!(0, N))
             {
-                ret._lengths[i] = _lengths[p];
-                ret._strides[i] = _strides[p];
+                ret._lengths[i] = _lengths[perm[i]];
+                ret._strides[i] = _strides[perm[i]];
             }
-            foreach(i; N .. PureN) //TODO: static foreach
+            foreach(i; Iota!(N, PureN))
             {
                 ret._lengths[i] = _lengths[i];
                 ret._strides[i] = _strides[i];
@@ -1207,12 +1194,13 @@ auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] pe
     with(slice)
     {
         This ret = void;
-        foreach(i, p; completeTranspose!N(permutation))
+        immutable perm = completeTranspose!N(permutation);
+        foreach(i; Iota!(0, N))
         {
-            ret._lengths[i] = _lengths[p];
-            ret._strides[i] = _strides[p];
+            ret._lengths[i] = _lengths[perm[i]];
+            ret._strides[i] = _strides[perm[i]];
         }
-        foreach(i; N .. PureN) //TODO: static foreach
+        foreach(i; Iota!(N, PureN))
         {
             ret._lengths[i] = _lengths[i];
             ret._strides[i] = _strides[i];
@@ -1294,12 +1282,12 @@ auto everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
     with(slice)
     {
         This ret = void;
-        foreach(i; 0..N) //TODO: static foreach
+        foreach(i; Iota!(0, N))
         {
             ret._lengths[N-1-i] = _lengths[i];
             ret._strides[N-1-i] = _strides[i];
         }
-        foreach(i; N .. PureN) //TODO: static foreach
+        foreach(i; Iota!(N, PureN))
         {
             ret._lengths[i] = _lengths[i];
             ret._strides[i] = _strides[i];
@@ -1461,7 +1449,7 @@ auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
         alias D = Reverse!(Snowball!(Reverse!(Parts!NSeq)));
         foreach(i, _; NSeq)
         {
-            foreach(j; 0..C[i+1] - C[i]) //TODO: static foreach
+            foreach(j; Iota!(0, C[i+1] - C[i]))
             {
                 ret._lengths[j+D[i+1]] = _lengths[j+C[i]];
                 ret._strides[j+D[i+1]] = _strides[j+C[i]];
