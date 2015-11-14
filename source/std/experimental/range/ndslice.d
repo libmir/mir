@@ -18,9 +18,9 @@ private template Iota(size_t i, size_t j)
 {
     static assert(i <= j, "Iota: i>j");
     static if(i == j)
-        alias Iota = AliasSeq!();
+        alias Iota = TypeTuple!();
     else
-        alias Iota = AliasSeq!(i, Iota!(i+1, j));
+        alias Iota = TypeTuple!(i, Iota!(i+1, j));
 }
 
 private bool opEqualsImpl
@@ -223,7 +223,7 @@ private:
     else
         PtrShell!PureRange _ptr;
 
-    pragma(inline, true):
+    //pragma(inline, true):
 
     size_t backIndex(size_t pos = 0)()
     @property @safe pure nothrow @nogc const
@@ -644,7 +644,7 @@ public:
     ///
     T opCast(T : E[], E)()
     {
-        pragma(inline);
+        //pragma(inline);
         import std.array: uninitializedArray;
         alias U = Unqual!E[];
         U ret = void;
