@@ -1,9 +1,9 @@
-/++
+/**
 This module implements generic algorithms for creating and manipulating of n-dimensional random access ranges and arrays,
 which are represented with the $(LREF Slice).
 
 Transpose operators, iteration operators, subspace operators and $(LREF sliced) constructor have a very small computational cost.
-Transpose operators and iteration operators except `byElement` preserve type of a slice. Some operators are bifacial, 
+Transpose operators and iteration operators except `byElement` preserve type of a slice. Some operators are bifacial,
 i.e they have version with template parameters and version with function parameters.
 Versions with template parameters are preferred because compile time checks and optimization reasons.
 
@@ -49,6 +49,32 @@ $(T4 transposed, Yes, `slice.transposed!(1, 4, 3)`, `slice.transposed(1, 4, 3)`)
 $(T4 reversed, Yes, `slice.reversed!(0, 2)`, `slice.reversed(0, 2)`)
 )
 
+Example:
+----
+import std.array: array;
+import std.range: iota;
+
+auto tensor = 60.iota.array.sliced(3, 4, 5);
+
+assert(tensor[1, 2] == tensor[1][2]);
+assert(tensor[1, 2, 3] == tensor[1][2][3]);
+
+assert( tensor[0..$, 0..$, 4] == tensor.transposed!2[4]);
+assert(&tensor[0..$, 0..$, 4][1, 2] is &tensor[1, 2, 4]);
+
+tensor[1, 2, 3]++; //`opIndex` returns reference
+--tensor[1, 2, 3]; //`opUnary`
+
+++tensor[];
+tensor[] -= 1;
+
+// `opIndexAssing` accepts only fully qualified index/slice. Use additional empty slice `[]`.
+// tensor[0..2] *= 2; // Error: tensor.opIndex(tensor.opSlice(0u, 2u)) is not an lvalue
+
+tensor[0..2][] *= 2;        //OK, empty slice
+tensor[0..2, 3, 0..$] /= 2; //OK, 3 index/slice positions are defined.
+----
+
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
@@ -58,8 +84,34 @@ Source:    $(PHOBOSSRC std/_experemental/_range/_ndslice.d)
 Macros:
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
-+/
+*/
 module std.experimental.range.ndslice;
+
+//example test
+unittest {
+    import std.array: array;
+    import std.range: iota;
+
+    auto tensor = 60.iota.array.sliced(3, 4, 5);
+
+    assert(tensor[1, 2] == tensor[1][2]);
+    assert(tensor[1, 2, 3] == tensor[1][2][3]);
+
+    assert( tensor[0..$, 0..$, 4] == tensor.transposed!2[4]);
+    assert(&tensor[0..$, 0..$, 4][1, 2] is &tensor[1, 2, 4]);
+
+    tensor[1, 2, 3]++; //`opIndex` returns reference
+    --tensor[1, 2, 3]; //`opUnary`
+
+    ++tensor[];
+    tensor[] -= 1;
+
+    // `opIndexAssing` accepts only fully qualified index/slice. Use additional empty slice `[]`.
+    static assert(!__traits(compiles), tensor[0..2] *= 2);
+
+    tensor[0..2][] *= 2;        //OK, empty slice
+    tensor[0..2, 3, 0..$] /= 2; //OK, 3 index/slice positions are defined.
+}
 
 import std.traits;
 import std.typetuple;
@@ -895,7 +947,6 @@ private:
         return _strides[pos] * (_lengths[pos] - 1);
     }
 
-    
     size_t indexStride(Indexes...)(Indexes _indexes)
         if (isFullPureIndex!Indexes)
     {
@@ -989,22 +1040,19 @@ public:
     {
         static if (isPointer!PureRange)
         {
-            ///
-            inout(PureRange) ptr() @safe pure nothrow @nogc @property inout
+            package(std) inout(PureRange) ptr() @safe pure nothrow @nogc @property inout
             {
                 return _ptr;
             }
         }
         static if (!isPointer!PureRange)
         {
-            ///
-            PureRange range() @property
+            package(std) PureRange range() @property
             {
                 return _ptr._range;
             }
 
-            ///
-            sizediff_t shift()
+            package(std) sizediff_t shift()
             {
                 return _ptr._shift;
             }
@@ -1157,7 +1205,7 @@ public:
             {
                 static if (isIndex!(Slices[i]))
                 {
-                    assert(slice < _lengths[i]);
+                    assert(slice < _lengths[i], "Slice.opIndex: index must be less then length");
                     stride += _strides[i] * slice;
                 }
                 else
@@ -1340,7 +1388,90 @@ public:
     }
 }
 
-/// Slicing
+/// Properties and methods
+unittest {
+    import std.range: iota;
+    auto tensor = 100.iota.sliced(3, 4, 5);
+    static assert(isRandomAccessRange!(typeof(tensor)));
+
+    // `save` method
+    // Calls `range.save`
+    auto a = tensor.save;
+    static assert(is(typeof(a) == typeof(tensor)));
+
+    // `front` and `back` properties;
+    // `popFront`, `popBack`,
+    // `popFrontN` and `popBackN` methods
+    auto matrix = tensor.back;
+    matrix.popBack!1;
+    auto column = matrix.back!1;
+    column.popFrontN(3);
+    auto elem = column.front!0;
+    assert(elem == tensor[$-1, 3, $-2]);
+
+    // `length` property
+    assert(tensor.length   == 3);
+    assert(tensor.length!0 == 3);
+    assert(tensor.length!1 == 4);
+    assert(tensor.length!2 == 5);
+
+    // `stride` property
+    assert(tensor.stride   == 20);
+    assert(tensor.stride!0 == 20);
+    assert(tensor.stride!1 ==  5);
+    assert(tensor.stride!2 ==  1);
+
+    assert(matrix.stride   ==  5);
+    assert(matrix.stride!1 ==  1);
+
+    matrix = tensor.back!2;
+    assert(matrix.stride   == 20);
+    assert(matrix.stride!1 ==  5);
+
+    matrix = matrix.allReversed.everted;
+    assert(matrix.stride   == -5);
+    assert(matrix.stride!1 == -20);
+
+    // `structure` property
+    auto structure = tensor.structure;
+    assert(tensor.length!2 == structure.lengths[2]);
+    assert(tensor.stride!1 == structure.strides[1]);
+
+    // `shape` property
+    assert(tensor.shape == structure.lengths);
+}
+
+/// Conversion
+unittest {
+    import std.range: iota;
+    auto matrix = 4.iota.sliced(2, 2);
+    auto arrays = cast(float[][]) matrix;
+    assert(arrays == [[0f, 1f], [2f, 3f]]);
+
+    import std.conv;
+    auto ars = matrix.to!(immutable double[][]); //calls opCast
+}
+
+// Properties and methods: package(std)
+unittest {
+    import std.range: iota;
+    auto tensor = 100.iota.sliced(3, 4, 5);
+
+    // `range` method
+    auto theIota0 = tensor.range;
+    assert(theIota0.front == 0);
+    tensor.popFront;
+    auto theIota1 = tensor.range;
+    assert(theIota1.front == 0);
+
+    // `ptr` property
+    import std.array: array;
+    auto ar = 100.iota.array;
+    auto ts = ar.sliced(3, 4, 5)[1..$, 2..$, 3..$];
+    assert(ts.ptr is ar.ptr + 1*20+2*5+3*1);
+}
+
+// Slicing
 unittest {
     import std.range: iota;
     auto a = 1000000.iota.sliced(10, 20, 30, 40);
@@ -1352,7 +1483,7 @@ unittest {
     assert(d[3] == a[6, 10, 25, 4]);
 }
 
-/// Operator overloading. # 1
+// Operator overloading. # 1
 unittest {
     import std.range: iota;
     import std.array: array;
@@ -1373,7 +1504,7 @@ unittest {
     assert(tensor[0, 0, 0] == 11);
 }
 
-/// Operator overloading. # 2
+// Operator overloading. # 2
 unittest {
     import std.algorithm.iteration: map;
     import std.array: array;
@@ -1395,7 +1526,7 @@ unittest {
                 assert(matrix[i, j] < 100);
 }
 
-/// Operator overloading. # 3
+// Operator overloading. # 3
 unittest {
     import std.algorithm.comparison: equal;
     import std.algorithm.iteration: map;
@@ -1422,84 +1553,7 @@ unittest {
             assert(elem >= 200);
 }
 
-/// Properties and methods
-unittest {
-    import std.range: iota;
-    auto tensor = 100.iota.sliced(3, 4, 5);
-    static assert(isRandomAccessRange!(typeof(tensor)));
-
-    // `save` method
-    // Calls `range.save`
-    auto a = tensor.save;
-    static assert(is(typeof(a) == typeof(tensor)));
-
-    // `length` property
-    assert(tensor.length   == 3);
-    assert(tensor.length!0 == 3);
-    assert(tensor.length!1 == 4);
-    assert(tensor.length!2 == 5);
-
-    // `front` and `back` properties
-    // and `popFront`, `popBack`,
-    // `popFrontN` and `popBackN` methods
-    auto matrix = tensor.back;
-    matrix.popBack!1;
-    auto column = matrix.back!1;
-    column.popFrontN(3);
-    auto elem = column.front!0;
-    assert(elem == tensor[$-1, 3, $-2]);
-
-    // `stride` property
-    assert(tensor.stride   == 20);
-    assert(tensor.stride!0 == 20);
-    assert(tensor.stride!1 ==  5);
-    assert(tensor.stride!2 ==  1);
-
-    assert(matrix.stride   ==  5);
-    assert(matrix.stride!1 ==  1);
-
-    matrix = tensor.back!2;
-    assert(matrix.stride   == 20);
-    assert(matrix.stride!1 ==  5);
-
-    // `structure` property
-    auto structure = tensor.structure;
-    assert(tensor.length!2 == structure.lengths[2]);
-    assert(tensor.stride!1 == structure.strides[1]);
-    import std.typecons: Tuple;
-    alias Structure = Tuple!(size_t[3], `lengths`, sizediff_t[3], `strides`);
-    static assert(is(typeof(structure) == Structure));
-
-    // `shape` property
-    assert(tensor.shape == structure.lengths);
-
-    // `range` method
-    auto theIota0 = tensor.range;
-    assert(theIota0.front == 0);
-    tensor.popFront;
-    auto theIota1 = tensor.range;
-    assert(theIota1.front == 0);
-
-    // `ptr` property
-    import std.array: array;
-    auto ar = 100.iota.array;
-    auto ts = ar.sliced(3, 4, 5)[1..$, 2..$, 3..$];
-    assert(ts.ptr is ar.ptr + 1*20+2*5+3*1);
-}
-
-
-/// Conversion
-unittest {
-    import std.range: iota;
-    auto matrix = 4.iota.sliced(2, 2);
-    auto arrays = cast(float[][]) matrix;
-    assert(arrays == [[0f, 1f], [2f, 3f]]);
-
-    import std.conv;
-    auto ars = matrix.to!(immutable double[][]); //calls opCast
-}
-
-/// Type deduction
+// Type deduction
 unittest {
     //Arrays
     foreach(T; TypeTuple!(int, const int, immutable int))
@@ -1510,7 +1564,7 @@ unittest {
     Array!int ar;
     static assert(is(typeof(ar[].sliced(3, 4)) == Slice!(2, typeof(ar[]))));
 
-    //An implicitly convertable types to it's unqualified type.
+    //An implicitly convertible types to it's unqualified type.
     import std.range: iota;
     auto      i0 = 100.iota;
     const     i1 = 100.iota;
