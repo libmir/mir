@@ -676,6 +676,39 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 _length--;
             }
 
+            void popFrontN(size_t n)
+            in {
+                assert(n <= _length);
+            }
+            body {
+                _length -= n;
+                sizediff_t _shift;
+                size_t indexesI = n + _indexes[N-1];
+                foreach_reverse(i; Iota!(1, N)) with(_slice)
+                {
+                    immutable v = indexesI / _lengths[i];
+                    indexesI %= _lengths[i];
+                    _shift += (indexesI - _indexes[i]) * _strides[i];
+                    _indexes[i] = indexesI;
+                    indexesI = _indexes[i-1] + v;
+                }
+                assert(indexesI < _slice._lengths[0]);
+                with(_slice)
+                {
+                    _shift += (indexesI - _indexes[0]) * _strides[0];
+                    _indexes[0] = indexesI;
+                }
+                _slice._ptr += _shift;
+            }
+
+            void popBackN(size_t n)
+            in {
+                assert(n <= _length);
+            }
+            body {
+                _length -= n;
+            }
+
             private sizediff_t getShift(size_t index){
                 assert(index < length);
                 sizediff_t _shift;
@@ -702,6 +735,25 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             auto opIndexAssign(DeepElemType elem, size_t index)
             {
                 return _slice[getShift(index)] = elem;
+            }
+
+            import std.typecons: Tuple;
+            auto opIndex(Tuple!(size_t, size_t) sl)
+            {
+                auto ret = this;
+                ret.popFrontN(sl[0]);
+                ret.popBackN(_length - sl[1]);
+                return ret;
+            }
+
+            alias opDollar = length;
+
+            Tuple!(size_t, size_t) opSlice(size_t pos : 0)(size_t i, size_t j)
+            in   {
+                assert(i <= j && j - i <= _length);
+            }
+            body {
+                return typeof(return)(i, j);
             }
         }
         return ByElement(slice, slice.elementsCount);
@@ -732,30 +784,38 @@ unittest {
         .equal(iota(6 * 7, 6 * 7 * 2)));
 }
 
-///Random access
+/++
+Random access and slicing.
+Random access is more expensive comparing with iteration with input range primitives.
++/
 unittest {
-    import std.range: iota, popFrontN, popBackN;
+    import std.range: iota;
     auto elems = 100.iota.sliced(4, 5).byElement;
-    static assert(isRandomAccessRange!(typeof(elems)));
 
-    popFrontN(elems, 11);
-    popBackN(elems, 2);
+    elems = elems[11 .. $-2];
+
     assert(elems.length == 7);
     assert(elems.front == 11);
     assert(elems.back == 17);
-    
+
     foreach(i; 0..7)
         assert(elems[i] == i+11);
 }
 
+unittest {
+    import std.range: iota;
+    auto elems = 100.iota.sliced(4, 5).byElement;
+    static assert(isRandomAccessRange!(typeof(elems)));
+    static assert(hasSlicing!(typeof(elems)));
+}
+
 // Check strides
 unittest {
-    import std.range: iota, popFrontN, popBackN;
+    import std.range: iota;
     auto elems = 100.iota.sliced(4, 5).everted.byElement;
     static assert(isRandomAccessRange!(typeof(elems)));
 
-    popFrontN(elems, 11);
-    popBackN(elems, 2);
+    elems = elems[11 .. $-2];
     auto elems2 = elems;
     foreach(i; 0..7)
     {
