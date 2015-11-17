@@ -18,17 +18,17 @@ $(T2 ndarray, `1000.iota.sliced(3, 4, 5).ndarray` returns array type of `int[][]
 $(BOOKTABLE $(H2 Transpose operators),
 
 $(TR $(TH Function Name) $(TH Description))
+$(T2 transposed, `100000.iota.sliced(3, 4, 5, 6, 7).transposed!(4, 0, 1).shape` returns `[7, 3, 4, 5, 6]`.)
 $(T2 swapped, `1000.iota.sliced(3, 4, 5).swapped!(1, 2).shape` returns `[3, 5, 4]`.)
 $(T2 everted, `1000.iota.sliced(3, 4, 5).everted.shape` returns `[5, 4, 3]`.)
-$(T2 transposed, `100000.iota.sliced(3, 4, 5, 6, 7).transposed!(4, 0, 1).shape` returns `[7, 3, 4, 5, 6]`.)
 )
 
 $(BOOKTABLE $(H2 Iteration operators),
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 allReversed, `20.iota.sliced(4, 5).allReversed` equals `20.iota.retro.sliced(4, 5)`.)
-$(T2 reversed, `slice.reversed!(0, slice.N)` returns slice with reversed direction of the iteration for top level and tail level dimensions.)
 $(T2 strided, `1000.iota.sliced(13, 40).strided!0(2).strided!1(5).shape` equals `[7, 8]`.)
+$(T2 reversed, `slice.reversed!(0, slice.shape.length-1)` returns slice with reversed direction of the iteration for top level and tail level dimensions.)
+$(T2 allReversed, `20.iota.sliced(4, 5).allReversed` equals `20.iota.retro.sliced(4, 5)`.)
 $(T2 byElement, `100.iota.sliced(4, 5).byElement` equals `20.iota`.)
 )
 
@@ -37,7 +37,7 @@ $(BOOKTABLE $(H2 Subspace operators),
 $(TR $(TH Function Name) $(TH Description))
 $(T2 packed, Type of `1000000.iota.sliced(1,2,3,4,5,6,7,8).packed!2` is `Slice!(6, Slice!(3, typeof(1000000.iota)))`.)
 $(T2 unpacked, Restores common type after `packed`.)
-$(T2 packEverted, `slice.packed!2.packEverted.unpacked` is identical to `slice.transposed!(slice.N-2, slice.N-1)`.)
+$(T2 packEverted, `slice.packed!2.packEverted.unpacked` is identical to `slice.transposed!(slice.shape.length-2, slice.shape.length-1)`.)
 )
 
 $(BOOKTABLE $(H2 Bifacial operators),
@@ -138,13 +138,13 @@ auto sliced(size_t N, Range)(Range range, auto ref in size_t[N] lengths, size_t 
     if (!isStaticArray!Range && !isNarrowString!Range && N)
 in {
     foreach(len; lengths)
-        assert(len > 0);
+        assert(len > 0, "sliced: all length must be positive.");
     static if (hasLength!Range)
     {
         size_t length = 1;
         foreach(len; lengths)
             length *= len;
-        assert(length + shift <= range.length);
+        assert(length + shift <= range.length, "sliced: range length mast be greater or equal lengths product plus shift");
     }
 }
 body {
@@ -191,12 +191,12 @@ unittest {
 Creates array and n-dimensional slice over it.
 See_also: $(LREF sliced)
 +/
-auto createSlice(T, Lengths...)(Lengths _lengths)
+auto createSlice(T, Lengths...)(Lengths lengths)
 {
     size_t length = 1;
-    foreach(len; _lengths)
+    foreach(len; lengths)
         length *= len;
-    return new T[length].sliced(_lengths);
+    return new T[length].sliced(lengths);
 }
 
 ///
@@ -363,7 +363,7 @@ body {
 
 /++
 N-dimensional transpose operator.
-Brings on top selected dimensions.
+Brings selected dimensions on top.
 See_also: $(LREF swapped), $(LREF everted)
 +/
 template transposed(FrontDimensions...)
@@ -604,12 +604,12 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 return typeof(this)(_slice.save, _length, _indexes);
             }
 
-            bool empty() const @property @safe pure nothrow
+            bool empty() const @property
             {
                 return _length == 0;
             }
 
-            size_t length() const @property @safe pure nothrow
+            size_t length() const @property
             {
                 return _length;
             }
@@ -829,7 +829,7 @@ auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 unittest {
     import std.range: iota;
     auto slice = 100000000.iota.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    assert(slice.packed!2.packEverted.unpacked == slice.transposed!(slice.N-2, slice.N-1));
+    assert(slice.packed!2.packEverted.unpacked == slice.transposed!(slice.shape.length-2, slice.shape.length-1));
 }
 
 ///
@@ -870,12 +870,12 @@ struct Slice(size_t _N, _Range)
 
     import std.typecons: Tuple;
 
-    ///
-    alias N = _N;
-    ///
-    alias Range = _Range;
-
 private:
+
+    enum doUnittest = is(_Range == int*);
+
+    alias N = _N;
+    alias Range = _Range;
 
     alias This = Slice!(N, Range);
     static if (is(Range == Slice!(N_, Range_), size_t N_, Range_))
@@ -938,13 +938,10 @@ private:
     else
         PtrShell!PureRange _ptr;
 
-
-
-    size_t backIndex(size_t pos = 0)()
-    @property @safe pure nothrow @nogc const
-        if (pos < N)
+    size_t backIndex(size_t dimension = 0)() @property const
+        if (dimension < N)
     {
-        return _strides[pos] * (_lengths[pos] - 1);
+        return _strides[dimension] * (_lengths[dimension] - 1);
     }
 
     size_t indexStride(Indexes...)(Indexes _indexes)
@@ -959,18 +956,6 @@ private:
         return stride;
     }
 
-    size_t elementsCount()
-    @safe pure nothrow @nogc const
-    {
-        size_t len = 1;
-        foreach(i; Iota!(0, N))
-            len *= _lengths[i];
-        return len;
-    }
-
-public:
-
-    ///
     this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PureRange range)
     {
         foreach(i; Iota!(0, PureN))
@@ -985,7 +970,7 @@ public:
     }
 
     static if (!isPointer!PureRange)
-    private this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PtrShell!PureRange shell)
+    this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PtrShell!PureRange shell)
     {
         foreach(i; Iota!(0, PureN))
             _lengths[i] = lengths[i];
@@ -994,22 +979,84 @@ public:
         _ptr = shell;
     }
 
-    ///
-    size_t[N] shape()
-    @property @safe pure nothrow @nogc const
+public:
+
+    /++
+    Returns:
+        fixed size array of lengths
+    +/
+    size_t[N] shape() @property const
     {
         return _lengths[0..N];
     }
 
-    ///
+    static if(doUnittest)
+    ///Normal slice
+    unittest {
+        import std.range: iota;
+        assert(100.iota
+            .sliced(3, 4, 5)
+            .shape == [3, 4, 5]);
+    }
+
+    static if(doUnittest)
+    ///Packed slice
+    unittest {
+        import std.range: iota;
+        assert(10000.iota
+            .sliced(3, 4, 5, 6, 7)
+            .packed!2
+            .shape == [3, 4, 5]);
+    }
+
+    /++
+    Returns: fixed size array of lengths and fixed size array of strides
+         See_also: $(LREF Slice.shape), $(LREF Slice.structure)
+   +/
     Tuple!(size_t[N], `lengths`, sizediff_t[N], `strides`)
-    structure()
-    @property @safe pure nothrow @nogc const
+    structure() @property const
     {
         return typeof(return)(_lengths[0..N], _strides[0..N]);
     }
 
-    ///
+    static if(doUnittest)
+    ///Normal slice
+    unittest {
+        import std.typecons: tuple;
+        import std.range: iota;
+        assert(100.iota
+            .sliced(3, 4, 5)
+            .structure == tuple([3, 4, 5], [20, 5, 1]));
+    }
+
+    static if(doUnittest)
+    ///Packed slice
+    unittest {
+        import std.typecons: tuple;
+        import std.range: iota;
+        assert(1000.iota
+            .sliced(3, 4, 50)
+            .reversed!2      //makes stride negative
+            .strided!2(6)    //multiplies stride by 6, and changes length
+            .transposed!2    //brings dimension `2` on top
+            .structure == tuple([9, 3, 4], [-6, 200, 50]));
+    }
+
+    static if(doUnittest)
+    ///Packed slice
+    unittest {
+        import std.typecons: tuple;
+        import std.range: iota;
+        assert(10000.iota
+            .sliced(3, 4, 5, 6, 7)
+            .packed!2
+            .structure == tuple([3, 4, 5], [20 * 42, 5 * 42, 1 * 42]));
+    }
+
+    /++
+    `save` range primitive.
+    Defined if `Range` is forward range or pointer type.
+    +/
     static if (isPointer!PureRange || isForwardRange!PureRange)
     auto save() @property
     {
@@ -1019,28 +1066,87 @@ public:
             return typeof(this)(_lengths, _strides, _ptr.save);
     }
 
-    ///
-    size_t length(size_t pos = 0)()
-    @property @safe pure nothrow @nogc const
-        if (pos < N)
-    {
-        return _lengths[pos];
+    static if(doUnittest)
+    ///Forward range
+    unittest {
+        import std.range: iota;
+        auto slice = 100.iota.sliced(2, 3).save;
     }
+
+    static if(doUnittest)
+    ///Pointer type.
+    unittest {
+         //slice has type `Slice!(2, int*)`
+         auto slice = createSlice!int(2, 3).save;
+    }
+
+
+    /++
+        Multidimensional `length` property.
+        Returns: length of corresponding dimension.
+        See_also: $(LREF Slice.shape), $(LREF Slice.structure)
+    +/
+    size_t length(size_t dimension = 0)() @property const
+        if (dimension < N)
+    {
+        return _lengths[dimension];
+    }
+
+    static if(doUnittest)
+    ///
+    unittest {
+        import std.range: iota;
+        auto slice = 100.iota.sliced(3, 4, 5);
+        assert(slice.length   == 3);
+        assert(slice.length!0 == 3);
+        assert(slice.length!1 == 4);
+        assert(slice.length!2 == 5);
+    }
+
     alias opDollar = length;
 
-    ///
-    size_t stride(size_t pos = 0)()
-    @property @safe pure nothrow @nogc const
-        if (pos < N)
+    /++
+        Multidimensional `stride` property.
+        Returns: stride of corresponding dimension.
+        See_also: $(LREF Slice.structure)
+    +/
+    size_t stride(size_t dimension = 0)() @property const
+        if (dimension < N)
     {
-        return _strides[pos];
+        return _strides[dimension];
+    }
+
+    static if(doUnittest)
+    ///Normal slice
+    unittest {
+        import std.typecons: tuple;
+        import std.range: iota;
+        import std.range: iota;
+        auto slice = 100.iota.sliced(3, 4, 5);
+        assert(slice.stride   == 20);
+        assert(slice.stride!0 == 20);
+        assert(slice.stride!1 == 5);
+        assert(slice.stride!2 == 1);
+    }
+
+    static if(doUnittest)
+    ///Normal modified slice
+    unittest {
+        import std.typecons: tuple;
+        import std.range: iota;
+        assert(1000.iota
+            .sliced(3, 4, 50)
+            .reversed!2      //makes stride negative
+            .strided!2(6)    //multiplies stride by 6, and changes length
+            .swapped!(1, 2)  //swaps dimensions `1` and `2`
+            .stride!1 == -6);
     }
 
     static if (N == PureN)
     {
         static if (isPointer!PureRange)
         {
-            package(std) inout(PureRange) ptr() @safe pure nothrow @nogc @property inout
+            package(std) inout(PureRange) ptr() @property inout
             {
                 return _ptr;
             }
@@ -1059,19 +1165,21 @@ public:
         }
     }
 
-    ///
-    bool empty(size_t pos = 0)()
-    @property @safe pure nothrow @nogc const
-        if (pos < N)
+    /++
+    Multidimensional input range primitive.
+    +/
+    bool empty(size_t dimension = 0)()
+    @property const
+        if (dimension < N)
     {
-        return _lengths[pos] == 0;
+        return _lengths[dimension] == 0;
     }
 
-    ///
-    auto ref front(size_t pos = 0)() @property
-        if (pos < N)
+    ///ditto
+    auto ref front(size_t dimension = 0)() @property
+        if (dimension < N)
     {
-        assert(!empty);
+        assert(!empty!dimension);
         static if (PureN == 1)
         {
             return _ptr[0];
@@ -1079,12 +1187,12 @@ public:
         else
         {
             ElemType ret = void;
-            foreach(i; Iota!(0, pos))
+            foreach(i; Iota!(0, dimension))
             {
                 ret._lengths[i] = _lengths[i];
                 ret._strides[i] = _strides[i];
             }
-            foreach(i; Iota!(pos, PureN-1))
+            foreach(i; Iota!(dimension, PureN-1))
             {
                 ret._lengths[i] = _lengths[i + 1];
                 ret._strides[i] = _strides[i + 1];
@@ -1094,11 +1202,22 @@ public:
         }
     }
 
-    ///
-    auto ref back(size_t pos = 0)() @property
-        if (pos < N)
+    static if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef)
     {
-        assert(!empty);
+        ///ditto
+        auto front(size_t dimension = 0, T)(T value) @property
+            if (dimension == 0)
+        {
+            assert(!empty!dimension);
+            return _ptr.front = value;
+        }
+    }
+
+    ///ditto
+    auto ref back(size_t dimension = 0)() @property
+        if (dimension < N)
+    {
+        assert(!empty!dimension);
         static if (PureN == 1)
         {
             return _ptr[backIndex];
@@ -1106,75 +1225,130 @@ public:
         else
         {
             ElemType ret = void;
-            foreach(i; Iota!(0, pos))
+            foreach(i; Iota!(0, dimension))
             {
                 ret._lengths[i] = _lengths[i];
                 ret._strides[i] = _strides[i];
             }
-            foreach(i; Iota!(pos, PureN-1))
+            foreach(i; Iota!(dimension, PureN-1))
             {
                 ret._lengths[i] = _lengths[i + 1];
                 ret._strides[i] = _strides[i + 1];
             }
-            ret._ptr = _ptr + backIndex!pos;
+            ret._ptr = _ptr + backIndex!dimension;
             return ret;
         }
     }
 
-    ///
-    auto ref front(size_t pos = 0, T)(T value) @property
-        if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef && pos == 0)
+    static if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef)
     {
-        assert(!empty);
-        return _ptr.front = value;
+        ///ditto
+        auto back(size_t dimension = 0, T)(T value) @property
+            if (dimension == 0)
+        {
+            assert(!empty!dimension);
+            return _ptr[backIndex] = value;
+        }
     }
 
-    ///
-    auto ref back(size_t pos = 0, T)(T value) @property
-        if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef && pos == 0)
+
+    ///ditto
+    void popFront(size_t dimension = 0)()
+        if (dimension < N)
     {
-        assert(!empty);
-        return _ptr[backIndex] = value;
+        assert(!empty!dimension);
+        _lengths[dimension]--;
+        _ptr += _strides[dimension];
     }
 
-    ///
-    void popFront(size_t pos = 0)()
-        if (pos < N)
+
+    ///ditto
+    void popBack(size_t dimension = 0)()
+        if (dimension < N)
     {
-        assert(!empty!pos);
-        _lengths[pos]--;
-        _ptr += _strides[pos];
+        assert(!empty!dimension);
+        _lengths[dimension]--;
     }
 
-    ///
-    void popFrontN(size_t pos = 0)(size_t n)
-        if (pos < N)
+    ///ditto
+    void popFrontN(size_t dimension = 0)(size_t n)
+        if (dimension < N)
     {
-        assert(n <= _lengths[pos]);
-        _lengths[pos] -= n;
-        _ptr += _strides[pos] * n;
+        assert(n <= _lengths[dimension]);
+        _lengths[dimension] -= n;
+        _ptr += _strides[dimension] * n;
     }
 
-    ///
-    void popBack(size_t pos = 0)()
-        if (pos < N)
+    ///ditto
+    void popBackN(size_t dimension = 0)(size_t n)
+        if (dimension < N)
     {
-        assert(!empty);
-        _lengths[pos]--;
+        assert(n <= _lengths[dimension]);
+        _lengths[dimension] -= n;
     }
 
+    static if(doUnittest)
     ///
-    void popBackN(size_t pos = 0)(size_t n)
-        if (pos < N)
-    {
-        assert(n <= _lengths[pos]);
-        _lengths[pos] -= n;
+    unittest {
+        import std.range: iota;
+        auto slice = 10000.iota.sliced(10, 20, 30);
+        static assert(isRandomAccessRange!(typeof(slice)));
+
+        assert(slice.shape == [10, 20, 30]);
+        slice.popFront;
+        slice.popFront!1;
+        slice.popBackN!2(4);
+        assert(slice.shape == [9, 19, 26]);
+
+        auto matrix = slice.front!1;
+        assert(matrix.shape == [9, 26]);
+
+        auto column = matrix.back!1;
+        assert(column.shape == [9]);
+
+        slice.popFrontN!1(slice.length!1);
+        assert(slice.empty   == false);
+        assert(slice.empty!1 == true);
+        assert(slice.empty!2 == false);
+        assert(slice.shape == [9, 0, 26]);
+
+        assert(slice.back.front!1.empty);
     }
 
-    size_t[2] opSlice(size_t pos)(size_t i, size_t j) @safe pure
-        if (pos < N)
+    /++
+    Returns: count of all elements a in slice
+    +/
+    size_t elementsCount() const
+    {
+        size_t len = 1;
+        foreach(i; Iota!(0, N))
+            len *= _lengths[i];
+        return len;
+    }
+
+    static if(doUnittest)
+    ///Normal slice
+    unittest {
+        import std.range: iota;
+        assert(100.iota.sliced(3, 4, 5).elementsCount == 60);
+    }
+
+
+    static if(doUnittest)
+    ///Packed slice
+    unittest {
+        import std.range: iota;
+        auto slice = 50000.iota.sliced(3, 4, 5, 6, 7, 8);
+        auto packed = slice.packed!2;
+        assert(packed.elementsCount == 360);
+        assert(packed.packEverted.elementsCount == 56);
+    }
+
+
+    size_t[2] opSlice(size_t dimension)(size_t i, size_t j)
+        if (dimension < N)
     in   {
-        assert(i <= j && j - i <= _lengths[pos]);
+        assert(i <= j && j - i <= _lengths[dimension]);
     }
     body {
         return [i, j];
@@ -1368,7 +1542,9 @@ public:
         return opEqualsImpl(this, rslice);
     }
 
-    ///
+    /++
+    `cast` operator overload.
+    +/
     T opCast(T : E[], E)()
     {
         import std.array: uninitializedArray;
@@ -1386,70 +1562,18 @@ public:
         }
         return cast(T)ret;
     }
-}
 
-/// Properties and methods
-unittest {
-    import std.range: iota;
-    auto tensor = 100.iota.sliced(3, 4, 5);
-    static assert(isRandomAccessRange!(typeof(tensor)));
+    static if(doUnittest)
+    ///
+    unittest {
+        import std.range: iota;
+        auto matrix = 4.iota.sliced(2, 2);
+        auto arrays = cast(float[][]) matrix;
+        assert(arrays == [[0f, 1f], [2f, 3f]]);
 
-    // `save` method
-    // Calls `range.save`
-    auto a = tensor.save;
-    static assert(is(typeof(a) == typeof(tensor)));
-
-    // `front` and `back` properties;
-    // `popFront`, `popBack`,
-    // `popFrontN` and `popBackN` methods
-    auto matrix = tensor.back;
-    matrix.popBack!1;
-    auto column = matrix.back!1;
-    column.popFrontN(3);
-    auto elem = column.front!0;
-    assert(elem == tensor[$-1, 3, $-2]);
-
-    // `length` property
-    assert(tensor.length   == 3);
-    assert(tensor.length!0 == 3);
-    assert(tensor.length!1 == 4);
-    assert(tensor.length!2 == 5);
-
-    // `stride` property
-    assert(tensor.stride   == 20);
-    assert(tensor.stride!0 == 20);
-    assert(tensor.stride!1 ==  5);
-    assert(tensor.stride!2 ==  1);
-
-    assert(matrix.stride   ==  5);
-    assert(matrix.stride!1 ==  1);
-
-    matrix = tensor.back!2;
-    assert(matrix.stride   == 20);
-    assert(matrix.stride!1 ==  5);
-
-    matrix = matrix.allReversed.everted;
-    assert(matrix.stride   == -5);
-    assert(matrix.stride!1 == -20);
-
-    // `structure` property
-    auto structure = tensor.structure;
-    assert(tensor.length!2 == structure.lengths[2]);
-    assert(tensor.stride!1 == structure.strides[1]);
-
-    // `shape` property
-    assert(tensor.shape == structure.lengths);
-}
-
-/// Conversion
-unittest {
-    import std.range: iota;
-    auto matrix = 4.iota.sliced(2, 2);
-    auto arrays = cast(float[][]) matrix;
-    assert(arrays == [[0f, 1f], [2f, 3f]]);
-
-    import std.conv;
-    auto ars = matrix.to!(immutable double[][]); //calls opCast
+        import std.conv;
+        auto ars = matrix.to!(immutable double[][]); //calls opCast
+    }
 }
 
 // Properties and methods: package(std)
@@ -1603,7 +1727,7 @@ template SliceFromSeq(Range, Seq...)
         alias SliceFromSeq = SliceFromSeq!(Slice!(Seq[$-1], Range), Seq[0..$-1]);
 }
 
-bool isPermutation(size_t N)(in size_t[N] perm...) @safe pure nothrow
+bool isPermutation(size_t N)(in size_t[N] perm)
 {
     if (perm.empty)
         return false;
@@ -1620,6 +1744,7 @@ bool isPermutation(size_t N)(in size_t[N] perm...) @safe pure nothrow
             return false;
     return true;
 }
+
 enum isIndex(I) = is(I : size_t);
 enum isReference(P) =
        isPointer!P
@@ -1630,14 +1755,6 @@ enum isReference(P) =
     || is(P == class);
 enum hasReference(T) = anySatisfy!(isReference, RepresentationTypeTuple!T);
 alias ImplicitlyUnqual(T) = Select!(isImplicitlyConvertible!(T, Unqual!T), Unqual!T, T);
-template RepeatTypeTuple(T, size_t n)
-{
-    import std.typetuple: TypeTuple;
-    static if (n == 0)
-        alias RepeatTypeTuple = TypeTuple!();
-    else
-        alias RepeatTypeTuple = TypeTuple!(RepeatTypeTuple!(T, n-1), T);
-}
 
 //TODO: replace with static foreach
 template Iota(size_t i, size_t j)
