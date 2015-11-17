@@ -650,7 +650,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                     _ptr += _strides[i];
                     _indexes[i]++;
                     if (_indexes[i] < _lengths[i])
-                        break;
+                        return;
                     assert(_indexes[i] == _lengths[i]);
                     _ptr -= _lengths[i] * _strides[i];
                     _indexes[i] = 0;
@@ -676,29 +676,32 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 _length--;
             }
 
+            private sizediff_t getShift(size_t index){
+                assert(index < length);
+                sizediff_t _shift;
+                size_t indexesI = index + _indexes[N-1];
+                foreach_reverse(i; Iota!(1, N)) with(_slice)
+                {
+                    immutable v = indexesI / _lengths[i];
+                    indexesI %= _lengths[i];
+                    _shift += (indexesI - _indexes[i]) * _strides[i];
+                    indexesI = _indexes[i-1] + v;
+                }
+                assert(indexesI < _slice._lengths[0]);
+                with(_slice)
+                    _shift += (indexesI - _indexes[0]) * _strides[0];
+                return _shift;
+            }
+
             auto ref opIndex(size_t index)
             {
-                return _slice[splitIndex(index)];
+                return _slice._ptr[getShift(index)];
             }
 
             static if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef)
             auto opIndexAssign(DeepElemType elem, size_t index)
             {
-                return _slice[splitIndex(index)] = elem;
-            }
-
-            private auto splitIndex(size_t index)
-            in {
-                assert(index < length);
-            }
-            body {
-                size_t[N] indexes = void;
-                foreach_reverse(i; Iota!(0, N)) with(_slice)
-                {
-                    indexes[i] = index % _lengths[i];
-                    index /= _lengths[i];
-                }
-                return indexes;
+                return _slice[getShift(index)] = elem;
             }
         }
         return ByElement(slice, slice.elementsCount);
@@ -743,6 +746,22 @@ unittest {
     
     foreach(i; 0..7)
         assert(elems[i] == i+11);
+}
+
+// Check strides
+unittest {
+    import std.range: iota, popFrontN, popBackN;
+    auto elems = 100.iota.sliced(4, 5).everted.byElement;
+    static assert(isRandomAccessRange!(typeof(elems)));
+
+    popFrontN(elems, 11);
+    popBackN(elems, 2);
+    auto elems2 = elems;
+    foreach(i; 0..7)
+    {
+        assert(elems[i] == elems2.front);
+        elems2.popFront;
+    }
 }
 
 unittest {
@@ -1900,7 +1919,7 @@ struct PtrShell(Range)
         mixin(`return typeof(this)(_shift ` ~ op ~ ` shift, _range);`);
     }
 
-    auto ref opIndex(size_t index)
+    auto ref opIndex(sizediff_t index)
     in {
         assert(_shift + index >= 0);
         static if (!isInfinite!Range)
@@ -1912,7 +1931,7 @@ struct PtrShell(Range)
 
     static if (!hasAccessByRef)
     {
-        auto ref opIndexAssign(T)(T value, size_t index)
+        auto ref opIndexAssign(T)(T value, sizediff_t index)
         in {
             assert(_shift + index >= 0);
             static if (!isInfinite!Range)
@@ -1922,7 +1941,7 @@ struct PtrShell(Range)
             return _range[_shift + index] = value;
         }
 
-        auto ref opIndexOpAssign(string op, T)(T value, size_t index)
+        auto ref opIndexOpAssign(string op, T)(T value, sizediff_t index)
         in {
             assert(_shift + index >= 0);
             static if (!isInfinite!Range)
@@ -1932,7 +1951,7 @@ struct PtrShell(Range)
             mixin(`return _range[_shift + index] ` ~ op ~ `= value;`);
         }
 
-        auto ref opIndexUnary(string op)(size_t index)
+        auto ref opIndexUnary(string op)(sizediff_t index)
             if (op == `++` || op == `--`)
          in {
             assert(_shift + index >= 0);
