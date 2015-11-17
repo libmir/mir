@@ -73,13 +73,17 @@ tensor[] -= 1;
 
 tensor[0..2][] *= 2;        //OK, empty slice
 tensor[0..2, 3, 0..$] /= 2; //OK, 3 index/slice positions are defined.
+
+//fully qualified index defined by static array
+size_t[3] index = [1, 2, 3];
+assert(tensor[index] == tensor[1, 2, 3]);
 ----
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
-Source:    $(PHOBOSSRC std/_experemental/_range/_ndslice.d)
+Source:    $(PHOBOSSRC std/_experimental/_range/_ndslice.d)
 
 Macros:
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
@@ -111,6 +115,10 @@ unittest {
 
     tensor[0..2][] *= 2;        //OK, empty slice
     tensor[0..2, 3, 0..$] /= 2; //OK, 3 index/slice positions are defined.
+
+    //fully qualified index defined by static array
+    size_t[3] index = [1, 2, 3];
+    assert(tensor[index] == tensor[1, 2, 3]);
 }
 
 import std.traits;
@@ -585,7 +593,7 @@ unittest {
 }
 
 /++
-Returns an input range of all elements of a slice.
+Returns a random access range of all elements of a slice.
 +/
 auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
@@ -614,22 +622,6 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 return _length;
             }
 
-            void popFront()
-            {
-                assert(!empty);
-                _length--;
-                foreach_reverse(i; Iota!(0, N)) with(_slice)
-                {
-                    _slice._ptr += _strides[i];
-                    _indexes[i]++;
-                    if (_indexes[i] < _lengths[i])
-                        break;
-                    assert(_indexes[i] == _lengths[i]);
-                    _slice._ptr -= _lengths[i] * _strides[i];
-                    _indexes[i] = 0;
-                }
-            }
-
             auto ref front() @property
             {
                 assert(!this.empty);
@@ -647,6 +639,66 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             {
                 assert(!this.empty);
                 return _slice._ptr[0] = elem;
+            }
+
+            void popFront()
+            {
+                assert(!empty);
+                _length--;
+                foreach_reverse(i; Iota!(0, N)) with(_slice)
+                {
+                    _ptr += _strides[i];
+                    _indexes[i]++;
+                    if (_indexes[i] < _lengths[i])
+                        break;
+                    assert(_indexes[i] == _lengths[i]);
+                    _ptr -= _lengths[i] * _strides[i];
+                    _indexes[i] = 0;
+                }
+            }
+
+            auto ref back() @property
+            {
+                assert(!this.empty);
+                return opIndex(_length - 1);
+            }
+
+            static if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef)
+            auto back(DeepElemType elem) @property
+            {
+                assert(!this.empty);
+                return opIndexAssign(_length - 1, elem);
+            }
+
+            void popBack()
+            {
+                assert(!empty);
+                _length--;
+            }
+
+            auto ref opIndex(size_t index)
+            {
+                return _slice[splitIndex(index)];
+            }
+
+            static if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef)
+            auto opIndexAssign(DeepElemType elem, size_t index)
+            {
+                return _slice[splitIndex(index)] = elem;
+            }
+
+            private auto splitIndex(size_t index)
+            in {
+                assert(index < length);
+            }
+            body {
+                size_t[N] indexes = void;
+                foreach_reverse(i; Iota!(0, N)) with(_slice)
+                {
+                    indexes[i] = index % _lengths[i];
+                    index /= _lengths[i];
+                }
+                return indexes;
             }
         }
         return ByElement(slice, slice.elementsCount);
@@ -675,6 +727,22 @@ unittest {
         .front
         .byElement
         .equal(iota(6 * 7, 6 * 7 * 2)));
+}
+
+///Random access
+unittest {
+    import std.range: iota, popFrontN, popBackN;
+    auto elems = 100.iota.sliced(4, 5).byElement;
+    static assert(isRandomAccessRange!(typeof(elems)));
+
+    popFrontN(elems, 11);
+    popBackN(elems, 2);
+    assert(elems.length == 7);
+    assert(elems.front == 11);
+    assert(elems.back == 17);
+    
+    foreach(i; 0..7)
+        assert(elems[i] == i+11);
 }
 
 unittest {
@@ -856,15 +924,14 @@ unittest
     static assert(is(typeof(e) == ElementType!R));
 }
 
-
 /++
 $(D _N)-dimensional slice-shell over a range.
 See_also: $(LREF sliced), $(LREF createSlice), $(LREF ndarray)
 +/
 struct Slice(size_t _N, _Range)
-    if (!(is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
-            && (isPointer!_Range
-                    || is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
+    if (
+        (!is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
+         && (isPointer!_Range || is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
         || is(_Range == Slice!(N1, Range1), size_t N1, Range1))
 {
 
@@ -917,19 +984,26 @@ private:
         __traits(compiles, { auto a = &(_ptr[0]); } );
 
     enum PureIndexLength(Slices...) = Filter!(isIndex, Slices).length;
-
-    enum isFullPureIndex(Indexes...) =
-           Indexes.length == N
-        && allSatisfy!(isIndex, Indexes);
-
+    template isFullPureIndex(Indexes...)
+    {
+        static if (allSatisfy!(isIndex, Indexes))
+            enum isFullPureIndex  = Indexes.length == N;
+        else
+        static if (Indexes.length == 1 && isStaticArray!(Indexes[0]))
+            enum isFullPureIndex = Indexes[0].length == N && isIndex!(ForeachType!(Indexes[0]));
+        else
+            enum isFullPureIndex = false;
+    }
     enum isPureSlice(Slices...) =
            Slices.length <= N
-        && PureIndexLength!Slices < N;
+        && PureIndexLength!Slices < N
+        && Filter!(isStaticArray, Slices).length == 0;
 
     enum isFullPureSlice(Slices...) =
            Slices.length == 0
         || Slices.length == N
-        && PureIndexLength!Slices < N;
+        && PureIndexLength!Slices < N
+        && Filter!(isStaticArray, Slices).length == 0;
 
     size_t[PureN] _lengths;
     sizediff_t[PureN] _strides;
@@ -947,13 +1021,26 @@ private:
     size_t indexStride(Indexes...)(Indexes _indexes)
         if (isFullPureIndex!Indexes)
     {
-        size_t stride;
-        foreach(i, index; _indexes) //static
+        static if(isStaticArray!(Indexes[0]))
         {
-            assert(index < _lengths[i], "indexStride: index must be less then lengths");
-            stride += _strides[i] * index;
+            size_t stride;
+            foreach(i; Iota!(0, N)) //static
+            {
+                assert(_indexes[0][i] < _lengths[i], "indexStride: index must be less then lengths");
+                stride += _strides[i] * _indexes[0][i];
+            }
+            return stride;
         }
-        return stride;
+        else
+        {
+            size_t stride;
+            foreach(i, index; _indexes) //static
+            {
+                assert(index < _lengths[i], "indexStride: index must be less then lengths");
+                stride += _strides[i] * index;
+            }
+            return stride;
+        }
     }
 
     this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PureRange range)
@@ -1344,14 +1431,13 @@ public:
         assert(packed.packEverted.elementsCount == 56);
     }
 
-
-    size_t[2] opSlice(size_t dimension)(size_t i, size_t j)
+    Tuple!(size_t, size_t) opSlice(size_t dimension)(size_t i, size_t j)
         if (dimension < N)
     in   {
         assert(i <= j && j - i <= _lengths[dimension]);
     }
     body {
-        return [i, j];
+        return typeof(return)(i, j);
     }
 
     auto ref opIndex(Indexes...)(Indexes _indexes)
