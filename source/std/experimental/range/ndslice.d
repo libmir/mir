@@ -12,6 +12,7 @@ $(BOOKTABLE $(H2 Constructors),
 $(TR $(TH Function Name) $(TH Description))
 $(T2 sliced, `1000.iota.sliced(3, 4, 5)` returns `3`-dimensional slice-shell with dimensions `3, 4, 5`.)
 $(T2 createSlice, `createSlice(3, 4, 5)` creates an array with length equal `60` and returns `3`-dimensional slice-shell over it.)
+$(T2 makeSlice, `theAllocator.makeSlice(3, 4)` allocates an array with length equal `12` and returns this `array` and `2`-dimensional `slice`-shell over it.)
 $(T2 ndarray, `1000.iota.sliced(3, 4, 5).ndarray` returns array type of `int[][][]`.)
 )
 
@@ -237,6 +238,7 @@ unittest {
 }
 
 import std.traits;
+import std.typecons: Tuple;
 import std.typetuple;
 import std.range.primitives;
 import core.exception: RangeError;
@@ -263,12 +265,8 @@ in {
     foreach(len; lengths)
         assert(len > 0, "sliced: all length must be positive.");
     static if (hasLength!Range)
-    {
-        size_t length = 1;
-        foreach(len; lengths)
-            length *= len;
-        assert(length + shift <= range.length, "sliced: range length mast be greater or equal lengths product plus shift");
-    }
+        assert(lengthsProduct!N(lengths) + shift <= range.length,
+            "sliced: range length mast be greater or equal lengths product plus shift");
 }
 body {
     static if (isDynamicArray!Range)
@@ -318,10 +316,13 @@ See_also: $(LREF sliced)
 +/
 auto createSlice(T, Lengths...)(Lengths lengths)
 {
-    size_t length = 1;
-    foreach(len; lengths)
-        length *= len;
-    return new T[length].sliced(lengths);
+    return createSlice!(T, Lengths.length)(cast(size_t[Lengths.length])[lengths]);
+}
+
+///ditto
+auto createSlice(T, size_t N)(auto ref size_t[N] lengths)
+{
+    return new T[lengths.lengthsProduct].sliced(lengths);
 }
 
 ///
@@ -330,6 +331,53 @@ unittest {
     assert(slice.length == 5);
     assert(slice.elementsCount == 5 * 6 * 7);
     static assert(is(typeof(slice) == Slice!(3, int*)));
+
+    auto duplicate = createSlice!int(slice.shape);
+    duplicate[] = slice;
+}
+
+/++
+Allocates array and n-dimensional slice over it.
+Params:
+    alloc = allocator, see also $(LINK2 std_experimental_allocator.html, std.experimental.allocator)
+    lengths = list of lengths for dimensions
+Returns: `array` created with `alloc` and `slice` over it
+See_also: $(LREF sliced)
++/
+auto makeSlice(T, Allocator, Lengths...)(auto ref Allocator alloc, Lengths lengths)
+{
+    return alloc.makeSlice!(T, Allocator, Lengths.length)(cast(size_t[Lengths.length])[lengths]);
+}
+
+///
+auto makeSlice(T, Allocator, size_t N)(auto ref Allocator alloc, auto ref in size_t[N] lengths)
+{
+    //Can not use `Tuple` because `slice` is name of the `slice` method in `Tuple`.
+    struct Result { T[] array; Slice!(N, int*) slice; }
+    import std.experimental.allocator: makeArray;
+    T[] a = alloc.makeArray!T(lengths.lengthsProduct);
+    return Result(a, a.sliced(lengths));
+}
+
+///
+unittest {
+    import std.experimental.allocator;
+    auto tup = theAllocator.makeSlice!int(2, 3, 4);
+
+    static assert(is(typeof(tup.array) == int[]));
+    static assert(is(typeof(tup.slice) == Slice!(3, int*)));
+
+    assert(tup.array.length           == 24);
+    assert(tup.slice.elementsCount    == 24);
+    assert(tup.array.ptr == &tup.slice[0, 0, 0]);
+
+    auto duplicate = theAllocator.makeSlice!int(tup.slice.shape);
+    duplicate.slice[] = tup.slice;
+    //or
+    duplicate.array[] = tup.array;
+
+    theAllocator.dispose(tup.array);
+    theAllocator.dispose(duplicate.array);
 }
 
 /++
@@ -866,7 +914,6 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 return _slice[getShift(index)] = elem;
             }
 
-            import std.typecons: Tuple;
             auto opIndex(Tuple!(size_t, size_t) sl)
             {
                 auto ret = this;
@@ -1152,14 +1199,10 @@ $(D _N)-dimensional slice-shell over a range.
 See_also: $(LREF sliced), $(LREF createSlice), $(LREF ndarray)
 +/
 struct Slice(size_t _N, _Range)
-    if (
-        (!is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
-         && (isPointer!_Range || is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
-        || is(_Range == Slice!(N1, Range1), size_t N1, Range1))
+    if ((!is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
+                 && (isPointer!_Range || is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
+                || is(_Range == Slice!(N1, Range1), size_t N1, Range1))
 {
-
-    import std.typecons: Tuple;
-
 private:
 
     enum doUnittest = is(_Range == int*);
@@ -1182,7 +1225,7 @@ private:
     }
     alias PureThis = Slice!(PureN, PureRange);
 
-    static assert(PureN < 256);
+    static assert(PureN < 256, "Slice: Pure N should be less then 256");
 
     static if (N == 1)
         static if (isPointer!Range)
@@ -1602,7 +1645,10 @@ public:
     unittest {
         import std.range: iota;
         auto slice = 10000.iota.sliced(10, 20, 30);
+
         static assert(isRandomAccessRange!(typeof(slice)));
+        static assert(hasSlicing!(typeof(slice)));
+        static assert(hasLength!(typeof(slice)));
 
         assert(slice.shape == [10, 20, 30]);
         slice.popFront;
@@ -2076,6 +2122,20 @@ template Iota(size_t i, size_t j)
         alias Iota = TypeTuple!(i, Iota!(i+1, j));
 }
 
+private size_t lengthsProduct(size_t N)(auto ref in size_t[N] lengths)
+{
+    size_t length = lengths[0];
+    foreach(i; Iota!(1, N))
+            length *= lengths[i];
+    return length;
+}
+
+unittest {
+    const size_t[3] lengths = [3, 4, 5];
+    assert(lengthsProduct(lengths) == 60);
+    assert(lengthsProduct([3, 4, 5]) == 60);
+}
+
 bool opEqualsImpl
     (size_t NL, RangeL, size_t NR, RangeR)(
     auto ref Slice!(NL, RangeL) lslice,
@@ -2331,6 +2391,22 @@ unittest
     assert(t0.length!1 == 20);
     assert(t0.length!2 == 30);
     assert(t0.length!3 == 40);
+}
+
+unittest {
+    import std.typetuple;
+    import std.range: iota;
+    foreach(R; TypeTuple!(
+        int*, int[], typeof(1.iota),
+        double*, double[], typeof(10.0.iota),
+        Tuple!(double, int[string])*, Tuple!(double, int[string])[]))
+    foreach(n; Iota!(1, 4))
+    {
+        alias S = Slice!(n, R);
+        static assert(isRandomAccessRange!S);
+        static assert(hasSlicing!S);
+        static assert(hasLength!S);
+    }
 }
 
 unittest {
