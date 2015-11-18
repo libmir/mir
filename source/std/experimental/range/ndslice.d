@@ -239,7 +239,7 @@ unittest {
 
 import std.traits;
 import std.typecons: Tuple;
-import std.typetuple;
+import std.meta;
 import std.range.primitives;
 import core.exception: RangeError;
 
@@ -1013,7 +1013,7 @@ unittest {
     auto elems0 = slice0.byElement;
     auto elems1 = slice1.byElement;
 
-    foreach(S; TypeTuple!(typeof(elems0), typeof(elems1)))
+    foreach(S; AliasSeq!(typeof(elems0), typeof(elems1)))
     {
         static assert(isForwardRange!S);
         static assert(hasLength!S);
@@ -1215,7 +1215,7 @@ private:
     {
         enum size_t PureN = N + Range.PureN - 1;
         alias PureRange = Range.PureRange;
-        alias NSeq = TypeTuple!(N, Range.NSeq);
+        alias NSeq = AliasSeq!(N, Range.NSeq);
     }
     else
     {
@@ -2039,7 +2039,7 @@ unittest {
 // Type deduction
 unittest {
     //Arrays
-    foreach(T; TypeTuple!(int, const int, immutable int))
+    foreach(T; AliasSeq!(int, const int, immutable int))
         static assert(is(typeof((T[]).init.sliced(3, 4)) == Slice!(2, T*)));
 
     //Container Array
@@ -2053,30 +2053,30 @@ unittest {
     const     i1 = 100.iota;
     immutable i2 = 100.iota;
     alias S = Slice!(3, typeof(iota(0)));
-    foreach(i; TypeTuple!(i0, i1, i2))
+    foreach(i; AliasSeq!(i0, i1, i2))
         static assert(is(typeof(i.sliced(3, 4, 5)) == S));
 }
 
 private:
 
-alias IncFront(Seq...) = TypeTuple!(Seq[0] + 1, Seq[1..$]);
-alias DecFront(Seq...) = TypeTuple!(Seq[0] - 1, Seq[1..$]);
+alias IncFront(Seq...) = AliasSeq!(Seq[0] + 1, Seq[1..$]);
+alias DecFront(Seq...) = AliasSeq!(Seq[0] - 1, Seq[1..$]);
 alias NSeqEvert(Seq...) = DecFront!(Reverse!(IncFront!Seq));
 alias Parts(Seq...) = DecAll!(IncFront!Seq);
-alias Snowball(Seq...) = TypeTuple!(size_t.init, SnowballImpl!(size_t.init, Seq));
+alias Snowball(Seq...) = AliasSeq!(size_t.init, SnowballImpl!(size_t.init, Seq));
 template SnowballImpl(size_t val, Seq...)
 {
     static if (Seq.length == 0)
-        alias SnowballImpl = TypeTuple!();
+        alias SnowballImpl = AliasSeq!();
     else
-        alias SnowballImpl = TypeTuple!(Seq[0]+val, SnowballImpl!(Seq[0]+val, Seq[1..$]));
+        alias SnowballImpl = AliasSeq!(Seq[0]+val, SnowballImpl!(Seq[0]+val, Seq[1..$]));
 }
 template DecAll(Seq...)
 {
     static if (Seq.length == 0)
-        alias DecAll = TypeTuple!();
+        alias DecAll = AliasSeq!();
     else
-        alias DecAll = TypeTuple!(Seq[0] - 1, DecAll!(Seq[1..$]));
+        alias DecAll = AliasSeq!(Seq[0] - 1, DecAll!(Seq[1..$]));
 }
 template SliceFromSeq(Range, Seq...)
 {
@@ -2120,9 +2120,9 @@ template Iota(size_t i, size_t j)
 {
     static assert(i <= j, "Iota: i>j");
     static if (i == j)
-        alias Iota = TypeTuple!();
+        alias Iota = AliasSeq!();
     else
-        alias Iota = TypeTuple!(i, Iota!(i+1, j));
+        alias Iota = AliasSeq!(i, Iota!(i+1, j));
 }
 
 private size_t lengthsProduct(size_t N)(auto ref in size_t[N] lengths)
@@ -2246,7 +2246,7 @@ auto ptrShell(Range)(Range range, sizediff_t shift = 0)
 version(none)
 unittest {
     import std.internal.test.dummyrange;
-    foreach(RB; TypeTuple!(ReturnBy.Reference, ReturnBy.Value))
+    foreach(RB; AliasSeq!(ReturnBy.Reference, ReturnBy.Value))
     {
         DummyRange!(RB, Length.Yes, RangeType.Random) range;
         assert(range.length >= 10);
@@ -2397,9 +2397,8 @@ unittest
 }
 
 unittest {
-    import std.typetuple;
     import std.range: iota;
-    foreach(R; TypeTuple!(
+    foreach(R; AliasSeq!(
         int*, int[], typeof(1.iota),
         const(int)*, const(int)[],
         immutable(int)*, immutable(int)[],
