@@ -22,6 +22,7 @@ $(T2 transposed, `100000.iota.sliced(3, 4, 5, 6, 7).transposed!(4, 0, 1).shape` 
 $(T2 swapped, `1000.iota.sliced(3, 4, 5).swapped!(1, 2).shape` returns `[3, 5, 4]`.)
 $(T2 everted, `1000.iota.sliced(3, 4, 5).everted.shape` returns `[5, 4, 3]`.)
 )
+See also $(LREF packEverted).
 
 $(BOOKTABLE $(H2 Iteration operators),
 
@@ -32,7 +33,15 @@ $(T2 allReversed, `20.iota.sliced(4, 5).allReversed` equals `20.iota.retro.slice
 $(T2 byElement, `100.iota.sliced(4, 5).byElement` equals `20.iota`.)
 )
 
-$(BOOKTABLE $(H2 Subspace operators),
+$(H2 Subspace operators)
+
+The destination of subspace operators is iteration over subset of dimensions using $(LREF byElement).
+`packed!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
+so type of element of `slice.byElement` is `Slice!(K, Range)`.
+Another way to use `packed` is transposition of packs of dimensions using `packEverted`.
+Examples with subspace operators are available for $(LREF .Slice.structure), $(LREF byElement), $(LREF .Slice.shape), $(LREF .Slice.elementsCount).
+
+$(BOOKTABLE Subspace operators,
 
 $(TR $(TH Function Name) $(TH Description))
 $(T2 packed, Type of `1000000.iota.sliced(1,2,3,4,5,6,7,8).packed!2` is `Slice!(6, Slice!(3, typeof(1000000.iota)))`.)
@@ -49,7 +58,7 @@ $(T4 transposed, Yes, `slice.transposed!(1, 4, 3)`, `slice.transposed(1, 4, 3)`)
 $(T4 reversed, Yes, `slice.reversed!(0, 2)`, `slice.reversed(0, 2)`)
 )
 
-Example:
+Example: slicing, indexing and operations
 ----
 import std.array: array;
 import std.range: iota;
@@ -77,6 +86,60 @@ tensor[0..2, 3, 0..$] /= 2; //OK, 3 index/slice positions are defined.
 //fully qualified index defined by static array
 size_t[3] index = [1, 2, 3];
 assert(tensor[index] == tensor[1, 2, 3]);
+----
+
+Example: operations with rvalue slices
+----
+auto tensor = createSlice!int(3, 4, 5);
+auto matrix = createSlice!int(3, 4);
+auto vector = createSlice!int(3);
+
+foreach(i; 0..3)
+    vector[i] = i;
+
+// fill matrix columns
+// transposed matrix shape is (4, 3)
+//            vector shape is (   3)
+matrix.transposed[] = vector;
+
+// fill tensor with vector
+// transposed tensor shape is (4, 5, 3)
+//            vector shape is (      3)
+tensor.transposed!(1, 2)[] = vector;
+
+
+// transposed tensor shape is (5, 3, 4)
+//            matrix shape is (   3, 4)
+tensor.transposed!2[] += matrix;
+
+// transposed tensor shape is (5, 4, 3)
+// transposed matrix shape is (   4, 3)
+tensor.everted[] ^= matrix.transposed; // XOR
+----
+
+Example: formatting, see also $(LINK2 std_format.html, std.format).
+----
+import std.algorithm, std.exception, std.format,
+    std.functional, std.conv, std.string, std.range;
+
+Slice!(2, int*) toMatrix(string str)
+{
+    string[][] data = str.lineSplitter.filter!(not!empty).map!split.array;
+    size_t rows = data.length.enforce("empty input");
+    size_t columns = data[0].length.enforce("empty first row");
+    data.each!(a => enforce(a.length == columns, "rows have different lengths"));
+
+    auto slice = createSlice!int(rows, columns);
+    foreach(i, line; data)
+        foreach(j, num; line)
+            slice[i, j] = num.to!int;
+    return slice;
+}
+
+auto input = "\r1 2  3\r\n 4 5 6\n";
+auto ouptut = "1 2 3\n4 5 6\n";
+auto fmt = "%(%(%s %)\n%)\n";
+assert(format(fmt, toMatrix(input)) == ouptut);
 ----
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
@@ -119,6 +182,58 @@ unittest {
     //fully qualified index defined by static array
     size_t[3] index = [1, 2, 3];
     assert(tensor[index] == tensor[1, 2, 3]);
+}
+
+//example test
+unittest {
+    auto tensor = createSlice!int(3, 4, 5);
+    auto matrix = createSlice!int(3, 4);
+    auto vector = createSlice!int(3);
+
+    foreach(i; 0..3)
+        vector[i] = i;
+
+    // fill matrix columns
+    matrix.transposed[] = vector;
+
+    // fill tensor with vector
+    // transposed tensor shape is (4, 5, 3)
+    //            vector shape is (      3)
+    tensor.transposed!(1, 2)[] = vector;
+
+
+    // transposed tensor shape is (5, 3, 4)
+    //            matrix shape is (   3, 4)
+    tensor.transposed!2[] += matrix;
+
+    // transposed tensor shape is (5, 4, 3)
+    // transposed matrix shape is (   4, 3)
+    tensor.everted[] ^= matrix.transposed; // XOR
+}
+
+//example test
+unittest {
+    import std.algorithm, std.exception, std.format,
+        std.functional, std.conv, std.string, std.range;
+
+    Slice!(2, int*) toMatrix(string str)
+    {
+        string[][] data = str.lineSplitter.filter!(not!empty).map!split.array;
+        size_t rows = data.length.enforce("empty input");
+        size_t columns = data[0].length.enforce("empty first row");
+        data.each!(a => enforce(a.length == columns, "rows have different lengths"));
+
+        auto slice = createSlice!int(rows, columns);
+        foreach(i, line; data)
+            foreach(j, num; line)
+                slice[i, j] = num.to!int;
+        return slice;
+    }
+
+    auto input = "\r1 2  3\r\n 4 5 6\n";
+    auto ouptut = "1 2 3\n4 5 6\n";
+    auto fmt = "%(%(%s %)\n%)\n";
+    assert(format(fmt, toMatrix(input)) == ouptut);
 }
 
 import std.traits;
@@ -197,6 +312,8 @@ unittest {
 
 /++
 Creates array and n-dimensional slice over it.
+Params:
+    lengths = list of lengths for dimensions
 See_also: $(LREF sliced)
 +/
 auto createSlice(T, Lengths...)(Lengths lengths)
@@ -372,6 +489,10 @@ body {
 /++
 N-dimensional transpose operator.
 Brings selected dimensions on top.
+Params:
+    FrontDimensions = indexes of dimensions
+    frontDimensions = indexes of dimensions
+    frontDimension = indexes of dimension to bring on top
 See_also: $(LREF swapped), $(LREF everted)
 +/
 template transposed(FrontDimensions...)
@@ -599,6 +720,9 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     with(Slice!(N, Range))
     {
+        /++
+        ByElement shifts range's `_ptr` without modifying strides and lengths.
+        +/
         static struct ByElement
         {
 
@@ -682,21 +806,22 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             }
             body {
                 _length -= n;
+                //calculate shift and new indexes
                 sizediff_t _shift;
-                size_t indexesI = n + _indexes[N-1];
+                n += _indexes[N-1];
                 foreach_reverse(i; Iota!(1, N)) with(_slice)
                 {
-                    immutable v = indexesI / _lengths[i];
-                    indexesI %= _lengths[i];
-                    _shift += (indexesI - _indexes[i]) * _strides[i];
-                    _indexes[i] = indexesI;
-                    indexesI = _indexes[i-1] + v;
+                    immutable v = n / _lengths[i];
+                    n %= _lengths[i];
+                    _shift += (n - _indexes[i]) * _strides[i];
+                    _indexes[i] = n;
+                    n = _indexes[i-1] + v;
                 }
-                assert(indexesI < _slice._lengths[0]);
+                assert(n < _slice._lengths[0]);
                 with(_slice)
                 {
-                    _shift += (indexesI - _indexes[0]) * _strides[0];
-                    _indexes[0] = indexesI;
+                    _shift += (n - _indexes[0]) * _strides[0];
+                    _indexes[0] = n;
                 }
                 _slice._ptr += _shift;
             }
@@ -709,20 +834,24 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 _length -= n;
             }
 
-            private sizediff_t getShift(size_t index){
-                assert(index < length);
+            //calculate shift for index n
+            private sizediff_t getShift(size_t n)
+            in {
+                assert(n < _length);
+            }
+            body {
                 sizediff_t _shift;
-                size_t indexesI = index + _indexes[N-1];
+                n += _indexes[N-1];
                 foreach_reverse(i; Iota!(1, N)) with(_slice)
                 {
-                    immutable v = indexesI / _lengths[i];
-                    indexesI %= _lengths[i];
-                    _shift += (indexesI - _indexes[i]) * _strides[i];
-                    indexesI = _indexes[i-1] + v;
+                    immutable v = n / _lengths[i];
+                    n %= _lengths[i];
+                    _shift += (n - _indexes[i]) * _strides[i];
+                    n = _indexes[i-1] + v;
                 }
-                assert(indexesI < _slice._lengths[0]);
+                assert(n < _slice._lengths[0]);
                 with(_slice)
-                    _shift += (indexesI - _indexes[0]) * _strides[0];
+                    _shift += (n - _indexes[0]) * _strides[0];
                 return _shift;
             }
 
@@ -750,7 +879,10 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
 
             Tuple!(size_t, size_t) opSlice(size_t pos : 0)(size_t i, size_t j)
             in   {
-                assert(i <= j && j - i <= _length);
+                assert(i <= j,
+                    "opSlice!" ~ pos.stringof ~ ": left bound must be less then or equal right bound");
+                assert(j - i <= _length,
+                    "opSlice!" ~ pos.stringof ~ ": difference between right and left bounds must be less then or equal length");
             }
             body {
                 return typeof(return)(i, j);
@@ -863,26 +995,31 @@ unittest {
 }
 
 /++
-Packs a slice into the composed slice.
-See_also:  $(LREF unpacked), $(LREF packEverted).
+Packs a slice into the composed slice, i.e. slice of slices.
+Params:
+    K = sizes of packs of dimensions
+Returns:
+    `packed!K` returns `Slice!(N-K, Slice!(K+1, Range))`;
+    `slice.packed!(K1, K2, ..., Kn)` is the same as `slice.pacKed!K1.pacKed!K2. ... pacKed!Kn`.
+See_also:  $(LREF unpacked), $(LREF packEverted),  $(LREF byElement).
 +/
-template packed(Packs...)
+template packed(K...)
 {
     auto packed(size_t N, Range)(Slice!(N, Range) slice)
     {
-        template Template(size_t NInner, Range, Packs...)
+        template Template(size_t NInner, Range, K...)
         {
-            static if (Packs.length)
+            static if (K.length)
             {
-                static assert(NInner > Packs[0]);
-                alias Template = Template!(NInner - Packs[0], Slice!(Packs[0] + 1, Range), Packs[1..$]);
+                static assert(NInner > K[0]);
+                alias Template = Template!(NInner - K[0], Slice!(K[0] + 1, Range), K[1..$]);
             }
             else
             {
                 alias Template = Slice!(NInner, Range);
             }
         }
-        return Template!(N, Range, Packs)(slice._lengths, slice._strides, slice._ptr);
+        return Template!(N, Range, K)(slice._lengths, slice._strides, slice._ptr);
     }
 }
 
@@ -949,6 +1086,7 @@ unittest
 
 /++
 Inverts composition of a slice.
+This function is used for transposition and in functional pipeline with $(LREF byElement).
 See_also: $(LREF packed), $(LREF unpacked)
 +/
 auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
@@ -976,7 +1114,13 @@ auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 unittest {
     import std.range: iota;
     auto slice = 100000000.iota.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    assert(slice.packed!2.packEverted.unpacked == slice.transposed!(slice.shape.length-2, slice.shape.length-1));
+    assert(slice
+        .packed!2
+        .packEverted
+        .unpacked
+             == slice.transposed!(
+                slice.shape.length-2,
+                slice.shape.length-1));
 }
 
 ///
@@ -1148,8 +1292,8 @@ private:
 public:
 
     /++
-    Returns:
-        fixed size array of lengths
+    Returns: fixed size array of lengths
+    See_also: $(LREF .Slice.structure)
     +/
     size_t[N] shape() @property const
     {
@@ -1177,7 +1321,7 @@ public:
 
     /++
     Returns: fixed size array of lengths and fixed size array of strides
-         See_also: $(LREF Slice.shape), $(LREF Slice.structure)
+    See_also: $(LREF .Slice.shape)
    +/
     Tuple!(size_t[N], `lengths`, sizediff_t[N], `strides`)
     structure() @property const
@@ -1196,7 +1340,7 @@ public:
     }
 
     static if(doUnittest)
-    ///Packed slice
+    ///Normal modified slice
     unittest {
         import std.typecons: tuple;
         import std.range: iota;
@@ -1250,7 +1394,7 @@ public:
     /++
         Multidimensional `length` property.
         Returns: length of corresponding dimension.
-        See_also: $(LREF Slice.shape), $(LREF Slice.structure)
+        See_also: $(LREF .Slice.shape), $(LREF .Slice.structure)
     +/
     size_t length(size_t dimension = 0)() @property const
         if (dimension < N)
@@ -1274,7 +1418,7 @@ public:
     /++
         Multidimensional `stride` property.
         Returns: stride of corresponding dimension.
-        See_also: $(LREF Slice.structure)
+        See_also: $(LREF .Slice.structure)
     +/
     size_t stride(size_t dimension = 0)() @property const
         if (dimension < N)
@@ -1507,6 +1651,7 @@ public:
         auto slice = 50000.iota.sliced(3, 4, 5, 6, 7, 8);
         auto packed = slice.packed!2;
         assert(packed.elementsCount == 360);
+        assert(packed[0, 0, 0, 0].elementsCount == 56);
         assert(packed.packEverted.elementsCount == 56);
     }
 
@@ -1576,7 +1721,7 @@ public:
             auto sl = this[slices];
             enum M = sl._lengths.length;
             static if (is(T : Slice!(M, _t), _t))
-                assert(sl._lengths == value._lengths);
+                assert(sl._lengths == value._lengths, "opIndexAssign: Slices must have the same shapes.");
             static if (M == 1)
             {
                 for(; sl.length; sl.popFront)
@@ -1655,7 +1800,7 @@ public:
                 auto sl = this[slices];
                 enum M = sl._lengths.length;
                 static if (is(T : Slice!(M, _t), _t))
-                    assert(sl._lengths == value._lengths);
+                    assert(sl._lengths == value._lengths, "opIndexOpAssign: Slices must have the same shapes.");
                 static if (M == 1)
                 {
                     foreach(ref v; sl)
