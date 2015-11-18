@@ -927,9 +927,9 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             Tuple!(size_t, size_t) opSlice(size_t pos : 0)(size_t i, size_t j)
             in   {
                 assert(i <= j,
-                    "opSlice!" ~ pos.stringof ~ ": left bound must be less then or equal right bound");
+                    "ByElement.opSlice: left bound must be less then or equal right bound");
                 assert(j - i <= _length,
-                    "opSlice!" ~ pos.stringof ~ ": difference between right and left bounds must be less then or equal length");
+                    "ByElement.opSlice: difference between right and left bounds must be less then or equal length");
             }
             body {
                 return typeof(return)(i, j);
@@ -1704,7 +1704,10 @@ public:
     Tuple!(size_t, size_t) opSlice(size_t dimension)(size_t i, size_t j)
         if (dimension < N)
     in   {
-        assert(i <= j && j - i <= _lengths[dimension]);
+        assert(i <= j,
+            "Slice.opSlice!" ~ dimension.stringof ~ ": left bound must be less then or equal right bound");
+        assert(j - i <= _lengths[dimension],
+            "Slice.opSlice!" ~ dimension.stringof ~ ": difference between right and left bounds must be less then or equal length");
     }
     body {
         return typeof(return)(i, j);
@@ -2398,6 +2401,8 @@ unittest {
     import std.range: iota;
     foreach(R; TypeTuple!(
         int*, int[], typeof(1.iota),
+        const(int)*, const(int)[],
+        immutable(int)*, immutable(int)[],
         double*, double[], typeof(10.0.iota),
         Tuple!(double, int[string])*, Tuple!(double, int[string])[]))
     foreach(n; Iota!(1, 4))
@@ -2407,6 +2412,9 @@ unittest {
         static assert(hasSlicing!S);
         static assert(hasLength!S);
     }
+
+    immutable int[] im = [1,2,3,4,5,6];
+    auto slice = im.sliced(2, 3);
 }
 
 unittest {
