@@ -308,6 +308,43 @@ unittest {
     assert(slice[0, 0, 0] == 9);
 }
 
+/// Allocators
+version(Posix) //Issue 15281
+unittest {
+    /++
+    Allocates array and n-dimensional slice over it.
+    Params:
+        alloc = allocator, see also $(LINK2 std_experimental_allocator.html, std.experimental.allocator)
+        lengths = list of lengths for dimensions
+    Returns: `array` created with `alloc` and `slice` over it
+    See_also: $(LREF sliced)
+    +/
+
+    import std.experimental.allocator;
+
+    auto makeSlice(T, Allocator, Lengths...)(auto ref Allocator alloc, Lengths lengths)
+    {
+        enum N = Lengths.length;
+        struct Result { T[] array; Slice!(N, int*) slice; }
+        size_t length = lengths[0];
+        foreach(len; lengths[1..N])
+                length *= len;
+        T[] a = alloc.makeArray!T(length);
+        return Result(a, a.sliced(lengths));
+    }
+
+    auto tup = makeSlice!int(theAllocator, 2, 3, 4);
+
+    static assert(is(typeof(tup.array) == int[]));
+    static assert(is(typeof(tup.slice) == Slice!(3, int*)));
+
+    assert(tup.array.length           == 24);
+    assert(tup.slice.elementsCount    == 24);
+    assert(tup.array.ptr == &tup.slice[0, 0, 0]);
+
+    theAllocator.dispose(tup.array);
+}
+
 /++
 Creates array and n-dimensional slice over it.
 Params:
@@ -334,50 +371,6 @@ unittest {
 
     auto duplicate = createSlice!int(slice.shape);
     duplicate[] = slice;
-}
-
-/++
-Allocates array and n-dimensional slice over it.
-Params:
-    alloc = allocator, see also $(LINK2 std_experimental_allocator.html, std.experimental.allocator)
-    lengths = list of lengths for dimensions
-Returns: `array` created with `alloc` and `slice` over it
-See_also: $(LREF sliced)
-+/
-auto makeSlice(T, Allocator, Lengths...)(auto ref Allocator alloc, Lengths lengths)
-{
-    return alloc.makeSlice!(T, Allocator, Lengths.length)(cast(size_t[Lengths.length])[lengths]);
-}
-
-///
-auto makeSlice(T, Allocator, size_t N)(auto ref Allocator alloc, auto ref in size_t[N] lengths)
-{
-    //Can not use `Tuple` because `slice` is name of the `slice` method in `Tuple`.
-    struct Result { T[] array; Slice!(N, int*) slice; }
-    import std.experimental.allocator: makeArray;
-    T[] a = alloc.makeArray!T(lengths.lengthsProduct);
-    return Result(a, a.sliced(lengths));
-}
-
-///
-unittest {
-    import std.experimental.allocator;
-    auto tup = theAllocator.makeSlice!int(2, 3, 4);
-
-    static assert(is(typeof(tup.array) == int[]));
-    static assert(is(typeof(tup.slice) == Slice!(3, int*)));
-
-    assert(tup.array.length           == 24);
-    assert(tup.slice.elementsCount    == 24);
-    assert(tup.array.ptr == &tup.slice[0, 0, 0]);
-
-    auto duplicate = theAllocator.makeSlice!int(tup.slice.shape);
-    duplicate.slice[] = tup.slice;
-    //or
-    duplicate.array[] = tup.array;
-
-    theAllocator.dispose(tup.array);
-    theAllocator.dispose(duplicate.array);
 }
 
 /++
@@ -817,6 +810,11 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             {
                 assert(!empty);
                 _length--;
+                popFrontImpl;
+            }
+
+            private void popFrontImpl()
+            {
                 foreach_reverse(i; Iota!(0, N)) with(_slice)
                 {
                     _ptr += _strides[i];
@@ -961,6 +959,57 @@ unittest {
         .front
         .byElement
         .equal(iota(6 * 7, 6 * 7 * 2)));
+}
+
+/++
+Returns a newly allocated mutable array of all elements int a slice.
++/
+Unqual!(ElementType!Range)[] elements(size_t N, Range)(auto ref Slice!(N, Range) slice) @property
+{
+    import std.array: uninitializedArray;
+    with(Slice!(N, Range))
+    {
+        alias E = Unqual!(ElementType!Range);
+        E[] ret = void;
+        auto lazyElements = slice.byElement;
+        static if(__traits(compiles, {ret = uninitializedArray!(E[])(lazyElements.length); }))
+        {
+            if(__ctfe)
+                ret = new E[lazyElements.length];
+            else
+                ret = uninitializedArray!(E[])(lazyElements.length);
+        }
+        else
+        {
+            ret = new E[lazyElements.length];
+        }
+        foreach(ref e; ret)
+        {
+            e = lazyElements.front;
+            lazyElements.popFrontImpl;
+        }
+        return ret;
+    }
+}
+
+///Common slice
+unittest {
+    import std.range: iota;
+    import std.algorithm.comparison: equal;
+    assert(100.iota
+        .sliced(2, 3)
+        .elements == [0, 1, 2, 3, 4, 5]);
+}
+
+///Packed slice
+unittest {
+    import std.range: iota, drop;
+    import std.algorithm.comparison: equal;
+    assert(100000.iota
+        .sliced(2, 2, 3)
+        .packed!2
+        .elements[$-1]
+        .elements == [6, 7, 8, 9, 10, 11]);
 }
 
 /++
@@ -1278,7 +1327,7 @@ private:
     else
         PtrShell!PureRange _ptr;
 
-    size_t backIndex(size_t dimension = 0)() @property const
+    sizediff_t backIndex(size_t dimension = 0)() @property const
         if (dimension < N)
     {
         return _strides[dimension] * (_lengths[dimension] - 1);
@@ -1909,10 +1958,17 @@ public:
         import std.array: uninitializedArray;
         alias U = Unqual!E[];
         U ret = void;
-        if (__ctfe)
-            ret = new U(_lengths[0]);
+        static if (__traits(compiles, ret = uninitializedArray!U(_lengths[0])))
+        {
+            if (__ctfe)
+                ret = new U(_lengths[0]);
+            else
+                ret = uninitializedArray!U(_lengths[0]);
+        }
         else
+        {
             ret = uninitializedArray!U(_lengths[0]);
+        }
         auto sl = this[];
         foreach(ref e; ret)
         {
