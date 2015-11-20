@@ -1,3 +1,48 @@
+/+
+## Guide for Slice/Matrix/BLAS contributors
+
+1. Pay _unprecedented_ attention to functions to be
+       a. inlined(!),
+       b. `@nogc`,
+       c. `nothrow`,
+       d. `pure`.
+    95% of functions will be marked with `pragma(inline, true)`. So, use
+    _simple_ `assert`s with messages that can be computed at compile time.
+    The goals are:
+        1. to reduce executable size for _any_ compilation mode
+        2. to reduce template bloat in object files
+        3. to reduce compilation time
+        4. to allow a user to write an extern C bindings for code based on `Slice`.
+
+2. Do not import `std.format`, `std.string` and `std.conv` to format error
+    messages.`"Use" ~ Concatenation.stringof ~ ", really ."` Why? Please,
+    read [1] again.
+
+3. Try to use already defined `mixin template`s for pretty error messaging.
+
+4. Do not use `Exception`s/`enforce`s to check indexes and length. Exceptions are
+    allowed only for algorithms where validation of an input data is
+    significantly complex for user. `reshaped` is a good example where
+    Exceptions are required. Put an example of Exception handing and workaround
+    for a function that can throw.
+
+5. Do not use compile time flags for simple checks like transposition
+    of a matrix. It is much better to have runtime matrix transposition.
+    Furthermore, Slice provide runtime matrix transposition out of the box.
+
+6. Do not use _Fortran_VS_C_ flags. They are about notation,
+    but not about algorithm itself. To care about math world users add
+    appropriate code example in the documentation. `transposed` / `everted`
+    can be used for cash friendly code.
+
+7. Do not use compile time power of D to produce dummy entities like
+    `IdentityMatrix`.
+
+8. Try to separate allocation and algorithm logic whenever possible.
+
+9. Add CTFE unittests to new functions.
++/
+
 /**
 This module implements generic algorithms for creating and manipulating of n-dimensional random access ranges and arrays,
 which are represented with the $(LREF Slice).
@@ -12,8 +57,8 @@ $(BOOKTABLE $(H2 Constructors),
 $(TR $(TH Function Name) $(TH Description))
 $(T2 sliced, `1000.iota.sliced(3, 4, 5)` returns `3`-dimensional slice-shell with dimensions `3, 4, 5`.)
 $(T2 createSlice, `createSlice(3, 4, 5)` creates an array with length equal `60` and returns `3`-dimensional slice-shell over it.)
-$(T2 makeSlice, `theAllocator.makeSlice(3, 4)` allocates an array with length equal `12` and returns this `array` and `2`-dimensional `slice`-shell over it.)
 $(T2 ndarray, `1000.iota.sliced(3, 4, 5).ndarray` returns array type of `int[][][]`.)
+$(T2 elements, `100.iota.sliced(2, 3).elements` is identical to `[0, 1, 2, 3, 4, 5]`.)
 )
 
 $(BOOKTABLE $(H2 Transpose operators),
@@ -54,7 +99,7 @@ $(BOOKTABLE $(H2 Bifacial operators),
 
 $(TR $(TH Function Name) $(TH Variadic) $(TH Template) $(TH Function))
 $(T4 swapped, No, `slice.swapped!(2, 3)`, `slice.swapped(2, 3)`)
-$(T4 strided, No, `slice.strided!2(40)`, `slice.strided(2, 40)`)
+$(T4 strided, Yes/No, `slice.strided!(1, 2)(20, 40)`, `slice.strided(1, 20).strided(2, 40)`)
 $(T4 transposed, Yes, `slice.transposed!(1, 4, 3)`, `slice.transposed(1, 4, 3)`)
 $(T4 reversed, Yes, `slice.reversed!(0, 2)`, `slice.reversed(0, 2)`)
 )
@@ -241,7 +286,6 @@ import std.traits;
 import std.typecons: Tuple;
 import std.meta;
 import std.range.primitives;
-import core.exception: RangeError;
 
 /++
 Creates `n`-dimensional slice-shell over a `range`.
@@ -263,10 +307,13 @@ auto sliced(size_t N, Range)(Range range, auto ref in size_t[N] lengths, size_t 
     if (!isStaticArray!Range && !isNarrowString!Range && N)
 in {
     foreach(len; lengths)
-        assert(len > 0, "sliced: all length must be positive.");
+        assert(len > 0,
+            "All length must be positive."
+            ~ tailErrorMessage!());
     static if (hasLength!Range)
         assert(lengthsProduct!N(lengths) + shift <= range.length,
-            "sliced: range length mast be greater or equal lengths product plus shift");
+            "Range length mast be greater or equal lengths product plus shift."
+            ~ tailErrorMessage!());
 }
 body {
     static if (isDynamicArray!Range)
@@ -311,6 +358,8 @@ unittest {
 /// Allocators
 version(Posix) //Issue 15281
 unittest {
+    import std.experimental.allocator;
+
     /++
     Allocates array and n-dimensional slice over it.
     Params:
@@ -320,12 +369,12 @@ unittest {
     See_also: $(LREF sliced)
     +/
 
-    import std.experimental.allocator;
-
+    // `theAllocator.makeSlice(3, 4)` allocates an array with length equal `12`
+    // and returns this `array` and `2`-dimensional `slice`-shell over it.
     auto makeSlice(T, Allocator, Lengths...)(auto ref Allocator alloc, Lengths lengths)
     {
         enum N = Lengths.length;
-        struct Result { T[] array; Slice!(N, int*) slice; }
+        struct Result { T[] array; Slice!(N, T*) slice; }
         size_t length = lengths[0];
         foreach(len; lengths[1..N])
                 length *= len;
@@ -399,7 +448,6 @@ unittest {
     assert(ar == [[0,1,2,3], [4,5,6,7], [8,9,10,11]]);
 }
 
-
 private enum _swappedCode = q{
     auto ret = slice;
     with(ret)
@@ -421,8 +469,17 @@ See_also: $(LREF everted), $(LREF transposed)
 template swapped(size_t dimensionA, size_t dimensionB)
 {
     auto swapped(size_t N, Range)(auto ref Slice!(N, Range) slice)
-        if (dimensionA < N && dimensionB < N)
     {
+        {
+            enum i = 0;
+            alias dimension = dimensionA;
+            mixin DimensionCTError;
+        }
+        {
+            enum i = 1;
+            alias dimension = dimensionB;
+            mixin DimensionCTError;
+        }
         mixin(_swappedCode);
     }
 }
@@ -430,8 +487,14 @@ template swapped(size_t dimensionA, size_t dimensionB)
 /// ditto
 auto swapped(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimensionA, size_t dimensionB)
 in{
-    assert(dimensionA < N, "swapped: dimensionA must be less then N");
-    assert(dimensionB < N, "swapped: dimensionB must be less then N");
+    {
+        alias dimension = dimensionA;
+        mixin(DimensionRTError);
+    }
+    {
+        alias dimension = dimensionB;
+        mixin(DimensionRTError);
+    }
 }
 body {
     mixin(_swappedCode);
@@ -507,20 +570,17 @@ private enum _transposedCode = q{
     }
 };
 
-private size_t[N] completeTranspose(size_t N)(in size_t[] tr)
-out(res){
-    assert(isPermutation(res));
-}
-body {
-    assert(tr.length <= N);
-    size_t[N] ctr = void;
-    bool[N] mask;
-    foreach(i, ref e; tr)
+private size_t[N] completeTranspose(size_t N)(in size_t[] dimensions)
+{
+    assert(dimensions.length <= N);
+    size_t[N] ctr;
+    uint[N] mask;
+    foreach(i, ref dimension; dimensions)
     {
-        mask[e] = true;
-        ctr[i] = e;
+        mask[dimension] = true;
+        ctr[i] = dimension;
     }
-    size_t j = tr.length;
+    size_t j = dimensions.length;
     foreach(i, e; mask)
         if (e == false)
             ctr[j++] = i;
@@ -531,36 +591,54 @@ body {
 N-dimensional transpose operator.
 Brings selected dimensions on top.
 Params:
-    FrontDimensions = indexes of dimensions
-    frontDimensions = indexes of dimensions
-    frontDimension = indexes of dimension to bring on top
+    Dimensions = indexes of dimensions to bring on top
+    dimensions = indexes of dimensions to bring on top
+    dimension = indexes of dimension to bring on top
 See_also: $(LREF swapped), $(LREF everted)
 +/
-template transposed(FrontDimensions...)
-    if (FrontDimensions.length)
+template transposed(Dimensions...)
+    if (Dimensions.length)
 {
     auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice)
-        if (FrontDimensions.length <= N)
     {
-        enum perm = completeTranspose!N([FrontDimensions]);
+        mixin DimensionsCountCTError;
+        foreach(i, dimension; Dimensions)
+            mixin DimensionCTError;
+        static assert(isValidPartialPermutation!N([Dimensions]),
+            "Failed to complete permutation of dimensions " ~ Dimensions.stringof
+            ~ tailErrorMessage!());
+        enum perm = completeTranspose!N([Dimensions]);
+        static assert(perm.isPermutation, __PRETTY_FUNCTION__ ~ ": internal error.");
         mixin(_transposedCode);
     }
 }
 
 ///ditto
-auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t frontDimension)
-{
+auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimension)
+in {
+    mixin(DimensionRTError);
+}
+body {
     size_t[1] permutation = void;
-    permutation[0] = frontDimension;
+    permutation[0] = dimension;
     immutable perm = completeTranspose!N(permutation);
+    assert(perm.isPermutation, __PRETTY_FUNCTION__  ~ ": internal error.");
     mixin(_transposedCode);
 }
 
 ///ditto
-auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] frontDimensions...)
-{
-    assert(frontDimensions.length <= N);
-    immutable perm = completeTranspose!N(frontDimensions);
+auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] dimensions...)
+in {
+    mixin(DimensionsCountRTError);
+    foreach(dimension; dimensions)
+        mixin(DimensionRTError);
+}
+body {
+    assert(dimensions.isValidPartialPermutation!N,
+        "Failed to complete permutation of dimensions."
+        ~ tailErrorMessage!());
+    immutable perm = completeTranspose!N(dimensions);
+    assert(perm.isPermutation, __PRETTY_FUNCTION__ ~ ": internal error.");
     mixin(_transposedCode);
 }
 
@@ -644,9 +722,9 @@ template reversed(Dimensions...)
     auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice)
     {
         auto ret = slice;
-        foreach(dimension; Dimensions)
+        foreach(i, dimension; Dimensions)
         {
-            static assert(dimension < N, "reversed: dimension(" ~ dimension.stringof ~ ") should be less then N(" ~ N.stringof ~ ")");
+            mixin DimensionCTError;
             mixin(_reversedCode);
         }
         return ret;
@@ -655,22 +733,25 @@ template reversed(Dimensions...)
 
 ///ditto
 auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimension)
-{
+in {
+    mixin(DimensionRTError);
+}
+body {
     auto ret = slice;
-    assert(dimension < N, "reversed: dimension should be less then N");
     mixin(_reversedCode);
     return ret;
 }
 
 ///ditto
 auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] dimensions...)
-{
+in {
+    foreach(dimension; dimensions)
+        mixin(DimensionRTError);
+}
+body {
     auto ret = slice;
     foreach(dimension; dimensions)
-    {
-        assert(dimension < N, "reversed: dimension should be less then N");
         mixin(_reversedCode);
-    }
     return ret;
 }
 
@@ -697,42 +778,50 @@ unittest {
     assert(slice.reversed (1, 0)   .byElement.equal(chain(r2, r1, r0)));
     assert(slice.reversed (1, 1)   .byElement.equal(chain(i0, i1, i2)));
     assert(slice.reversed (0, 0, 0).byElement.equal(chain(i2, i1, i0)));
-
 }
 
 private enum _stridedCode = q{
     assert(factor > 0, "strided: factor must be positive");
-    auto ret = slice;
     const rem = ret._lengths[dimension] % factor;
     ret._lengths[dimension] /= factor;
-    ret._strides[dimension] *= factor;
+    if(ret._lengths[dimension]) //do not remove
+        ret._strides[dimension] *= factor;
     if (rem)
         ret._lengths[dimension]++;
-    return ret;
 };
 
 /++
 Multiplies a stride of selected dimension by the factor.
 Params:
+    Dimensions = list of dimension numbers
     dimension = dimension number
     factor = step extension factor
 +/
-template strided(size_t dimension)
+template strided(Dimensions...)
+    if (Dimensions.length)
 {
-    auto strided(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t factor)
-        if (dimension < N)
+    auto strided(size_t N, Range)(auto ref Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) factors)
     body {
-        mixin(_stridedCode);
+        auto ret = slice;
+        foreach(i, dimension; Dimensions)
+        {
+            mixin DimensionCTError;
+            immutable factor = factors[i];
+            mixin(_stridedCode);
+        }
+        return ret;
     }
 }
 
 ///ditto
 auto strided(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimension, size_t factor)
 in {
-    assert(dimension < N, "stride: dimension should be less then N");
+    mixin(DimensionRTError);
 }
 body {
+    auto ret = slice;
     mixin(_stridedCode);
+    return ret;
 }
 
 ///
@@ -747,15 +836,19 @@ unittest {
     // Template
     assert(slice.strided!0(2) .byElement.equal(chain(i0, i2)));
     assert(slice.strided!1(3) .byElement.equal(chain(s0, s1, s2)));
+    assert(slice.strided!(0, 1)(2, 3).byElement.equal(chain(s0, s2)));
     // Function
     assert(slice.strided(0, 2).byElement.equal(chain(i0, i2)));
     assert(slice.strided(1, 3).byElement.equal(chain(s0, s1, s2)));
+    assert(slice.strided(0, 2).strided(1, 3).byElement.equal(chain(s0, s2)));
 
-    assert(1000.iota.sliced(13, 40).strided!0(2).strided!1(5).shape == [7, 8]);
+    static assert(1000.iota.sliced(13, 40).strided!(0, 1)(2, 5).shape == [7, 8]);
+    static assert(100.iota.sliced(93).strided!(0, 0)(7, 3).shape == [5]);
 }
 
 /++
 Returns a random access range of all elements of a slice.
+See_also: $(LREF elements)
 +/
 auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
@@ -963,6 +1056,7 @@ unittest {
 
 /++
 Returns a newly allocated mutable array of all elements int a slice.
+See_also: $(LREF byElement)
 +/
 Unqual!(ElementType!Range)[] elements(size_t N, Range)(auto ref Slice!(N, Range) slice) @property
 {
@@ -972,6 +1066,7 @@ Unqual!(ElementType!Range)[] elements(size_t N, Range)(auto ref Slice!(N, Range)
         alias E = Unqual!(ElementType!Range);
         E[] ret = void;
         auto lazyElements = slice.byElement;
+        //TODO: check constructors
         static if(__traits(compiles, {ret = uninitializedArray!(E[])(lazyElements.length); }))
         {
             if(__ctfe)
@@ -995,7 +1090,6 @@ Unqual!(ElementType!Range)[] elements(size_t N, Range)(auto ref Slice!(N, Range)
 ///Common slice
 unittest {
     import std.range: iota;
-    import std.algorithm.comparison: equal;
     assert(100.iota
         .sliced(2, 3)
         .elements == [0, 1, 2, 3, 4, 5]);
@@ -1003,8 +1097,7 @@ unittest {
 
 ///Packed slice
 unittest {
-    import std.range: iota, drop;
-    import std.algorithm.comparison: equal;
+    import std.range: iota;
     assert(100000.iota
         .sliced(2, 2, 3)
         .packed!2
@@ -1103,12 +1196,18 @@ template packed(K...)
 {
     auto packed(size_t N, Range)(Slice!(N, Range) slice)
     {
-        template Template(size_t NInner, Range, K...)
+        template Template(size_t NInner, Range, R...)
         {
-            static if (K.length)
+            static if (R.length > 0)
             {
-                static assert(NInner > K[0]);
-                alias Template = Template!(NInner - K[0], Slice!(K[0] + 1, Range), K[1..$]);
+                static if(NInner > R[0])
+                    alias Template = Template!(NInner - R[0], Slice!(R[0] + 1, Range), R[1..$]);
+                else
+                static assert(0,
+                    "Sum of all lengths of packs " ~ K.stringof
+                    ~ " should be less then N = "~ N.stringof
+                    ~ tailErrorMessage!());
+
             }
             else
             {
@@ -1243,14 +1342,94 @@ unittest
     static assert(is(typeof(e) == ElementType!R));
 }
 
+///
+struct Structure(size_t N)
+    if(N && N < 256)
+{
+    ///
+    size_t    [N] lengths;
+
+    ///
+    sizediff_t[N] strides;
+
+    ///
+    static if(N == 2)
+    bool isBlasCompatible() @property
+    {
+        return strides[0] == 1 && strides[1] > 0 || strides[1] == 1 && strides[0] > 0;
+    }
+    else enum bool isBlasCompatible = N == 1; //BLAS level-1 allows negative strides.
+
+    ///
+    static if(N > 1)
+    bool isContiguous() @property
+    {
+        size_t length = strides[N-1];
+        foreach_reverse(i; Iota!(0, N-1))
+        {
+            length *= lengths[i+1];
+            if(length != strides[i])
+                return false;
+        }
+        return true;
+    }
+    else
+    enum bool isContiguous = true;
+
+    ///
+    bool isNormal() @property
+    {
+        foreach(i; Iota!(0, N-1))
+        {
+            if(strides[i] <= strides[i+1])
+                return false;
+        }
+        return strides[N-1] > 0;
+    }
+
+    ///
+    bool isPure() @property
+    {
+        size_t length = 1;
+        foreach_reverse(i; Iota!(0, N))
+        {
+            if(length != strides[i])
+                return false;
+            length *= lengths[i];
+        }
+        return true;
+    }
+
+    ///
+    Structure normalized() @property
+    {
+        Structure ret = this;
+        with(ret)
+        {
+            foreach(i; Iota!(0, N))
+            {
+                if(strides[i] < 0)
+                    strides[i] = -strides[i];
+            }
+            //TODO: optimize sort
+            //import std.algorithm.mutation: swap;
+            import std.algorithm.sorting: sort;
+            import std.range: zip;
+            zip(lengths[], strides[]).sort!((a, b) => a[1] > b[1]);
+        }
+        return ret;
+    }
+}
+
+
 /++
 $(D _N)-dimensional slice-shell over a range.
 See_also: $(LREF sliced), $(LREF createSlice), $(LREF ndarray)
 +/
 struct Slice(size_t _N, _Range)
-    if ((!is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
-                 && (isPointer!_Range || is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
-                || is(_Range == Slice!(N1, Range1), size_t N1, Range1))
+    if (_N && _N < 256LU && ((!is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
+                     && (isPointer!_Range || is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
+                    || is(_Range == Slice!(N1, Range1), size_t N1, Range1)))
 {
 private:
 
@@ -1958,6 +2137,7 @@ public:
         import std.array: uninitializedArray;
         alias U = Unqual!E[];
         U ret = void;
+        //TODO: check constructors
         static if (__traits(compiles, ret = uninitializedArray!U(_lengths[0])))
         {
             if (__ctfe)
@@ -2115,6 +2295,52 @@ unittest {
 
 private:
 
+enum string tailErrorMessage(
+    string fun = __FUNCTION__,
+    string pfun = __PRETTY_FUNCTION__) =
+"
+- - -
+Emitted by function
+" ~ fun ~ "
+- - -
+Function prototype
+" ~ pfun ~ "
+_____";
+
+mixin template DimensionsCountCTError()
+{
+    static assert(Dimensions.length <= N,
+        "Dimensions list length = " ~ Dimensions.length.stringof
+        ~ " should be less or equal N = " ~ N.stringof
+        ~ tailErrorMessage!());
+}
+
+enum DimensionsCountRTError = q{
+    assert(dimensions.length <= N,
+        "Dimensions list length should be less or equal N = " ~ N.stringof
+        ~ tailErrorMessage!());
+};
+
+mixin template DimensionCTError()
+{
+    static assert(dimension >= 0,
+        "dimension = " ~ dimension.stringof ~ " at position "
+        ~ i.stringof ~ " be greater or equal 0"
+        ~ tailErrorMessage!());
+    static assert(dimension < N,
+        "dimension = " ~ dimension.stringof ~ " at position "
+        ~ i.stringof ~ " should be less then N = " ~ N.stringof
+        ~ tailErrorMessage!());
+}
+
+enum DimensionRTError = q{
+    static if(isSigned!(typeof(dimension)))
+    assert(dimension >= 0, "dimension should be greater or equal 0"
+        ~ tailErrorMessage!());
+    assert(dimension < N, "dimension should be less then N = " ~ N.stringof
+        ~ tailErrorMessage!());
+};
+
 alias IncFront(Seq...) = AliasSeq!(Seq[0] + 1, Seq[1..$]);
 alias DecFront(Seq...) = AliasSeq!(Seq[0] - 1, Seq[1..$]);
 alias NSeqEvert(Seq...) = DecFront!(Reverse!(IncFront!Seq));
@@ -2142,21 +2368,41 @@ template SliceFromSeq(Range, Seq...)
         alias SliceFromSeq = SliceFromSeq!(Slice!(Seq[$-1], Range), Seq[0..$-1]);
 }
 
-bool isPermutation(size_t N)(in size_t[N] perm)
+bool isPermutation(size_t N)(auto ref in size_t[N] perm)
 {
-    if (perm.empty)
+    if(perm.length == 0)
         return false;
-    immutable n = perm.length;
-    bool[N] mask;
+    int[N] mask;
     foreach(j; perm)
     {
-        if (j >= n)
+        if (j >= N)
+            return false;
+        if(mask[j]) //duplicate
             return false;
         mask[j] = true;
     }
     foreach(e; mask)
         if (e == false)
             return false;
+    return true;
+}
+
+bool isValidPartialPermutation(size_t N)(in size_t[] perm)
+{
+    if(perm.length == 0)
+        return false;
+    int[N] mask;
+    foreach(j; perm)
+    {
+        if (j >= N)
+            return false;
+        if(mask[j]) //duplicate
+            return false;
+        mask[j] = true;
+    }
+    //foreach(e; mask)
+    //    if (e == false)
+    //        return false;
     return true;
 }
 
@@ -2179,6 +2425,14 @@ template Iota(size_t i, size_t j)
         alias Iota = AliasSeq!();
     else
         alias Iota = AliasSeq!(i, Iota!(i+1, j));
+}
+
+template Repeat(T, size_t N)
+{
+    static if(N)
+        alias Repeat = AliasSeq!(Repeat!(T, N-1), T);
+    else
+        alias Repeat = AliasSeq!();
 }
 
 private size_t lengthsProduct(size_t N)(auto ref in size_t[N] lengths)
