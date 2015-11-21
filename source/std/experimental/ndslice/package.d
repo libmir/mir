@@ -15,8 +15,7 @@
         4. to allow a user to write an extern C bindings for code based on `Slice`.
 
 2. Do not import `std.format`, `std.string` and `std.conv` to format error
-    messages.`"Use" ~ Concatenation.stringof ~ ", really ."` Why? Please,
-    read [1] again.
+    messages.`"Use" ~ Concatenation.stringof`.
 
 3. Try to use already defined `mixin template`s for pretty error messaging.
 
@@ -45,7 +44,58 @@
 
 /**
 This package implements generic algorithms for creating and manipulating of n-dimensional random access ranges and arrays,
-which are represented with the $(LREF Slice).
+which are represented with the $(SUBREF slice, Slice).
+
+$(SCRIPT inhibitQuickIndex = 1;)
+
+$(DIVC quickindex,
+$(BOOKTABLE ,
+$(TR $(TH Category) $(TH Submodule) $(TH Functions)
+)
+$(TR $(TDNW Slicing)
+     $(TDNW $(SUBMODULE slice))
+     $(TD
+        $(SUBREF slice, sliced)
+    )
+)
+$(TR $(TDNW Multidimensional operators)
+     $(TDNW $(SUBMODULE operators))
+     $(TD
+        $(SUBREF operators, transposed)
+        $(SUBREF operators, strided)
+        $(SUBREF operators, reversed)
+        $(SUBREF operators, packed)
+        $(SUBREF operators, allReversed)
+        $(SUBREF operators, everted)
+        $(SUBREF operators, packEverted)
+        $(SUBREF operators, swapped)
+        $(SUBREF operators, unpacked)
+    )
+)
+$(TR $(TDNW Optimized iterators)
+     $(TDNW $(SUBMODULE iterators))
+     $(TD
+        $(SUBREF iterators, byElement)
+    )
+)
+$(TR $(TDNW Shape and strides)
+     $(TDNW $(SUBMODULE structure))
+     $(TD
+        $(SUBREF structure, Structure.isBlasCompatible)
+        $(SUBREF structure, Structure.isContiguous)
+        $(SUBREF structure, Structure.isNormal)
+        $(SUBREF structure, Structure.isPure)
+        $(SUBREF structure, Structure.normalized)
+    )
+)
+$(TR $(TDNW Copy constructors and allocators)
+     $(TDNW $(SUBMODULE allocators))
+     $(TD
+        $(SUBREF allocators, ndarray)
+        $(SUBREF allocators, createSlice)
+    )
+)
+))
 
 Example: slicing, indexing and operations
 ----
@@ -79,9 +129,9 @@ assert(tensor[index] == tensor[1, 2, 3]);
 
 Example: operations with rvalue slices
 ----
-auto tensor = createSlice!int(3, 4, 5);
-auto matrix = createSlice!int(3, 4);
-auto vector = createSlice!int(3);
+auto tensor = new int[60].sliced(3, 4, 5);
+auto matrix = new int[12].sliced(3, 4);
+auto vector = new int[ 3].sliced(3);
 
 foreach(i; 0..3)
     vector[i] = i;
@@ -118,7 +168,7 @@ Slice!(2, int*) toMatrix(string str)
     size_t columns = data[0].length.enforce("empty first row");
     data.each!(a => enforce(a.length == columns, "rows have different lengths"));
 
-    auto slice = createSlice!int(rows, columns);
+    auto slice = new int[rows * columns].sliced(rows, columns);
     foreach(i, line; data)
         foreach(j, num; line)
             slice[i, j] = num.to!int;
@@ -135,9 +185,11 @@ License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
-Source:    $(PHOBOSSRC std/_experimental/_range/_ndslice.d)
+Source:    $(PHOBOSSRC std/_experimental/_ndslice/_package.d)
 
 Macros:
+SUBMODULE = $(LINK2 std_experimental_ndslice_$1.html, std.experimental.ndslice.$1)
+SUBREF = $(LINK2 std_experimental_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
@@ -146,7 +198,6 @@ module std.experimental.ndslice;
 public import std.experimental.ndslice.allocators;
 public import std.experimental.ndslice.iterators;
 public import std.experimental.ndslice.operators;
-public import std.experimental.ndslice.primitives;
 public import std.experimental.ndslice.slice;
 public import std.experimental.ndslice.structure;
 

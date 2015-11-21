@@ -1,5 +1,8 @@
-/++
-Slice operators have a very small computational cost.
+/**
+$(SCRIPT inhibitQuickIndex = 1;)
+
+Slice operators change only strides and lengths.
+A range owned by a slice remains unmodified.
 Transpose operators and iteration operators preserve type of a slice. Some operators are bifacial,
 i.e they have version with template parameters and version with function parameters.
 Versions with template parameters are preferred because compile time checks and optimization reasons.
@@ -20,6 +23,13 @@ $(T2 strided, `1000.iota.sliced(13, 40).strided!0(2).strided!1(5).shape` equals 
 $(T2 reversed, `slice.reversed!(0, slice.shape.length-1)` returns slice with reversed direction of the iteration for top level and tail level dimensions.)
 $(T2 allReversed, `20.iota.sliced(4, 5).allReversed` equals `20.iota.retro.sliced(4, 5)`.)
 )
+Drop operators:
+    $(LREF drop), $(LREF dropBack),
+    $(LREF dropOne), $(LREF dropBackOne),
+    $(LREF dropExacly), $(LREF dropBackExacly),
+    $(LREF allDrop), $(LREF allDropBack),
+    $(LREF allDropOne), $(LREF allDropBackOne),
+    $(LREF allDropExacly), $(LREF allDropBackExacly).
 
 $(H2 Subspace operators)
 
@@ -46,7 +56,16 @@ $(T4 transposed, Yes, `slice.transposed!(1, 4, 3)`, `slice.transposed(1, 4, 3)`)
 $(T4 reversed, Yes, `slice.reversed!(0, 2)`, `slice.reversed(0, 2)`)
 )
 
-+/
+License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors:   Ilya Yaroshenko
+
+Source:    $(PHOBOSSRC std/_experimental/_ndslice/_operators.d)
+
+Macros:
+T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
+*/
 module std.experimental.ndslice.operators;
 
 import std.meta;
@@ -55,8 +74,7 @@ import std.experimental.ndslice.internal;
 import std.experimental.ndslice.slice;
 
 private enum _swappedCode = q{
-    auto ret = slice;
-    with(ret)
+    with(slice)
     {
         auto tl = _lengths[dimensionA];
         auto ts = _strides[dimensionA];
@@ -65,7 +83,7 @@ private enum _swappedCode = q{
         _lengths[dimensionB] = tl;
         _strides[dimensionB] = ts;
     }
-    return ret;
+    return slice;
 };
 
 /++
@@ -74,7 +92,7 @@ See_also: $(LREF everted), $(LREF transposed)
 +/
 template swapped(size_t dimensionA, size_t dimensionB)
 {
-    auto swapped(size_t N, Range)(auto ref Slice!(N, Range) slice)
+    auto swapped(size_t N, Range)(Slice!(N, Range) slice)
     {
         {
             enum i = 0;
@@ -91,7 +109,7 @@ template swapped(size_t dimensionA, size_t dimensionB)
 }
 
 /// ditto
-auto swapped(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimensionA, size_t dimensionB)
+auto swapped(size_t N, Range)(Slice!(N, Range) slice, size_t dimensionA, size_t dimensionB)
 in{
     {
         alias dimension = dimensionA;
@@ -291,7 +309,7 @@ unittest {
 }
 
 private enum _reversedCode = q{
-    with(ret)
+    with(slice)
     {
         _ptr += _strides[dimension] * (_lengths[dimension] - 1);
         _strides[dimension] = -_strides[dimension];
@@ -301,14 +319,13 @@ private enum _reversedCode = q{
 /++
 Reverses direction of iteration for all dimensions.
 +/
-auto allReversed(size_t N, Range)(auto ref Slice!(N, Range) slice)
+auto allReversed(size_t N, Range)(Slice!(N, Range) slice)
 {
-    auto ret = slice;
     foreach(dimension; Iota!(0, N))
     {
         mixin(_reversedCode);
     }
-    return ret;
+    return slice;
 }
 
 ///
@@ -325,40 +342,37 @@ Reverses direction of the iteration for selected dimensions.
 template reversed(Dimensions...)
     if (Dimensions.length)
 {
-    auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice)
+    auto reversed(size_t N, Range)(Slice!(N, Range) slice)
     {
-        auto ret = slice;
         foreach(i, dimension; Dimensions)
         {
             mixin DimensionCTError;
             mixin(_reversedCode);
         }
-        return ret;
+        return slice;
     }
 }
 
 ///ditto
-auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimension)
+auto reversed(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
 in {
     mixin(DimensionRTError);
 }
 body {
-    auto ret = slice;
     mixin(_reversedCode);
-    return ret;
+    return slice;
 }
 
 ///ditto
-auto reversed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] dimensions...)
+auto reversed(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
 in {
     foreach(dimension; dimensions)
         mixin(DimensionRTError);
 }
 body {
-    auto ret = slice;
     foreach(dimension; dimensions)
         mixin(_reversedCode);
-    return ret;
+    return slice;
 }
 
 ///
@@ -390,12 +404,12 @@ unittest {
 private enum _stridedCode = q{
     assert(factor > 0, "factor must be positive"
         ~ tailErrorMessage!());
-    const rem = ret._lengths[dimension] % factor;
-    ret._lengths[dimension] /= factor;
-    if(ret._lengths[dimension]) //do not remove
-        ret._strides[dimension] *= factor;
+    immutable rem = slice._lengths[dimension] % factor;
+    slice._lengths[dimension] /= factor;
+    if(slice._lengths[dimension]) //do not remove `if(...)`
+        slice._strides[dimension] *= factor;
     if (rem)
-        ret._lengths[dimension]++;
+        slice._lengths[dimension]++;
 };
 
 /++
@@ -408,28 +422,26 @@ Params:
 template strided(Dimensions...)
     if (Dimensions.length)
 {
-    auto strided(size_t N, Range)(auto ref Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) factors)
+    auto strided(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) factors)
     body {
-        auto ret = slice;
         foreach(i, dimension; Dimensions)
         {
             mixin DimensionCTError;
             immutable factor = factors[i];
             mixin(_stridedCode);
         }
-        return ret;
+        return slice;
     }
 }
 
 ///ditto
-auto strided(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimension, size_t factor)
+auto strided(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t factor)
 in {
     mixin(DimensionRTError);
 }
 body {
-    auto ret = slice;
     mixin(_stridedCode);
-    return ret;
+    return slice;
 }
 
 ///
@@ -467,7 +479,7 @@ See_also:  $(LREF unpacked), $(LREF packEverted),  $(LREF byElement).
 +/
 template packed(K...)
 {
-    auto packed(size_t N, Range)(Slice!(N, Range) slice)
+    auto packed(size_t N, Range)(auto ref Slice!(N, Range) slice)
     {
         template Template(size_t NInner, Range, R...)
         {
@@ -487,7 +499,7 @@ template packed(K...)
                 alias Template = Slice!(NInner, Range);
             }
         }
-        return Template!(N, Range, K)(slice._lengths, slice._strides, slice._ptr);
+        with(slice) return Template!(N, Range, K)(_lengths, _strides, _ptr);
     }
 }
 
@@ -616,4 +628,370 @@ unittest
     static assert(is(typeof(c) == Slice!(3, Slice!(5, R))));
     static assert(is(typeof(d) == Slice!(4, R)));
     static assert(is(typeof(e) == ElementType!R));
+}
+
+/++
+Convenience function which calls `slice.popFront!dimension()` for each dimension and returns `slice`.
+
+`allDropBackOne` provides the same functionality but instead calls `slice.popBack!dimension()`.
++/
+auto allDropOne(size_t N, Range)(Slice!(N, Range) slice)
+{
+    foreach(dimension; Iota!(0, N))
+        slice.popFront!dimension;
+    return slice;
+}
+
+///ditto
+auto allDropBackOne(size_t N, Range)(Slice!(N, Range) slice)
+{
+    foreach(dimension; Iota!(0, N))
+        slice.popBack!dimension;
+    return slice;
+}
+
+///
+unittest {
+    import std.range: iota, retro;
+    auto a = 20.iota.sliced(4, 5);
+
+    assert(a.allDropOne[0, 0] == 6);
+    assert(a.allDropOne.shape == [3, 4]);
+    assert(a.allDropBackOne[$-1, $-1] == 13);
+    assert(a.allDropBackOne.shape == [3, 4]);
+}
+
+/++
+Similar to `allDrop` and `allDropBack` but they call 
+`slice.popFrontExactly!dimension(n)` and `slice.popBackExactly!dimension(n)` instead.
+
+Note:
+Unlike `allDrop`, `allDropExactly` will assume that the slice holds at least n-dimensional cube.
+This makes `allDropExactly` faster than `allDrop`. 
+Only use `allDropExactly` when it is guaranteed that slice 
+holds at least n-dimensional cube.
++/
+auto allDropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t n)
+{
+    foreach(dimension; Iota!(0, N))
+        slice.popFrontExactly!dimension(n);
+    return slice;
+}
+
+///ditto
+auto allDropBackExactly(size_t N, Range)(Slice!(N, Range) slice, size_t n)
+{
+    foreach(dimension; Iota!(0, N))
+        slice.popBackExactly!dimension(n);
+    return slice;
+}
+
+///
+unittest {
+    import std.range: iota, retro;
+    auto a = 20.iota.sliced(4, 5);
+
+    assert(a.allDropExactly(2)[0, 0] == 12);
+    assert(a.allDropExactly(2).shape == [2, 3]);
+    assert(a.allDropBackExactly(2)[$-1, $-1] == 7);
+    assert(a.allDropBackExactly(2).shape == [2, 3]);
+}
+
+/++
+Convenience function which calls `slice.popFrontN!dimension(n)` for each dimension and returns slice.
+
+`allDropBack` provides the same functionality but instead calls `slice.popBackN!dimension(n)`.
+
+Note:
+`allDrop` and `allDropBack` will only pop up to n elements but will stop if the slice is empty first.
++/
+auto allDrop(size_t N, Range)(Slice!(N, Range) slice, size_t n)
+{
+    foreach(dimension; Iota!(0, N))
+        slice.popFrontN!dimension(n);
+    return slice;
+}
+
+///ditto
+auto allDropBack(size_t N, Range)(Slice!(N, Range) slice, size_t n)
+{
+    foreach(dimension; Iota!(0, N))
+        slice.popBackN!dimension(n);
+    return slice;
+}
+
+///
+unittest {
+    import std.range: iota, retro;
+    auto a = 20.iota.sliced(4, 5);
+ 
+    assert(a.allDrop(2)[0, 0] == 12);
+    assert(a.allDrop(2).shape == [2, 3]);
+    assert(a.allDropBack(2)[$-1, $-1] == 7);
+    assert(a.allDropBack(2).shape == [2, 3]);
+
+    assert(a.allDrop    (5).shape == [0, 0]);
+    assert(a.allDropBack(5).shape == [0, 0]);
+}
+
+/++
+Convenience function which calls `slice.popFront!dimension()` for selected dimensions and returns `slice`.
+
+`dropBackOne` provides the same functionality but instead calls `slice.popBack!dimension()`.
++/
+template dropOne(Dimensions...)
+    if (Dimensions.length)
+{
+    auto dropOne(size_t N, Range)(Slice!(N, Range) slice)
+    {
+        foreach(i, dimension; Dimensions)
+        {
+            mixin DimensionCTError;
+            slice.popFront!dimension;
+        }
+        return slice;
+    }
+}
+
+///ditto
+auto dropOne(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
+in {
+    mixin(DimensionRTError);
+}
+body {
+    slice.popFront(dimension);
+    return slice;
+}
+
+///ditto
+auto dropOne(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
+in {
+    foreach(dimension; dimensions)
+        mixin(DimensionRTError);
+}
+body {
+    foreach(dimension; dimensions)
+        slice.popFront(dimension);
+    return slice;
+}
+
+///ditto
+template dropBackOne(Dimensions...)
+    if (Dimensions.length)
+{
+    auto dropBackOne(size_t N, Range)(Slice!(N, Range) slice)
+    {
+        foreach(i, dimension; Dimensions)
+        {
+            mixin DimensionCTError;
+            slice.popBack!dimension;
+        }
+        return slice;
+    }
+}
+
+///ditto
+auto dropBackOne(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
+in {
+    mixin(DimensionRTError);
+}
+body {
+    slice.popBack(dimension);
+    return slice;
+}
+
+///ditto
+auto dropBackOne(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
+in {
+    foreach(dimension; dimensions)
+        mixin(DimensionRTError);
+}
+body {
+    foreach(dimension; dimensions)
+        slice.popBack(dimension);
+    return slice;
+}
+
+
+///
+unittest {
+    import std.range: iota, retro;
+    auto a = 20.iota.sliced(4, 5);
+
+    assert(a.dropOne!(1, 0)[0, 0] == 6);
+    assert(a.dropOne (1, 0)[0, 0] == 6);
+    assert(a.dropOne!(1, 0).shape == [3, 4]);
+    assert(a.dropOne (1, 0).shape == [3, 4]);
+    assert(a.dropBackOne!(1, 0)[$-1, $-1] == 13);
+    assert(a.dropBackOne (1, 0)[$-1, $-1] == 13);
+    assert(a.dropBackOne!(1, 0).shape == [3, 4]);
+    assert(a.dropBackOne (1, 0).shape == [3, 4]);
+
+    assert(a.dropOne!(0, 0)[0, 0] == 10);
+    assert(a.dropOne (0, 0)[0, 0] == 10);
+    assert(a.dropOne!(0, 0).shape == [2, 5]);
+    assert(a.dropOne (0, 0).shape == [2, 5]);
+    assert(a.dropBackOne!(1, 1)[$-1, $-1] == 17);
+    assert(a.dropBackOne (1, 1)[$-1, $-1] == 17);
+    assert(a.dropBackOne!(1, 1).shape == [4, 3]);
+    assert(a.dropBackOne (1, 1).shape == [4, 3]);
+}
+
+unittest {
+    import std.range: iota, retro;
+    auto a = 20.iota.sliced(4, 5);
+
+    assert(a.dropOne(0).dropOne(0)[0, 0] == 10);
+    assert(a.dropOne(0).dropOne(0).shape == [2, 5]);
+    assert(a.dropBackOne(1).dropBackOne(1)[$-1, $-1] == 17);
+    assert(a.dropBackOne(1).dropBackOne(1).shape == [4, 3]);
+}
+
+
+/++
+Similar to `drop` and `dropBack` but they call 
+`slice.popFrontExactly!dimension(n)` and `slice.popBackExactly!dimension(n)` instead.
+
+Note:
+Unlike `drop`, `dropExactly` will assume that the slice holds enough elements in
+selected dimension.
+This makes `dropExactly` faster than `drop`. 
++/
+template dropExactly(Dimensions...)
+    if (Dimensions.length)
+{
+    auto dropExactly(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
+    body {
+        foreach(i, dimension; Dimensions)
+        {
+            mixin DimensionCTError;
+            slice.popFrontExactly!dimension(ns[i]);
+        }
+        return slice;
+    }
+}
+
+///ditto
+auto dropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
+in {
+    mixin(DimensionRTError);
+}
+body {
+    slice.popFrontExactly(dimension, n);
+    return slice;
+}
+
+///ditto
+template dropBackExactly(Dimensions...)
+    if (Dimensions.length)
+{
+    auto dropBackExactly(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
+    body {
+        foreach(i, dimension; Dimensions)
+        {
+            mixin DimensionCTError;
+            slice.popBackExactly!dimension(ns[i]);
+        }
+        return slice;
+    }
+}
+
+///ditto
+auto dropBackExactly(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
+in {
+    mixin(DimensionRTError);
+}
+body {
+    slice.popBackExactly(dimension, n);
+    return slice;
+}
+
+///
+unittest {
+    import std.range: iota, retro;
+    auto a = 20.iota.sliced(4, 5);
+
+    assert(a.dropExactly    !(1, 0)(2, 3)[0, 0] == 17);
+    assert(a.dropExactly    !(1, 0)(2, 3).shape == [1, 3]);
+    assert(a.dropBackExactly!(0, 1)(2, 3)[$-1, $-1] == 6);
+    assert(a.dropBackExactly!(0, 1)(2, 3).shape == [2, 2]);
+
+    assert(a.dropExactly(1, 2).dropExactly(0, 3)[0, 0] == 17);
+    assert(a.dropExactly(1, 2).dropExactly(0, 3).shape == [1, 3]);
+    assert(a.dropBackExactly(0, 2).dropBackExactly(1, 3)[$-1, $-1] == 6);
+    assert(a.dropBackExactly(0, 2).dropBackExactly(1, 3).shape == [2, 2]);
+}
+
+/++
+Convenience function which calls `slice.popFrontN!dimension(n)` for each dimension and returns slice.
+
+`dropBack` provides the same functionality but instead calls `slice.popBackN!dimension(n)`.
+
+Note:
+`drop` and `dropBack` will only pop up to n elements but will stop if the slice is empty first.
++/
+template drop(Dimensions...)
+    if (Dimensions.length)
+{
+    auto drop(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
+    body {
+        foreach(i, dimension; Dimensions)
+        {
+            mixin DimensionCTError;
+            slice.popFrontN!dimension(ns[i]);
+        }
+        return slice;
+    }
+}
+
+///ditto
+auto drop(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
+in {
+    mixin(DimensionRTError);
+}
+body {
+    slice.popFrontN(dimension, n);
+    return slice;
+}
+
+///ditto
+template dropBack(Dimensions...)
+    if (Dimensions.length)
+{
+    auto dropBack(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
+    body {
+        foreach(i, dimension; Dimensions)
+        {
+            mixin DimensionCTError;
+            slice.popBackN!dimension(ns[i]);
+        }
+        return slice;
+    }
+}
+
+///ditto
+auto dropBack(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
+in {
+    mixin(DimensionRTError);
+}
+body {
+    slice.popBackN(dimension, n);
+    return slice;
+}
+
+
+///
+unittest {
+    import std.range: iota, retro;
+    auto a = 20.iota.sliced(4, 5);
+
+    assert(a.drop    !(1, 0)(2, 3)[0, 0] == 17);
+    assert(a.drop    !(1, 0)(2, 3).shape == [1, 3]);
+    assert(a.dropBack!(0, 1)(2, 3)[$-1, $-1] == 6);
+    assert(a.dropBack!(0, 1)(2, 3).shape == [2, 2]);
+
+    assert(a.drop(1, 2).drop(0, 3)[0, 0] == 17);
+    assert(a.drop(1, 2).drop(0, 3).shape == [1, 3]);
+    assert(a.dropBack(0, 2).dropBack(1, 3)[$-1, $-1] == 6);
+    assert(a.dropBack(0, 2).dropBack(1, 3).shape == [2, 2]);
 }

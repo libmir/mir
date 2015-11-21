@@ -1,8 +1,19 @@
-/++
+/**
+$(SCRIPT inhibitQuickIndex = 1;)
+
 $(BOOKTABLE $(H2 Iterators),
 $(T2 byElement, `100.iota.sliced(4, 5).byElement` equals `20.iota`.)
 )
-+/
+
+License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors:   Ilya Yaroshenko
+
+Source:    $(PHOBOSSRC std/_experimental/_ndslice/_iterators.d)
+
+Macros:
+T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+*/
 module std.experimental.ndslice.iterators;
 
 import std.experimental.ndslice.slice;
@@ -103,7 +114,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 _length--;
             }
 
-            void popFrontN(size_t n)
+            void popFrontExactly(size_t n)
             in {
                 assert(n <= _length);
             }
@@ -129,7 +140,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 _slice._ptr += _shift;
             }
 
-            void popBackN(size_t n)
+            void popBackExactly(size_t n)
             in {
                 assert(n <= _length);
             }
@@ -172,8 +183,8 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             auto opIndex(Tuple!(size_t, size_t) sl)
             {
                 auto ret = this;
-                ret.popFrontN(sl[0]);
-                ret.popBackN(_length - sl[1]);
+                ret.popFrontExactly(sl[0]);
+                ret.popBackExactly(_length - sl[1]);
                 return ret;
             }
 
@@ -293,7 +304,7 @@ unittest {
     assert(elems2.empty);
 
     elems0.popFront();
-    elems0.popFrontN(slice0.elementsCount - 14);
+    elems0.popFrontExactly(slice0.elementsCount - 14);
     assert(elems0.length == 13);
     assert(elems0.equal(range[slice0.elementsCount-13 .. slice0.elementsCount]));
 

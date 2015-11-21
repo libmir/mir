@@ -1,3 +1,11 @@
+/**
+
+License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors:   Ilya Yaroshenko
+
+Source:    $(PHOBOSSRC std/_experimental/_ndslice/_internal.d)
+*/
 module std.experimental.ndslice.internal;
 
 import std.traits;

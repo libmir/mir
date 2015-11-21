@@ -1,4 +1,15 @@
-///
+/**
+
+License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors:   Ilya Yaroshenko
+
+Source:    $(PHOBOSSRC std/_experimental/_ndslice/_sliced)
+
+Macros:
+T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
+*/
 module std.experimental.ndslice.slice;
 
 import std.traits;
@@ -32,7 +43,7 @@ in {
             ~ tailErrorMessage!());
     static if (hasLength!Range)
         assert(lengthsProduct!N(lengths) + shift <= range.length,
-            "Range length mast be greater or equal lengths product plus shift."
+            "Range length mast be greater or equal to lengths product plus shift."
             ~ tailErrorMessage!());
 }
 body {
@@ -73,45 +84,6 @@ unittest {
     assert(slice.length == 5);
     assert(slice.elementsCount == 5 * 6 * 7);
     assert(slice[0, 0, 0] == 9);
-}
-
-/// Allocators
-version(Posix) //Issue 15281
-unittest {
-    import std.experimental.allocator;
-
-    /++
-    Allocates array and n-dimensional slice over it.
-    Params:
-        alloc = allocator, see also $(LINK2 std_experimental_allocator.html, std.experimental.allocator)
-        lengths = list of lengths for dimensions
-    Returns: `array` created with `alloc` and `slice` over it
-    See_also: $(LREF sliced)
-    +/
-
-    // `theAllocator.makeSlice(3, 4)` allocates an array with length equal `12`
-    // and returns this `array` and `2`-dimensional `slice`-shell over it.
-    auto makeSlice(T, Allocator, Lengths...)(auto ref Allocator alloc, Lengths lengths)
-    {
-        enum N = Lengths.length;
-        struct Result { T[] array; Slice!(N, T*) slice; }
-        size_t length = lengths[0];
-        foreach(len; lengths[1..N])
-                length *= len;
-        T[] a = alloc.makeArray!T(length);
-        return Result(a, a.sliced(lengths));
-    }
-
-    auto tup = makeSlice!int(theAllocator, 2, 3, 4);
-
-    static assert(is(typeof(tup.array) == int[]));
-    static assert(is(typeof(tup.slice) == Slice!(3, int*)));
-
-    assert(tup.array.length           == 24);
-    assert(tup.slice.elementsCount    == 24);
-    assert(tup.array.ptr == &tup.slice[0, 0, 0]);
-
-    theAllocator.dispose(tup.array);
 }
 
 /++
@@ -534,35 +506,94 @@ public:
     void popFront(size_t dimension = 0)()
         if (dimension < N)
     {
-        assert(!empty!dimension);
+        assert(_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater then 0.");
         _lengths[dimension]--;
         _ptr += _strides[dimension];
     }
 
+    package void popFront(size_t dimension)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        assert(_lengths[dimension], ": length!dim should be greater then 0.");
+        _lengths[dimension]--;
+        _ptr += _strides[dimension];
+    }
 
     ///ditto
     void popBack(size_t dimension = 0)()
         if (dimension < N)
     {
-        assert(!empty!dimension);
+        assert(_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater then 0.");
         _lengths[dimension]--;
+    }
+
+    package void popBack(size_t dimension)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        assert(_lengths[dimension], ": length!dim should be greater then 0.");
+        _lengths[dimension]--;
+    }
+
+    ///ditto
+    void popFrontExactly(size_t dimension = 0)(size_t n)
+        if (dimension < N)
+    {
+        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!" ~ dimension.stringof);
+        _lengths[dimension] -= n;
+        _ptr += _strides[dimension] * n;
+    }
+
+    package void popFrontExactly(size_t dimension, size_t n)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!dim");
+        _lengths[dimension] -= n;
+        _ptr += _strides[dimension] * n;
+    }
+
+    ///ditto
+    void popBackExactly(size_t dimension = 0)(size_t n)
+        if (dimension < N)
+    {
+        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!" ~ dimension.stringof);
+        _lengths[dimension] -= n;
+    }
+
+    package void popBackExactly(size_t dimension, size_t n)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!dim");
+        _lengths[dimension] -= n;
     }
 
     ///ditto
     void popFrontN(size_t dimension = 0)(size_t n)
         if (dimension < N)
     {
-        assert(n <= _lengths[dimension]);
-        _lengths[dimension] -= n;
-        _ptr += _strides[dimension] * n;
+        import std.algorithm.comparison: min;
+        popFrontExactly!dimension(min(n, _lengths[dimension]));
+    }
+
+    package void popFrontN(size_t dimension, size_t n)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        import std.algorithm.comparison: min;
+        popFrontExactly(dimension, min(n, _lengths[dimension]));
     }
 
     ///ditto
     void popBackN(size_t dimension = 0)(size_t n)
         if (dimension < N)
     {
-        assert(n <= _lengths[dimension]);
-        _lengths[dimension] -= n;
+        import std.algorithm.comparison: min;
+        popBackExactly!dimension(min(n, _lengths[dimension]));
+    }
+
+    package void popBackN(size_t dimension, size_t n)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        import std.algorithm.comparison: min;
+        popBackExactly(dimension, min(n, _lengths[dimension]));
     }
 
     static if(doUnittest)
@@ -578,7 +609,7 @@ public:
         assert(slice.shape == [10, 20, 30]);
         slice.popFront;
         slice.popFront!1;
-        slice.popBackN!2(4);
+        slice.popBackExactly!2(4);
         assert(slice.shape == [9, 19, 26]);
 
         auto matrix = slice.front!1;
@@ -587,13 +618,17 @@ public:
         auto column = matrix.back!1;
         assert(column.shape == [9]);
 
-        slice.popFrontN!1(slice.length!1);
+        slice.popFrontExactly!1(slice.length!1);
         assert(slice.empty   == false);
         assert(slice.empty!1 == true);
         assert(slice.empty!2 == false);
         assert(slice.shape == [9, 0, 26]);
 
         assert(slice.back.front!1.empty);
+        
+        slice.popFrontN!0(40);
+        slice.popFrontN!2(40);
+        assert(slice.shape == [0, 0, 0]);
     }
 
     /++
@@ -631,9 +666,9 @@ public:
         if (dimension < N)
     in   {
         assert(i <= j,
-            "Slice.opSlice!" ~ dimension.stringof ~ ": left bound must be less then or equal right bound");
+            "Slice.opSlice!" ~ dimension.stringof ~ ": left bound must be less then or equal to right bound");
         assert(j - i <= _lengths[dimension],
-            "Slice.opSlice!" ~ dimension.stringof ~ ": difference between right and left bounds must be less then or equal length");
+            "Slice.opSlice!" ~ dimension.stringof ~ ": difference between right and left bounds must be less then or equal to length");
     }
     body {
         return typeof(return)(i, j);
@@ -832,25 +867,14 @@ public:
     +/
     T opCast(T : E[], E)()
     {
-        import std.array: uninitializedArray;
-        alias U = Unqual!E[];
-        U ret = void;
-        //TODO: check constructors
-        static if (__traits(compiles, ret = uninitializedArray!U(_lengths[0])))
-        {
-            if (__ctfe)
-                ret = new U(_lengths[0]);
-            else
-                ret = uninitializedArray!U(_lengths[0]);
-        }
-        else
-        {
-            ret = uninitializedArray!U(_lengths[0]);
-        }
+        if(empty)
+            return null;
+        alias U = Unqual!E;
+        auto ret = new U[_lengths[0]];
         auto sl = this[];
         foreach(ref e; ret)
         {
-            e = cast(Unqual!E) sl.front;
+            e = cast(U) sl.front;
             sl.popFront;
         }
         return cast(T)ret;
