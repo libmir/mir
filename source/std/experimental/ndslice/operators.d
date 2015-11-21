@@ -3,7 +3,7 @@ $(SCRIPT inhibitQuickIndex = 1;)
 
 Slice operators change only strides and lengths.
 A range owned by a slice remains unmodified.
-Transpose operators and iteration operators preserve type of a slice. Some operators are bifacial,
+All operators preserve type of a slice. Some operators are bifacial,
 i.e they have version with template parameters and version with function parameters.
 Versions with template parameters are preferred because compile time checks and optimization reasons.
 
@@ -31,22 +31,6 @@ Drop operators:
     $(LREF allDrop), $(LREF allDropBack),
     $(LREF allDropOne), $(LREF allDropBackOne),
     $(LREF allDropExactly), $(LREF allDropBackExactly).
-
-$(H2 Subspace operators)
-
-The destination of subspace operators is iteration over subset of dimensions using $(SUBREF iterators, byElement).
-`packed!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
-so type of element of `slice.byElement` is `Slice!(K, Range)`.
-Another way to use `packed` is transposition of packs of dimensions using `packEverted`.
-Examples with subspace operators are available for $(SUBMODULE structure), $(SUBMODULE iterators), $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
-
-$(BOOKTABLE Subspace operators,
-
-$(TR $(TH Function Name) $(TH Description))
-$(T2 packed, Type of `1000000.iota.sliced(1,2,3,4,5,6,7,8).packed!2` is `Slice!(6, Slice!(3, typeof(1000000.iota)))`.)
-$(T2 unpacked, Restores common type after `packed`.)
-$(T2 packEverted, `slice.packed!2.packEverted.unpacked` is identical to `slice.transposed!(slice.shape.length-2, slice.shape.length-1)`.)
-)
 
 $(BOOKTABLE $(H2 Bifacial operators),
 
@@ -112,7 +96,7 @@ template swapped(size_t dimensionA, size_t dimensionB)
 }
 
 /// ditto
-auto swapped(size_t N, Range)(Slice!(N, Range) slice, size_t dimensionA, size_t dimensionB)
+Slice!(N, Range) swapped(size_t N, Range)(Slice!(N, Range) slice, size_t dimensionA, size_t dimensionB)
 in{
     {
         alias dimension = dimensionA;
@@ -149,7 +133,7 @@ unittest {
 Everts dimensions in the reverse order.
 See_also: $(LREF swapped), $(LREF transposed)
 +/
-auto everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
+Slice!(N, Range) everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     with(slice)
     {
@@ -241,7 +225,7 @@ template transposed(Dimensions...)
 }
 
 ///ditto
-auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimension)
+Slice!(N, Range) transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimension)
 in {
     mixin(DimensionRTError);
 }
@@ -254,7 +238,7 @@ body {
 }
 
 ///ditto
-auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] dimensions...)
+Slice!(N, Range) transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] dimensions...)
 in {
     mixin(DimensionsCountRTError);
     foreach(dimension; dimensions)
@@ -270,7 +254,7 @@ body {
 }
 
 ///ditto
-auto transposed(Range)(auto ref Slice!(2, Range) slice)
+Slice!(2, Range) transposed(Range)(auto ref Slice!(2, Range) slice)
 {
     return .transposed!(1, 0)(slice);
 }
@@ -322,7 +306,7 @@ private enum _reversedCode = q{
 /++
 Reverses direction of iteration for all dimensions.
 +/
-auto allReversed(size_t N, Range)(Slice!(N, Range) slice)
+Slice!(N, Range) allReversed(size_t N, Range)(Slice!(N, Range) slice)
 {
     foreach(dimension; Iota!(0, N))
     {
@@ -357,7 +341,7 @@ template reversed(Dimensions...)
 }
 
 ///ditto
-auto reversed(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
+Slice!(N, Range) reversed(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
 in {
     mixin(DimensionRTError);
 }
@@ -367,7 +351,7 @@ body {
 }
 
 ///ditto
-auto reversed(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
+Slice!(N, Range) reversed(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
 in {
     foreach(dimension; dimensions)
         mixin(DimensionRTError);
@@ -438,7 +422,7 @@ template strided(Dimensions...)
 }
 
 ///ditto
-auto strided(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t factor)
+Slice!(N, Range) strided(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t factor)
 in {
     mixin(DimensionRTError);
 }
@@ -470,175 +454,12 @@ unittest {
     static assert(100.iota.sliced(93).strided!(0, 0)(7, 3).shape == [5]);
 }
 
-
-/++
-Packs a slice into the composed slice, i.e. slice of slices.
-Params:
-    K = sizes of packs of dimensions
-Returns:
-    `packed!K` returns `Slice!(N-K, Slice!(K+1, Range))`;
-    `slice.packed!(K1, K2, ..., Kn)` is the same as `slice.pacKed!K1.pacKed!K2. ... pacKed!Kn`.
-See_also:  $(LREF unpacked), $(LREF packEverted),  $(SUBREF iterators, byElement).
-+/
-template packed(K...)
-{
-    auto packed(size_t N, Range)(auto ref Slice!(N, Range) slice)
-    {
-        template Template(size_t NInner, Range, R...)
-        {
-            static if (R.length > 0)
-            {
-                static if(NInner > R[0])
-                    alias Template = Template!(NInner - R[0], Slice!(R[0] + 1, Range), R[1..$]);
-                else
-                static assert(0,
-                    "Sum of all lengths of packs " ~ K.stringof
-                    ~ " should be less then N = "~ N.stringof
-                    ~ tailErrorMessage!());
-
-            }
-            else
-            {
-                alias Template = Slice!(NInner, Range);
-            }
-        }
-        with(slice) return Template!(N, Range, K)(_lengths, _strides, _ptr);
-    }
-}
-
-///
-unittest
-{
-    import std.range.primitives: ElementType;
-    import std.range: iota;
-    import std.algorithm.comparison: equal;
-    auto r = 100000000.iota;
-    auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    auto b = a.packed!(2, 3); // the same as `a.packed!2.packed!3`
-    auto c = b[1, 2, 3, 4];
-    auto d = c[5, 6, 7];
-    auto e = d[8, 9];
-    auto g = a[1, 2, 3, 4, 5, 6, 7, 8, 9];
-    assert(e == g);
-    assert(a == b);
-    assert(c == a[1, 2, 3, 4]);
-    alias R = typeof(r);
-    static assert(is(typeof(b) == typeof(a.packed!2.packed!3)));
-    static assert(is(typeof(b) == Slice!(4, Slice!(4, Slice!(3, R)))));
-    static assert(is(typeof(c) == Slice!(3, Slice!(3, R))));
-    static assert(is(typeof(d) == Slice!(2, R)));
-    static assert(is(typeof(e) == ElementType!R));
-}
-
-unittest {
-    import std.experimental.ndslice.iterators;
-    import std.range: iota;
-    auto r = 100000000.iota;
-    auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    auto b = a.packed!(2, 3);
-    static assert(b.shape.length == 4);
-    static assert(b.structure.lengths.length == 4);
-    static assert(b.structure.strides.length == 4);
-    static assert(b
-        .byElement.front
-        .shape.length == 3);
-    static assert(b
-        .byElement.front
-        .byElement.front
-        .shape.length == 2);
-}
-
-/++
-Unpacks a composed slice.
-See_also: $(LREF packed), $(LREF packEverted)
-+/
-auto unpacked(size_t N, Range)(auto ref Slice!(N, Range) slice)
-{
-    with(slice) return PureThis(_lengths, _strides, _ptr);
-}
-
-///
-unittest
-{
-    import std.range: iota;
-    import std.algorithm.comparison: equal;
-    auto r = 100000000.iota;
-    auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    auto b = a.packed!(2, 3).unpacked();
-    static assert(is(typeof(a) == typeof(b)));
-    assert(a == b);
-}
-
-/++
-Inverts composition of a slice.
-This function is used for transposition and in functional pipeline with $(LREF byElement).
-See_also: $(LREF packed), $(LREF unpacked)
-+/
-auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
-{
-    with(slice)
-    {
-        static assert(NSeq.length > 0);
-        SliceFromSeq!(PureRange, NSeqEvert!(NSeq)) ret = void;
-        alias C = Snowball!(Parts!NSeq);
-        alias D = Reverse!(Snowball!(Reverse!(Parts!NSeq)));
-        foreach(i, _; NSeq)
-        {
-            foreach(j; Iota!(0, C[i+1] - C[i]))
-            {
-                ret._lengths[j+D[i+1]] = _lengths[j+C[i]];
-                ret._strides[j+D[i+1]] = _strides[j+C[i]];
-            }
-        }
-        ret._ptr = _ptr;
-        return ret;
-    }
-}
-
-///
-unittest {
-    import std.range: iota;
-    auto slice = 100000000.iota.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    assert(slice
-        .packed!2
-        .packEverted
-        .unpacked
-             == slice.transposed!(
-                slice.shape.length-2,
-                slice.shape.length-1));
-}
-
-///
-unittest
-{
-    import std.range.primitives: ElementType;
-    import std.range: iota;
-    import std.algorithm.comparison: equal;
-    auto r = 100000000.iota;
-    auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    auto b = a
-        .packed!(2, 3)
-        .packEverted;
-    auto c = b[8, 9];
-    auto d = c[5, 6, 7];
-    auto e = d[1, 2, 3, 4];
-    auto g = a[1, 2, 3, 4, 5, 6, 7, 8, 9];
-    assert(e == g);
-    assert(a == b.packEverted);
-    assert(c == a.transposed!(7, 8, 4, 5, 6)[8, 9]);
-    alias R = typeof(r);
-    static assert(is(typeof(b) == Slice!(2, Slice!(4, Slice!(5, R)))));
-    static assert(is(typeof(c) == Slice!(3, Slice!(5, R))));
-    static assert(is(typeof(d) == Slice!(4, R)));
-    static assert(is(typeof(e) == ElementType!R));
-}
-
 /++
 Convenience function which calls `slice.popFront!dimension()` for each dimension and returns `slice`.
 
 `allDropBackOne` provides the same functionality but instead calls `slice.popBack!dimension()`.
 +/
-auto allDropOne(size_t N, Range)(Slice!(N, Range) slice)
+Slice!(N, Range) allDropOne(size_t N, Range)(Slice!(N, Range) slice)
 {
     foreach(dimension; Iota!(0, N))
         slice.popFront!dimension;
@@ -646,7 +467,7 @@ auto allDropOne(size_t N, Range)(Slice!(N, Range) slice)
 }
 
 ///ditto
-auto allDropBackOne(size_t N, Range)(Slice!(N, Range) slice)
+Slice!(N, Range) allDropBackOne(size_t N, Range)(Slice!(N, Range) slice)
 {
     foreach(dimension; Iota!(0, N))
         slice.popBack!dimension;
@@ -674,7 +495,7 @@ This makes `allDropExactly` faster than `allDrop`.
 Only use `allDropExactly` when it is guaranteed that slice
 holds at least n-dimensional cube.
 +/
-auto allDropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t n)
+Slice!(N, Range) allDropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 {
     foreach(dimension; Iota!(0, N))
         slice.popFrontExactly!dimension(n);
@@ -682,7 +503,7 @@ auto allDropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 }
 
 ///ditto
-auto allDropBackExactly(size_t N, Range)(Slice!(N, Range) slice, size_t n)
+Slice!(N, Range) allDropBackExactly(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 {
     foreach(dimension; Iota!(0, N))
         slice.popBackExactly!dimension(n);
@@ -708,7 +529,7 @@ Convenience function which calls `slice.popFrontN!dimension(n)` for each dimensi
 Note:
 `allDrop` and `allDropBack` will only pop up to n elements but will stop if the slice is empty first.
 +/
-auto allDrop(size_t N, Range)(Slice!(N, Range) slice, size_t n)
+Slice!(N, Range) allDrop(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 {
     foreach(dimension; Iota!(0, N))
         slice.popFrontN!dimension(n);
@@ -716,7 +537,7 @@ auto allDrop(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 }
 
 ///ditto
-auto allDropBack(size_t N, Range)(Slice!(N, Range) slice, size_t n)
+Slice!(N, Range) allDropBack(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 {
     foreach(dimension; Iota!(0, N))
         slice.popBackN!dimension(n);
@@ -745,7 +566,7 @@ Convenience function which calls `slice.popFront!dimension()` for selected dimen
 template dropOne(Dimensions...)
     if (Dimensions.length)
 {
-    auto dropOne(size_t N, Range)(Slice!(N, Range) slice)
+    Slice!(N, Range) dropOne(size_t N, Range)(Slice!(N, Range) slice)
     {
         foreach(i, dimension; Dimensions)
         {
@@ -757,7 +578,7 @@ template dropOne(Dimensions...)
 }
 
 ///ditto
-auto dropOne(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
+Slice!(N, Range) dropOne(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
 in {
     mixin(DimensionRTError);
 }
@@ -767,7 +588,7 @@ body {
 }
 
 ///ditto
-auto dropOne(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
+Slice!(N, Range) dropOne(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
 in {
     foreach(dimension; dimensions)
         mixin(DimensionRTError);
@@ -782,7 +603,7 @@ body {
 template dropBackOne(Dimensions...)
     if (Dimensions.length)
 {
-    auto dropBackOne(size_t N, Range)(Slice!(N, Range) slice)
+    Slice!(N, Range) dropBackOne(size_t N, Range)(Slice!(N, Range) slice)
     {
         foreach(i, dimension; Dimensions)
         {
@@ -794,7 +615,7 @@ template dropBackOne(Dimensions...)
 }
 
 ///ditto
-auto dropBackOne(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
+Slice!(N, Range) dropBackOne(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
 in {
     mixin(DimensionRTError);
 }
@@ -804,7 +625,7 @@ body {
 }
 
 ///ditto
-auto dropBackOne(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
+Slice!(N, Range) dropBackOne(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
 in {
     foreach(dimension; dimensions)
         mixin(DimensionRTError);
@@ -863,7 +684,7 @@ This makes `dropExactly` faster than `drop`.
 template dropExactly(Dimensions...)
     if (Dimensions.length)
 {
-    auto dropExactly(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
+    Slice!(N, Range) dropExactly(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
     body {
         foreach(i, dimension; Dimensions)
         {
@@ -875,7 +696,7 @@ template dropExactly(Dimensions...)
 }
 
 ///ditto
-auto dropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
+Slice!(N, Range) dropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
 in {
     mixin(DimensionRTError);
 }
@@ -888,7 +709,7 @@ body {
 template dropBackExactly(Dimensions...)
     if (Dimensions.length)
 {
-    auto dropBackExactly(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
+    Slice!(N, Range) dropBackExactly(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
     body {
         foreach(i, dimension; Dimensions)
         {
@@ -900,7 +721,7 @@ template dropBackExactly(Dimensions...)
 }
 
 ///ditto
-auto dropBackExactly(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
+Slice!(N, Range) dropBackExactly(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
 in {
     mixin(DimensionRTError);
 }
@@ -936,7 +757,7 @@ Note:
 template drop(Dimensions...)
     if (Dimensions.length)
 {
-    auto drop(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
+    Slice!(N, Range) drop(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
     body {
         foreach(i, dimension; Dimensions)
         {
@@ -948,7 +769,7 @@ template drop(Dimensions...)
 }
 
 ///ditto
-auto drop(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
+Slice!(N, Range) drop(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
 in {
     mixin(DimensionRTError);
 }
@@ -961,7 +782,7 @@ body {
 template dropBack(Dimensions...)
     if (Dimensions.length)
 {
-    auto dropBack(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
+    Slice!(N, Range) dropBack(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
     body {
         foreach(i, dimension; Dimensions)
         {
@@ -973,7 +794,7 @@ template dropBack(Dimensions...)
 }
 
 ///ditto
-auto dropBack(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
+Slice!(N, Range) dropBack(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
 in {
     mixin(DimensionRTError);
 }

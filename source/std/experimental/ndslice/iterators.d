@@ -1,8 +1,25 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
-$(BOOKTABLE $(H2 Iterators),
+$(BOOKTABLE $(H2 By element iterators),
 $(T2 byElement, `100.iota.sliced(4, 5).byElement` equals `20.iota`.)
+)
+
+
+$(H2 Subspace iterators)
+
+The destination of subspace iterators is iteration over subset of dimensions using $(LREF byElement).
+`packed!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
+so type of element of `slice.byElement` is `Slice!(K, Range)`.
+Another way to use `packed` is transposition of packs of dimensions using `packEverted`.
+Examples with subspace iterators are available for $(SUBMODULE structure), $(SUBMODULE iterators), $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
+
+$(BOOKTABLE Subspace iterators,
+
+$(TR $(TH Function Name) $(TH Description))
+$(T2 packed, Type of `1000000.iota.sliced(1,2,3,4,5,6,7,8).packed!2` is `Slice!(6, Slice!(3, typeof(1000000.iota)))`.)
+$(T2 unpacked, Restores common type after `packed`.)
+$(T2 packEverted, `slice.packed!2.packEverted.unpacked` is identical to `slice.transposed!(slice.shape.length-2, slice.shape.length-1)`.)
 )
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
@@ -12,14 +29,182 @@ Authors:   Ilya Yaroshenko
 Source:    $(PHOBOSSRC std/_experimental/_ndslice/_iterators.d)
 
 Macros:
+SUBMODULE = $(LINK2 std_experimental_ndslice_$1.html, std.experimental.ndslice.$1)
+SUBREF = $(LINK2 std_experimental_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
+T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
 module std.experimental.ndslice.iterators;
 
 import std.experimental.ndslice.slice;
 import std.experimental.ndslice.internal;
 import std.traits;
+import std.meta;
 import std.range.primitives;
+
+/++
+Packs a slice into the composed slice, i.e. slice of slices.
+Params:
+    K = sizes of packs of dimensions
+Returns:
+    `packed!K` returns `Slice!(N-K, Slice!(K+1, Range))`;
+    `slice.packed!(K1, K2, ..., Kn)` is the same as `slice.pacKed!K1.pacKed!K2. ... pacKed!Kn`.
+See_also:  $(LREF unpacked), $(LREF packEverted),  $(SUBREF iterators, byElement).
++/
+template packed(K...)
+{
+    auto packed(size_t N, Range)(auto ref Slice!(N, Range) slice)
+    {
+        template Template(size_t NInner, Range, R...)
+        {
+            static if (R.length > 0)
+            {
+                static if(NInner > R[0])
+                    alias Template = Template!(NInner - R[0], Slice!(R[0] + 1, Range), R[1..$]);
+                else
+                static assert(0,
+                    "Sum of all lengths of packs " ~ K.stringof
+                    ~ " should be less then N = "~ N.stringof
+                    ~ tailErrorMessage!());
+
+            }
+            else
+            {
+                alias Template = Slice!(NInner, Range);
+            }
+        }
+        with(slice) return Template!(N, Range, K)(_lengths, _strides, _ptr);
+    }
+}
+
+///
+unittest
+{
+    import std.range.primitives: ElementType;
+    import std.range: iota;
+    import std.algorithm.comparison: equal;
+    auto r = 100000000.iota;
+    auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
+    auto b = a.packed!(2, 3); // the same as `a.packed!2.packed!3`
+    auto c = b[1, 2, 3, 4];
+    auto d = c[5, 6, 7];
+    auto e = d[8, 9];
+    auto g = a[1, 2, 3, 4, 5, 6, 7, 8, 9];
+    assert(e == g);
+    assert(a == b);
+    assert(c == a[1, 2, 3, 4]);
+    alias R = typeof(r);
+    static assert(is(typeof(b) == typeof(a.packed!2.packed!3)));
+    static assert(is(typeof(b) == Slice!(4, Slice!(4, Slice!(3, R)))));
+    static assert(is(typeof(c) == Slice!(3, Slice!(3, R))));
+    static assert(is(typeof(d) == Slice!(2, R)));
+    static assert(is(typeof(e) == ElementType!R));
+}
+
+unittest {
+    import std.experimental.ndslice.iterators;
+    import std.range: iota;
+    auto r = 100000000.iota;
+    auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
+    auto b = a.packed!(2, 3);
+    static assert(b.shape.length == 4);
+    static assert(b.structure.lengths.length == 4);
+    static assert(b.structure.strides.length == 4);
+    static assert(b
+        .byElement.front
+        .shape.length == 3);
+    static assert(b
+        .byElement.front
+        .byElement.front
+        .shape.length == 2);
+}
+
+/++
+Unpacks a composed slice.
+See_also: $(LREF packed), $(LREF packEverted)
++/
+Slice!(N, Range).PureThis unpacked(size_t N, Range)(auto ref Slice!(N, Range) slice)
+{
+    with(slice) return PureThis(_lengths, _strides, _ptr);
+}
+
+///
+unittest
+{
+    import std.range: iota;
+    import std.algorithm.comparison: equal;
+    auto r = 100000000.iota;
+    auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
+    auto b = a.packed!(2, 3).unpacked();
+    static assert(is(typeof(a) == typeof(b)));
+    assert(a == b);
+}
+
+/++
+Inverts composition of a slice.
+This function is used for transposition and in functional pipeline with $(LREF byElement).
+See_also: $(LREF packed), $(LREF unpacked)
++/
+auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
+{
+    with(slice)
+    {
+        static assert(NSeq.length > 0);
+        SliceFromSeq!(PureRange, NSeqEvert!(NSeq)) ret = void;
+        alias C = Snowball!(Parts!NSeq);
+        alias D = Reverse!(Snowball!(Reverse!(Parts!NSeq)));
+        foreach(i, _; NSeq)
+        {
+            foreach(j; Iota!(0, C[i+1] - C[i]))
+            {
+                ret._lengths[j+D[i+1]] = _lengths[j+C[i]];
+                ret._strides[j+D[i+1]] = _strides[j+C[i]];
+            }
+        }
+        ret._ptr = _ptr;
+        return ret;
+    }
+}
+
+///
+unittest {
+    import std.experimental.ndslice.operators: transposed;
+    import std.range: iota;
+    auto slice = 100000000.iota.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
+    assert(slice
+        .packed!2
+        .packEverted
+        .unpacked
+             == slice.transposed!(
+                slice.shape.length-2,
+                slice.shape.length-1));
+}
+
+///
+unittest
+{
+    import std.experimental.ndslice.operators: transposed;
+    import std.range.primitives: ElementType;
+    import std.range: iota;
+    import std.algorithm.comparison: equal;
+    auto r = 100000000.iota;
+    auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
+    auto b = a
+        .packed!(2, 3)
+        .packEverted;
+    auto c = b[8, 9];
+    auto d = c[5, 6, 7];
+    auto e = d[1, 2, 3, 4];
+    auto g = a[1, 2, 3, 4, 5, 6, 7, 8, 9];
+    assert(e == g);
+    assert(a == b.packEverted);
+    assert(c == a.transposed!(7, 8, 4, 5, 6)[8, 9]);
+    alias R = typeof(r);
+    static assert(is(typeof(b) == Slice!(2, Slice!(4, Slice!(5, R)))));
+    static assert(is(typeof(c) == Slice!(3, Slice!(5, R))));
+    static assert(is(typeof(d) == Slice!(4, R)));
+    static assert(is(typeof(e) == ElementType!R));
+}
 
 /++
 Returns 1-dimensional slice over main diagonal of n-dimensional slice.
