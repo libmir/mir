@@ -70,6 +70,8 @@ $(TR $(TDNW Multidimensional operators)
         $(SUBREF operators, packEverted)
         $(SUBREF operators, swapped)
         $(SUBREF operators, unpacked)
+        $(SUBREF operators, dropToNCube)
+        $(SUBREF operators, dropToNCube) and other `drop*` primitives
     )
 )
 $(TR $(TDNW Optimized iterators)
@@ -86,13 +88,6 @@ $(TR $(TDNW Shape and strides)
         $(SUBREF structure, Structure.isNormal)
         $(SUBREF structure, Structure.isPure)
         $(SUBREF structure, Structure.normalized)
-    )
-)
-$(TR $(TDNW Copy constructors and allocators)
-     $(TDNW $(SUBMODULE allocators))
-     $(TD
-        $(SUBREF allocators, ndarray)
-        $(SUBREF allocators, createSlice)
     )
 )
 ))
@@ -195,7 +190,6 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
 module std.experimental.ndslice;
 
-public import std.experimental.ndslice.allocators;
 public import std.experimental.ndslice.iterators;
 public import std.experimental.ndslice.operators;
 public import std.experimental.ndslice.slice;

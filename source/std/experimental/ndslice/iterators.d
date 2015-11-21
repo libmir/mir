@@ -22,6 +22,117 @@ import std.traits;
 import std.range.primitives;
 
 /++
+Returns 1-dimensional slice over main diagonal of n-dimensional slice.
++/
+Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
+{
+    size_t[1] length = void;
+    sizediff_t[1] stride = void;
+    length[0] = slice._lengths[0];
+    stride[0] = slice._strides[0];
+    foreach(i; Iota!(1, N))
+    {
+        if(length[0] > slice._lengths[i])
+            length[0] = slice._lengths[i];
+        stride[0] += slice._strides[i];
+    }
+    return typeof(return)(length, stride, slice._ptr);
+}
+
+/// Matrix, main diagonal
+unittest {
+    import std.algorithm.comparison: equal;
+    import std.range: iota;
+    //  -------
+    // | 0 1 2 |
+    // | 3 4 5 |
+    //  -------
+    //->
+    // | 0 4 |
+    assert(10.iota
+        .sliced(2, 3)
+        .diagonal
+        .equal([0, 4]));
+}
+
+/// Matrix, subdiagonal
+unittest {
+    import std.algorithm.comparison: equal;
+    import std.range: iota;
+    import std.experimental.ndslice.operators: dropOne;
+    //  -------
+    // | 0 1 2 |
+    // | 3 4 5 |
+    //  -------
+    //->
+    // | 1 5 |
+    assert(10.iota
+        .sliced(2, 3)
+        .dropOne!1
+        .diagonal
+        .equal([1, 5]));
+}
+
+/// Matrix, antidiagonal
+unittest {
+    import std.algorithm.comparison: equal;
+    import std.range: iota;
+    import std.experimental.ndslice.operators: dropToNCube, reversed;
+    //  -------
+    // | 0 1 2 |
+    // | 3 4 5 |
+    //  -------
+    //->
+    // | 1 3 |
+    assert(10.iota
+        .sliced(2, 3)
+        .dropToNCube
+        .reversed!1
+        .diagonal
+        .equal([1, 3]));
+}
+
+/// Cube, main diagonal
+unittest {
+    import std.algorithm.comparison: equal;
+    import std.range: iota;
+    //  -----------
+    // |  0   1  2 |
+    // |  3   4  5 |
+    //  - - - - - -
+    // |  6   7  8 |
+    // |  9  10 11 |
+    //  -----------
+    //->
+    // | 0 10 |
+    assert(100.iota
+        .sliced(2, 2, 3)
+        .diagonal
+        .equal([0, 10]));
+}
+
+/// Cube, subdiagonal
+unittest {
+    import std.algorithm.comparison: equal;
+    import std.range: iota;
+    import std.experimental.ndslice.operators: dropOne;
+    //  -----------
+    // |  0   1  2 |
+    // |  3   4  5 |
+    //  - - - - - -
+    // |  6   7  8 |
+    // |  9  10 11 |
+    //  -----------
+    //->
+    // | 1 11 |
+    assert(100.iota
+        .sliced(2, 2, 3)
+        .dropOne!2
+        .diagonal
+        .equal([1, 11]));
+}
+
+/++
 Returns a random access range of all elements of a slice.
 See_also: $(LREF elements)
 +/

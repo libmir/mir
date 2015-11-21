@@ -24,20 +24,21 @@ $(T2 reversed, `slice.reversed!(0, slice.shape.length-1)` returns slice with rev
 $(T2 allReversed, `20.iota.sliced(4, 5).allReversed` equals `20.iota.retro.sliced(4, 5)`.)
 )
 Drop operators:
+    $(LREF dropToNCube), $(LREF dropBack),
     $(LREF drop), $(LREF dropBack),
     $(LREF dropOne), $(LREF dropBackOne),
-    $(LREF dropExacly), $(LREF dropBackExacly),
+    $(LREF dropExactly), $(LREF dropBackExactly),
     $(LREF allDrop), $(LREF allDropBack),
     $(LREF allDropOne), $(LREF allDropBackOne),
-    $(LREF allDropExacly), $(LREF allDropBackExacly).
+    $(LREF allDropExactly), $(LREF allDropBackExactly).
 
 $(H2 Subspace operators)
 
-The destination of subspace operators is iteration over subset of dimensions using $(LREF byElement).
+The destination of subspace operators is iteration over subset of dimensions using $(SUBREF iterators, byElement).
 `packed!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
 so type of element of `slice.byElement` is `Slice!(K, Range)`.
 Another way to use `packed` is transposition of packs of dimensions using `packEverted`.
-Examples with subspace operators are available for $(LREF .Slice.structure), $(LREF byElement), $(LREF .Slice.shape), $(LREF .Slice.elementsCount).
+Examples with subspace operators are available for $(SUBMODULE structure), $(SUBMODULE iterators), $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
 
 $(BOOKTABLE Subspace operators,
 
@@ -63,6 +64,8 @@ Authors:   Ilya Yaroshenko
 Source:    $(PHOBOSSRC std/_experimental/_ndslice/_operators.d)
 
 Macros:
+SUBMODULE = $(LINK2 std_experimental_ndslice_$1.html, std.experimental.ndslice.$1)
+SUBREF = $(LINK2 std_experimental_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
@@ -475,7 +478,7 @@ Params:
 Returns:
     `packed!K` returns `Slice!(N-K, Slice!(K+1, Range))`;
     `slice.packed!(K1, K2, ..., Kn)` is the same as `slice.pacKed!K1.pacKed!K2. ... pacKed!Kn`.
-See_also:  $(LREF unpacked), $(LREF packEverted),  $(LREF byElement).
+See_also:  $(LREF unpacked), $(LREF packEverted),  $(SUBREF iterators, byElement).
 +/
 template packed(K...)
 {
@@ -662,13 +665,13 @@ unittest {
 }
 
 /++
-Similar to `allDrop` and `allDropBack` but they call 
+Similar to `allDrop` and `allDropBack` but they call
 `slice.popFrontExactly!dimension(n)` and `slice.popBackExactly!dimension(n)` instead.
 
 Note:
 Unlike `allDrop`, `allDropExactly` will assume that the slice holds at least n-dimensional cube.
-This makes `allDropExactly` faster than `allDrop`. 
-Only use `allDropExactly` when it is guaranteed that slice 
+This makes `allDropExactly` faster than `allDrop`.
+Only use `allDropExactly` when it is guaranteed that slice
 holds at least n-dimensional cube.
 +/
 auto allDropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t n)
@@ -724,7 +727,7 @@ auto allDropBack(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 unittest {
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
- 
+
     assert(a.allDrop(2)[0, 0] == 12);
     assert(a.allDrop(2).shape == [2, 3]);
     assert(a.allDropBack(2)[$-1, $-1] == 7);
@@ -849,13 +852,13 @@ unittest {
 
 
 /++
-Similar to `drop` and `dropBack` but they call 
+Similar to `drop` and `dropBack` but they call
 `slice.popFrontExactly!dimension(n)` and `slice.popBackExactly!dimension(n)` instead.
 
 Note:
 Unlike `drop`, `dropExactly` will assume that the slice holds enough elements in
 selected dimension.
-This makes `dropExactly` faster than `drop`. 
+This makes `dropExactly` faster than `drop`.
 +/
 template dropExactly(Dimensions...)
     if (Dimensions.length)
@@ -989,9 +992,35 @@ unittest {
     assert(a.drop    !(1, 0)(2, 3).shape == [1, 3]);
     assert(a.dropBack!(0, 1)(2, 3)[$-1, $-1] == 6);
     assert(a.dropBack!(0, 1)(2, 3).shape == [2, 2]);
+    assert(a.dropBack!(0, 1)(5, 5).shape == [0, 0]);
+
 
     assert(a.drop(1, 2).drop(0, 3)[0, 0] == 17);
     assert(a.drop(1, 2).drop(0, 3).shape == [1, 3]);
     assert(a.dropBack(0, 2).dropBack(1, 3)[$-1, $-1] == 6);
     assert(a.dropBack(0, 2).dropBack(1, 3).shape == [2, 2]);
+    assert(a.dropBack(0, 5).dropBack(1, 5).shape == [0, 0]);
+}
+
+/++
+Returns maximal multidimensional cube.
++/
+Slice!(N, Range) dropToNCube(size_t N, Range)(Slice!(N, Range) slice)
+body {
+    size_t length = slice._lengths[0];
+    foreach(i; Iota!(1, N))
+        if(length > slice._lengths[i])
+            length = slice._lengths[i];
+    foreach(i; Iota!(0, N))
+        slice._lengths[i] = length;
+    return slice;
+}
+
+///
+unittest {
+    import std.range: iota, retro;
+    assert(1000.iota
+        .sliced(5, 4, 6, 7)
+        .dropToNCube
+        .shape == [4, 4, 4, 4]);
 }

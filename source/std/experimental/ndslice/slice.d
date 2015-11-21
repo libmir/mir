@@ -7,6 +7,8 @@ Authors:   Ilya Yaroshenko
 Source:    $(PHOBOSSRC std/_experimental/_ndslice/_sliced)
 
 Macros:
+SUBMODULE = $(LINK2 std_experimental_ndslice_$1.html, std.experimental.ndslice.$1)
+SUBREF = $(LINK2 std_experimental_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
@@ -24,7 +26,7 @@ Params:
     range = a random access range or an array; only index operator `auto opIndex(size_t index)` is required for ranges
     lengths = list of lengths for each dimension
     shift = number of the first element in a `range`; first `shift` elements are ignored
-See_also: $(LREF createSlice)
+See_also: $(SUBREF allocators, createSlice)
 +/
 auto sliced(Range, Lengths...)(Range range, Lengths lengths)
     if (!isStaticArray!Range && !isNarrowString!Range
@@ -87,8 +89,96 @@ unittest {
 }
 
 /++
+Creates array and n-dimensional slice over it.
+Params:
+    lengths = list of lengths for dimensions
++/
+unittest {
+
+    auto createSlice(T, Lengths...)(Lengths lengths)
+    {
+        return createSlice2!(T, Lengths.length)(cast(size_t[Lengths.length])[lengths]);
+    }
+
+    ///ditto
+    auto createSlice2(T, size_t N)(auto ref size_t[N] lengths)
+    {
+        return new T[lengths.lengthsProduct].sliced(lengths);
+    }
+
+    auto slice = createSlice!int(5, 6, 7);
+    assert(slice.length == 5);
+    assert(slice.elementsCount == 5 * 6 * 7);
+    static assert(is(typeof(slice) == Slice!(3, int*)));
+
+    auto duplicate = createSlice2!int(slice.shape);
+    duplicate[] = slice;
+}
+
+/++
+Creates a common `n`-dimensional array.
++/
+unittest {
+    auto ndarray(size_t N, Range)(auto ref Slice!(N, Range) slice)
+    {
+        import std.array: array;
+        static if (N == 1)
+        {
+            return slice.array;
+        }
+        else
+        {
+            import std.algorithm.iteration: map;
+            return slice.map!(a => ndarray(a)).array;
+        }
+    }
+
+    import std.range: iota;
+    auto ar = ndarray(100.iota.sliced(3, 4));
+    static assert(is(typeof(ar) == int[][]));
+    assert(ar == [[0,1,2,3], [4,5,6,7], [8,9,10,11]]);
+}
+
+/++
+Allocates array and n-dimensional slice over it.
+Params:
+    alloc = allocator, see also $(LINK2 std_experimental_allocator.html, std.experimental.allocator)
+    lengths = list of lengths for dimensions
+Returns: `array` created with `alloc` and `slice` over it
++/
+version(Posix) //Issue 15281
+unittest {
+    import std.experimental.allocator;
+
+
+    // `theAllocator.makeSlice(3, 4)` allocates an array with length equal `12`
+    // and returns this `array` and `2`-dimensional `slice`-shell over it.
+    auto makeSlice(T, Allocator, Lengths...)(auto ref Allocator alloc, Lengths lengths)
+    {
+        enum N = Lengths.length;
+        struct Result { T[] array; Slice!(N, T*) slice; }
+        size_t length = lengths[0];
+        foreach(len; lengths[1..N])
+                length *= len;
+        T[] a = alloc.makeArray!T(length);
+        return Result(a, a.sliced(lengths));
+    }
+
+    auto tup = makeSlice!int(theAllocator, 2, 3, 4);
+
+    static assert(is(typeof(tup.array) == int[]));
+    static assert(is(typeof(tup.slice) == Slice!(3, int*)));
+
+    assert(tup.array.length           == 24);
+    assert(tup.slice.elementsCount    == 24);
+    assert(tup.array.ptr == &tup.slice[0, 0, 0]);
+
+    theAllocator.dispose(tup.array);
+}
+
+/++
 $(D _N)-dimensional slice-shell over a range.
-See_also: $(LREF sliced), $(LREF createSlice), $(LREF ndarray)
+See_also: $(LREF sliced), $(SUBREF allocators, createSlice), $(SUBREF allocators, ndarray)
 +/
 struct Slice(size_t _N, _Range)
     if (_N && _N < 256LU && ((!is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
@@ -625,7 +715,7 @@ public:
         assert(slice.shape == [9, 0, 26]);
 
         assert(slice.back.front!1.empty);
-        
+
         slice.popFrontN!0(40);
         slice.popFrontN!2(40);
         assert(slice.shape == [0, 0, 0]);
