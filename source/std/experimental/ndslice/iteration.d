@@ -53,7 +53,7 @@ SUBREF = $(LINK2 std_experimental_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
-module std.experimental.ndslice.operators;
+module std.experimental.ndslice.iteration;
 
 import std.meta;
 import std.traits;
@@ -364,7 +364,7 @@ body {
 
 ///
 unittest {
-    import std.experimental.ndslice.iterators;
+    import std.experimental.ndslice.selection;
     import std.algorithm.comparison: equal;
     import std.range: iota, retro, chain;
     auto i0 = iota(0,  4); auto r0 = i0.retro;
@@ -433,7 +433,7 @@ body {
 
 ///
 unittest {
-    import std.experimental.ndslice.iterators;
+    import std.experimental.ndslice.selection;
     import std.algorithm.comparison: equal;
     import std.range: iota, stride, chain;
     auto i0 = iota(0,  4); auto s0 = i0.stride(3);

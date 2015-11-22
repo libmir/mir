@@ -43,7 +43,7 @@ SUBREF = $(LINK2 std_experimental_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
-module std.experimental.ndslice.iterators;
+module std.experimental.ndslice.selection;
 
 import std.experimental.ndslice.slice;
 import std.experimental.ndslice.internal;
@@ -58,7 +58,6 @@ Params:
 Returns:
     `pack!K` returns `Slice!(N-K, Slice!(K+1, Range))`;
     `slice.pack!(K1, K2, ..., Kn)` is the same as `slice.pacKed!K1.pacKed!K2. ... pacKed!Kn`.
-See_also:  $(LREF unpack), $(LREF packEverted),  $(SUBREF iterators, byElement).
 +/
 template pack(K...)
 {
@@ -111,7 +110,7 @@ unittest
 }
 
 unittest {
-    import std.experimental.ndslice.iterators;
+    import std.experimental.ndslice.selection;
     import std.range: iota;
     auto r = 100000000.iota;
     auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
@@ -177,7 +176,7 @@ auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 
 ///
 unittest {
-    import std.experimental.ndslice.operators: transposed;
+    import std.experimental.ndslice.iteration: transposed;
     import std.range: iota;
     auto slice = 100000000.iota.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
     assert(slice
@@ -192,7 +191,7 @@ unittest {
 ///
 unittest
 {
-    import std.experimental.ndslice.operators: transposed;
+    import std.experimental.ndslice.iteration: transposed;
     import std.range.primitives: ElementType;
     import std.range: iota;
     import std.algorithm.comparison: equal;
@@ -248,7 +247,7 @@ Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
 unittest {
     import std.algorithm.comparison: equal;
     import std.range: iota;
- 
+
     ///-------
     //  -------
     // | 0 1 2 |
@@ -276,7 +275,7 @@ unittest {
 unittest {
     import std.algorithm.comparison: equal;
     import std.range: iota;
-    import std.experimental.ndslice.operators: dropOne;
+    import std.experimental.ndslice.iteration: dropOne;
     //  -------
     // | 0 1 2 |
     // | 3 4 5 |
@@ -294,7 +293,7 @@ unittest {
 unittest {
     import std.algorithm.comparison: equal;
     import std.range: iota;
-    import std.experimental.ndslice.operators: dropToNCube, reversed;
+    import std.experimental.ndslice.iteration: dropToNCube, reversed;
     //  -------
     // | 0 1 2 |
     // | 3 4 5 |
@@ -332,7 +331,7 @@ unittest {
 unittest {
     import std.algorithm.comparison: equal;
     import std.range: iota;
-    import std.experimental.ndslice.operators: dropOne;
+    import std.experimental.ndslice.iteration: dropOne;
     //  -----------
     // |  0   1  2 |
     // |  3   4  5 |
@@ -353,7 +352,7 @@ unittest {
 unittest {
     import std.algorithm.comparison: equal;
     import std.range: iota;
-    import std.experimental.ndslice.operators: dropOne;
+    import std.experimental.ndslice.iteration: dropOne;
     //  -----------
     // |  0   1  2 |
     // |  3   4  5 |
@@ -442,7 +441,7 @@ unittest {
     auto slice = new int[1000].sliced(5, 8);
     auto blocks = slice.blocks!(2, int*)(2, 3);
     auto diagonalBlocks = blocks.diagonal.unpack;
-    
+
     diagonalBlocks[0][] = 1;
     diagonalBlocks[1][] = 2;
 
@@ -662,7 +661,7 @@ unittest {
 
 ///Packed slice
 unittest {
-    import std.experimental.ndslice.operators;
+    import std.experimental.ndslice.iteration;
     import std.range: iota, drop;
     import std.algorithm.comparison: equal;
     assert(100000.iota
@@ -702,7 +701,7 @@ unittest {
 
 // Check strides
 unittest {
-    import std.experimental.ndslice.operators;
+    import std.experimental.ndslice.iteration;
     import std.range: iota;
     auto elems = 100.iota.sliced(4, 5).everted.byElement;
     static assert(isRandomAccessRange!(typeof(elems)));
@@ -717,7 +716,7 @@ unittest {
 }
 
 unittest {
-    import std.experimental.ndslice.operators;
+    import std.experimental.ndslice.iteration;
     import std.range: iota;
     import std.algorithm.comparison: equal;
 

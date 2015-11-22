@@ -337,7 +337,7 @@ public:
     static if(doUnittest)
     ///Packed slice
     unittest {
-        import std.experimental.ndslice.iterators;
+        import std.experimental.ndslice.selection;
         import std.range: iota;
         assert(10000.iota
             .sliced(3, 4, 5, 6, 7)
@@ -368,8 +368,8 @@ public:
     static if(doUnittest)
     ///Normal modified slice
     unittest {
-        import std.experimental.ndslice.iterators: pack;
-        import std.experimental.ndslice.operators: reversed, strided, transposed;
+        import std.experimental.ndslice.selection: pack;
+        import std.experimental.ndslice.iteration: reversed, strided, transposed;
         import std.typecons: tuple;
         import std.range: iota;
         assert(1000.iota
@@ -384,7 +384,7 @@ public:
     ///Packed slice
     unittest {
         import std.experimental.ndslice.slice;
-        import std.experimental.ndslice.iterators: pack;
+        import std.experimental.ndslice.selection: pack;
         import std.typecons: tuple;
         import std.range: iota;
         assert(10000.iota
@@ -472,7 +472,7 @@ public:
     static if(doUnittest)
     ///Normal modified slice
     unittest {
-        import std.experimental.ndslice.operators;
+        import std.experimental.ndslice.iteration;
         import std.typecons: tuple;
         import std.range: iota;
         assert(1000.iota
@@ -744,7 +744,7 @@ public:
     static if(doUnittest)
     ///Packed slice
     unittest {
-        import std.experimental.ndslice.iterators: pack, packEverted;
+        import std.experimental.ndslice.selection: pack, packEverted;
         import std.range: iota;
         auto slice = 50000.iota.sliced(3, 4, 5, 6, 7, 8);
         auto p = slice.pack!2;
@@ -1397,7 +1397,7 @@ unittest {
 }
 
 unittest {
-    import std.experimental.ndslice.iterators: pack;
+    import std.experimental.ndslice.selection: pack;
     auto slice = new int[24].sliced(2, 3, 4);
     auto r0 = slice.pack!1[1, 2];
     slice.pack!1[1, 2] = 4;

@@ -58,28 +58,28 @@ $(TR $(TDNW Slicing)
         $(SUBREF slice, sliced)
     )
 )
-$(TR $(TDNW Multidimensional operators)
-     $(TDNW $(SUBMODULE operators))
+$(TR $(TDNW Iteration)
+     $(TDNW $(SUBMODULE iteration))
      $(TD
-        $(SUBREF operators, transposed)
-        $(SUBREF operators, strided)
-        $(SUBREF operators, reversed)
-        $(SUBREF operators, pack)
-        $(SUBREF operators, allReversed)
-        $(SUBREF operators, everted)
-        $(SUBREF operators, swapped)
-        $(SUBREF operators, dropToNCube) and other `drop*` primitives
+        $(SUBREF iteration, transposed)
+        $(SUBREF iteration, strided)
+        $(SUBREF iteration, reversed)
+        $(SUBREF iteration, pack)
+        $(SUBREF iteration, allReversed)
+        $(SUBREF iteration, everted)
+        $(SUBREF iteration, swapped)
+        $(SUBREF iteration, dropToNCube) and other `drop*` primitives
     )
 )
-$(TR $(TDNW Optimized iterators)
-     $(TDNW $(SUBMODULE iterators))
+$(TR $(TDNW Optimized Selection)
+     $(TDNW $(SUBMODULE selection))
      $(TD
-        $(SUBREF iterators, blocks)
-        $(SUBREF iterators, diagonal)
-        $(SUBREF iterators, byElement)
-        $(SUBREF iterators, pack)
-        $(SUBREF iterators, packEverted)
-        $(SUBREF iterators, unpack)
+        $(SUBREF selection, blocks)
+        $(SUBREF selection, diagonal)
+        $(SUBREF selection, byElement)
+        $(SUBREF selection, pack)
+        $(SUBREF selection, packEverted)
+        $(SUBREF selection, unpack)
     )
 )
 $(TR $(TDNW Shape and strides)
@@ -192,8 +192,8 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
 module std.experimental.ndslice;
 
-public import std.experimental.ndslice.iterators;
-public import std.experimental.ndslice.operators;
+public import std.experimental.ndslice.iteration;
+public import std.experimental.ndslice.selection;
 public import std.experimental.ndslice.slice;
 public import std.experimental.ndslice.structure;
 
