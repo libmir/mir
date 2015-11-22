@@ -1,25 +1,34 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
-$(BOOKTABLE $(H2 By element iterators),
+$(H2 Iterators)
+
+$(BOOKTABLE Subspace iterators,
+$(T2 blocks, n-dimensional slice of n-dimensional blocks)
+$(T2 diagonal, n-dimensional slice of diagonal)
 $(T2 byElement, `100.iota.sliced(4, 5).byElement` equals `20.iota`.)
 )
 
+$(TR $(TH Function Name) $(TH Description))
+$(T2 pack, Type of `1000000.iota.sliced(1,2,3,4,5,6,7,8).pack!2` is `Slice!(6, Slice!(3, typeof(1000000.iota)))`.)
+$(T2 unpack, Restores common type after `pack`.)
+$(T2 packEverted, `slice.pack!2.packEverted.unpack` is identical to `slice.transposed!(slice.shape.length-2, slice.shape.length-1)`.)
+)
 
 $(H2 Subspace iterators)
 
-The destination of subspace iterators is iteration over subset of dimensions using $(LREF byElement).
-`packed!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
+The destination of subspace iterators is painless generalization of other iterators.
+`pack!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
 so type of element of `slice.byElement` is `Slice!(K, Range)`.
-Another way to use `packed` is transposition of packs of dimensions using `packEverted`.
-Examples with subspace iterators are available for iterators, $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
+Another way to use `pack` is transposition of packs of dimensions using `packEverted`.
+Examples with subspace iterators are available for all iterators, $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
 
 $(BOOKTABLE Subspace iterators,
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 packed, Type of `1000000.iota.sliced(1,2,3,4,5,6,7,8).packed!2` is `Slice!(6, Slice!(3, typeof(1000000.iota)))`.)
-$(T2 unpacked, Restores common type after `packed`.)
-$(T2 packEverted, `slice.packed!2.packEverted.unpacked` is identical to `slice.transposed!(slice.shape.length-2, slice.shape.length-1)`.)
+$(T2 pack, Type of `1000000.iota.sliced(1,2,3,4,5,6,7,8).pack!2` is `Slice!(6, Slice!(3, typeof(1000000.iota)))`.)
+$(T2 unpack, Restores common type after `pack`.)
+$(T2 packEverted, `slice.pack!2.packEverted.unpack` is identical to `slice.transposed!(slice.shape.length-2, slice.shape.length-1)`.)
 )
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
@@ -47,13 +56,13 @@ Packs a slice into the composed slice, i.e. slice of slices.
 Params:
     K = sizes of packs of dimensions
 Returns:
-    `packed!K` returns `Slice!(N-K, Slice!(K+1, Range))`;
-    `slice.packed!(K1, K2, ..., Kn)` is the same as `slice.pacKed!K1.pacKed!K2. ... pacKed!Kn`.
-See_also:  $(LREF unpacked), $(LREF packEverted),  $(SUBREF iterators, byElement).
+    `pack!K` returns `Slice!(N-K, Slice!(K+1, Range))`;
+    `slice.pack!(K1, K2, ..., Kn)` is the same as `slice.pacKed!K1.pacKed!K2. ... pacKed!Kn`.
+See_also:  $(LREF unpack), $(LREF packEverted),  $(SUBREF iterators, byElement).
 +/
-template packed(K...)
+template pack(K...)
 {
-    auto packed(size_t N, Range)(auto ref Slice!(N, Range) slice)
+    auto pack(size_t N, Range)(auto ref Slice!(N, Range) slice)
     {
         template Template(size_t NInner, Range, R...)
         {
@@ -85,7 +94,7 @@ unittest
     import std.algorithm.comparison: equal;
     auto r = 100000000.iota;
     auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    auto b = a.packed!(2, 3); // the same as `a.packed!2.packed!3`
+    auto b = a.pack!(2, 3); // the same as `a.pack!2.pack!3`
     auto c = b[1, 2, 3, 4];
     auto d = c[5, 6, 7];
     auto e = d[8, 9];
@@ -94,7 +103,7 @@ unittest
     assert(a == b);
     assert(c == a[1, 2, 3, 4]);
     alias R = typeof(r);
-    static assert(is(typeof(b) == typeof(a.packed!2.packed!3)));
+    static assert(is(typeof(b) == typeof(a.pack!2.pack!3)));
     static assert(is(typeof(b) == Slice!(4, Slice!(4, Slice!(3, R)))));
     static assert(is(typeof(c) == Slice!(3, Slice!(3, R))));
     static assert(is(typeof(d) == Slice!(2, R)));
@@ -106,7 +115,7 @@ unittest {
     import std.range: iota;
     auto r = 100000000.iota;
     auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    auto b = a.packed!(2, 3);
+    auto b = a.pack!(2, 3);
     static assert(b.shape.length == 4);
     static assert(b.structure.lengths.length == 4);
     static assert(b.structure.strides.length == 4);
@@ -121,9 +130,9 @@ unittest {
 
 /++
 Unpacks a composed slice.
-See_also: $(LREF packed), $(LREF packEverted)
+See_also: $(LREF pack), $(LREF packEverted)
 +/
-Slice!(N, Range).PureThis unpacked(size_t N, Range)(auto ref Slice!(N, Range) slice)
+Slice!(N, Range).PureThis unpack(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     with(slice) return PureThis(_lengths, _strides, _ptr);
 }
@@ -135,7 +144,7 @@ unittest
     import std.algorithm.comparison: equal;
     auto r = 100000000.iota;
     auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    auto b = a.packed!(2, 3).unpacked();
+    auto b = a.pack!(2, 3).unpack();
     static assert(is(typeof(a) == typeof(b)));
     assert(a == b);
 }
@@ -143,7 +152,7 @@ unittest
 /++
 Inverts composition of a slice.
 This function is used for transposition and in functional pipeline with $(LREF byElement).
-See_also: $(LREF packed), $(LREF unpacked)
+See_also: $(LREF pack), $(LREF unpack)
 +/
 auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
@@ -172,9 +181,9 @@ unittest {
     import std.range: iota;
     auto slice = 100000000.iota.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
     assert(slice
-        .packed!2
+        .pack!2
         .packEverted
-        .unpacked
+        .unpack
              == slice.transposed!(
                 slice.shape.length-2,
                 slice.shape.length-1));
@@ -190,7 +199,7 @@ unittest
     auto r = 100000000.iota;
     auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
     auto b = a
-        .packed!(2, 3)
+        .pack!(2, 3)
         .packEverted;
     auto c = b[8, 9];
     auto d = c[5, 6, 7];
@@ -208,7 +217,8 @@ unittest
 
 /++
 Returns 1-dimensional slice over main diagonal of n-dimensional slice.
-diagonal can be enhance with subspace iterators.
+`diagonal` can be enhance with subspace iterators.
+Can be used in combination with $(LREF blocks) to get slice of diagonal blocks.
 See the last example of how to get diagonal plain in a cube.
 +/
 Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
@@ -238,6 +248,8 @@ Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
 unittest {
     import std.algorithm.comparison: equal;
     import std.range: iota;
+ 
+    ///-------
     //  -------
     // | 0 1 2 |
     // | 3 4 5 |
@@ -248,6 +260,16 @@ unittest {
         .sliced(2, 3)
         .diagonal
         .equal([0, 4]));
+
+    ///-------
+    auto slice = new int[9].sliced(3, 3);
+    int i;
+    foreach(ref e; slice.diagonal)
+        e = ++i;
+    assert(cast(int[][])slice == [
+        [1, 0, 0],
+        [0, 2, 0],
+        [0, 0, 3]]);
 }
 
 /// Matrix, subdiagonal
@@ -353,7 +375,7 @@ unittest {
     //  -----------
     auto slice = 100.iota
         .sliced(3, 3, 3)
-        .packed!2
+        .pack!2
         .packEverted
         .diagonal
         .packEverted;
@@ -361,6 +383,87 @@ unittest {
         [[ 0,  4,  8],
          [ 9, 13, 17],
          [18, 22, 26]]);
+}
+
+/++
+Returns n-dimensional slice of n-dimensional blocks.
+`blocks` can be enhance with subspace iterators.
+Can be used in combination with $(LREF diagonal) to get slice of diagonal blocks.
+Params:
+    N = dimension count
+    slice = slice to split on blocks
+    lengths = N dimensions for block size, residual blocks are ignored
++/
+Slice!(N, Slice!(N+1, Range)) blocks(size_t N, Range)(auto ref Slice!(N, Range) slice, Repeat!(size_t, N) lengths)
+in {
+    foreach(i, length; lengths)
+        assert(length > 0, "length for dimension = " ~ i.stringof ~ " must be positive"
+            ~ tailErrorMessage!());
+}
+body {
+    typeof(return) ret = void;
+    foreach(dimension; Iota!(0, N))
+    {
+        ret._lengths[dimension] = slice._lengths[dimension] / lengths[dimension];
+        ret._strides[dimension] = slice._strides[dimension];
+        if(ret._lengths[dimension]) //do not remove `if(...)`
+            ret._strides[dimension] *= lengths[dimension];
+        ret._lengths[dimension+N] = lengths[dimension];
+        ret._strides[dimension+N] = slice._strides[dimension];
+    }
+    ret._ptr = slice._ptr;
+    return ret;
+}
+
+///
+unittest {
+    auto slice = new int[1000].sliced(5, 8);
+    auto blocks = slice.blocks!(2, int*)(2, 3);
+    int i;
+    foreach(block; blocks.byElement)
+        block[] = ++i;
+
+    assert(cast(int[][][][]) blocks ==
+        [[[[1, 1, 1], [1, 1, 1]],
+          [[2, 2, 2], [2, 2, 2]]],
+         [[[3, 3, 3], [3, 3, 3]],
+          [[4, 4, 4], [4, 4, 4]]]]);
+
+    assert(cast(int[][])     slice ==
+        [[1, 1, 1, 2, 2, 2, 0, 0],
+         [1, 1, 1, 2, 2, 2, 0, 0],
+         [3, 3, 3, 4, 4, 4, 0, 0],
+         [3, 3, 3, 4, 4, 4, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0]]);
+}
+
+///Diagonal blocks
+unittest {
+    auto slice = new int[1000].sliced(5, 8);
+    auto blocks = slice.blocks!(2, int*)(2, 3);
+    auto diagonalBlocks = blocks.diagonal.unpack;
+    
+    diagonalBlocks[0][] = 1;
+    diagonalBlocks[1][] = 2;
+
+    assert(cast(int[][][])   diagonalBlocks ==
+        [[[1, 1, 1],
+          [1, 1, 1]],
+         [[2, 2, 2],
+          [2, 2, 2]]]);
+
+    assert(cast(int[][][][]) blocks ==
+        [[[[1, 1, 1], [1, 1, 1]],
+          [[0, 0, 0], [0, 0, 0]]],
+         [[[0, 0, 0], [0, 0, 0]],
+          [[2, 2, 2], [2, 2, 2]]]]);
+
+    assert(cast(int[][])     slice ==
+        [[1, 1, 1, 0, 0, 0, 0, 0],
+         [1, 1, 1, 0, 0, 0, 0, 0],
+         [0, 0, 0, 2, 2, 2, 0, 0],
+         [0, 0, 0, 2, 2, 2, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0]]);
 }
 
 /++
@@ -564,7 +667,7 @@ unittest {
     import std.algorithm.comparison: equal;
     assert(100000.iota
         .sliced(3, 4, 5, 6, 7)
-        .packed!2
+        .pack!2
         .byElement()
         .drop(1)
         .front
@@ -620,7 +723,7 @@ unittest {
 
     auto range = 100000.iota;
     auto slice0 = range.sliced(3, 4, 5, 6, 7);
-    auto slice1 = slice0.transposed!(2, 1).packed!2;
+    auto slice1 = slice0.transposed!(2, 1).pack!2;
     auto elems0 = slice0.byElement;
     auto elems1 = slice1.byElement;
 
