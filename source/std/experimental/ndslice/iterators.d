@@ -12,7 +12,7 @@ The destination of subspace iterators is iteration over subset of dimensions usi
 `packed!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
 so type of element of `slice.byElement` is `Slice!(K, Range)`.
 Another way to use `packed` is transposition of packs of dimensions using `packEverted`.
-Examples with subspace iterators are available for $(SUBMODULE structure), $(SUBMODULE iterators), $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
+Examples with subspace iterators are available for iterators, $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
 
 $(BOOKTABLE Subspace iterators,
 
@@ -208,20 +208,30 @@ unittest
 
 /++
 Returns 1-dimensional slice over main diagonal of n-dimensional slice.
+diagonal can be enhance with subspace iterators.
+See the last example of how to get diagonal plain in a cube.
 +/
 Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     size_t[1] length = void;
     sizediff_t[1] stride = void;
-    length[0] = slice._lengths[0];
-    stride[0] = slice._strides[0];
+    auto NewN = slice.PureN - N + 1;
+    typeof(return) ret = void;
+    ret._lengths[0] = slice._lengths[0];
+    ret._strides[0] = slice._strides[0];
     foreach(i; Iota!(1, N))
     {
-        if(length[0] > slice._lengths[i])
-            length[0] = slice._lengths[i];
-        stride[0] += slice._strides[i];
+        if(ret._lengths[0] > slice._lengths[i])
+            ret._lengths[0] = slice._lengths[i];
+        ret._strides[0] += slice._strides[i];
     }
-    return typeof(return)(length, stride, slice._ptr);
+    foreach(i; Iota!(1, ret.PureN))
+    {
+        ret._lengths[i] = slice._lengths[i + N - 1];
+        ret._strides[i] = slice._strides[i + N - 1];
+    }
+    ret._ptr = slice._ptr;
+    return ret;
 }
 
 /// Matrix, main diagonal
@@ -277,7 +287,7 @@ unittest {
         .equal([1, 3]));
 }
 
-/// Cube, main diagonal
+/// 3D, main diagonal
 unittest {
     import std.algorithm.comparison: equal;
     import std.range: iota;
@@ -296,7 +306,7 @@ unittest {
         .equal([0, 10]));
 }
 
-/// Cube, subdiagonal
+/// 3D, subdiagonal
 unittest {
     import std.algorithm.comparison: equal;
     import std.range: iota;
@@ -315,6 +325,42 @@ unittest {
         .dropOne!2
         .diagonal
         .equal([1, 11]));
+}
+
+/// 3D, diagonal plain
+unittest {
+    import std.algorithm.comparison: equal;
+    import std.range: iota;
+    import std.experimental.ndslice.operators: dropOne;
+    //  -----------
+    // |  0   1  2 |
+    // |  3   4  5 |
+    // |  6   7  8 |
+    //  - - - - - -
+    // |  9  10 11 |
+    // | 12  13 14 |
+    // | 15  16 17 |
+    //  - - - - - -
+    // | 18  20 21 |
+    // | 22  23 24 |
+    // | 24  25 26 |
+    //  -----------
+    //->
+    //  -----------
+    // |  0   4  8 |
+    // |  9  13 17 |
+    // | 18  23 26 |
+    //  -----------
+    auto slice = 100.iota
+        .sliced(3, 3, 3)
+        .packed!2
+        .packEverted
+        .diagonal
+        .packEverted;
+    assert(cast(int[][])slice ==
+        [[ 0,  4,  8],
+         [ 9, 13, 17],
+         [18, 22, 26]]);
 }
 
 /++
