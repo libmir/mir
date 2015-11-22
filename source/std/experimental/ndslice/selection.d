@@ -1,29 +1,23 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
-$(H2 Iterators)
+$(H2 Selectors)
 
-$(BOOKTABLE Subspace iterators,
+$(BOOKTABLE Selectors,
 $(T2 blocks, n-dimensional slice of n-dimensional blocks)
 $(T2 diagonal, n-dimensional slice of diagonal)
 $(T2 byElement, `100.iota.sliced(4, 5).byElement` equals `20.iota`.)
 )
 
-$(TR $(TH Function Name) $(TH Description))
-$(T2 pack, Type of `1000000.iota.sliced(1,2,3,4,5,6,7,8).pack!2` is `Slice!(6, Slice!(3, typeof(1000000.iota)))`.)
-$(T2 unpack, Restores common type after `pack`.)
-$(T2 packEverted, `slice.pack!2.packEverted.unpack` is identical to `slice.transposed!(slice.shape.length-2, slice.shape.length-1)`.)
-)
+$(H2 Subspace selectors)
 
-$(H2 Subspace iterators)
-
-The destination of subspace iterators is painless generalization of other iterators.
+The destination of subspace selectors is painless generalization of other selectors.
 `pack!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
 so type of element of `slice.byElement` is `Slice!(K, Range)`.
 Another way to use `pack` is transposition of packs of dimensions using `packEverted`.
-Examples with subspace iterators are available for all iterators, $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
+Examples with subspace selectors are available for selectors, $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
 
-$(BOOKTABLE Subspace iterators,
+$(BOOKTABLE Subspace selectors,
 
 $(TR $(TH Function Name) $(TH Description))
 $(T2 pack, Type of `1000000.iota.sliced(1,2,3,4,5,6,7,8).pack!2` is `Slice!(6, Slice!(3, typeof(1000000.iota)))`.)
@@ -35,7 +29,7 @@ License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
-Source:    $(PHOBOSSRC std/_experimental/_ndslice/_iterators.d)
+Source:    $(PHOBOSSRC std/_experimental/_ndslice/_selectors.d)
 
 Macros:
 SUBMODULE = $(LINK2 std_experimental_ndslice_$1.html, std.experimental.ndslice.$1)
@@ -216,7 +210,7 @@ unittest
 
 /++
 Returns 1-dimensional slice over main diagonal of n-dimensional slice.
-`diagonal` can be enhance with subspace iterators.
+`diagonal` can be generalized with subspace selectors.
 Can be used in combination with $(LREF blocks) to get slice of diagonal blocks.
 See the last example of how to get diagonal plain in a cube.
 +/
@@ -386,7 +380,7 @@ unittest {
 
 /++
 Returns n-dimensional slice of n-dimensional blocks.
-`blocks` can be enhance with subspace iterators.
+`blocks` can be generalized with subspace selectors.
 Can be used in combination with $(LREF diagonal) to get slice of diagonal blocks.
 Params:
     N = dimension count
@@ -446,10 +440,8 @@ unittest {
     diagonalBlocks[1][] = 2;
 
     assert(cast(int[][][])   diagonalBlocks ==
-        [[[1, 1, 1],
-          [1, 1, 1]],
-         [[2, 2, 2],
-          [2, 2, 2]]]);
+        [[[1, 1, 1], [1, 1, 1]],
+         [[2, 2, 2], [2, 2, 2]]]);
 
     assert(cast(int[][][][]) blocks ==
         [[[[1, 1, 1], [1, 1, 1]],
@@ -465,11 +457,17 @@ unittest {
          [0, 0, 0, 0, 0, 0, 0, 0]]);
 }
 
+enum ElementSelection
+{
+    all,
+    triangle,
+}
+
 /++
 Returns a random access range of all elements of a slice.
-See_also: $(LREF elements)
+`byElement` can be generalized with subspace selectors.
 +/
-auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
+auto byElement(ElementSelection selection = ElementSelection.all, size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     with(Slice!(N, Range))
     {

@@ -19,10 +19,16 @@ See also $(LREF packEverted).
 $(BOOKTABLE $(H2 Iteration operators),
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 strided, `1000.iota.sliced(13, 40).strided!0(2).strided!1(5).shape` equals `[7, 8]`.)
+$(T2 strided, `1000.iota.sliced(13, 40).strided!(0, 1)(2, 5).shape` equals `[7, 8]`.)
 $(T2 reversed, `slice.reversed!(0, slice.shape.length-1)` returns slice with reversed direction of the iteration for top level and tail level dimensions.)
 $(T2 allReversed, `20.iota.sliced(4, 5).allReversed` equals `20.iota.retro.sliced(4, 5)`.)
 )
+
+$(BOOKTABLE $(H2 Other operators),
+$(TR $(TH Function Name) $(TH Description))
+$(T2 rotated, `10.iota.sliced(2, 3).rotated.writeln;` prints `[[2, 5], [1, 4], [0, 3]]`.)
+)
+
 Drop operators:
     $(LREF dropToNCube), $(LREF dropBack),
     $(LREF drop), $(LREF dropBack),
@@ -111,6 +117,12 @@ body {
     mixin(_swappedCode);
 }
 
+/// ditto
+Slice!(2, Range) swapped(Range)(Slice!(2, Range) slice)
+body {
+    return slice.swapped!(0, 1);
+}
+
 /// Template
 unittest {
     import std.range: iota;
@@ -127,6 +139,125 @@ unittest {
         .sliced(3, 4, 5, 6)
         .swapped(1, 3)
         .shape == [3, 6, 5, 4]);
+}
+
+/// 2D
+unittest {
+    import std.range: iota;
+    assert(10000.iota
+        .sliced(3, 4)
+        .swapped
+        .shape == [4, 3]);
+}
+
+private enum _rotatedCode = q{
+    k &= 0b11;
+    if(k == 0)
+        return slice;
+    if(k == 2)
+        return slice.allReversed;
+    static if(__traits(compiles, { enum _enum = dimensionA + dimensionB; }))
+    {
+        slice = slice.swapped!(dimensionA, dimensionB);
+        if(k == 1)
+            return slice.reversed!dimensionA;
+        else
+            return slice.reversed!dimensionB;
+    }
+    else
+    {
+        slice = slice.swapped (dimensionA, dimensionB);
+        if(k == 1)
+            return slice.reversed(dimensionA);
+        else
+            return slice.reversed(dimensionB);
+    }
+};
+
+/++
+Rotates two selected dimensions by `k*90` degrees.
+Order of dimensions is matter.
+For 2d-sliced the default direction is counterclockwise.
+Params:
+    dimensionA = first dimension
+    dimensionA = second dimension
+    slice = input slice
+    k = rotation counter, can be negative
++/
+template rotated(size_t dimensionA, size_t dimensionB)
+{
+    auto rotated(size_t N, Range)(Slice!(N, Range) slice, sizediff_t k = 1)
+    {
+        {
+            enum i = 0;
+            alias dimension = dimensionA;
+            mixin DimensionCTError;
+        }
+        {
+            enum i = 1;
+            alias dimension = dimensionB;
+            mixin DimensionCTError;
+        }
+        mixin(_rotatedCode);
+    }
+}
+
+/// ditto
+Slice!(N, Range) rotated(size_t N, Range)(Slice!(N, Range) slice, size_t dimensionA, size_t dimensionB, sizediff_t k = 1)
+in{
+    {
+        alias dimension = dimensionA;
+        mixin(DimensionRTError);
+    }
+    {
+        alias dimension = dimensionB;
+        mixin(DimensionRTError);
+    }
+}
+body {
+    mixin(_rotatedCode);
+}
+
+/// ditto
+Slice!(2, Range) rotated(Range)(Slice!(2, Range) slice, sizediff_t k = 1)
+body {
+    return slice.rotated!(0, 1)(k);
+}
+
+/// Template
+unittest {
+    import std.range: iota;
+    auto slice = 10.iota.sliced(2, 3);
+
+    auto a = [[0, 1, 2],
+              [3, 4, 5]];
+
+    auto b = [[2, 5],
+              [1, 4],
+              [0, 3]];
+
+    auto c = [[5, 4, 3],
+              [2, 1, 0]];
+
+    auto d = [[3, 0],
+              [4, 1],
+              [5, 2]];
+
+    assert(cast(int[][]) slice.rotated       ( 4) == a);
+    assert(cast(int[][]) slice.rotated!(0, 1)(-4) == a);
+    assert(cast(int[][]) slice.rotated (1, 0,  8) == a);
+
+    assert(cast(int[][]) slice.rotated            == b);
+    assert(cast(int[][]) slice.rotated!(0, 1)(-3) == b);
+    assert(cast(int[][]) slice.rotated (1, 0,  3) == b);
+
+    assert(cast(int[][]) slice.rotated       ( 6) == c);
+    assert(cast(int[][]) slice.rotated!(0, 1)( 2) == c);
+    assert(cast(int[][]) slice.rotated (0, 1, -2) == c);
+
+    assert(cast(int[][]) slice.rotated       ( 7) == d);
+    assert(cast(int[][]) slice.rotated!(0, 1)( 3) == d);
+    assert(cast(int[][]) slice.rotated (1, 0,   ) == d);
 }
 
 /++
