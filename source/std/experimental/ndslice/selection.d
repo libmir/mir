@@ -1,28 +1,31 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
-$(H2 Selectors)
-
-$(BOOKTABLE Selectors,
-$(T2 blocks, n-dimensional slice of n-dimensional blocks)
-$(T2 diagonal, n-dimensional slice of diagonal)
-$(T2 byElement, `100.iota.sliced(4, 5).byElement` equals `20.iota`.)
-)
 
 $(H2 Subspace selectors)
 
-The destination of subspace selectors is painless generalization of other selectors.
+The destination of subspace selectors is painless generalization and combination of other selectors.
 `pack!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
 so type of element of `slice.byElement` is `Slice!(K, Range)`.
 Another way to use `pack` is transposition of packs of dimensions using `packEverted`.
 Examples with subspace selectors are available for selectors, $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
 
-$(BOOKTABLE Subspace selectors,
+$(BOOKTABLE ,
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 pack, Type of `1000000.iota.sliced(1,2,3,4,5,6,7,8).pack!2` is `Slice!(6, Slice!(3, typeof(1000000.iota)))`.)
-$(T2 unpack, Restores common type after `pack`.)
-$(T2 packEverted, `slice.pack!2.packEverted.unpack` is identical to `slice.transposed!(slice.shape.length-2, slice.shape.length-1)`.)
+$(T2 pack, returns slice of slices.)
+$(T2 unpack, unites all dimension packs.)
+$(T2 packEverted, reverse packs of dimensions.)
+)
+
+$(H2 Selectors)
+
+$(BOOKTABLE Selectors,
+$(T2 blocks, n-dimensional slice of n-dimensional non-overlapping blocks)
+$(T2 windows, n-dimensional slice of n-dimensional overlapping  blocks)
+$(T2 diagonal, 1-dimensional slice of diagonal elements)
+$(T2 byElement, a random access range of all elements)
+$(T2 byElementInStandardSimplex, an input range of standard simplex in hypercube (left upper triangular matrix).)
 )
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
@@ -210,9 +213,9 @@ unittest
 
 /++
 Returns 1-dimensional slice over main diagonal of n-dimensional slice.
-`diagonal` can be generalized with subspace selectors.
 Can be used in combination with $(LREF blocks) to get slice of diagonal blocks.
-See the last example of how to get diagonal plain in a cube.
+`diagonal` can be generalized with other selectors,
+for example, in combination with $(LREF blocks) to get slice of diagonal blocks.
 +/
 Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
@@ -380,8 +383,8 @@ unittest {
 
 /++
 Returns n-dimensional slice of n-dimensional blocks.
-`blocks` can be generalized with subspace selectors.
-Can be used in combination with $(LREF diagonal) to get slice of diagonal blocks.
+`blocks` can be generalized with other selectors,
+for example, in combination with $(LREF diagonal) to get slice of diagonal blocks.
 Params:
     N = dimension count
     slice = slice to split on blocks
@@ -457,17 +460,12 @@ unittest {
          [0, 0, 0, 0, 0, 0, 0, 0]]);
 }
 
-enum ElementSelection
-{
-    all,
-    triangle,
-}
-
 /++
 Returns a random access range of all elements of a slice.
-`byElement` can be generalized with subspace selectors.
+Order of elements is preserved.
+`byElement` can be generalized with other selectors.
 +/
-auto byElement(ElementSelection selection = ElementSelection.all, size_t N, Range)(auto ref Slice!(N, Range) slice)
+auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     with(Slice!(N, Range))
     {
@@ -476,7 +474,6 @@ auto byElement(ElementSelection selection = ElementSelection.all, size_t N, Rang
         +/
         static struct ByElement
         {
-
             This _slice;
             size_t _length;
             size_t[N] _indexes;
@@ -518,7 +515,7 @@ auto byElement(ElementSelection selection = ElementSelection.all, size_t N, Rang
 
             void popFront()
             {
-                assert(!empty);
+                assert(_length != 0);
                 _length--;
                 popFrontImpl;
             }
@@ -531,7 +528,7 @@ auto byElement(ElementSelection selection = ElementSelection.all, size_t N, Rang
                     _indexes[i]++;
                     if (_indexes[i] < _lengths[i])
                         return;
-                    assert(_indexes[i] == _lengths[i]);
+                    debug(ndslice) assert(_indexes[i] == _lengths[i]);
                     _ptr -= _lengths[i] * _strides[i];
                     _indexes[i] = 0;
                 }
@@ -552,7 +549,7 @@ auto byElement(ElementSelection selection = ElementSelection.all, size_t N, Rang
 
             void popBack()
             {
-                assert(!empty);
+                assert(_length != 0);
                 _length--;
             }
 
@@ -605,7 +602,7 @@ auto byElement(ElementSelection selection = ElementSelection.all, size_t N, Rang
                     _shift += (n - _indexes[i]) * _strides[i];
                     n = _indexes[i-1] + v;
                 }
-                assert(n < _slice._lengths[0]);
+                debug(ndslice) assert(n < _slice._lengths[0]);
                 with(_slice)
                     _shift += (n - _indexes[0]) * _strides[0];
                 return _shift;
@@ -635,9 +632,11 @@ auto byElement(ElementSelection selection = ElementSelection.all, size_t N, Rang
             Tuple!(size_t, size_t) opSlice(size_t pos : 0)(size_t i, size_t j)
             in   {
                 assert(i <= j,
-                    "ByElement.opSlice: left bound must be less then or equal right bound");
+                    "left bound must be less then or equal right bound"
+                    ~ tailErrorMessage!());
                 assert(j - i <= _length,
-                    "ByElement.opSlice: difference between right and left bounds must be less then or equal length");
+                    "difference between right and left bounds must be less then or equal length"
+                    ~ tailErrorMessage!());
             }
             body {
                 return typeof(return)(i, j);
@@ -751,4 +750,125 @@ unittest {
     assert(elems0.equal(range[slice0.elementsCount-13 .. slice0.elementsCount]));
 
     foreach(elem; elems0) {}
+}
+
+/++
+Returns an input range of all elements of a slice in standard simplex, 
+i.g. it is set of elements in left upper triangular matrix in case of 2D slice.
+Order of elements is preserved.
+`byElementInStandardSimplex` can be generalized with other selectors.
++/
+auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t maxCobeLength = size_t.max)
+{
+    with(Slice!(N, Range))
+    {
+        /++
+        ByElementInTopSimplex shifts range's `_ptr` without modifying strides and lengths.
+        +/
+        static struct ByElementInTopSimplex
+        {
+            This _slice;
+            size_t _length;
+            size_t maxCobeLength;
+            size_t sum;
+            size_t[N] _indexes;
+
+            static if (isPointer!PureRange || isForwardRange!PureRange)
+            auto save() @property
+            {
+                return typeof(this)(_slice.save, _length, maxCobeLength, sum, _indexes);
+            }
+
+            bool empty() const @property
+            {
+                return _length == 0;
+            }
+
+            size_t length() const @property
+            {
+                return _length;
+            }
+
+            auto ref front() @property
+            {
+                assert(!this.empty);
+                static if (N == PureN)
+                    return _slice._ptr[0];
+                else with(_slice)
+                {
+                    alias M = DeepElemType.PureN;
+                    return DeepElemType(_lengths[$-M .. $], _strides[$-M .. $], _ptr);
+                }
+            }
+
+            static if (PureN == 1 && rangeHasMutableElements && !hasAccessByRef)
+            auto front(DeepElemType elem) @property
+            {
+                assert(!this.empty);
+                return _slice._ptr[0] = elem;
+            }
+
+            void popFront()
+            {
+                assert(_length != 0);
+                _length--;
+                popFrontImpl;
+            }
+
+            private void popFrontImpl()
+            {
+                foreach_reverse(i; Iota!(0, N)) with(_slice)
+                {
+                    _ptr += _strides[i];
+                    _indexes[i]++;
+                    debug(ndslice) assert(_indexes[i] <= _lengths[i]);
+                    sum++;
+                    if (sum < maxCobeLength)
+                        return;
+                    debug(ndslice) assert(sum == maxCobeLength);
+                    _ptr -= _indexes[i] * _strides[i];
+                    sum -= _indexes[i];
+                    _indexes[i] = 0;
+                }
+            }
+        }
+        foreach(i; Iota!(0, N))
+            if(maxCobeLength > slice._lengths[i])
+                maxCobeLength = slice._lengths[i];
+        immutable size_t elementsCount = ((maxCobeLength + 1) * maxCobeLength ^^ (N-1)) / 2;
+        return ByElementInTopSimplex(slice, elementsCount, maxCobeLength);
+    }
+}
+
+///
+unittest {
+    auto slice = new int[20].sliced(4, 5);
+    auto elems = slice
+        .byElementInStandardSimplex;
+    int i;
+    foreach(ref e; elems)
+        e = ++i;
+    assert(cast(int[][]) slice ==
+        [[ 1, 2, 3, 4, 0],
+         [ 5, 6, 7, 0, 0],
+         [ 8, 9, 0, 0, 0],
+         [10, 0, 0, 0, 0]]);
+}
+
+///
+unittest {
+    import std.experimental.ndslice.iteration;
+    auto slice = new int[20].sliced(4, 5);
+    auto elems = slice
+        .transposed
+        .allReversed
+        .byElementInStandardSimplex;
+    int i;
+    foreach(ref e; elems)
+        e = ++i;
+    assert(cast(int[][]) slice ==
+        [[0,  0, 0, 0, 4],
+         [0,  0, 0, 7, 3],
+         [0,  0, 9, 6, 2],
+         [0, 10, 8, 5, 1]]);
 }

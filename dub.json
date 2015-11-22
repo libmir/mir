@@ -3,5 +3,6 @@
 	"description": "This module provides basic utilities for creating n-dimensional random access ranges.",
 	"copyright": "Copyright © 2015, Ilya Yaroshenko",
 	"authors": ["Ilya Yaroshenko"],
-	"license": "BSL-1.0"
+	"license": "BSL-1.0",
+
 }
