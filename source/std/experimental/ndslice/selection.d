@@ -22,7 +22,7 @@ $(H2 Selectors)
 
 $(BOOKTABLE Selectors,
 $(T2 blocks, n-dimensional slice of n-dimensional non-overlapping blocks)
-$(T2 windows, n-dimensional slice of n-dimensional overlapping  blocks)
+$(T2 windows, n-dimensional slice of n-dimensional overlapping  windows)
 $(T2 diagonal, 1-dimensional slice of diagonal elements)
 $(T2 byElement, a random access range of all elements)
 $(T2 byElementInStandardSimplex, an input range of standard simplex in hypercube (left upper triangular matrix).)
@@ -213,9 +213,8 @@ unittest
 
 /++
 Returns 1-dimensional slice over main diagonal of n-dimensional slice.
-Can be used in combination with $(LREF blocks) to get slice of diagonal blocks.
-`diagonal` can be generalized with other selectors,
-for example, in combination with $(LREF blocks) to get slice of diagonal blocks.
+`diagonal` can be generalized with other selectors, for example
+$(LREF blocks)(diagonal blocks) and $(LREF windows) (multi-diagonal slice).
 +/
 Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
@@ -382,9 +381,9 @@ unittest {
 }
 
 /++
-Returns n-dimensional slice of n-dimensional blocks.
-`blocks` can be generalized with other selectors,
-for example, in combination with $(LREF diagonal) to get slice of diagonal blocks.
+Returns n-dimensional slice of n-dimensional non-overlapping blocks.
+`blocks` can be generalized with other selectors.
+For example, `blocks` in combination with $(LREF diagonal) can be used to get slice of diagonal blocks.
 Params:
     N = dimension count
     slice = slice to split on blocks
@@ -458,6 +457,87 @@ unittest {
          [0, 0, 0, 2, 2, 2, 0, 0],
          [0, 0, 0, 2, 2, 2, 0, 0],
          [0, 0, 0, 0, 0, 0, 0, 0]]);
+}
+
+/++
+Returns n-dimensional slice of n-dimensional overlapping windows.
+`windows` can be generalized with other selectors.
+For example, `windows` in combination with $(LREF diagonal) can be used to get multi-diagonal slice.
+Params:
+    N = dimension count
+    slice = slice to iterate
+    lengths = N dimensions for size of the window
++/
+Slice!(N, Slice!(N+1, Range)) windows(size_t N, Range)(auto ref Slice!(N, Range) slice, Repeat!(size_t, N) lengths)
+in {
+    foreach(i, length; lengths)
+        assert(length > 0, "length for dimension = " ~ i.stringof ~ " must be positive"
+            ~ tailErrorMessage!());
+}
+body {
+    typeof(return) ret = void;
+    foreach(dimension; Iota!(0, N))
+    {
+        ret._lengths[dimension] = slice._lengths[dimension] - slice._lengths[dimension] % lengths[dimension];
+        ret._strides[dimension] = slice._strides[dimension];
+        ret._lengths[dimension+N] = lengths[dimension];
+        ret._strides[dimension+N] = slice._strides[dimension];
+    }
+    ret._ptr = slice._ptr;
+    return ret;
+}
+
+///
+unittest {
+    auto slice = new int[1000].sliced(5, 8);
+    auto windows = slice.windows!(2, int*)(2, 3);
+    foreach(window; windows.byElement)
+        window[] += 1;
+
+    assert(cast(int[][]) slice ==
+        [[1, 2, 3, 3, 3, 3, 2, 1],
+         [2, 4, 6, 6, 6, 6, 4, 2],
+         [2, 4, 6, 6, 6, 6, 4, 2],
+         [2, 4, 6, 6, 6, 6, 4, 2],
+         [1, 2, 3, 3, 3, 3, 2, 1]]);
+}
+
+///
+unittest {
+    auto slice = new int[1000].sliced(5, 8);
+    auto windows = slice.windows!(2, int*)(2, 3);
+    windows[1, 2][] = 1;
+    windows[1, 2][0, 1] += 1;
+    windows.unpack[1, 2, 0, 1] += 1;
+
+    assert(cast(int[][]) slice ==
+        [[0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 1, 3, 1, 0, 0, 0],
+         [0, 0, 1, 1, 1, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 0, 0, 0, 0, 0]]);
+}
+
+///Multi-diagonal
+unittest {
+    auto slice = new int[1000].sliced(8, 8);
+    auto windows = slice.windows!(2, int*)(3, 3);
+
+    auto multidiagonal = windows
+        .diagonal
+        .unpack;
+    foreach(window; multidiagonal)
+        window[] += 1;
+
+    assert(cast(int[][]) slice ==
+        [[1, 1, 1, 0, 0, 0, 0, 0],
+         [1, 2, 2, 1, 0, 0, 0, 0],
+         [1, 2, 3, 2, 1, 0, 0, 0],
+         [0, 1, 2, 3, 2, 1, 0, 0],
+         [0, 0, 1, 2, 3, 2, 1, 0],
+         [0, 0, 0, 1, 2, 3, 2, 1],
+         [0, 0, 0, 0, 1, 2, 2, 1],
+         [0, 0, 0, 0, 0, 1, 1, 1]]);
 }
 
 /++
@@ -753,7 +833,7 @@ unittest {
 }
 
 /++
-Returns an input range of all elements of a slice in standard simplex, 
+Returns an input range of all elements of a slice in standard simplex,
 i.g. it is set of elements in left upper triangular matrix in case of 2D slice.
 Order of elements is preserved.
 `byElementInStandardSimplex` can be generalized with other selectors.

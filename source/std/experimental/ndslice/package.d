@@ -84,15 +84,6 @@ $(TR $(TDNW Optimized Selection)
         $(SUBREF selection, unpack)
     )
 )
-$(TR $(TDNW Shape and Strides)
-     $(TDNW $(SUBMODULE structure))
-     $(TD
-        $(SUBREF structure, Structure.isBlasCompatible)
-        $(SUBREF structure, Structure.isContiguous)
-        $(SUBREF structure, Structure.isNormal)
-        $(SUBREF structure, Structure.isPure)
-        $(SUBREF structure, Structure.normalized)
-    )
 )
 ))
 
@@ -194,10 +185,9 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
 module std.experimental.ndslice;
 
+public import std.experimental.ndslice.slice;
 public import std.experimental.ndslice.iteration;
 public import std.experimental.ndslice.selection;
-public import std.experimental.ndslice.slice;
-public import std.experimental.ndslice.structure;
 
 //example test
 unittest {
