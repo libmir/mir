@@ -744,13 +744,13 @@ struct Slice(size_t _N, _Range)
     static if(doUnittest)
     ///Packed slice
     unittest {
-        import std.experimental.ndslice.selection: pack, packEverted;
+        import std.experimental.ndslice.selection: pack, evertPack;
         import std.range: iota;
         auto slice = 50000.iota.sliced(3, 4, 5, 6, 7, 8);
         auto p = slice.pack!2;
         assert(p.elementsCount == 360);
         assert(p[0, 0, 0, 0].elementsCount == 56);
-        assert(p.packEverted.elementsCount == 56);
+        assert(p.evertPack.elementsCount == 56);
     }
 
     Tuple!(size_t, size_t) opSlice(size_t dimension)(size_t i, size_t j)

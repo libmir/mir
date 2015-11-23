@@ -14,7 +14,7 @@ $(T2 transposed, `100000.iota.sliced(3, 4, 5, 6, 7).transposed!(4, 0, 1).shape` 
 $(T2 swapped, `1000.iota.sliced(3, 4, 5).swapped!(1, 2).shape` returns `[3, 5, 4]`.)
 $(T2 everted, `1000.iota.sliced(3, 4, 5).everted.shape` returns `[5, 4, 3]`.)
 )
-See also $(LREF packEverted).
+See also $(LREF evertPack).
 
 $(BOOKTABLE $(H2 Iteration operators),
 

@@ -7,7 +7,7 @@ $(H2 Subspace selectors)
 The destination of subspace selectors is painless generalization and combination of other selectors.
 `pack!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
 so type of element of `slice.byElement` is `Slice!(K, Range)`.
-Another way to use `pack` is transposition of packs of dimensions using `packEverted`.
+Another way to use `pack` is transposition of packs of dimensions using `evertPack`.
 Examples with subspace selectors are available for selectors, $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
 
 $(BOOKTABLE ,
@@ -15,7 +15,7 @@ $(BOOKTABLE ,
 $(TR $(TH Function Name) $(TH Description))
 $(T2 pack, returns slice of slices.)
 $(T2 unpack, unites all dimension packs.)
-$(T2 packEverted, reverse packs of dimensions.)
+$(T2 evertPack, reverse packs of dimensions.)
 )
 
 $(H2 Selectors)
@@ -127,7 +127,7 @@ unittest {
 
 /++
 Unpacks a composed slice.
-See_also: $(LREF pack), $(LREF packEverted)
+See_also: $(LREF pack), $(LREF evertPack)
 +/
 Slice!(N, Range).PureThis unpack(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
@@ -151,7 +151,7 @@ Inverts composition of a slice.
 This function is used for transposition and in functional pipeline with $(LREF byElement).
 See_also: $(LREF pack), $(LREF unpack)
 +/
-auto packEverted(size_t N, Range)(auto ref Slice!(N, Range) slice)
+auto evertPack(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     with(slice)
     {
@@ -179,7 +179,7 @@ unittest {
     auto slice = 100000000.iota.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
     assert(slice
         .pack!2
-        .packEverted
+        .evertPack
         .unpack
              == slice.transposed!(
                 slice.shape.length-2,
@@ -197,13 +197,13 @@ unittest
     auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
     auto b = a
         .pack!(2, 3)
-        .packEverted;
+        .evertPack;
     auto c = b[8, 9];
     auto d = c[5, 6, 7];
     auto e = d[1, 2, 3, 4];
     auto g = a[1, 2, 3, 4, 5, 6, 7, 8, 9];
     assert(e == g);
-    assert(a == b.packEverted);
+    assert(a == b.evertPack);
     assert(c == a.transposed!(7, 8, 4, 5, 6)[8, 9]);
     alias R = typeof(r);
     static assert(is(typeof(b) == Slice!(2, Slice!(4, Slice!(5, R)))));
@@ -372,9 +372,9 @@ unittest {
     auto slice = 100.iota
         .sliced(3, 3, 3)
         .pack!2
-        .packEverted
+        .evertPack
         .diagonal
-        .packEverted;
+        .evertPack;
     assert(cast(int[][])slice ==
         [[ 0,  4,  8],
          [ 9, 13, 17],
