@@ -185,7 +185,7 @@ struct Slice(size_t _N, _Range)
                      && (isPointer!_Range || is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
                     || is(_Range == Slice!(N1, Range1), size_t N1, Range1)))
 {
-package:
+    package:
 
     enum doUnittest = is(_Range == int*);
 
@@ -314,7 +314,7 @@ package:
         _ptr = shell;
     }
 
-public:
+    public:
 
     /++
     Returns: fixed size array of lengths

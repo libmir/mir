@@ -24,6 +24,7 @@ $(BOOKTABLE Selectors,
 $(T2 blocks, n-dimensional slice of n-dimensional non-overlapping blocks)
 $(T2 windows, n-dimensional slice of n-dimensional overlapping  windows)
 $(T2 diagonal, 1-dimensional slice of diagonal elements)
+$(T2 reshape, returns new slice for the same data)
 $(T2 byElement, a random access range of all elements)
 $(T2 byElementInStandardSimplex, an input range of standard simplex in hypercube (left upper triangular matrix).)
 )
@@ -538,6 +539,174 @@ unittest {
          [0, 0, 0, 1, 2, 3, 2, 1],
          [0, 0, 0, 0, 1, 2, 2, 1],
          [0, 0, 0, 0, 0, 1, 1, 1]]);
+}
+
+/++
+Returns new slice for the same data.
+Params:
+    slice = slice to reshape
+    lengths = list of new dimensions. Single length can be set to `-1`. 
+        In this case, the corresponding dimension is inferred.
+Throws:
+    $(ReshapeException) if `slice` con not be reshaped with `lengths`.
++/
+Slice!(Lengths.length, Range)
+    reshape
+        (         size_t N, Range       , Lengths...     )
+        (auto ref Slice!(N, Range) slice, Lengths lengths)
+    if ( allSatisfy!(isIndex, Lengths) && Lengths.length)
+{
+
+    typeof(return) ret = void;
+    foreach(i; Iota!(0, ret.N))
+        ret._lengths[i] = lengths[i];
+
+    immutable size_t eco = slice.elementsCount;
+              size_t ecn = ret  .elementsCount;
+
+    if(eco == 0)
+        throw new ReshapeException(
+            slice._lengths.dup, 
+            slice._strides.dup, 
+            ret.  _lengths.dup,
+            "slice should be not empty");
+
+    foreach(i; Iota!(0, ret.N))
+        if(ret._lengths[i] == -1)
+        {
+            ecn = -ecn;
+            ret._lengths[i] = eco / ecn;
+            ecn *= ret._lengths[i];
+            break;
+        }
+
+    if(eco != ecn)
+        throw new ReshapeException(
+            slice._lengths.dup, 
+            slice._strides.dup, 
+            ret.  _lengths.dup,
+            "total elements count should be the same");
+
+    for(size_t oi, ni, oj, nj; oi < slice.N && ni < ret.N; oi = oj, ni = nj)
+    {
+        size_t op = slice._lengths[oj++];
+        size_t np = ret  ._lengths[nj++];
+
+        for(;;)
+        {
+            if(op < np)
+                op *= slice._lengths[oj++];
+            if(op > np)
+                np *= ret  ._lengths[nj++];
+            if(op == np)
+                break;
+        }
+        while(oj < slice.N && slice._lengths[oj] == 1) oj++;
+        while(nj < ret  .N && ret  ._lengths[nj] == 1) nj++;
+
+        for (size_t l = oi, r = oi+1; r < oj; r++)
+            if(slice._lengths[r] != 1)
+            {
+                if(slice._strides[l] != slice._lengths[r] * slice._strides[r])
+                    throw new ReshapeException(
+                        slice._lengths.dup, 
+                        slice._strides.dup, 
+                        ret.  _lengths.dup,
+                        "structure is incompatible with new shape");
+                l = r;
+            }
+
+        ret._strides[nj - 1] = slice._strides[oj - 1];
+        foreach_reverse(i; ni .. nj - 1)
+            ret._strides[i] = ret._lengths[i+1] * ret._strides[i+1];
+    assert((oi == slice.N) == (ni == ret.N));
+    }
+    foreach(i; Iota!(ret.N, ret.PureN))
+    {
+        ret._lengths[i] = slice._lengths[i + slcie.N - ret.N];
+        ret._strides[i] = slice._strides[i + slcie.N - ret.N];
+    }
+    ret._ptr = slice._ptr;
+    return ret;
+}
+
+///
+unittest {
+    import std.range: iota;
+    import std.experimental.ndslice.iteration: allReversed;
+    auto slice = 100.iota
+        .sliced(3, 4)
+        .allReversed
+        .reshape(-1, 3);
+    assert(cast(int[][]) slice == 
+        [[11, 10, 9],
+         [ 8,  7, 6],
+         [ 5,  4, 3],
+         [ 2,  1, 0]]);
+}
+
+/// Reshape with memory reallocation
+unittest {
+    import std.array: array;
+    import std.range: iota;
+    import std.experimental.ndslice.iteration: reversed;
+    auto reshape2(S, L...)(S slice, L lengths)
+    {
+        // Try to reshape without reallocation
+        try return slice.reshape(lengths);
+        catch(ReshapeException e)
+            //reallocate elements and slice
+            //Note: -1 length is not supported by reshape2 
+            return slice.byElement.array.sliced(lengths);
+    }
+    auto slice = 100.iota
+        .array //cast to array
+        .sliced(3, 4)
+        .reversed!0;
+    assert(cast(int[][]) reshape2(slice, 4, 3) == 
+        [[ 8, 9, 10],
+         [11, 4,  5],
+         [ 6, 7,  0],
+         [ 1, 2,  3]]);
+}
+
+unittest {
+    import std.stdio;
+    import std.range: iota;
+    import std.experimental.ndslice.iteration: allReversed;
+    auto slice = 100.iota.sliced(1, 1, 3, 2, 1, 2, 1).allReversed;
+    assert(cast(int[][][][][][])slice.reshape(1, -1, 1, 1, 3, 1) == 
+        [[[[[[11], [10], [9]]]],
+          [[[[ 8], [ 7], [6]]]],
+          [[[[ 5], [ 4], [3]]]],
+          [[[[ 2], [ 1], [0]]]]]]);
+}
+
+///Exception class for $(LREF reshape).
+class ReshapeException: Exception
+{
+    /// Old lengths
+    size_t[] lengths;
+    /// Old strides
+    sizediff_t[] strides;
+    /// New lengths
+    size_t[] newLengths;
+    ///
+    this(
+        size_t[] lengths,
+        sizediff_t[] strides,
+        size_t[] newLengths,
+        string msg, 
+        string file = __FILE__, 
+        ulong line = cast(ulong)__LINE__, 
+        Throwable next = null 
+        ) pure nothrow @nogc @safe
+    {
+        super(msg, file, line, next);
+        this.lengths = lengths;
+        this.strides = strides;
+        this.newLengths = newLengths;
+    }
 }
 
 /++
