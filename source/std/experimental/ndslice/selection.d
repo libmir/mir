@@ -545,7 +545,7 @@ unittest {
 Returns new slice for the same data.
 Params:
     slice = slice to reshape
-    lengths = list of new dimensions. Single length can be set to `-1`. 
+    lengths = list of new dimensions. Single length can be set to `-1`.
         In this case, the corresponding dimension is inferred.
 Throws:
     $(ReshapeException) if `slice` con not be reshaped with `lengths`.
@@ -566,8 +566,8 @@ Slice!(Lengths.length, Range)
 
     if(eco == 0)
         throw new ReshapeException(
-            slice._lengths.dup, 
-            slice._strides.dup, 
+            slice._lengths.dup,
+            slice._strides.dup,
             ret.  _lengths.dup,
             "slice should be not empty");
 
@@ -582,8 +582,8 @@ Slice!(Lengths.length, Range)
 
     if(eco != ecn)
         throw new ReshapeException(
-            slice._lengths.dup, 
-            slice._strides.dup, 
+            slice._lengths.dup,
+            slice._strides.dup,
             ret.  _lengths.dup,
             "total elements count should be the same");
 
@@ -609,8 +609,8 @@ Slice!(Lengths.length, Range)
             {
                 if(slice._strides[l] != slice._lengths[r] * slice._strides[r])
                     throw new ReshapeException(
-                        slice._lengths.dup, 
-                        slice._strides.dup, 
+                        slice._lengths.dup,
+                        slice._strides.dup,
                         ret.  _lengths.dup,
                         "structure is incompatible with new shape");
                 l = r;
@@ -638,7 +638,7 @@ unittest {
         .sliced(3, 4)
         .allReversed
         .reshape(-1, 3);
-    assert(cast(int[][]) slice == 
+    assert(cast(int[][]) slice ==
         [[11, 10, 9],
          [ 8,  7, 6],
          [ 5,  4, 3],
@@ -656,14 +656,14 @@ unittest {
         try return slice.reshape(lengths);
         catch(ReshapeException e)
             //reallocate elements and slice
-            //Note: -1 length is not supported by reshape2 
+            //Note: -1 length is not supported by reshape2
             return slice.byElement.array.sliced(lengths);
     }
     auto slice = 100.iota
         .array //cast to array
         .sliced(3, 4)
         .reversed!0;
-    assert(cast(int[][]) reshape2(slice, 4, 3) == 
+    assert(cast(int[][]) reshape2(slice, 4, 3) ==
         [[ 8, 9, 10],
          [11, 4,  5],
          [ 6, 7,  0],
@@ -675,7 +675,7 @@ unittest {
     import std.range: iota;
     import std.experimental.ndslice.iteration: allReversed;
     auto slice = 100.iota.sliced(1, 1, 3, 2, 1, 2, 1).allReversed;
-    assert(cast(int[][][][][][])slice.reshape(1, -1, 1, 1, 3, 1) == 
+    assert(cast(int[][][][][][])slice.reshape(1, -1, 1, 1, 3, 1) ==
         [[[[[[11], [10], [9]]]],
           [[[[ 8], [ 7], [6]]]],
           [[[[ 5], [ 4], [3]]]],
@@ -696,10 +696,10 @@ class ReshapeException: Exception
         size_t[] lengths,
         sizediff_t[] strides,
         size_t[] newLengths,
-        string msg, 
-        string file = __FILE__, 
-        ulong line = cast(ulong)__LINE__, 
-        Throwable next = null 
+        string msg,
+        string file = __FILE__,
+        ulong line = cast(ulong)__LINE__,
+        Throwable next = null
         ) pure nothrow @nogc @safe
     {
         super(msg, file, line, next);
