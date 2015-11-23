@@ -698,7 +698,7 @@ class ReshapeException: Exception
         size_t[] newLengths,
         string msg,
         string file = __FILE__,
-        ulong line = cast(ulong)__LINE__,
+        uint line = cast(uint)__LINE__,
         Throwable next = null
         ) pure nothrow @nogc @safe
     {
