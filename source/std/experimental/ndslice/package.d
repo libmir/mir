@@ -85,7 +85,6 @@ $(TR $(TDNW Optimized Selection)
         $(SUBREF selection, unpack)
     )
 )
-)
 ))
 
 Example: slicing, indexing and operations

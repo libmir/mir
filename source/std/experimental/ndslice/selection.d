@@ -390,7 +390,8 @@ Params:
     slice = slice to split on blocks
     lengths = N dimensions for block size, residual blocks are ignored
 +/
-Slice!(N, Slice!(N+1, Range)) blocks(size_t N, Range)(auto ref Slice!(N, Range) slice, Repeat!(size_t, N) lengths)
+Slice!(N, Slice!(N+1, Range)) blocks(size_t N, Range, Lengths...)(auto ref Slice!(N, Range) slice, Lengths lengths)
+    if (allSatisfy!(isIndex, Lengths) && Lengths.length == N)
 in {
     foreach(i, length; lengths)
         assert(length > 0, "length for dimension = " ~ i.stringof ~ " must be positive"
@@ -407,6 +408,11 @@ body {
         ret._lengths[dimension+N] = lengths[dimension];
         ret._strides[dimension+N] = slice._strides[dimension];
     }
+    foreach(dimension; Iota!(N, slice.PureN))
+    {
+        ret._lengths[dimension+N] = slice._lengths[dimension];
+        ret._strides[dimension+N] = slice._strides[dimension];
+    }
     ret._ptr = slice._ptr;
     return ret;
 }
@@ -414,7 +420,7 @@ body {
 ///
 unittest {
     auto slice = new int[1000].sliced(5, 8);
-    auto blocks = slice.blocks!(2, int*)(2, 3);
+    auto blocks = slice.blocks(2, 3);
     int i;
     foreach(block; blocks.byElement)
         block[] = ++i;
@@ -426,17 +432,19 @@ unittest {
           [[4, 4, 4], [4, 4, 4]]]]);
 
     assert(cast(int[][])     slice ==
-        [[1, 1, 1, 2, 2, 2, 0, 0],
-         [1, 1, 1, 2, 2, 2, 0, 0],
-         [3, 3, 3, 4, 4, 4, 0, 0],
-         [3, 3, 3, 4, 4, 4, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0]]);
+        [[1, 1, 1,  2, 2, 2,  0, 0],
+         [1, 1, 1,  2, 2, 2,  0, 0],
+
+         [3, 3, 3,  4, 4, 4,  0, 0],
+         [3, 3, 3,  4, 4, 4,  0, 0],
+         
+         [0, 0, 0,  0, 0, 0,  0, 0]]);
 }
 
 ///Diagonal blocks
 unittest {
     auto slice = new int[1000].sliced(5, 8);
-    auto blocks = slice.blocks!(2, int*)(2, 3);
+    auto blocks = slice.blocks(2, 3);
     auto diagonalBlocks = blocks.diagonal.unpack;
 
     diagonalBlocks[0][] = 1;
@@ -453,11 +461,33 @@ unittest {
           [[2, 2, 2], [2, 2, 2]]]]);
 
     assert(cast(int[][])     slice ==
-        [[1, 1, 1, 0, 0, 0, 0, 0],
-         [1, 1, 1, 0, 0, 0, 0, 0],
-         [0, 0, 0, 2, 2, 2, 0, 0],
-         [0, 0, 0, 2, 2, 2, 0, 0],
+        [[1, 1, 1,  0, 0, 0,  0, 0],
+         [1, 1, 1,  0, 0, 0,  0, 0],
+
+         [0, 0, 0,  2, 2, 2,  0, 0],
+         [0, 0, 0,  2, 2, 2,  0, 0],
+
          [0, 0, 0, 0, 0, 0, 0, 0]]);
+}
+
+///Vertical blocks for matrix
+unittest {
+    auto slice = new int[1000].sliced(5, 13);
+    auto windows = slice
+        .pack!1
+        .evertPack
+        .blocks(3);
+
+    int i;    
+    foreach(window; windows.byElement)
+        window[] = ++i;
+
+    assert(cast(int[][]) slice ==
+        [[1, 1, 1,  2, 2, 2,  3, 3, 3,  4, 4, 4,  0],
+         [1, 1, 1,  2, 2, 2,  3, 3, 3,  4, 4, 4,  0],
+         [1, 1, 1,  2, 2, 2,  3, 3, 3,  4, 4, 4,  0],
+         [1, 1, 1,  2, 2, 2,  3, 3, 3,  4, 4, 4,  0],
+         [1, 1, 1,  2, 2, 2,  3, 3, 3,  4, 4, 4,  0]]);
 }
 
 /++
@@ -469,7 +499,8 @@ Params:
     slice = slice to iterate
     lengths = N dimensions for size of the window
 +/
-Slice!(N, Slice!(N+1, Range)) windows(size_t N, Range)(auto ref Slice!(N, Range) slice, Repeat!(size_t, N) lengths)
+Slice!(N, Slice!(N+1, Range)) windows(size_t N, Range, Lengths...)(auto ref Slice!(N, Range) slice, Lengths lengths)
+    if (allSatisfy!(isIndex, Lengths) && Lengths.length == N)
 in {
     foreach(i, length; lengths)
         assert(length > 0, "length for dimension = " ~ i.stringof ~ " must be positive"
@@ -484,6 +515,11 @@ body {
         ret._lengths[dimension+N] = lengths[dimension];
         ret._strides[dimension+N] = slice._strides[dimension];
     }
+    foreach(dimension; Iota!(N, slice.PureN))
+    {
+        ret._lengths[dimension+N] = slice._lengths[dimension];
+        ret._strides[dimension+N] = slice._strides[dimension];
+    }
     ret._ptr = slice._ptr;
     return ret;
 }
@@ -491,38 +527,42 @@ body {
 ///
 unittest {
     auto slice = new int[1000].sliced(5, 8);
-    auto windows = slice.windows!(2, int*)(2, 3);
+    auto windows = slice.windows(2, 3);
     foreach(window; windows.byElement)
         window[] += 1;
 
     assert(cast(int[][]) slice ==
-        [[1, 2, 3, 3, 3, 3, 2, 1],
-         [2, 4, 6, 6, 6, 6, 4, 2],
-         [2, 4, 6, 6, 6, 6, 4, 2],
-         [2, 4, 6, 6, 6, 6, 4, 2],
-         [1, 2, 3, 3, 3, 3, 2, 1]]);
+        [[1,  2,  3, 3, 3, 3,  2,  1],
+
+         [2,  4,  6, 6, 6, 6,  4,  2],
+         [2,  4,  6, 6, 6, 6,  4,  2],
+         [2,  4,  6, 6, 6, 6,  4,  2],
+        
+         [1,  2,  3, 3, 3, 3,  2,  1]]);
 }
 
 ///
 unittest {
     auto slice = new int[1000].sliced(5, 8);
-    auto windows = slice.windows!(2, int*)(2, 3);
+    auto windows = slice.windows(2, 3);
     windows[1, 2][] = 1;
     windows[1, 2][0, 1] += 1;
     windows.unpack[1, 2, 0, 1] += 1;
 
     assert(cast(int[][]) slice ==
-        [[0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 1, 3, 1, 0, 0, 0],
-         [0, 0, 1, 1, 1, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 0, 0, 0, 0, 0]]);
+        [[0, 0,  0, 0, 0,  0, 0, 0],
+
+         [0, 0,  1, 3, 1,  0, 0, 0],
+         [0, 0,  1, 1, 1,  0, 0, 0],
+
+         [0, 0,  0, 0, 0,  0, 0, 0],
+         [0, 0,  0, 0, 0,  0, 0, 0]]);
 }
 
 ///Multi-diagonal
 unittest {
     auto slice = new int[1000].sliced(8, 8);
-    auto windows = slice.windows!(2, int*)(3, 3);
+    auto windows = slice.windows(3, 3);
 
     auto multidiagonal = windows
         .diagonal
@@ -531,14 +571,33 @@ unittest {
         window[] += 1;
 
     assert(cast(int[][]) slice ==
-        [[1, 1, 1, 0, 0, 0, 0, 0],
-         [1, 2, 2, 1, 0, 0, 0, 0],
-         [1, 2, 3, 2, 1, 0, 0, 0],
-         [0, 1, 2, 3, 2, 1, 0, 0],
-         [0, 0, 1, 2, 3, 2, 1, 0],
-         [0, 0, 0, 1, 2, 3, 2, 1],
-         [0, 0, 0, 0, 1, 2, 2, 1],
-         [0, 0, 0, 0, 0, 1, 1, 1]]);
+        [[ 1, 1, 1,  0, 0, 0, 0, 0],
+         [ 1, 2, 2, 1,  0, 0, 0, 0],
+         [ 1, 2, 3, 2, 1,  0, 0, 0],
+         [0,  1, 2, 3, 2, 1,  0, 0],
+         [0, 0,  1, 2, 3, 2, 1,  0],
+         [0, 0, 0,  1, 2, 3, 2, 1],
+         [0, 0, 0, 0,  1, 2, 2, 1],
+         [0, 0, 0, 0, 0,  1, 1, 1]]);
+}
+
+///Vertical windows for matrix
+unittest {
+    auto slice = new int[1000].sliced(5, 8);
+    auto windows = slice
+        .pack!1
+        .evertPack
+        .windows(3);
+
+    foreach(window; windows.byElement)
+        window[] += 1;
+
+    assert(cast(int[][]) slice ==
+        [[1,  2,  3, 3, 3, 3,  2,  1],
+         [1,  2,  3, 3, 3, 3,  2,  1],
+         [1,  2,  3, 3, 3, 3,  2,  1],
+         [1,  2,  3, 3, 3, 3,  2,  1],
+         [1,  2,  3, 3, 3, 3,  2,  1]]);
 }
 
 /++
@@ -889,6 +948,11 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             }
             body {
                 return typeof(return)(i, j);
+            }
+
+            size_t[N] index() @property
+            {
+                return _indexes;
             }
         }
         return ByElement(slice, slice.elementsCount);
