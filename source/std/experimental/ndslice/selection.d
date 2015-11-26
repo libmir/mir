@@ -984,6 +984,18 @@ unittest {
         .equal(iota(6 * 7, 6 * 7 * 2)));
 }
 
+/// properties
+unittest {
+    import std.range: iota;
+    auto elems = 12.iota.sliced(3, 4).byElement;
+    elems.popFrontExactly(2);
+    assert(elems.front == 2);
+    assert(elems.index == [0, 2]);
+    elems.popBackExactly(2);
+    assert(elems.back == 9);
+    assert(elems.length == 8);
+}
+
 /++
 Random access and slicing.
 Random access is more expensive comparing with iteration with input range primitives.
@@ -1144,6 +1156,11 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
                     _indexes[i] = 0;
                 }
             }
+
+            size_t[N] index() @property
+            {
+                return _indexes;
+            }
         }
         foreach(i; Iota!(0, N))
             if(maxCobeLength > slice._lengths[i])
@@ -1184,4 +1201,19 @@ unittest {
          [0,  0, 0, 7, 3],
          [0,  0, 9, 6, 2],
          [0, 10, 8, 5, 1]]);
+}
+
+
+/// properties
+unittest {
+    import std.range: iota;
+    auto elems = 12.iota.sliced(3, 4).byElementInStandardSimplex;
+    elems.popFront;
+    assert(elems.front == 1);
+    assert(elems.index == [0, 1]);
+    import std.range: popFrontN;
+    elems.popFrontN(3);
+    assert(elems.front == 5);
+    assert(elems.index == [1, 1]);
+    assert(elems.length == 2);
 }
