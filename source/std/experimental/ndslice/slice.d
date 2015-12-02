@@ -272,16 +272,6 @@ private template _Range_DeclarationList(Names...)
 }
 
 
-///
-auto assumeSameStructure()
-{
-    foreach()
-    {
-        
-    }
-}
-
-
 /++
 If `yes` arrays would be replaced with pointers to increase performance.
 Use `no` for compile time function evolution.
