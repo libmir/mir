@@ -14,7 +14,7 @@ $(T2 transposed, `100000.iota.sliced(3, 4, 5, 6, 7).transposed!(4, 0, 1).shape` 
 $(T2 swapped, `1000.iota.sliced(3, 4, 5).swapped!(1, 2).shape` returns `[3, 5, 4]`.)
 $(T2 everted, `1000.iota.sliced(3, 4, 5).everted.shape` returns `[5, 4, 3]`.)
 )
-See also $(LREF evertPack).
+See also $(SUBREF selection, evertPack).
 
 $(BOOKTABLE $(H2 Iteration operators),
 
@@ -29,14 +29,30 @@ $(TR $(TH Function Name) $(TH Description))
 $(T2 rotated, `10.iota.sliced(2, 3).rotated.writeln;` prints `[[2, 5], [1, 4], [0, 3]]`.)
 )
 
-Drop operators:
-    $(LREF dropToNCube), $(LREF dropBack),
-    $(LREF drop), $(LREF dropBack),
-    $(LREF dropOne), $(LREF dropBackOne),
-    $(LREF dropExactly), $(LREF dropBackExactly),
-    $(LREF allDrop), $(LREF allDropBack),
-    $(LREF allDropOne), $(LREF allDropBackOne),
-    $(LREF allDropExactly), $(LREF allDropBackExactly).
+$(H4 Drop operators)
+
+$(LREF dropToHypercube), $(LREF dropBack),
+$(LREF drop), $(LREF dropBack),
+$(LREF dropOne), $(LREF dropBackOne),
+$(LREF dropExactly), $(LREF dropBackExactly),
+$(LREF allDrop), $(LREF allDropBack),
+$(LREF allDropOne), $(LREF allDropBackOne),
+$(LREF allDropExactly), $(LREF allDropBackExactly).
+
+$(GRAMMAR
+$(GNAME DropOperatorName):
+    $(D dropToHypercube)
+    $(GLINK DropRoot)
+    $(GLINK DropRoot) $(GLINK DropSuffix)
+    $(GLINK DropRoot) $(D Back)
+    $(GLINK DropRoot) $(D Back) $(GLINK DropSuffix)
+$(GNAME DropRoot):
+    $(D drop)
+    $(D allDrop)
+$(GNAME DropSuffix):
+    $(D One)
+    $(D Exactly)
+)
 
 $(BOOKTABLE $(H2 Bifacial operators),
 
@@ -51,7 +67,7 @@ License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
-Source:    $(PHOBOSSRC std/_experimental/_ndslice/_operators.d)
+Source:    $(PHOBOSSRC std/_experimental/_ndslice/_iteration.d)
 
 Macros:
 SUBMODULE = $(LINK2 std_experimental_ndslice_$1.html, std.experimental.ndslice.$1)
@@ -957,7 +973,7 @@ unittest {
 /++
 Returns maximal multidimensional cube.
 +/
-Slice!(N, Range) dropToNCube(size_t N, Range)(Slice!(N, Range) slice)
+Slice!(N, Range) dropToHypercube(size_t N, Range)(Slice!(N, Range) slice)
 body {
     size_t length = slice._lengths[0];
     foreach(i; Iota!(1, N))
@@ -973,6 +989,6 @@ unittest {
     import std.range: iota, retro;
     assert(1000.iota
         .sliced(5, 4, 6, 7)
-        .dropToNCube
+        .dropToHypercube
         .shape == [4, 4, 4, 4]);
 }

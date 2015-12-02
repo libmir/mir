@@ -21,7 +21,7 @@
 
 4. Do not use `Exception`s/`enforce`s to check indexes and length. Exceptions are
     allowed only for algorithms where validation of an input data is
-    significantly complex for user. `reshaped` is a good example where
+    significantly complex for user. `reshape` is a good example where
     Exceptions are required. Put an example of Exception handing and workaround
     for a function that can throw.
 
@@ -50,12 +50,15 @@ $(SCRIPT inhibitQuickIndex = 1;)
 
 $(DIVC quickindex,
 $(BOOKTABLE ,
-$(TR $(TH Category) $(TH Submodule) $(TH Functions)
+$(TR $(TH Category) $(TH Submodule) $(TH Declarations)
 )
 $(TR $(TDNW Slicing)
      $(TDNW $(SUBMODULE slice))
      $(TD
         $(SUBREF slice, sliced)
+        $(SUBREF slice, Slice)
+        $(SUBREF slice, ReplaceArrayWithPointer)
+        $(SUBREF slice, DeepElementType)
     )
 )
 $(TR $(TDNW Iteration)
@@ -68,7 +71,7 @@ $(TR $(TDNW Iteration)
         $(SUBREF iteration, everted)
         $(SUBREF iteration, swapped)
         $(SUBREF iteration, allReversed)
-        $(SUBREF iteration, dropToNCube) and other `drop*` primitives
+        $(SUBREF iteration, dropToHypercube) and other `drop` primitives
     )
 )
 $(TR $(TDNW Optimized Selection)
@@ -269,4 +272,194 @@ unittest {
     auto ouptut = "1 2 3\n4 5 6\n";
     auto fmt = "%(%(%s %)\n%)\n";
     assert(format(fmt, toMatrix(input)) == ouptut);
+}
+
+unittest
+{
+    import std.algorithm.comparison: equal;
+    import std.range: iota;
+    immutable r = 1_000_000.iota;
+
+    auto t0 = r.sliced(1000);
+    assert(t0.front == 0);
+    assert(t0.back == 999);
+    assert(t0[9] == 9);
+
+    auto t1 = t0[10..20];
+    assert(t1.front == 10);
+    assert(t1.back == 19);
+    assert(t1[9] == 19);
+
+    t1.popFront();
+    assert(t1.front == 11);
+    t1.popFront();
+    assert(t1.front == 12);
+
+    t1.popBack();
+    assert(t1.back == 18);
+    t1.popBack();
+    assert(t1.back == 17);
+
+    assert(t1.equal(iota(12, 18)));
+}
+
+unittest
+{
+    import std.algorithm.comparison: equal;
+    import std.array: array;
+    import std.range: iota;
+    auto r = 1_000.iota.array;
+
+    auto t0 = r.sliced(1000);
+    assert(t0.length == 1000);
+    assert(t0.front == 0);
+    assert(t0.back == 999);
+    assert(t0[9] == 9);
+
+    auto t1 = t0[10..20];
+    assert(t1.front == 10);
+    assert(t1.back == 19);
+    assert(t1[9] == 19);
+
+    t1.popFront();
+    assert(t1.front == 11);
+    t1.popFront();
+    assert(t1.front == 12);
+
+    t1.popBack();
+    assert(t1.back == 18);
+    t1.popBack();
+    assert(t1.back == 17);
+
+    assert(t1.equal(iota(12, 18)));
+
+    t1.front = 13;
+    assert(t1.front == 13);
+    t1.front++;
+    assert(t1.front == 14);
+    t1.front += 2;
+    assert(t1.front == 16);
+    t1.front = 12;
+    assert((t1.front = 12) == 12);
+
+    t1.back = 13;
+    assert(t1.back == 13);
+    t1.back++;
+    assert(t1.back == 14);
+    t1.back += 2;
+    assert(t1.back == 16);
+    t1.back = 12;
+    assert((t1.back = 12) == 12);
+
+    t1[3] = 13;
+    assert(t1[3] == 13);
+    t1[3]++;
+    assert(t1[3] == 14);
+    t1[3] += 2;
+    assert(t1[3] == 16);
+    t1[3] = 12;
+    assert((t1[3] = 12) == 12);
+
+    t1[3..5] = 100;
+    assert(t1[2] != 100);
+    assert(t1[3] == 100);
+    assert(t1[4] == 100);
+    assert(t1[5] != 100);
+
+    t1[3..5] += 100;
+    assert(t1[2] <  100);
+    assert(t1[3] == 200);
+    assert(t1[4] == 200);
+    assert(t1[5] <  100);
+
+    --t1[3..5];
+
+    assert(t1[2] <  100);
+    assert(t1[3] == 199);
+    assert(t1[4] == 199);
+    assert(t1[5] <  100);
+
+    --t1[];
+    assert(t1[3] == 198);
+    assert(t1[4] == 198);
+
+    t1[] += 2;
+    assert(t1[3] == 200);
+    assert(t1[4] == 200);
+
+    t1[] *= t1[];
+    assert(t1[3] == 40000);
+    assert(t1[4] == 40000);
+
+
+    assert(&t1[$-1] is &(t1.back()));
+}
+
+unittest
+{
+    import std.range: iota;
+    auto r = (10_000L * 2 * 3 * 4).iota;
+
+    auto t0 = r.sliced(10, 20, 30, 40);
+    assert(t0.length == 10);
+    assert(t0.length!0 == 10);
+    assert(t0.length!1 == 20);
+    assert(t0.length!2 == 30);
+    assert(t0.length!3 == 40);
+}
+
+unittest {
+    import std.experimental.ndslice.internal: Iota;
+    import std.meta: AliasSeq;
+    import std.range;
+    foreach(R; AliasSeq!(
+        int*, int[], typeof(1.iota),
+        const(int)*, const(int)[],
+        immutable(int)*, immutable(int)[],
+        double*, double[], typeof(10.0.iota),
+        Tuple!(double, int[string])*, Tuple!(double, int[string])[]))
+    foreach(n; Iota!(1, 4))
+    {
+        alias S = Slice!(n, R);
+        static assert(isRandomAccessRange!S);
+        static assert(hasSlicing!S);
+        static assert(hasLength!S);
+    }
+
+    immutable int[] im = [1,2,3,4,5,6];
+    auto slice = im.sliced(2, 3);
+}
+
+unittest {
+    auto tensor = new int[100].sliced(3, 4, 8);
+    assert(&(tensor.back.back.back()) is &tensor[2, 3, 7]);
+    assert(&(tensor.front.front.front()) is &tensor[0, 0, 0]);
+}
+
+unittest {
+    import std.experimental.ndslice.selection: pack;
+    auto slice = new int[24].sliced(2, 3, 4);
+    auto r0 = slice.pack!1[1, 2];
+    slice.pack!1[1, 2] = 4;
+    auto r1 = slice[1, 2];
+    assert(slice[1, 2, 3] == 4);
+}
+
+unittest {
+    auto ar = new int[3 * 8 * 9];
+
+    auto tensor = ar.sliced(3, 8, 9);
+    tensor[0, 1, 2] = 4;
+    tensor[0, 1, 2]++;
+    assert(tensor[0, 1, 2] == 5);
+    tensor[0, 1, 2]--;
+    assert(tensor[0, 1, 2] == 4);
+    tensor[0, 1, 2] += 2;
+    assert(tensor[0, 1, 2] == 6);
+
+    auto matrix = tensor[0..$, 1, 0..$];
+    matrix[] = 10;
+    assert(tensor[0, 1, 2] == 10);
+    assert(matrix[0, 2] == tensor[0, 1, 2]);
+    assert(&matrix[0, 2] is &tensor[0, 1, 2]);
 }

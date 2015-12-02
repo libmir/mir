@@ -18,9 +18,9 @@ $(T2 unpack, unites all dimension packs.)
 $(T2 evertPack, reverse packs of dimensions.)
 )
 
-$(H2 Selectors)
+$(BOOKTABLE $(H2 Selectors),
 
-$(BOOKTABLE Selectors,
+$(TR $(TH Function Name) $(TH Description))
 $(T2 blocks, n-dimensional slice of n-dimensional non-overlapping blocks)
 $(T2 windows, n-dimensional slice of n-dimensional overlapping  windows)
 $(T2 diagonal, 1-dimensional slice of diagonal elements)
@@ -33,7 +33,7 @@ License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
-Source:    $(PHOBOSSRC std/_experimental/_ndslice/_selectors.d)
+Source:    $(PHOBOSSRC std/_experimental/_ndslice/_selection.d)
 
 Macros:
 SUBMODULE = $(LINK2 std_experimental_ndslice_$1.html, std.experimental.ndslice.$1)
@@ -290,7 +290,7 @@ unittest {
 unittest {
     import std.algorithm.comparison: equal;
     import std.range: iota;
-    import std.experimental.ndslice.iteration: dropToNCube, reversed;
+    import std.experimental.ndslice.iteration: dropToHypercube, reversed;
     //  -------
     // | 0 1 2 |
     // | 3 4 5 |
@@ -299,7 +299,7 @@ unittest {
     // | 1 3 |
     assert(10.iota
         .sliced(2, 3)
-        .dropToNCube
+        .dropToHypercube
         .reversed!1
         .diagonal
         .equal([1, 3]));
@@ -437,7 +437,7 @@ unittest {
 
          [3, 3, 3,  4, 4, 4,  0, 0],
          [3, 3, 3,  4, 4, 4,  0, 0],
-         
+
          [0, 0, 0,  0, 0, 0,  0, 0]]);
 }
 
@@ -478,7 +478,7 @@ unittest {
         .evertPack
         .blocks(3);
 
-    int i;    
+    int i;
     foreach(window; windows.byElement)
         window[] = ++i;
 
@@ -537,7 +537,7 @@ unittest {
          [2,  4,  6, 6, 6, 6,  4,  2],
          [2,  4,  6, 6, 6, 6,  4,  2],
          [2,  4,  6, 6, 6, 6,  4,  2],
-        
+
          [1,  2,  3, 3, 3, 3,  2,  1]]);
 }
 
@@ -786,7 +786,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             size_t _length;
             size_t[N] _indexes;
 
-            static if (isPointer!PureRange || isForwardRange!PureRange)
+            static if (isForwardRange!This)
             auto save() @property
             {
                 return typeof(this)(_slice.save, _length, _indexes);
@@ -1098,7 +1098,7 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
             size_t sum;
             size_t[N] _indexes;
 
-            static if (isPointer!PureRange || isForwardRange!PureRange)
+            static if (isForwardRange!This)
             auto save() @property
             {
                 return typeof(this)(_slice.save, _length, maxCobeLength, sum, _indexes);
