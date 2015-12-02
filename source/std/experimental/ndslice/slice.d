@@ -72,6 +72,8 @@ body {
     return ret;
 }
 
+private enum bool _isSlice(T) = is(T : Slice!(N, Range), size_t N, Range);
+
 ///ditto
 template sliced(Names...)
  if (Names.length && !anySatisfy!(isType, Names) && allSatisfy!(isStringValue, Names))
@@ -97,6 +99,9 @@ template sliced(Names...)
             size_t shift = 0)
     {
         alias RS = AliasSeq!("  ~_Range_Types!Names ~ ");
+        static assert(!anySatisfy!(_isSlice, RS),
+            `Pucked slices are not allowed in slice tuples`
+            ~ tailErrorMessage!());
         alias PT = PtrTuple!Names;
         alias SPT = PT!(staticMap!(PrepareRangeType, RS));
         SPT range = void;
@@ -107,15 +112,15 @@ template sliced(Names...)
             alias R = RS[i];
             static assert(!isStaticArray!R);
             static assert(!isNarrowString!R);
+            mixin(`alias r = range_` ~ name ~`;`);
             static if (hasLength!R)
-                mixin(`assert(
-                minLength <= range_` ~ name ~ `.length,
+                assert(minLength <= r.length,
                     \" length of the range '\" ~ name ~ \"' must be greater or equal to lengths product plus shift.\"
-                    ~ tailErrorMessage!());`);
+                    ~ tailErrorMessage!());
             static if(isDynamicArray!T && mod)
-                mixin(`range.ptrs[i] = range_` ~ name ~`.ptr);`);
+                range.ptrs[i] = r.ptr;
             else
-                mixin(`range.ptrs[i] = T(0, range_` ~ name ~`);`);
+                range.ptrs[i] = T(0, r);
         }
         return .sliced!(mod, N, SPT)(range, lengths, shift);
     }
@@ -139,31 +144,29 @@ unittest {
     assert(slice[0, 0, 0] == 9);
 }
 
-/// Sliced tuple
+/// Slice tuple. See also $(LREF assumeSameStructure).
 unittest {
     import std.algorithm.comparison: equal;
     import std.experimental.ndslice.selection: byElement;
     import std.range: iota;
 
-    auto a = 12.iota;
-    auto b = new int[12];
+    auto alpha = 12.iota;
+    auto beta = new int[12];
 
-    auto m = sliced!("a", "b")(a, b, 4, 3);
+    auto m = sliced!("a", "b")(alpha, beta, 4, 3);
     foreach(r; m)
         foreach(e; r)
             e.b = e.a;
-    assert(equal(a, b));
+    assert(equal(alpha, beta));
 
-    b[] = 0;
+    beta[] = 0;
     foreach(e; m.byElement)
         e.b = e.a;
-    assert(equal(a, b));
+    assert(equal(alpha, beta));
 }
 
 /++
 Creates array and n-dimensional slice over it.
-Params:
-    lengths = list of lengths for dimensions
 +/
 unittest {
 
@@ -216,7 +219,7 @@ Allocates array and n-dimensional slice over it.
 Params:
     alloc = allocator, see also $(LINK2 std_experimental_allocator.html, std.experimental.allocator)
     lengths = list of lengths for dimensions
-Returns: `array` created with `alloc` and `slice` over it
+Returns `array` created with `alloc` and `slice` over it
 +/
 unittest {
     import std.experimental.allocator;
@@ -271,6 +274,79 @@ private template _Range_DeclarationList(Names...)
         enum string _Range_DeclarationList = "";
 }
 
+private template _Slice_DeclarationList(Names...)
+{
+    static if(Names.length)
+        enum string _Slice_DeclarationList = "Slice!(N, Range_" ~ Names[0] ~ ") slice_" ~ Names[0] ~ ", " ~ _Slice_DeclarationList!(Names[1..$]);
+    else
+        enum string _Slice_DeclarationList = "";
+}
+
+/++
+Groups slices into slice tuple.
+Slices must have the same structure.
+
+See_also: $(LREF .Slice.structure).
++/
+template assumeSameStructure(Names...)
+ if (Names.length && !anySatisfy!(isType, Names) && allSatisfy!(isStringValue, Names))
+{
+    mixin(
+    "
+    auto assumeSameStructure(
+            ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes,
+            size_t N, " ~ _Range_Types!Names ~ ")
+            (" ~ _Slice_DeclarationList!Names ~ ")
+    {
+        alias RS = AliasSeq!("  ~_Range_Types!Names ~ ");
+        static assert(!anySatisfy!(_isSlice, RS),
+            `Pucked slices not allowed in slice tuples`
+            ~ tailErrorMessage!());
+
+        alias PT = PtrTuple!Names;
+        alias SPT = PT!(staticMap!(PrepareRangeType, RS));
+        Slice!(N, SPT) ret = void;
+        mixin(`alias slice0 = slice_` ~ Names[0] ~`;`);
+        ret._lengths = slice0._lengths;
+        ret._strides = slice0._strides;
+        ret._ptr._range.ptrs[0] = slice0._ptr;
+        ret._ptr._shift = 0;
+        foreach(i, name; Names[1..$])
+        {
+            mixin(`alias slice = slice_` ~ name ~`;`);
+            assert(ret._lengths == slice._lengths,
+                `Shapes must be identical`
+                ~ tailErrorMessage!());
+            assert(ret._strides == slice._strides,
+                `Strides must be identical`
+                ~ tailErrorMessage!());
+            ret._ptr._range.ptrs[i+1] = slice._ptr;
+        }
+        return ret;
+    }
+    ");
+}
+
+///
+unittest {
+    import std.algorithm.comparison: equal;
+    import std.experimental.ndslice.selection: byElement;
+    import std.range: iota;
+
+    auto alpha = 12.iota   .sliced(4, 3);
+    auto beta = new int[12].sliced(4, 3);
+
+    auto m = assumeSameStructure!("a", "b")(alpha, beta);
+    foreach(r; m)
+        foreach(e; r)
+            e.b = e.a;
+    assert(equal(alpha, beta));
+
+    beta[] = 0;
+    foreach(e; m.byElement)
+        e.b = e.a;
+    assert(equal(alpha, beta));
+}
 
 /++
 If `yes` arrays would be replaced with pointers to increase performance.
