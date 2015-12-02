@@ -57,9 +57,18 @@ body {
     }
     else
     {
-        Slice!(N, ImplicitlyUnqual!(typeof(range))) ret = void;
-        ret._ptr._range = range;
-        ret._ptr._shift = shift;
+        alias S = Slice!(N, ImplicitlyUnqual!(typeof(range)));
+        S ret = void;
+        static if(hasPtrBehavior!(S.PureRange))
+        {
+            ret._ptr = range;
+            ret._ptr += shift;
+        }
+        else
+        {
+            ret._ptr._range = range;
+            ret._ptr._shift = shift;
+        }
     }
 
     size_t stride = 1;
@@ -302,15 +311,13 @@ template assumeSameStructure(Names...)
         static assert(!anySatisfy!(_isSlice, RS),
             `Pucked slices not allowed in slice tuples`
             ~ tailErrorMessage!());
-
         alias PT = PtrTuple!Names;
         alias SPT = PT!(staticMap!(PrepareRangeType, RS));
         Slice!(N, SPT) ret = void;
         mixin(`alias slice0 = slice_` ~ Names[0] ~`;`);
         ret._lengths = slice0._lengths;
         ret._strides = slice0._strides;
-        ret._ptr._range.ptrs[0] = slice0._ptr;
-        ret._ptr._shift = 0;
+        ret._ptr.ptrs[0] = slice0._ptr;
         foreach(i, name; Names[1..$])
         {
             mixin(`alias slice = slice_` ~ name ~`;`);
@@ -320,7 +327,7 @@ template assumeSameStructure(Names...)
             assert(ret._strides == slice._strides,
                 `Strides must be identical`
                 ~ tailErrorMessage!());
-            ret._ptr._range.ptrs[i+1] = slice._ptr;
+            ret._ptr.ptrs[i+1] = slice._ptr;
         }
         return ret;
     }
@@ -462,7 +469,7 @@ struct Slice(size_t _N, _Range)
 
     size_t[PureN] _lengths;
     sizediff_t[PureN] _strides;
-    static if (isPointer!PureRange || is(PureRange : PtrTuple!(Names), Names))
+    static if (hasPtrBehavior!PureRange)
         PureRange _ptr;
     else
         PtrShell!PureRange _ptr;
@@ -504,14 +511,14 @@ struct Slice(size_t _N, _Range)
             _lengths[i] = lengths[i];
         foreach(i; Iota!(0, PureN))
             _strides[i] = strides[i];
-        static if (isPointer!PureRange)
+        static if (hasPtrBehavior!PureRange)
             _ptr = range;
         else
             _ptr._range = range;
 
     }
 
-    static if (!isPointer!PureRange)
+    static if (!hasPtrBehavior!PureRange)
     this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PtrShell!PureRange shell)
     {
         foreach(i; Iota!(0, PureN))
@@ -688,29 +695,6 @@ struct Slice(size_t _N, _Range)
             .strided!2(6)    //multiplies stride by 6, and changes length
             .swapped!(1, 2)  //swaps dimensions `1` and `2`
             .stride!1 == -6);
-    }
-
-    static if (N == PureN)
-    {
-        static if (isPointer!PureRange)
-        {
-            package(std) inout(PureRange) ptr() @property inout
-            {
-                return _ptr;
-            }
-        }
-        static if (!isPointer!PureRange)
-        {
-            package(std) PureRange range() @property
-            {
-                return _ptr._range;
-            }
-
-            package(std) sizediff_t shift()
-            {
-                return _ptr._shift;
-            }
-        }
     }
 
     /++
@@ -1194,25 +1178,6 @@ struct Slice(size_t _N, _Range)
     }
 }
 
-// Properties and methods: package(std)
-unittest {
-    import std.range: iota;
-    auto tensor = 100.iota.sliced(3, 4, 5);
-
-    // `range` method
-    auto theIota0 = tensor.range;
-    assert(theIota0.front == 0);
-    tensor.popFront;
-    auto theIota1 = tensor.range;
-    assert(theIota1.front == 0);
-
-    // `ptr` property
-    import std.array: array;
-    auto ar = 100.iota.array;
-    auto ts = ar.sliced(3, 4, 5)[1..$, 2..$, 3..$];
-    assert(ts.ptr is ar.ptr + 1*20+2*5+3*1);
-}
-
 // Slicing
 unittest {
     import std.range: iota;
@@ -1398,17 +1363,6 @@ private struct PtrShell(Range)
         body {
             mixin(`return _range[_shift + index] ` ~ op ~ `= value;`);
         }
-
-        auto ref opIndexUnary(string op)(sizediff_t index)
-            if (op == `++` || op == `--`)
-         in {
-            assert(_shift + index >= 0);
-            static if (hasLength!Range)
-                assert(_shift + index <= _range.length);
-        }
-        body {
-            mixin(`return ` ~ op ~ `_range[_shift + index];`);
-        }
     }
 
     static if (canSave!Range)
@@ -1443,10 +1397,20 @@ unittest {
 
 private enum isSlicePointer(T) = isPointer!T || is(T : PtrShell!R, R);
 private enum canSave(T) = isPointer!T || __traits(compiles, { T _unused; _unused = T.init.save; });
-
+private struct LikePtr {}
+template hasPtrBehavior(T)
+{
+    static if (isPointer!T)
+        enum hasPtrBehavior = true;
+    else
+    static if(!isAggregateType!T)
+        enum hasPtrBehavior = false;
+    else
+        enum hasPtrBehavior = hasUDA!(T, LikePtr);
+}
 private template PtrTuple(Names...)
 {
-    struct PtrTuple(Ptrs...)
+    @LikePtr struct PtrTuple(Ptrs...)
         if (allSatisfy!(isSlicePointer, Ptrs) && Ptrs.length == Names.length)
     {
         Ptrs ptrs;
@@ -1456,10 +1420,10 @@ private template PtrTuple(Names...)
         {
             PtrTuple p = void;
             foreach(i, ref ptr; ptrs)
-            static if(isPointer!(Ptrs[i]))
-                p.ptrs[i] = ptr;
-            else
-                p.ptrs[i] = ptr.save;
+                static if(isPointer!(Ptrs[i]))
+                    p.ptrs[i] = ptr;
+                else
+                    p.ptrs[i] = ptr.save;
 
             return p;
         }
@@ -1467,7 +1431,7 @@ private template PtrTuple(Names...)
         void opOpAssign(string op)(sizediff_t shift)
             if (op == `+` || op == `-`)
         {
-            foreach(ptr; ptrs)
+            foreach(ref ptr; ptrs)
                 mixin(`ptr ` ~ op ~ `= shift;`);
         }
 

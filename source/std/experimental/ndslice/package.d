@@ -57,6 +57,7 @@ $(TR $(TDNW Slicing)
      $(TD
         $(SUBREF slice, sliced)
         $(SUBREF slice, Slice)
+        $(SUBREF slice, assumeSameStructure)
         $(SUBREF slice, ReplaceArrayWithPointer)
         $(SUBREF slice, DeepElementType)
     )
