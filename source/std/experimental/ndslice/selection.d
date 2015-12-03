@@ -1220,7 +1220,7 @@ unittest {
 
 
 /++
-Returns a slice with elements equals to initial index.
+Returns the slice with elements equals to initial index.
 See_also: $(LREF IndexSlice)
 +/
 IndexSlice!(Lengths.length) indexSlice(Lengths...)(Lengths lengths)
