@@ -27,6 +27,7 @@ $(T2 diagonal, 1-dimensional slice of diagonal elements)
 $(T2 reshape, returns new slice for the same data)
 $(T2 byElement, a random access range of all elements)
 $(T2 byElementInStandardSimplex, an input range of standard simplex in hypercube (left upper triangular matrix).)
+$(T2 indexSlice, returns a slice with elements equals to initial index.)
 )
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
@@ -1215,3 +1216,76 @@ unittest {
     assert(elems.index == [1, 1]);
     assert(elems.length == 2);
 }
+
+
+
+/++
+Returns a slice with elements equals to initial index.
+See_also: $(LREF IndexSlice)
++/
+IndexSlice!(Lengths.length) indexSlice(Lengths...)(Lengths lengths)
+    if (allSatisfy!(isIndex, Lengths))
+{
+    return .indexSlice!(Lengths.length)([lengths]);
+}
+
+///ditto
+IndexSlice!N indexSlice(size_t N)(auto ref size_t[N] lengths)
+{
+    with(typeof(return)) return Range(lengths[1..$]).sliced(lengths);
+}
+
+///
+unittest {
+    auto im = indexSlice(7,9);
+
+    assert(im[2, 1] == [2, 1]);
+
+    for(auto elems = im.byElement; !elems.empty; elems.popFront)
+        assert(elems.front == elems.index);
+
+    //slicing works correctly
+    auto cm = im[1..$-3, 4..$-1];
+    assert(cm[2, 1] == [3, 5]);
+}
+
+/++
+Slice of indexes.
+See_also: $(LREF indexSlice)
++/
+template IndexSlice(size_t N)
+    if(N)
+{
+    struct IndexMap
+    {
+        private size_t[N-1] _lengths;
+
+        auto save() @property const {
+            return this;
+        }
+
+        size_t[N] opIndex(size_t index) const
+        {
+            size_t[N] indexes = void;
+            foreach_reverse(i; Iota!(0, N-1))
+            {
+                indexes[i + 1] = index % _lengths[i];
+                index /= _lengths[i];
+            }
+            indexes[0] = index;
+            return indexes;
+        }
+    }
+    alias IndexSlice = Slice!(N, IndexMap);
+}
+
+///
+unittest {
+    alias IS4 = IndexSlice!4;
+    static assert(is(IS4 == Slice!(4, Range), Range));
+}
+
+unittest {
+    auto r = indexSlice(1);
+}
+

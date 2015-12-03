@@ -73,13 +73,17 @@ body {
             ret._ptr._shift = shift;
         }
     }
-
-    size_t stride = 1;
-    foreach_reverse(i; Iota!(0, N))
+    ret._lengths[N - 1] = lengths[N - 1];
+    ret._strides[N - 1] = 1;
+    static if(N > 1)
     {
-        ret._lengths[i] = lengths[i];
-        ret._strides[i] = stride;
-        stride *= lengths[i];
+        ret._lengths[N - 2] = lengths[N - 2];
+        ret._strides[N - 2] = ret._lengths[N - 1];
+        foreach_reverse(i; Iota!(0, N - 2))
+        {
+            ret._lengths[i] = lengths[i];
+            ret._strides[i] = ret._strides[i + 1] * ret._lengths[i + 1];
+        }
     }
     return ret;
 }
@@ -403,12 +407,23 @@ unittest {
 }
 
 /++
+Represents $(LREF .Slice.structure).
++/
+struct Structure(size_t N)
+{
+    ///
+    size_t[N] lengths;
+    ///
+    sizediff_t[N] strides;
+}
+
+/++
 $(D _N)-dimensional slice-shell over a range.
 See_also: $(LREF sliced), $(SUBREF allocators, createSlice), $(SUBREF allocators, ndarray)
 +/
 struct Slice(size_t _N, _Range)
     if (_N && _N < 256LU && ((!is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
-                     && (isPointer!_Range || is(typeof(_Range.init[size_t.init]) == ElementType!_Range)))
+                     && (isPointer!_Range || is(typeof(_Range.init[size_t.init]))))
                     || is(_Range == Slice!(N1, Range1), size_t N1, Range1)))
 {
     package:
@@ -572,8 +587,7 @@ struct Slice(size_t _N, _Range)
     Returns: fixed size array of lengths and fixed size array of strides
     See_also: $(LREF .Slice.shape)
    +/
-    Tuple!(size_t[N], `lengths`, sizediff_t[N], `strides`)
-    structure() @property const
+    Structure!N structure() @property const
     {
         return typeof(return)(_lengths[0..N], _strides[0..N]);
     }
@@ -581,11 +595,10 @@ struct Slice(size_t _N, _Range)
     static if(doUnittest)
     ///Normal slice
     unittest {
-        import std.typecons: tuple;
         import std.range: iota;
         assert(100.iota
             .sliced(3, 4, 5)
-            .structure == tuple([3, 4, 5], [20, 5, 1]));
+            .structure == Structure!3([3, 4, 5], [20, 5, 1]));
     }
 
     static if(doUnittest)
@@ -593,14 +606,13 @@ struct Slice(size_t _N, _Range)
     unittest {
         import std.experimental.ndslice.selection: pack;
         import std.experimental.ndslice.iteration: reversed, strided, transposed;
-        import std.typecons: tuple;
         import std.range: iota;
         assert(1000.iota
             .sliced(3, 4, 50)
             .reversed!2      //makes stride negative
             .strided!2(6)    //multiplies stride by 6, and changes length
             .transposed!2    //brings dimension `2` on top
-            .structure == tuple([9, 3, 4], [-6, 200, 50]));
+            .structure == Structure!3([9, 3, 4], [-6, 200, 50]));
     }
 
     static if(doUnittest)
@@ -608,12 +620,11 @@ struct Slice(size_t _N, _Range)
     unittest {
         import std.experimental.ndslice.slice;
         import std.experimental.ndslice.selection: pack;
-        import std.typecons: tuple;
         import std.range: iota;
         assert(10000.iota
             .sliced(3, 4, 5, 6, 7)
             .pack!2
-            .structure == tuple([3, 4, 5], [20 * 42, 5 * 42, 1 * 42]));
+            .structure == Structure!3([3, 4, 5], [20 * 42, 5 * 42, 1 * 42]));
     }
 
     /++
@@ -682,8 +693,6 @@ struct Slice(size_t _N, _Range)
     static if(doUnittest)
     ///Normal slice
     unittest {
-        import std.typecons: tuple;
-        import std.range: iota;
         import std.range: iota;
         auto slice = 100.iota.sliced(3, 4, 5);
         assert(slice.stride   == 20);
@@ -696,7 +705,6 @@ struct Slice(size_t _N, _Range)
     ///Normal modified slice
     unittest {
         import std.experimental.ndslice.iteration;
-        import std.typecons: tuple;
         import std.range: iota;
         assert(1000.iota
             .sliced(3, 4, 50)
