@@ -58,7 +58,10 @@ body {
     else
     {
         alias S = Slice!(N, ImplicitlyUnqual!(typeof(range)));
-        S ret = void;
+        static if(hasElaborateAssign!(S.PureRange))
+            S ret;
+        else
+            S ret = void;
         static if(hasPtrBehavior!(S.PureRange))
         {
             ret._ptr = range;
@@ -113,7 +116,10 @@ template sliced(Names...)
             ~ tailErrorMessage!());
         alias PT = PtrTuple!Names;
         alias SPT = PT!(staticMap!(PrepareRangeType, RS));
-        SPT range = void;
+        static if(hasElaborateAssign!SPT)
+            SPT range;
+        else
+            SPT range = void;
         version(assert) immutable minLength = lengthsProduct!N(lengths) + shift;
         foreach(i, name; Names)
         {
@@ -124,7 +130,7 @@ template sliced(Names...)
             mixin(`alias r = range_` ~ name ~`;`);
             static if (hasLength!R)
                 assert(minLength <= r.length,
-                    \" length of the range '\" ~ name ~ \"' must be greater or equal to lengths product plus shift.\"
+                    `length of the range '` ~ name ~ `' must be greater or equal to lengths product plus shift.`
                     ~ tailErrorMessage!());
             static if(isDynamicArray!T && mod)
                 range.ptrs[i] = r.ptr;
@@ -313,7 +319,10 @@ template assumeSameStructure(Names...)
             ~ tailErrorMessage!());
         alias PT = PtrTuple!Names;
         alias SPT = PT!(staticMap!(PrepareRangeType, RS));
-        Slice!(N, SPT) ret = void;
+        static if(hasElaborateAssign!SPT)
+            Slice!(N, SPT) ret;
+        else
+            Slice!(N, SPT) ret = void;
         mixin(`alias slice0 = slice_` ~ Names[0] ~`;`);
         ret._lengths = slice0._lengths;
         ret._strides = slice0._strides;
@@ -721,7 +730,10 @@ struct Slice(size_t _N, _Range)
         }
         else
         {
-            ElemType ret = void;
+            static if(hasElaborateAssign!PureRange)
+                ElemType ret;
+            else
+                ElemType ret = void;
             foreach(i; Iota!(0, dimension))
             {
                 ret._lengths[i] = _lengths[i];
@@ -759,7 +771,10 @@ struct Slice(size_t _N, _Range)
         }
         else
         {
-            ElemType ret = void;
+            static if(hasElaborateAssign!PureRange)
+                ElemType ret;
+            else
+                ElemType ret = void;
             foreach(i; Iota!(0, dimension))
             {
                 ret._lengths[i] = _lengths[i];
@@ -786,20 +801,11 @@ struct Slice(size_t _N, _Range)
         }
     }
 
-
     ///ditto
     void popFront(size_t dimension = 0)()
         if (dimension < N)
     {
         assert(_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater then 0.");
-        _lengths[dimension]--;
-        _ptr += _strides[dimension];
-    }
-
-    package void popFront(size_t dimension)
-    {
-        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
-        assert(_lengths[dimension], ": length!dim should be greater then 0.");
         _lengths[dimension]--;
         _ptr += _strides[dimension];
     }
@@ -812,26 +818,11 @@ struct Slice(size_t _N, _Range)
         _lengths[dimension]--;
     }
 
-    package void popBack(size_t dimension)
-    {
-        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
-        assert(_lengths[dimension], ": length!dim should be greater then 0.");
-        _lengths[dimension]--;
-    }
-
     ///ditto
     void popFrontExactly(size_t dimension = 0)(size_t n)
         if (dimension < N)
     {
         assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!" ~ dimension.stringof);
-        _lengths[dimension] -= n;
-        _ptr += _strides[dimension] * n;
-    }
-
-    package void popFrontExactly(size_t dimension, size_t n)
-    {
-        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
-        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!dim");
         _lengths[dimension] -= n;
         _ptr += _strides[dimension] * n;
     }
@@ -844,13 +835,6 @@ struct Slice(size_t _N, _Range)
         _lengths[dimension] -= n;
     }
 
-    package void popBackExactly(size_t dimension, size_t n)
-    {
-        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
-        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!dim");
-        _lengths[dimension] -= n;
-    }
-
     ///ditto
     void popFrontN(size_t dimension = 0)(size_t n)
         if (dimension < N)
@@ -859,26 +843,12 @@ struct Slice(size_t _N, _Range)
         popFrontExactly!dimension(min(n, _lengths[dimension]));
     }
 
-    package void popFrontN(size_t dimension, size_t n)
-    {
-        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
-        import std.algorithm.comparison: min;
-        popFrontExactly(dimension, min(n, _lengths[dimension]));
-    }
-
     ///ditto
     void popBackN(size_t dimension = 0)(size_t n)
         if (dimension < N)
     {
         import std.algorithm.comparison: min;
         popBackExactly!dimension(min(n, _lengths[dimension]));
-    }
-
-    package void popBackN(size_t dimension, size_t n)
-    {
-        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
-        import std.algorithm.comparison: min;
-        popBackExactly(dimension, min(n, _lengths[dimension]));
     }
 
     static if(doUnittest)
@@ -914,6 +884,51 @@ struct Slice(size_t _N, _Range)
         slice.popFrontN!0(40);
         slice.popFrontN!2(40);
         assert(slice.shape == [0, 0, 0]);
+    }
+
+    package void popFront(size_t dimension)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        assert(_lengths[dimension], ": length!dim should be greater then 0.");
+        _lengths[dimension]--;
+        _ptr += _strides[dimension];
+    }
+
+
+    package void popBack(size_t dimension)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        assert(_lengths[dimension], ": length!dim should be greater then 0.");
+        _lengths[dimension]--;
+    }
+
+    package void popFrontExactly(size_t dimension, size_t n)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!dim");
+        _lengths[dimension] -= n;
+        _ptr += _strides[dimension] * n;
+    }
+
+    package void popBackExactly(size_t dimension, size_t n)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!dim");
+        _lengths[dimension] -= n;
+    }
+
+    package void popFrontN(size_t dimension, size_t n)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        import std.algorithm.comparison: min;
+        popFrontExactly(dimension, min(n, _lengths[dimension]));
+    }
+
+    package void popBackN(size_t dimension, size_t n)
+    {
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        import std.algorithm.comparison: min;
+        popBackExactly(dimension, min(n, _lengths[dimension]));
     }
 
     /++
@@ -979,7 +994,10 @@ struct Slice(size_t _N, _Range)
             enum size_t S = Slices.length;
             static assert(N-F > 0);
             size_t stride;
-            Slice!(N-F, Range) ret = void;
+            static if(hasElaborateAssign!PureRange)
+                Slice!(N-F, Range) ret;
+            else
+                Slice!(N-F, Range) ret = void;
             foreach(i, slice; slices) //static
             {
                 static if (isIndex!(Slices[i]))
@@ -1418,7 +1436,10 @@ private template PtrTuple(Names...)
         static if(allSatisfy!(canSave, Ptrs))
         auto save() @property
         {
-            PtrTuple p = void;
+            static if(anySatisfy!(hasElaborateAssign, Ptrs))
+                PtrTuple p;
+            else
+                PtrTuple p = void;
             foreach(i, ref ptr; ptrs)
                 static if(isPointer!(Ptrs[i]))
                     p.ptrs[i] = ptr;

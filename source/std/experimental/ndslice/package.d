@@ -1,5 +1,5 @@
 /+
-## Guide for Slice/Matrix/BLAS contributors
+## Guide for Slice/BLAS contributors
 
 1. Pay _unprecedented_ attention to functions to be
        a. inlined(!),
@@ -110,10 +110,10 @@ tensor[1, 2, 3]++; //`opIndex` returns reference
 ++tensor[];
 tensor[] -= 1;
 
-// `opIndexAssing` accepts only fully qualified index/slice. Use additional empty slice `[]`.
+// `opIndexAssing` accepts only fully qualified index/slice. Use additional empty slice `[]` operator.
 // tensor[0..2] *= 2; // Error: tensor.opIndex(tensor.opSlice(0u, 2u)) is not an lvalue
 
-tensor[0..2][] *= 2;        //OK, empty slice
+tensor[0..2][] *= 2;        //OK, empty slice `[]` operator
 tensor[0..2, 3, 0..$] /= 2; //OK, 3 index/slice positions are defined.
 
 //fully qualified index defined by static array

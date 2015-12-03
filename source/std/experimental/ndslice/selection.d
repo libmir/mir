@@ -151,12 +151,13 @@ Inverts composition of a slice.
 This function is used for transposition and in functional pipeline with $(LREF byElement).
 See_also: $(LREF pack), $(LREF unpack)
 +/
-auto evertPack(size_t N, Range)(auto ref Slice!(N, Range) slice)
+SliceFromSeq!(Slice!(N, Range).PureRange, NSeqEvert!(Slice!(N, Range).NSeq))
+evertPack(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
+    mixin _DefineRet;
+    static assert(Ret.NSeq.length > 0);
     with(slice)
     {
-        static assert(NSeq.length > 0);
-        SliceFromSeq!(PureRange, NSeqEvert!(NSeq)) ret = void;
         alias C = Snowball!(Parts!NSeq);
         alias D = Reverse!(Snowball!(Reverse!(Parts!NSeq)));
         foreach(i, _; NSeq)
@@ -219,10 +220,8 @@ $(LREF blocks)(diagonal blocks) and $(LREF windows) (multi-diagonal slice).
 +/
 Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
-    size_t[1] length = void;
-    sizediff_t[1] stride = void;
     auto NewN = slice.PureN - N + 1;
-    typeof(return) ret = void;
+    mixin _DefineRet;
     ret._lengths[0] = slice._lengths[0];
     ret._strides[0] = slice._strides[0];
     foreach(i; Iota!(1, N))
@@ -398,7 +397,7 @@ in {
             ~ tailErrorMessage!());
 }
 body {
-    typeof(return) ret = void;
+    mixin _DefineRet;
     foreach(dimension; Iota!(0, N))
     {
         ret._lengths[dimension] = slice._lengths[dimension] / lengths[dimension];
@@ -507,7 +506,7 @@ in {
             ~ tailErrorMessage!());
 }
 body {
-    typeof(return) ret = void;
+    mixin _DefineRet;
     foreach(dimension; Iota!(0, N))
     {
         ret._lengths[dimension] = slice._lengths[dimension] - slice._lengths[dimension] % lengths[dimension];
@@ -615,8 +614,7 @@ Slice!(Lengths.length, Range)
         (auto ref Slice!(N, Range) slice, Lengths lengths)
     if ( allSatisfy!(isIndex, Lengths) && Lengths.length)
 {
-
-    typeof(return) ret = void;
+    mixin _DefineRet;
     foreach(i; Iota!(0, ret.N))
         ret._lengths[i] = lengths[i];
 

@@ -282,10 +282,10 @@ See_also: $(LREF swapped), $(LREF transposed)
 +/
 Slice!(N, Range) everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
+    mixin _DefineRet;
     with(slice)
     {
-        This ret = void;
-        foreach(i; Iota!(0, N))
+         foreach(i; Iota!(0, N))
         {
             ret._lengths[N-1-i] = _lengths[i];
             ret._strides[N-1-i] = _strides[i];
@@ -310,9 +310,9 @@ unittest {
 }
 
 private enum _transposedCode = q{
+    mixin _DefineRet;
     with(slice)
     {
-        This ret = void;
         foreach(i; Iota!(0, N))
         {
             ret._lengths[i] = _lengths[perm[i]];
@@ -357,7 +357,7 @@ See_also: $(LREF swapped), $(LREF everted)
 template transposed(Dimensions...)
     if (Dimensions.length)
 {
-    auto transposed(size_t N, Range)(auto ref Slice!(N, Range) slice)
+    Slice!(N, Range) transposed(size_t N, Range)(auto ref Slice!(N, Range) slice)
     {
         mixin DimensionsCountCTError;
         foreach(i, dimension; Dimensions)

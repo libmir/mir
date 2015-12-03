@@ -26,6 +26,15 @@ Function prototype
 " ~ pfun ~ "
 _____";
 
+mixin template _DefineRet()
+{
+    alias Ret = typeof(return);
+    static if(hasElaborateAssign!(Ret.PureRange))
+        Ret ret;
+    else
+        Ret ret = void;
+}
+
 mixin template DimensionsCountCTError()
 {
     static assert(Dimensions.length <= N,
