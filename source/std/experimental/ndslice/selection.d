@@ -510,7 +510,8 @@ body {
     mixin _DefineRet;
     foreach(dimension; Iota!(0, N))
     {
-        ret._lengths[dimension] = slice._lengths[dimension] - slice._lengths[dimension] % lengths[dimension];
+        ret._lengths[dimension] = slice._lengths[dimension] >= lengths[dimension] ? 
+                                  slice._lengths[dimension] - lengths[dimension] + 1: 0;
         ret._strides[dimension] = slice._strides[dimension];
         ret._lengths[dimension+N] = lengths[dimension];
         ret._strides[dimension+N] = slice._strides[dimension];
