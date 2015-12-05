@@ -804,7 +804,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             auto ref front() @property
             {
                 assert(!this.empty);
-                static if (N == PureN)
+                static if (NSeq.length == 1)
                     return _slice._ptr[0];
                 else with(_slice)
                 {
@@ -1116,7 +1116,7 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
             auto ref front() @property
             {
                 assert(!this.empty);
-                static if (N == PureN)
+                static if (NSeq.length == 1)
                     return _slice._ptr[0];
                 else with(_slice)
                 {

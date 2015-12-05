@@ -444,7 +444,7 @@ struct Slice(size_t _N, _Range)
     {
         alias PureN = N;
         alias PureRange = Range;
-        alias NSeq = N;
+        alias NSeq = AliasSeq!(N);
     }
     alias PureThis = Slice!(PureN, PureRange);
 
@@ -455,7 +455,7 @@ struct Slice(size_t _N, _Range)
     else
         alias ElemType = Slice!(N-1, Range);
 
-    static if (PureN == N)
+    static if (NSeq.length == 1)
         alias DeepElemType = typeof(Range.init[size_t.init]);
     else
     static if (Range.N == 1)
@@ -985,7 +985,7 @@ struct Slice(size_t _N, _Range)
     auto ref opIndex(Indexes...)(Indexes _indexes)
         if (isFullPureIndex!Indexes)
     {
-        static if (N == PureN)
+        static if (NSeq.length == 1)
             return _ptr[indexStride(_indexes)];
         else
             return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes));
@@ -1078,7 +1078,7 @@ struct Slice(size_t _N, _Range)
         auto ref opIndexAssign(T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
         {
-            static if (N == PureN)
+            static if (NSeq.length == 1)
                 return _ptr[indexStride(_indexes)] = value;
             else
                 return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes))[] = value;
@@ -1087,7 +1087,7 @@ struct Slice(size_t _N, _Range)
         auto opIndexUnary(string op, Indexes...)(Indexes _indexes)
             if (isFullPureIndex!Indexes && (op == `++` || op == `--`))
         {
-            static if (N == PureN)
+            static if (NSeq.length == 1)
                 mixin(`return ` ~ op ~ `_ptr[indexStride(_indexes)];`);
             else
                 mixin(`return ` ~ op ~ `DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes))[];`);
@@ -1096,7 +1096,7 @@ struct Slice(size_t _N, _Range)
         auto ref opIndexOpAssign(string op, T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
         {
-            static if (N == PureN)
+            static if (NSeq.length == 1)
                 mixin(`return _ptr[indexStride(_indexes)] ` ~ op ~ `= value;`);
             else
                 mixin(`return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes))[] ` ~ op ~ `= value;`);
