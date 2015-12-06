@@ -71,7 +71,8 @@ enum DimensionRTError = q{
 
 alias IncFront(Seq...) = AliasSeq!(Seq[0] + 1, Seq[1..$]);
 alias DecFront(Seq...) = AliasSeq!(Seq[0] - 1, Seq[1..$]);
-alias NSeqEvert(Seq...) = DecFront!(Reverse!(IncFront!Seq));
+enum bool isNotZero(alias t) = t != 0;
+alias NSeqEvert(Seq...) = Filter!(isNotZero, DecFront!(Reverse!(IncFront!Seq)));
 alias Parts(Seq...) = DecAll!(IncFront!Seq);
 alias Snowball(Seq...) = AliasSeq!(size_t.init, SnowballImpl!(size_t.init, Seq));
 template SnowballImpl(size_t val, Seq...)

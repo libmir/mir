@@ -214,6 +214,29 @@ unittest
     static assert(is(typeof(e) == ElementType!R));
 }
 
+unittest {
+    static assert(is(typeof(new int[20]
+        .sliced(20)
+        .evertPack)
+         == Slice!(1LU, int*)));
+    static assert(is(typeof(new int[20]
+        .sliced(20)
+        .sliced(3)
+        .evertPack)
+         == Slice!(2LU, int*)));
+    static assert(is(typeof(new int[20]
+        .sliced(20)
+        .sliced(1,2,3)
+        .sliced(3)
+        .evertPack)
+         == Slice!(3LU, Slice!(2LU, int*))));
+    static assert(is(typeof(new int[20]
+        .sliced(20)
+        .sliced(1,2,3)          
+        .evertPack)
+         == Slice!(4LU, int*)));
+}
+
 /++
 Returns 1-dimensional slice over main diagonal of n-dimensional slice.
 `diagonal` can be generalized with other selectors, for example
@@ -805,7 +828,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             auto ref front() @property
             {
                 assert(!this.empty);
-                static if (NSeq.length == 1)
+                static if (N == PureN)
                     return _slice._ptr[0];
                 else with(_slice)
                 {
@@ -1117,7 +1140,7 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
             auto ref front() @property
             {
                 assert(!this.empty);
-                static if (NSeq.length == 1)
+                static if (N == PureN)
                     return _slice._ptr[0];
                 else with(_slice)
                 {

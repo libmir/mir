@@ -64,26 +64,40 @@ body {
             S ret = void;
         static if(hasPtrBehavior!(S.PureRange))
         {
-            ret._ptr = range;
+            static if(S.NSeq.length == 1)
+                ret._ptr = range;
+            else
+                ret._ptr = range._ptr;
             ret._ptr += shift;
         }
         else
         {
-            ret._ptr._range = range;
-            ret._ptr._shift = shift;
+            static if(S.NSeq.length == 1)
+            {
+                ret._ptr._range = range;
+                ret._ptr._shift = shift;
+            }
+            else
+            {
+                ret._ptr = range._ptr;
+                ret._ptr._shift += range._strides[0] * shift;
+            }
         }
     }
     ret._lengths[N - 1] = lengths[N - 1];
-    ret._strides[N - 1] = 1;
-    static if(N > 1)
+    static if(ret.NSeq.length == 1)
+        ret._strides[N - 1] = 1;
+    else
+        ret._strides[N - 1] = range._strides[0];
+    foreach_reverse(i; Iota!(0, N - 1))
     {
-        ret._lengths[N - 2] = lengths[N - 2];
-        ret._strides[N - 2] = ret._lengths[N - 1];
-        foreach_reverse(i; Iota!(0, N - 2))
-        {
-            ret._lengths[i] = lengths[i];
-            ret._strides[i] = ret._strides[i + 1] * ret._lengths[i + 1];
-        }
+        ret._lengths[i] = lengths[i];
+        ret._strides[i] = ret._strides[i + 1] * ret._lengths[i + 1];
+    }
+    foreach(i; Iota!(N, ret.PureN))
+    {
+        ret._lengths[i] = range._lengths[i-N+1];
+        ret._strides[i] = range._strides[i-N+1];
     }
     return ret;
 }
@@ -267,6 +281,36 @@ unittest {
     assert(tup.array.ptr == &tup.slice[0, 0, 0]);
 
     theAllocator.dispose(tup.array);
+}
+
+// sliced slice
+unittest {
+    import std.range: iota;
+    auto data = new int[24];
+    foreach(int i,ref e; data)
+        e = i;
+    auto a =    data.sliced(10).sliced(2, 3);
+    auto b = 24.iota.sliced(10).sliced(2, 3);
+    assert(a == b);
+    a[] += b;
+    foreach(int i, e; data[0..6])
+        assert(e == 2*i);
+    foreach(int i, e; data[6..$])
+        assert(e == i+6);
+    auto c  =    data.sliced(12, 2).sliced(2, 3);
+    auto d  = 24.iota.sliced(12, 2).sliced(2, 3);
+    auto cc =    data.sliced(2, 3, 2);
+    auto dc = 24.iota.sliced(2, 3, 2);
+    assert(c._lengths == cc._lengths);
+    assert(c._strides == cc._strides);
+    assert(d._lengths == dc._lengths);
+    assert(d._strides == dc._strides);
+    assert(cc == c);
+    assert(dc == d);
+    auto e  =    data.sliced(8, 3).sliced(5);
+    auto f  = 24.iota.sliced(8, 3).sliced(5);
+    assert(e ==    data.sliced(5, 3));
+    assert(f == 24.iota.sliced(5, 3));
 }
 
 private template _Range_Types(Names...)
@@ -985,7 +1029,7 @@ struct Slice(size_t _N, _Range)
     auto ref opIndex(Indexes...)(Indexes _indexes)
         if (isFullPureIndex!Indexes)
     {
-        static if (NSeq.length == 1)
+        static if (PureN == N)
             return _ptr[indexStride(_indexes)];
         else
             return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes));
@@ -1078,7 +1122,7 @@ struct Slice(size_t _N, _Range)
         auto ref opIndexAssign(T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
         {
-            static if (NSeq.length == 1)
+            static if (PureN == N)
                 return _ptr[indexStride(_indexes)] = value;
             else
                 return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes))[] = value;
@@ -1087,7 +1131,7 @@ struct Slice(size_t _N, _Range)
         auto opIndexUnary(string op, Indexes...)(Indexes _indexes)
             if (isFullPureIndex!Indexes && (op == `++` || op == `--`))
         {
-            static if (NSeq.length == 1)
+            static if (PureN == N)
                 mixin(`return ` ~ op ~ `_ptr[indexStride(_indexes)];`);
             else
                 mixin(`return ` ~ op ~ `DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes))[];`);
@@ -1096,7 +1140,7 @@ struct Slice(size_t _N, _Range)
         auto ref opIndexOpAssign(string op, T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
         {
-            static if (NSeq.length == 1)
+            static if (PureN == N)
                 mixin(`return _ptr[indexStride(_indexes)] ` ~ op ~ `= value;`);
             else
                 mixin(`return DeepElemType(_lengths[N..$], _strides[N..$], _ptr + indexStride(_indexes))[] ` ~ op ~ `= value;`);
