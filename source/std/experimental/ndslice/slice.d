@@ -1,5 +1,4 @@
 /**
-
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
@@ -1246,6 +1245,91 @@ struct Slice(size_t _N, _Range)
         import std.conv;
         auto ars = matrix.to!(immutable double[][]); //calls opCast
     }
+}
+
+/// slicing, indexing and operations
+unittest {
+    import std.array: array;
+    import std.range: iota;
+    import std.experimental.ndslice.iteration: transposed;
+
+    auto tensor = 60.iota.array.sliced(3, 4, 5);
+
+    assert(tensor[1, 2] == tensor[1][2]);
+    assert(tensor[1, 2, 3] == tensor[1][2][3]);
+
+    assert( tensor[0..$, 0..$, 4] == tensor.transposed!2[4]);
+    assert(&tensor[0..$, 0..$, 4][1, 2] is &tensor[1, 2, 4]);
+
+    tensor[1, 2, 3]++; //`opIndex` returns reference
+    --tensor[1, 2, 3]; //`opUnary`
+
+    ++tensor[];
+    tensor[] -= 1;
+
+    // `opIndexAssing` accepts only fully qualified index/slice. Use additional empty slice `[]`.
+    static assert(!__traits(compiles), tensor[0..2] *= 2);
+
+    tensor[0..2][] *= 2;        //OK, empty slice
+    tensor[0..2, 3, 0..$] /= 2; //OK, 3 index/slice positions are defined.
+
+    //fully qualified index defined by static array
+    size_t[3] index = [1, 2, 3];
+    assert(tensor[index] == tensor[1, 2, 3]);
+}
+
+/// operations with rvalue slices
+unittest {
+    import std.experimental.ndslice.iteration: transposed, everted;
+
+    auto tensor = new int[60].sliced(3, 4, 5);
+    auto matrix = new int[12].sliced(3, 4);
+    auto vector = new int[ 3].sliced(3);
+
+    foreach(i; 0..3)
+        vector[i] = i;
+
+    // fill matrix columns
+    matrix.transposed[] = vector;
+
+    // fill tensor with vector
+    // transposed tensor shape is (4, 5, 3)
+    //            vector shape is (      3)
+    tensor.transposed!(1, 2)[] = vector;
+
+
+    // transposed tensor shape is (5, 3, 4)
+    //            matrix shape is (   3, 4)
+    tensor.transposed!2[] += matrix;
+
+    // transposed tensor shape is (5, 4, 3)
+    // transposed matrix shape is (   4, 3)
+    tensor.everted[] ^= matrix.transposed; // XOR
+}
+
+///formatting. See also $(LINK2 std_format.html, std.format).
+unittest {
+    import std.algorithm, std.exception, std.format,
+        std.functional, std.conv, std.string, std.range;
+
+    Slice!(2, int*) toMatrix(string str)
+    {
+        string[][] data = str.lineSplitter.filter!(not!empty).map!split.array;
+        size_t rows = data.length.enforce("empty input");
+        size_t columns = data[0].length.enforce("empty first row");
+        data.each!(a => enforce(a.length == columns, "rows have different lengths"));
+
+        auto slice = new int[rows * columns].sliced(rows, columns);
+        foreach(i, line; data)
+            foreach(j, num; line)
+                slice[i, j] = num.to!int;
+        return slice;
+    }
+
+    auto input = "\r1 2  3\r\n 4 5 6\n";
+    auto ouptut = "1 2 3\n4 5 6\n";
+    auto fmt = "%(%(%s %)\n%)\n";
+    assert(format(fmt, toMatrix(input)) == ouptut);
 }
 
 // Slicing

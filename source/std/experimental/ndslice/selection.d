@@ -1,6 +1,8 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
+Селекторы создают новый тип итератора для тех же данных.
+Сами данные остаются неизменными.
 
 $(H2 Subspace selectors)
 
@@ -232,7 +234,7 @@ unittest {
          == Slice!(3LU, Slice!(2LU, int*))));
     static assert(is(typeof(new int[20]
         .sliced(20)
-        .sliced(1,2,3)          
+        .sliced(1,2,3)
         .evertPack)
          == Slice!(4LU, int*)));
 }
@@ -533,7 +535,7 @@ body {
     mixin _DefineRet;
     foreach(dimension; Iota!(0, N))
     {
-        ret._lengths[dimension] = slice._lengths[dimension] >= lengths[dimension] ? 
+        ret._lengths[dimension] = slice._lengths[dimension] >= lengths[dimension] ?
                                   slice._lengths[dimension] - lengths[dimension] + 1: 0;
         ret._strides[dimension] = slice._strides[dimension];
         ret._lengths[dimension+N] = lengths[dimension];

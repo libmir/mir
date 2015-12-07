@@ -43,8 +43,10 @@
 +/
 
 /**
-This package implements generic algorithms for creating and manipulating of n-dimensional random access ranges and arrays,
-which are represented with the $(SUBREF slice, Slice).
+Пакет `ndslice` предоставляет компактный и гибкий API 
+для работы с многомерными массивами и итераторами.
+Пакет предназначен для создания алгоритмов машинного обучения и обработки изображений, 
+расчетов в физики, статистике и линейной алгебре.
 
 $(SCRIPT inhibitQuickIndex = 1;)
 
@@ -92,89 +94,155 @@ $(TR $(TDNW Optimized Selection)
 )
 ))
 
-Example: slicing, indexing and operations
-----
-import std.array: array;
-import std.range: iota;
 
-auto tensor = 60.iota.array.sliced(3, 4, 5);
+$(H2 Example: image proccessing)
 
-assert(tensor[1, 2] == tensor[1][2]);
-assert(tensor[1, 2, 3] == tensor[1][2][3]);
+Note: Пример доступен на $(LINK2 GitHub, https://github.com/DlangScience/examples/tree/master/image_processing/median-filter).
 
-assert( tensor[0..$, 0..$, 4] == tensor.transposed!2[4]);
-assert(&tensor[0..$, 0..$, 4][1, 2] is &tensor[1, 2, 4]);
+В качестве примера реализован $(LINK2 https://en.wikipedia.org/wiki/Median_filter, медианный filter).
+Функция `movingWindowByChannel` может быть также использована и с другми фильтрами,
+аргументом которых является скользящее окно,
+в частности матрицами свертки, такими как $(LINK2 https://en.wikipedia.org/wiki/Sobel_operator, Sobel operator).
 
-tensor[1, 2, 3]++; //`opIndex` returns reference
---tensor[1, 2, 3]; //`opUnary`
+`movingWindowByChannel` итерируется по изображению в режиме скользящего окна.
+Каждое окно передается в `filter`, который вычичляет значение пикселя
+соответсвующее данному окну.
 
-++tensor[];
-tensor[] -= 1;
+Данная функция не вычилсляет краевые случаи, когда окно перекрывается с 
+изображением частично. Однако она вполне может использоваться для такого расчета.
+Для этого, к примеру, достаточно создать расширенное изображение,
+с краями отраженными от настоящего изображения, и уже у нему пременить данную функцию.
 
-// `opIndexAssing` accepts only fully qualified index/slice. Use additional empty slice `[]` operator.
-// tensor[0..2] *= 2; // Error: tensor.opIndex(tensor.opSlice(0u, 2u)) is not an lvalue
+---
+/++
+Params:
+    filter = унарная функция. В качестве аргумента выступает окно размерности 2D.
+    image = изображение размерности `(h, w, c)`,
+        где с - количество каналов в изображении
+    nr = количество строк в окне
+    nс = количество колонок в окне
 
-tensor[0..2][] *= 2;        //OK, empty slice `[]` operator
-tensor[0..2, 3, 0..$] /= 2; //OK, 3 index/slice positions are defined.
-
-//fully qualified index defined by static array
-size_t[3] index = [1, 2, 3];
-assert(tensor[index] == tensor[1, 2, 3]);
-----
-
-Example: operations with rvalue slices
-----
-auto tensor = new int[60].sliced(3, 4, 5);
-auto matrix = new int[12].sliced(3, 4);
-auto vector = new int[ 3].sliced(3);
-
-foreach(i; 0..3)
-    vector[i] = i;
-
-// fill matrix columns
-// transposed matrix shape is (4, 3)
-//            vector shape is (   3)
-matrix.transposed[] = vector;
-
-// fill tensor with vector
-// transposed tensor shape is (4, 5, 3)
-//            vector shape is (      3)
-tensor.transposed!(1, 2)[] = vector;
-
-
-// transposed tensor shape is (5, 3, 4)
-//            matrix shape is (   3, 4)
-tensor.transposed!2[] += matrix;
-
-// transposed tensor shape is (5, 4, 3)
-// transposed matrix shape is (   4, 3)
-tensor.everted[] ^= matrix.transposed; // XOR
-----
-
-Example: formatting, see also $(LINK2 std_format.html, std.format).
-----
-import std.algorithm, std.exception, std.format,
-    std.functional, std.conv, std.string, std.range;
-
-Slice!(2, int*) toMatrix(string str)
+Returns:
+    изображение размерности `(h - nr + 1, w - nc + 1, c)`,
+        где с - количество каналов в изображении.
+        Гарантировано плотнаое размещение данных в памяти.
++/
+Slice!(3, C*) movingWindowByChannel(alias filter, C)
+(Slice!(3, C*) image, size_t nr, size_t nc)
 {
-    string[][] data = str.lineSplitter.filter!(not!empty).map!split.array;
-    size_t rows = data.length.enforce("empty input");
-    size_t columns = data[0].length.enforce("empty first row");
-    data.each!(a => enforce(a.length == columns, "rows have different lengths"));
-
-    auto slice = new int[rows * columns].sliced(rows, columns);
-    foreach(i, line; data)
-        foreach(j, num; line)
-            slice[i, j] = num.to!int;
-    return slice;
+    import std.algorithm.iteration: map;
+    import std.array: array;
+    auto wnds = image        // 1. 3D : the last dimension is color channel 
+        .pack!1              // 2. 2D of 1D : packs the last dimension
+        .windows(nr, nc)     // 3. 2D of 2D of 1D : splits image to overlapping windows
+        .unpack              // 4. 5D : unpacks windows
+        .transposed!(0, 1, 4)// 5. 5D : brings color channel dimension to third position
+        .pack!2;             // 6. 3D of 2D : packs the last two dimensions
+    return wnds
+        .byElement           // 7. Range of 2D : gets the range of all elements in `wnds`
+        .map!filter          // 8. Range of C : 2D to C lazy conversion
+        .array               // 9. C[] : sole memory allocation in this function
+        .sliced(wnds.shape); //10. 3D : returns slice with corresponding shape
 }
+---
 
-auto input = "\r1 2  3\r\n 4 5 6\n";
-auto ouptut = "1 2 3\n4 5 6\n";
-auto fmt = "%(%(%s %)\n%)\n";
-assert(format(fmt, toMatrix(input)) == ouptut);
-----
+Также потребуется функция вычисляющее значение медианы итератора.
+
+---
+/++
+Params:
+    r = input range
+    buf = буффер с длинной не менее количества элементов в `r`
+Returns:
+    медианное значение в рэндже `r`
++/
+T median(Range, T)(Range r, T[] buf)
+{
+    import std.algorithm.sorting: sort;
+    size_t n;
+    foreach(e; r)
+        buf[n++] = e;
+    buf[0..n].sort();
+    immutable m = n >> 1;
+    return n & 1 ? buf[m] : cast(T)((buf[m-1] + buf[m])/2);
+}
+---
+
+Функция `main`:
+---
+void main(string[] args)
+{
+    import std.conv: to;
+    import std.getopt: getopt, defaultGetoptPrinter;
+    import std.path: stripExtension;
+
+    uint nr, nc, def = 3;
+    auto helpInformation = args.getopt(
+        "nr", "number of rows in window, default value is " ~ def.to!string, &nr, 
+        "nc", "number of columns in window default value equals to nr", &nc);
+    if(helpInformation.helpWanted)
+    {
+        defaultGetoptPrinter(
+            "Usage: median-filter [<options...>] [<file_names...>]\noptions:", 
+            helpInformation.options);
+        return;
+    }
+    if(!nr) nr = def;
+    if(!nc) nc = nr;
+
+    auto buf = new ubyte[nr * nc];
+
+    foreach(name; args[1..$])
+    {
+        import imageformats; // can be found at code.dlang.org
+    
+        IFImage image = read_image(name);
+
+        auto ret = image.pixels
+            .sliced(image.h, image.w, image.c)
+            .movingWindowByChannel
+                !(window => median(window.byElement, buf))
+                 (nr, nc);
+
+        write_image(
+            name.stripExtension ~ "_filtered.png",
+            ret.length!1,
+            ret.length!0,
+            (&ret[0, 0, 0])[0..ret.elementsCount]);
+    }
+}
+---
+
+Полученаая программа работает как с цветными так и с чернобелыми изображениями.
+
+---
+$ median-filter --help
+Usage: median-filter [<options...>] [<file_names...>]
+options:
+     --nr number of rows in window, default value is 3
+     --nc number of columns in window default value equals to nr
+-h --help This help information.
+---
+
+$(H2 Сравнение с `numpy.ndarray`)
+`numpy` - безусловно один из самых успешных математических пакетов,
+упростивший жизнь многим инженерам и ученым.
+Однако, в виду особенностей реализации языка Python,
+при желании программитса использовать функциональность,
+которая не представлена в `numpy`,
+он может обнаружить, что встроеных функций реализованных
+специально для `numpy` ему не хватает, а их реализация на
+Python работает очень медленно.
+Решением проблемы может быть расширение самого `numpy`,
+однако это представляется малообоснованным поскольку каждая,
+даже самая простая функция функция `numpy`,
+которая обращается непосредстванно к данным `ndarray`,
+для должной производительности должна быть реализована на C.
+
+В тоже время при работе с `ndslice` инженеру доступна вся
+номенклатура стандартной библиотеки D, и функции,
+которые он напишет сам, будут работать так же эффективно,
+как если бы они были написаны на С.
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
@@ -194,86 +262,89 @@ public import std.experimental.ndslice.slice;
 public import std.experimental.ndslice.iteration;
 public import std.experimental.ndslice.selection;
 
-//example test
+// relaxed
 unittest {
-    import std.array: array;
-    import std.range: iota;
 
-    auto tensor = 60.iota.array.sliced(3, 4, 5);
+    import std.experimental.ndslice;
 
-    assert(tensor[1, 2] == tensor[1][2]);
-    assert(tensor[1, 2, 3] == tensor[1][2][3]);
-
-    assert( tensor[0..$, 0..$, 4] == tensor.transposed!2[4]);
-    assert(&tensor[0..$, 0..$, 4][1, 2] is &tensor[1, 2, 4]);
-
-    tensor[1, 2, 3]++; //`opIndex` returns reference
-    --tensor[1, 2, 3]; //`opUnary`
-
-    ++tensor[];
-    tensor[] -= 1;
-
-    // `opIndexAssing` accepts only fully qualified index/slice. Use additional empty slice `[]`.
-    static assert(!__traits(compiles), tensor[0..2] *= 2);
-
-    tensor[0..2][] *= 2;        //OK, empty slice
-    tensor[0..2, 3, 0..$] /= 2; //OK, 3 index/slice positions are defined.
-
-    //fully qualified index defined by static array
-    size_t[3] index = [1, 2, 3];
-    assert(tensor[index] == tensor[1, 2, 3]);
-}
-
-//example test
-unittest {
-    auto tensor = new int[60].sliced(3, 4, 5);
-    auto matrix = new int[12].sliced(3, 4);
-    auto vector = new int[ 3].sliced(3);
-
-    foreach(i; 0..3)
-        vector[i] = i;
-
-    // fill matrix columns
-    matrix.transposed[] = vector;
-
-    // fill tensor with vector
-    // transposed tensor shape is (4, 5, 3)
-    //            vector shape is (      3)
-    tensor.transposed!(1, 2)[] = vector;
-
-
-    // transposed tensor shape is (5, 3, 4)
-    //            matrix shape is (   3, 4)
-    tensor.transposed!2[] += matrix;
-
-    // transposed tensor shape is (5, 4, 3)
-    // transposed matrix shape is (   4, 3)
-    tensor.everted[] ^= matrix.transposed; // XOR
-}
-
-//example test
-unittest {
-    import std.algorithm, std.exception, std.format,
-        std.functional, std.conv, std.string, std.range;
-
-    Slice!(2, int*) toMatrix(string str)
+    static Slice!(3, ubyte*) movingWindowByChannel
+    (Slice!(3, ubyte*) image, size_t nr, size_t nc, ubyte delegate(Slice!(2, ubyte*)) filter)
     {
-        string[][] data = str.lineSplitter.filter!(not!empty).map!split.array;
-        size_t rows = data.length.enforce("empty input");
-        size_t columns = data[0].length.enforce("empty first row");
-        data.each!(a => enforce(a.length == columns, "rows have different lengths"));
-
-        auto slice = new int[rows * columns].sliced(rows, columns);
-        foreach(i, line; data)
-            foreach(j, num; line)
-                slice[i, j] = num.to!int;
-        return slice;
+        import std.algorithm.iteration: map;
+        import std.array: array;
+        auto wnds = image
+            .pack!1
+            .windows(nr, nc)
+            .unpack
+            .transposed!(0, 1, 4)
+            .pack!2;
+        return wnds
+            .byElement
+            .map!filter
+            .array
+            .sliced(wnds.shape);
     }
 
-    auto input = "\r1 2  3\r\n 4 5 6\n";
-    auto ouptut = "1 2 3\n4 5 6\n";
-    auto fmt = "%(%(%s %)\n%)\n";
-    assert(format(fmt, toMatrix(input)) == ouptut);
+    /++
+    Params:
+        r = input range
+        buf = буффер с длинной не менее количества элементов в `r`
+    Returns:
+        медианное значение в рэндже `r`
+    +/
+    static T median(Range, T)(Range r, T[] buf)
+    {
+        import std.algorithm.sorting: sort;
+        size_t n;
+        foreach(e; r)
+            buf[n++] = e;
+        buf[0..n].sort();
+        immutable m = n >> 1;
+        return n & 1 ? buf[m] : cast(T)((buf[m-1] + buf[m])/2);
+    }
+
+    /++
+    Работает как с цветными так и с чернобелыми изображениями.
+    +/
+    import std.conv: to;
+    import std.getopt: getopt, defaultGetoptPrinter;
+    import std.path: stripExtension;
+
+    auto args = ["std"];
+    uint nr, nc, def = 3;
+    auto helpInformation = args.getopt(
+        "nr", "number of rows in window, default value is " ~ def.to!string, &nr,
+        "nc", "number of columns in window default value equals to nr", &nc);
+    if(helpInformation.helpWanted)
+    {
+        defaultGetoptPrinter(
+            "Usage: median-filter [<options...>] [<file_names...>]\noptions:",
+            helpInformation.options);
+        return;
+    }
+    if(!nr) nr = def;
+    if(!nc) nc = nr;
+
+    auto buf = new ubyte[nr * nc];
+
+    foreach(name; args[1..$])
+    {
+        //import imageformats;
+
+        //IFImage image = read_image(name);
+
+        //auto ret = image.pixels
+        //    .sliced(image.h, image.w, image.c)
+        auto ret =
+            movingWindowByChannel
+                 (new ubyte[300].sliced(10, 10, 3), nr, nc, window => median(window.byElement, buf));
+
+        //write_image(
+        //    name.stripExtension ~ "_filtered.png",
+        //    ret.length!1,
+        //    ret.length!0,
+        //    (&ret[0, 0, 0])[0..ret.elementsCount]);
+    }
 }
 
 unittest
