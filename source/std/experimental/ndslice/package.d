@@ -43,10 +43,10 @@
 +/
 
 /**
-Пакет `ndslice` предоставляет компактный и гибкий API 
-для работы с многомерными массивами и итераторами.
-Пакет предназначен для создания алгоритмов машинного обучения и обработки изображений, 
-расчетов в физики, статистике и линейной алгебре.
+The `ndslice` package offers a compact and flexible API for working with
+multidimensional arrays and iterators. The package is designed for creating
+machine learning and image processing algorithms as well as for carrying out
+calculations in physics, statistics and linear algebra.
 
 $(SCRIPT inhibitQuickIndex = 1;)
 
@@ -95,37 +95,39 @@ $(TR $(TDNW Optimized Selection)
 ))
 
 
-$(H2 Example: image proccessing)
+$(H2 Example: image processing)
 
-Note: Пример доступен на $(LINK2 GitHub, https://github.com/DlangScience/examples/tree/master/image_processing/median-filter).
+A median filter is implemented as an example. The function 
+`movingWindowByChannel` can also be used with other filters that use a sliding
+window as the argument, in particular with convolution matrices such as the
+$(LINK2 https://en.wikipedia.org/wiki/Sobel_operator, Sobel operator).
 
-В качестве примера реализован $(LINK2 https://en.wikipedia.org/wiki/Median_filter, медианный filter).
-Функция `movingWindowByChannel` может быть также использована и с другми фильтрами,
-аргументом которых является скользящее окно,
-в частности матрицами свертки, такими как $(LINK2 https://en.wikipedia.org/wiki/Sobel_operator, Sobel operator).
+`movingWindowByChannel` iterates over an image in sliding window mode. Each
+window is transferred to filter, which calculates the value of the pixel that
+corresponds to the given window.
 
-`movingWindowByChannel` итерируется по изображению в режиме скользящего окна.
-Каждое окно передается в `filter`, который вычичляет значение пикселя
-соответсвующее данному окну.
+This function does not calculate the edge cases in which a window overlaps the
+image partially. However, the function can still be used to carry out such
+calculations. That can be done by creating an amplified image, with the edges
+reflected from the given image, and applying the given function to the new
+file.
 
-Данная функция не вычилсляет краевые случаи, когда окно перекрывается с 
-изображением частично. Однако она вполне может использоваться для такого расчета.
-Для этого, к примеру, достаточно создать расширенное изображение,
-с краями отраженными от настоящего изображения, и уже у нему пременить данную функцию.
+Note: You can find the example at
+$(LINK2 GitHub, https://github.com/DlangScience/examples/tree/master/image_processing/median-filter).
 
 ---
 /++
 Params:
-    filter = унарная функция. В качестве аргумента выступает окно размерности 2D.
-    image = изображение размерности `(h, w, c)`,
-        где с - количество каналов в изображении
-    nr = количество строк в окне
-    nс = количество колонок в окне
+    filter = unary function. 2D window is the argument.
+    image = image with dimensions `(h, w, c)`,
+        where с is the number of channels in the image.
+    nr = number of rows in the window
+    nс = number of columns in the window
 
 Returns:
-    изображение размерности `(h - nr + 1, w - nc + 1, c)`,
-        где с - количество каналов в изображении.
-        Гарантировано плотнаое размещение данных в памяти.
+    image with dimensions `(h - nr + 1, w - nc + 1, c)`,
+    where с is the number of channels in the image.
+    Dense data layout is guaranteed.
 +/
 Slice!(3, C*) movingWindowByChannel(alias filter, C)
 (Slice!(3, C*) image, size_t nr, size_t nc)
@@ -146,15 +148,15 @@ Slice!(3, C*) movingWindowByChannel(alias filter, C)
 }
 ---
 
-Также потребуется функция вычисляющее значение медианы итератора.
+A function that calculates the value of iterator median is also necessary.
 
 ---
 /++
 Params:
     r = input range
-    buf = буффер с длинной не менее количества элементов в `r`
+    buf = buffer with length no less than the number of elements in `r`
 Returns:
-    медианное значение в рэндже `r`
+    median value over the range `r`
 +/
 T median(Range, T)(Range r, T[] buf)
 {
@@ -168,7 +170,7 @@ T median(Range, T)(Range r, T[] buf)
 }
 ---
 
-Функция `main`:
+The `main` function:
 ---
 void main(string[] args)
 {
@@ -213,7 +215,7 @@ void main(string[] args)
 }
 ---
 
-Полученаая программа работает как с цветными так и с чернобелыми изображениями.
+This program works both with color and grayscale images.
 
 ---
 $ median-filter --help
@@ -224,25 +226,21 @@ options:
 -h --help This help information.
 ---
 
-$(H2 Сравнение с `numpy.ndarray`)
-`numpy` - безусловно один из самых успешных математических пакетов,
-упростивший жизнь многим инженерам и ученым.
-Однако, в виду особенностей реализации языка Python,
-при желании программитса использовать функциональность,
-которая не представлена в `numpy`,
-он может обнаружить, что встроеных функций реализованных
-специально для `numpy` ему не хватает, а их реализация на
-Python работает очень медленно.
-Решением проблемы может быть расширение самого `numpy`,
-однако это представляется малообоснованным поскольку каждая,
-даже самая простая функция функция `numpy`,
-которая обращается непосредстванно к данным `ndarray`,
-для должной производительности должна быть реализована на C.
+$(H2 Compared with `numpy.ndarray`)
 
-В тоже время при работе с `ndslice` инженеру доступна вся
-номенклатура стандартной библиотеки D, и функции,
-которые он напишет сам, будут работать так же эффективно,
-как если бы они были написаны на С.
+`numpy` is undoubtedly one of the most effective software packages that has
+facilitated the work of many engineers and scientists. However, due to the
+specifics of implementation of Python, a programmer who wishes to use the
+functions not represented in `numpy` may find that the built-in functions
+implemented specifically for `numpy` are not enough, and their Python
+implementations work at a very low speed. An extension of `numpy` might be a
+solution in this case; nevertheless, it does not seem to be practical because
+even the most basic `numpy` functions that refer directly to `ndarray`
+data must be implemented in C to be productive enough.
+
+At the same time, while working with `ndslice`, an engineer has access to the
+whole set of the D standard library, so the functions he creates will be as
+efficient as if they were written in C.
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
@@ -262,7 +260,7 @@ public import std.experimental.ndslice.slice;
 public import std.experimental.ndslice.iteration;
 public import std.experimental.ndslice.selection;
 
-// relaxed
+// relaxed example
 unittest {
 
     import std.experimental.ndslice;
@@ -285,13 +283,6 @@ unittest {
             .sliced(wnds.shape);
     }
 
-    /++
-    Params:
-        r = input range
-        buf = буффер с длинной не менее количества элементов в `r`
-    Returns:
-        медианное значение в рэндже `r`
-    +/
     static T median(Range, T)(Range r, T[] buf)
     {
         import std.algorithm.sorting: sort;
@@ -303,9 +294,6 @@ unittest {
         return n & 1 ? buf[m] : cast(T)((buf[m-1] + buf[m])/2);
     }
 
-    /++
-    Работает как с цветными так и с чернобелыми изображениями.
-    +/
     import std.conv: to;
     import std.getopt: getopt, defaultGetoptPrinter;
     import std.path: stripExtension;
@@ -329,21 +317,9 @@ unittest {
 
     foreach(name; args[1..$])
     {
-        //import imageformats;
-
-        //IFImage image = read_image(name);
-
-        //auto ret = image.pixels
-        //    .sliced(image.h, image.w, image.c)
         auto ret =
             movingWindowByChannel
                  (new ubyte[300].sliced(10, 10, 3), nr, nc, window => median(window.byElement, buf));
-
-        //write_image(
-        //    name.stripExtension ~ "_filtered.png",
-        //    ret.length!1,
-        //    ret.length!0,
-        //    (&ret[0, 0, 0])[0..ret.elementsCount]);
     }
 }
 
