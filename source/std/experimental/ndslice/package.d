@@ -43,10 +43,16 @@
 +/
 
 /**
-The `ndslice` package offers a compact and flexible API for working with
-multidimensional arrays and iterators. The package is designed for creating
-machine learning and image processing algorithms as well as for carrying out
-calculations in physics, statistics and linear algebra.
+The package is designed for applications such as linear algebra, physics and 
+statistics. It would be well suited to creating machine learning and image
+processing algorithms, but should also be general enough for use anywhere with
+homogeneously-typed multidimensional data.
+
+
+Note:
+Во многих примерах вместо обычного массива используется
+$(LINK2 std_range.html#iota, std.range.iota).
+Это позволяет проводить тесты без аллокаций памяти.
 
 $(SCRIPT inhibitQuickIndex = 1;)
 
@@ -94,57 +100,80 @@ $(TR $(TDNW Optimized Selection)
 )
 ))
 
-
 $(H2 Example: image processing)
 
-A median filter is implemented as an example. The function 
+A median filter is implemented as an example. The function
 `movingWindowByChannel` can also be used with other filters that use a sliding
 window as the argument, in particular with convolution matrices such as the
 $(LINK2 https://en.wikipedia.org/wiki/Sobel_operator, Sobel operator).
 
-`movingWindowByChannel` iterates over an image in sliding window mode. Each
-window is transferred to filter, which calculates the value of the pixel that
-corresponds to the given window.
+`movingWindowByChannel` iterates over an image in sliding window mode.
+Each window is transferred to a `filter`, which calculates the value of the
+pixel that corresponds to the given window.
 
-This function does not calculate the edge cases in which a window overlaps the
-image partially. However, the function can still be used to carry out such
+This function does not calculate the border cases in which a window overlaps
+the image partially. However, the function can still be used to carry out such
 calculations. That can be done by creating an amplified image, with the edges
-reflected from the given image, and applying the given function to the new
-file.
+reflected from the given image, and then applying the given function to the
+new file.
 
 Note: You can find the example at
-$(LINK2 GitHub, https://github.com/DlangScience/examples/tree/master/image_processing/median-filter).
+$(LINK2 https://github.com/DlangScience/examples/tree/master/image_processing/median-filter, GitHub).
 
 ---
 /++
 Params:
-    filter = unary function. 2D window is the argument.
+    filter = unary function. Dimension window 2D is the argument.
     image = image with dimensions `(h, w, c)`,
-        where с is the number of channels in the image.
+        where с is the number of channels in the image
     nr = number of rows in the window
     nс = number of columns in the window
 
 Returns:
     image with dimensions `(h - nr + 1, w - nc + 1, c)`,
-    where с is the number of channels in the image.
-    Dense data layout is guaranteed.
+        where с is the number of channels in the image.
+        Dense data layout is guaranteed.
 +/
+
 Slice!(3, C*) movingWindowByChannel(alias filter, C)
 (Slice!(3, C*) image, size_t nr, size_t nc)
 {
     import std.algorithm.iteration: map;
     import std.array: array;
-    auto wnds = image        // 1. 3D : the last dimension is color channel 
-        .pack!1              // 2. 2D of 1D : packs the last dimension
-        .windows(nr, nc)     // 3. 2D of 2D of 1D : splits image to overlapping windows
-        .unpack              // 4. 5D : unpacks windows
-        .transposed!(0, 1, 4)// 5. 5D : brings color channel dimension to third position
-        .pack!2;             // 6. 3D of 2D : packs the last two dimensions
+
+        // 1. 3D
+        // The last dimension represents the color channel.
+    auto wnds = image
+        // 2. 2D composed of 1D
+        // Packs the last dimension.
+        .pack!1
+        // 3. 2D composed of 2D composed of 1D
+        // Splits image into overlapping windows.
+        .windows(nr, nc)
+        // 4. 5D
+        // Unpacks the windows.
+        .unpack
+        // 5. 5D
+        // Brings the color channel dimension to the third position.
+        .transposed!(0, 1, 4)
+        // 6. 3D Composed of 2D
+        // Packs the last two dimensions.
+        .pack!2;
+
     return wnds
-        .byElement           // 7. Range of 2D : gets the range of all elements in `wnds`
-        .map!filter          // 8. Range of C : 2D to C lazy conversion
-        .array               // 9. C[] : sole memory allocation in this function
-        .sliced(wnds.shape); //10. 3D : returns slice with corresponding shape
+        // 7. Range composed of 2D
+        // Gathers all windows in the range.
+        .byElement
+        // 8. Range composed of pixels
+        // 2D to pixel lazy conversion.
+        .map!filter
+        // 9. `C[]`
+        // The only memory allocation in this function.
+        .array
+        //10. 3D
+        //Returns the slice with the corresponding shape.
+        .sliced(wnds.shape);
+
 }
 ---
 
@@ -152,6 +181,7 @@ A function that calculates the value of iterator median is also necessary.
 
 ---
 /++
+
 Params:
     r = input range
     buf = buffer with length no less than the number of elements in `r`
@@ -162,15 +192,16 @@ T median(Range, T)(Range r, T[] buf)
 {
     import std.algorithm.sorting: sort;
     size_t n;
-    foreach(e; r)
+    foreach (e; r)
         buf[n++] = e;
-    buf[0..n].sort();
+    buf[0 .. n].sort();
     immutable m = n >> 1;
-    return n & 1 ? buf[m] : cast(T)((buf[m-1] + buf[m])/2);
+    return n & 1 ? buf[m] : cast(T)((buf[m - 1] + buf[m]) / 2);
 }
 ---
 
 The `main` function:
+
 ---
 void main(string[] args)
 {
@@ -180,24 +211,24 @@ void main(string[] args)
 
     uint nr, nc, def = 3;
     auto helpInformation = args.getopt(
-        "nr", "number of rows in window, default value is " ~ def.to!string, &nr, 
+        "nr", "number of rows in window, default value is " ~ def.to!string, &nr,
         "nc", "number of columns in window default value equals to nr", &nc);
-    if(helpInformation.helpWanted)
+    if (helpInformation.helpWanted)
     {
         defaultGetoptPrinter(
-            "Usage: median-filter [<options...>] [<file_names...>]\noptions:", 
+            "Usage: median-filter [<options...>] [<file_names...>]\noptions:",
             helpInformation.options);
         return;
     }
-    if(!nr) nr = def;
-    if(!nc) nc = nr;
+    if (!nr) nr = def;
+    if (!nc) nc = nr;
 
     auto buf = new ubyte[nr * nc];
 
-    foreach(name; args[1..$])
+    foreach (name; args[1 .. $])
     {
         import imageformats; // can be found at code.dlang.org
-    
+
         IFImage image = read_image(name);
 
         auto ret = image.pixels
@@ -210,7 +241,7 @@ void main(string[] args)
             name.stripExtension ~ "_filtered.png",
             ret.length!1,
             ret.length!0,
-            (&ret[0, 0, 0])[0..ret.elementsCount]);
+            (&ret[0, 0, 0])[0 .. ret.elementsCount]);
     }
 }
 ---
@@ -233,13 +264,12 @@ facilitated the work of many engineers and scientists. However, due to the
 specifics of implementation of Python, a programmer who wishes to use the
 functions not represented in `numpy` may find that the built-in functions
 implemented specifically for `numpy` are not enough, and their Python
-implementations work at a very low speed. An extension of `numpy` might be a
-solution in this case; nevertheless, it does not seem to be practical because
-even the most basic `numpy` functions that refer directly to `ndarray`
-data must be implemented in C to be productive enough.
+implementations work at a very low speed. Extending `numpy` can be done, but
+is somewhat laborious as even the most basic `numpy` functions that refer
+directly to `ndarray` data must be implemented in C for reasonable performance. 
 
 At the same time, while working with `ndslice`, an engineer has access to the
-whole set of the D standard library, so the functions he creates will be as
+whole set of standard D library, so the functions he creates will be as
 efficient as if they were written in C.
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
@@ -262,9 +292,6 @@ public import std.experimental.ndslice.selection;
 
 // relaxed example
 unittest {
-
-    import std.experimental.ndslice;
-
     static Slice!(3, ubyte*) movingWindowByChannel
     (Slice!(3, ubyte*) image, size_t nr, size_t nc, ubyte delegate(Slice!(2, ubyte*)) filter)
     {
@@ -287,11 +314,11 @@ unittest {
     {
         import std.algorithm.sorting: sort;
         size_t n;
-        foreach(e; r)
+        foreach (e; r)
             buf[n++] = e;
-        buf[0..n].sort();
+        buf[0 .. n].sort();
         immutable m = n >> 1;
-        return n & 1 ? buf[m] : cast(T)((buf[m-1] + buf[m])/2);
+        return n & 1 ? buf[m] : cast(T)((buf[m - 1] + buf[m]) / 2);
     }
 
     import std.conv: to;
@@ -303,19 +330,19 @@ unittest {
     auto helpInformation = args.getopt(
         "nr", "number of rows in window, default value is " ~ def.to!string, &nr,
         "nc", "number of columns in window default value equals to nr", &nc);
-    if(helpInformation.helpWanted)
+    if (helpInformation.helpWanted)
     {
         defaultGetoptPrinter(
             "Usage: median-filter [<options...>] [<file_names...>]\noptions:",
             helpInformation.options);
         return;
     }
-    if(!nr) nr = def;
-    if(!nc) nc = nr;
+    if (!nr) nr = def;
+    if (!nc) nc = nr;
 
     auto buf = new ubyte[nr * nc];
 
-    foreach(name; args[1..$])
+    foreach (name; args[1 .. $])
     {
         auto ret =
             movingWindowByChannel
@@ -323,6 +350,7 @@ unittest {
     }
 }
 
+@safe @nogc pure nothrow
 unittest
 {
     import std.algorithm.comparison: equal;
@@ -330,28 +358,29 @@ unittest
     immutable r = 1_000_000.iota;
 
     auto t0 = r.sliced(1000);
-    assert(t0.front == 0);
-    assert(t0.back == 999);
-    assert(t0[9] == 9);
+    assert (t0.front == 0);
+    assert (t0.back == 999);
+    assert (t0[9] == 9);
 
-    auto t1 = t0[10..20];
-    assert(t1.front == 10);
-    assert(t1.back == 19);
-    assert(t1[9] == 19);
+    auto t1 = t0[10 .. 20];
+    assert (t1.front == 10);
+    assert (t1.back == 19);
+    assert (t1[9] == 19);
 
     t1.popFront();
-    assert(t1.front == 11);
+    assert (t1.front == 11);
     t1.popFront();
-    assert(t1.front == 12);
+    assert (t1.front == 12);
 
     t1.popBack();
-    assert(t1.back == 18);
+    assert (t1.back == 18);
     t1.popBack();
-    assert(t1.back == 17);
+    assert (t1.back == 17);
 
-    assert(t1.equal(iota(12, 18)));
+    assert (t1.equal(iota(12, 18)));
 }
 
+pure nothrow
 unittest
 {
     import std.algorithm.comparison: equal;
@@ -360,155 +389,161 @@ unittest
     auto r = 1_000.iota.array;
 
     auto t0 = r.sliced(1000);
-    assert(t0.length == 1000);
-    assert(t0.front == 0);
-    assert(t0.back == 999);
-    assert(t0[9] == 9);
+    assert (t0.length == 1000);
+    assert (t0.front == 0);
+    assert (t0.back == 999);
+    assert (t0[9] == 9);
 
-    auto t1 = t0[10..20];
-    assert(t1.front == 10);
-    assert(t1.back == 19);
-    assert(t1[9] == 19);
+    auto t1 = t0[10 .. 20];
+    assert (t1.front == 10);
+    assert (t1.back == 19);
+    assert (t1[9] == 19);
 
     t1.popFront();
-    assert(t1.front == 11);
+    assert (t1.front == 11);
     t1.popFront();
-    assert(t1.front == 12);
+    assert (t1.front == 12);
 
     t1.popBack();
-    assert(t1.back == 18);
+    assert (t1.back == 18);
     t1.popBack();
-    assert(t1.back == 17);
+    assert (t1.back == 17);
 
-    assert(t1.equal(iota(12, 18)));
+    assert (t1.equal(iota(12, 18)));
 
     t1.front = 13;
-    assert(t1.front == 13);
+    assert (t1.front == 13);
     t1.front++;
-    assert(t1.front == 14);
+    assert (t1.front == 14);
     t1.front += 2;
-    assert(t1.front == 16);
+    assert (t1.front == 16);
     t1.front = 12;
-    assert((t1.front = 12) == 12);
+    assert ((t1.front = 12) == 12);
 
     t1.back = 13;
-    assert(t1.back == 13);
+    assert (t1.back == 13);
     t1.back++;
-    assert(t1.back == 14);
+    assert (t1.back == 14);
     t1.back += 2;
-    assert(t1.back == 16);
+    assert (t1.back == 16);
     t1.back = 12;
-    assert((t1.back = 12) == 12);
+    assert ((t1.back = 12) == 12);
 
     t1[3] = 13;
-    assert(t1[3] == 13);
+    assert (t1[3] == 13);
     t1[3]++;
-    assert(t1[3] == 14);
+    assert (t1[3] == 14);
     t1[3] += 2;
-    assert(t1[3] == 16);
+    assert (t1[3] == 16);
     t1[3] = 12;
-    assert((t1[3] = 12) == 12);
+    assert ((t1[3] = 12) == 12);
 
-    t1[3..5] = 100;
-    assert(t1[2] != 100);
-    assert(t1[3] == 100);
-    assert(t1[4] == 100);
-    assert(t1[5] != 100);
+    t1[3 .. 5] = 100;
+    assert (t1[2] != 100);
+    assert (t1[3] == 100);
+    assert (t1[4] == 100);
+    assert (t1[5] != 100);
 
-    t1[3..5] += 100;
-    assert(t1[2] <  100);
-    assert(t1[3] == 200);
-    assert(t1[4] == 200);
-    assert(t1[5] <  100);
+    t1[3 .. 5] += 100;
+    assert (t1[2] <  100);
+    assert (t1[3] == 200);
+    assert (t1[4] == 200);
+    assert (t1[5] <  100);
 
-    --t1[3..5];
+    --t1[3 .. 5];
 
-    assert(t1[2] <  100);
-    assert(t1[3] == 199);
-    assert(t1[4] == 199);
-    assert(t1[5] <  100);
+    assert (t1[2] <  100);
+    assert (t1[3] == 199);
+    assert (t1[4] == 199);
+    assert (t1[5] <  100);
 
     --t1[];
-    assert(t1[3] == 198);
-    assert(t1[4] == 198);
+    assert (t1[3] == 198);
+    assert (t1[4] == 198);
 
     t1[] += 2;
-    assert(t1[3] == 200);
-    assert(t1[4] == 200);
+    assert (t1[3] == 200);
+    assert (t1[4] == 200);
 
     t1[] *= t1[];
-    assert(t1[3] == 40000);
-    assert(t1[4] == 40000);
+    assert (t1[3] == 40000);
+    assert (t1[4] == 40000);
 
 
-    assert(&t1[$-1] is &(t1.back()));
+    assert (&t1[$ - 1] is &(t1.back()));
 }
 
+@safe @nogc pure nothrow
 unittest
 {
     import std.range: iota;
     auto r = (10_000L * 2 * 3 * 4).iota;
 
     auto t0 = r.sliced(10, 20, 30, 40);
-    assert(t0.length == 10);
-    assert(t0.length!0 == 10);
-    assert(t0.length!1 == 20);
-    assert(t0.length!2 == 30);
-    assert(t0.length!3 == 40);
+    assert (t0.length == 10);
+    assert (t0.length!0 == 10);
+    assert (t0.length!1 == 20);
+    assert (t0.length!2 == 30);
+    assert (t0.length!3 == 40);
 }
 
+pure nothrow
 unittest {
     import std.experimental.ndslice.internal: Iota;
     import std.meta: AliasSeq;
     import std.range;
-    foreach(R; AliasSeq!(
+    import std.typecons: Tuple;
+    foreach (R; AliasSeq!(
         int*, int[], typeof(1.iota),
         const(int)*, const(int)[],
         immutable(int)*, immutable(int)[],
         double*, double[], typeof(10.0.iota),
         Tuple!(double, int[string])*, Tuple!(double, int[string])[]))
-    foreach(n; Iota!(1, 4))
+    foreach (n; Iota!(1, 4))
     {
         alias S = Slice!(n, R);
-        static assert(isRandomAccessRange!S);
-        static assert(hasSlicing!S);
-        static assert(hasLength!S);
+        static assert (isRandomAccessRange!S);
+        static assert (hasSlicing!S);
+        static assert (hasLength!S);
     }
 
     immutable int[] im = [1,2,3,4,5,6];
     auto slice = im.sliced(2, 3);
 }
 
+pure nothrow
 unittest {
     auto tensor = new int[100].sliced(3, 4, 8);
-    assert(&(tensor.back.back.back()) is &tensor[2, 3, 7]);
-    assert(&(tensor.front.front.front()) is &tensor[0, 0, 0]);
+    assert (&(tensor.back.back.back()) is &tensor[2, 3, 7]);
+    assert (&(tensor.front.front.front()) is &tensor[0, 0, 0]);
 }
 
+pure nothrow
 unittest {
     import std.experimental.ndslice.selection: pack;
     auto slice = new int[24].sliced(2, 3, 4);
     auto r0 = slice.pack!1[1, 2];
-    slice.pack!1[1, 2] = 4;
+    slice.pack!1[1, 2][] = 4;
     auto r1 = slice[1, 2];
-    assert(slice[1, 2, 3] == 4);
+    assert (slice[1, 2, 3] == 4);
 }
 
+pure nothrow
 unittest {
     auto ar = new int[3 * 8 * 9];
 
     auto tensor = ar.sliced(3, 8, 9);
     tensor[0, 1, 2] = 4;
     tensor[0, 1, 2]++;
-    assert(tensor[0, 1, 2] == 5);
+    assert (tensor[0, 1, 2] == 5);
     tensor[0, 1, 2]--;
-    assert(tensor[0, 1, 2] == 4);
+    assert (tensor[0, 1, 2] == 4);
     tensor[0, 1, 2] += 2;
-    assert(tensor[0, 1, 2] == 6);
+    assert (tensor[0, 1, 2] == 6);
 
-    auto matrix = tensor[0..$, 1, 0..$];
+    auto matrix = tensor[0 .. $, 1, 0 .. $];
     matrix[] = 10;
-    assert(tensor[0, 1, 2] == 10);
-    assert(matrix[0, 2] == tensor[0, 1, 2]);
-    assert(&matrix[0, 2] is &tensor[0, 1, 2]);
+    assert (tensor[0, 1, 2] == 10);
+    assert (matrix[0, 2] == tensor[0, 1, 2]);
+    assert (&matrix[0, 2] is &tensor[0, 1, 2]);
 }
