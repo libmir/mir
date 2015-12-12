@@ -1392,7 +1392,7 @@ IndexSlice!N indexSlice(size_t N)(auto ref size_t[N] lengths)
 ///
 @safe @nogc pure nothrow
 unittest {
-    auto im = indexSlice(7,9);
+    auto im = indexSlice(7, 9);
 
     assert (im[2, 1] == cast(size_t[2])[2, 1]);
 

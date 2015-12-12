@@ -141,37 +141,37 @@ Slice!(3, C*) movingWindowByChannel(alias filter, C)
     import std.algorithm.iteration: map;
     import std.array: array;
 
-        // 1. 3D
+        // 0. 3D
         // The last dimension represents the color channel.
     auto wnds = image
-        // 2. 2D composed of 1D
+        // 1. 2D composed of 1D
         // Packs the last dimension.
         .pack!1
-        // 3. 2D composed of 2D composed of 1D
+        // 2. 2D composed of 2D composed of 1D
         // Splits image into overlapping windows.
         .windows(nr, nc)
-        // 4. 5D
+        // 3. 5D
         // Unpacks the windows.
         .unpack
-        // 5. 5D
+        // 4. 5D
         // Brings the color channel dimension to the third position.
         .transposed!(0, 1, 4)
-        // 6. 3D Composed of 2D
+        // 5. 3D Composed of 2D
         // Packs the last two dimensions.
         .pack!2;
 
     return wnds
-        // 7. Range composed of 2D
+        // 6. Range composed of 2D
         // Gathers all windows in the range.
         .byElement
-        // 8. Range composed of pixels
+        // 7. Range composed of pixels
         // 2D to pixel lazy conversion.
         .map!filter
-        // 9. `C[]`
+        // 8. `C[]`
         // The only memory allocation in this function.
         .array
-        //10. 3D
-        //Returns the slice with the corresponding shape.
+        // 9. 3D
+        // Returns the slice with the corresponding shape.
         .sliced(wnds.shape);
 
 }
@@ -276,7 +276,7 @@ License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
-Credits: John Loughran Colvin
+Acknowledgements:   John Loughran Colvin
 
 Source:    $(PHOBOSSRC std/_experimental/_ndslice/_package.d)
 
