@@ -1,16 +1,18 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
+This is a submodule of $(LINK2 std_experimental_ndslice.html, std.experimental.ndslice).
+
 Селекторы создают новый тип итератора для тех же данных.
 Сами данные остаются неизменными (to translate).
 
 $(H2 Subspace selectors)
 
-The destination of subspace selectors is painless generalization and combination of other selectors.
+The goal of subspace selectors is painless generalization and combination of other selectors.
 `pack!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
 so type of element of `slice.byElement` is `Slice!(K, Range)`.
-Another way to use `pack` is transposition of packs of dimensions using `evertPack`.
-Examples with subspace selectors are available for selectors, $(SUBREF slice, Slice.shape), $(SUBREF slice, .Slice.elementsCount).
+Another way to use $(LREF pack) is transposition of packs of dimensions using $(LREF evertPack).
+Examples with subspace selectors are available for selectors, $(SUBREF slice, Slice.shape), $(SUBREF slice, Slice.elementsCount).
 
 $(BOOKTABLE ,
 
@@ -23,13 +25,16 @@ $(T2 evertPack, reverse packs of dimensions.)
 $(BOOKTABLE $(H2 Selectors),
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 blocks, n-dimensional slice of n-dimensional non-overlapping blocks)
-$(T2 windows, n-dimensional slice of n-dimensional overlapping  windows)
-$(T2 diagonal, 1-dimensional slice of diagonal elements)
-$(T2 reshape, returns new slice for the same data)
-$(T2 byElement, a random access range of all elements)
-$(T2 byElementInStandardSimplex, an input range of standard simplex in hypercube (left upper triangular matrix).)
+$(T2 byElement, a random access range of all elements with `index` property)
+$(T2 byElementInStandardSimplex, an input range of all elements in standard simplex in hypercube.
+    В двумерном случае это рэндж с элементами из left upper triangular matrix.)
 $(T2 indexSlice, returns a slice with elements equals to initial index.)
+$(T2 reshape, returns new slice for the same data)
+$(T2 diagonal, 1-dimensional slice of diagonal elements)
+$(T2 blocks, n-dimensional slice of n-dimensional non-overlapping blocks.
+    В двумерном случае это блочная матрица.)
+$(T2 windows, n-dimensional slice of n-dimensional overlapping  windows.
+    В одномерном случае это скользящее окно.)
 )
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
@@ -1036,7 +1041,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
     }
 }
 
-///Common slice
+/// Common slice
 @safe @nogc pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -1048,7 +1053,7 @@ unittest {
         .equal(20.iota));
 }
 
-///Packed slice
+/// Packed slice
 @safe @nogc pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -1065,7 +1070,7 @@ unittest {
         .equal(iota(6 * 7, 6 * 7 * 2)));
 }
 
-/// properties
+/// Properties
 pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -1079,9 +1084,27 @@ unittest {
     assert (elems.length == 8);
 }
 
+/// Index property
+pure nothrow
+unittest {
+    import std.experimental.ndslice.slice;
+    auto slice = new long[20].sliced(5, 4);
+
+    for(auto elems = slice.byElement; !elems.empty; elems.popFront)
+    {
+        size_t[2] index = elems.index;
+        elems.front = index[0] * 10 + index[1] * 3;
+    }
+    assert(slice == 
+        [[ 0,  3,  6,  9],
+         [10, 13, 16, 19],
+         [20, 23, 26, 29],
+         [30, 33, 36, 39],
+         [40, 43, 46, 49]]);
+}
+
 /++
-Random access and slicing.
-Random access is more expensive comparing with iteration with input range primitives.
+Random access and slicing
 +/
 @safe @nogc pure nothrow
 unittest {
@@ -1097,6 +1120,38 @@ unittest {
 
     foreach (i; 0 .. 7)
         assert (elems[i] == i + 11);
+}
+
+/++
+Random access and backward access are more expensive
+comparing with forward access.
+Use $(SUBREF iteration, allReversed) in pipeline before
+`byElement` to achieve fast backward access.
++/
+@safe @nogc pure nothrow
+unittest {
+    import std.range: retro, iota;
+    import std.experimental.ndslice.iteration: allReversed;
+
+    auto slice = 100.iota.sliced(3, 4, 5);
+    
+    /// Slow backward iteration #1
+    foreach (ref e; slice.byElement.retro)
+    {
+        //... 
+    }
+
+    /// Slow backward iteration #2
+    foreach_reverse (ref e; slice.byElement)
+    {
+        //... 
+    }
+
+    /// Fast backward iteration
+    foreach (ref e; slice.allReversed.byElement)
+    {
+        //...
+    }
 }
 
 @safe @nogc pure nothrow

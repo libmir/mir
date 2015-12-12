@@ -1,4 +1,6 @@
 /**
+This is a submodule of $(LINK2 std_experimental_ndslice.html, std.experimental.ndslice).
+
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
@@ -10,6 +12,7 @@ SUBMODULE = $(LINK2 std_experimental_ndslice_$1.html, std.experimental.ndslice.$
 SUBREF = $(LINK2 std_experimental_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
+STD = $(TD $(SMALL $0))
 */
 module std.experimental.ndslice.slice;
 
@@ -285,11 +288,8 @@ unittest {
 }
 
 /++
-Allocates an array and an n-dimensional slice over it.
-Params:
-    alloc = allocator. See also $(LINK2 std_experimental_allocator.html, std.experimental.allocator)
-    lengths = list of lengths for each dimension
-Returns `array` created with `alloc` and `slice` over it
+Allocates an array and creats an n-dimensional slice over it.
+See also $(LINK2 std_experimental_allocator.html, std.experimental.allocator).
 +/
 version(Posix)
 unittest {
@@ -332,9 +332,9 @@ unittest {
     auto b = 24.iota.sliced(10).sliced(2, 3);
     assert (a == b);
     a[] += b;
-    foreach (int i, e; data[0 .. 6])
+    foreach (int i, e; data[0..6])
         assert (e == 2*i);
-    foreach (int i, e; data[6 .. $])
+    foreach (int i, e; data[6..$])
         assert (e == i+6);
     auto c  =    data.sliced(12, 2).sliced(2, 3);
     auto d  = 24.iota.sliced(12, 2).sliced(2, 3);
@@ -355,7 +355,7 @@ unittest {
 private template _Range_Types(Names...)
 {
     static if (Names.length)
-        enum string _Range_Types = "Range_" ~ Names[0] ~ ", " ~ _Range_Types!(Names[1 .. $]);
+        enum string _Range_Types = "Range_" ~ Names[0] ~ ", " ~ _Range_Types!(Names[1..$]);
     else
         enum string _Range_Types = "";
 }
@@ -363,7 +363,7 @@ private template _Range_Types(Names...)
 private template _Range_Values(Names...)
 {
     static if (Names.length)
-        enum string _Range_Values = "range_" ~ Names[0] ~ ", " ~ _Range_Values!(Names[1 .. $]);
+        enum string _Range_Values = "range_" ~ Names[0] ~ ", " ~ _Range_Values!(Names[1..$]);
     else
         enum string _Range_Values = "";
 }
@@ -371,7 +371,7 @@ private template _Range_Values(Names...)
 private template _Range_DeclarationList(Names...)
 {
     static if (Names.length)
-        enum string _Range_DeclarationList = "Range_" ~ Names[0] ~ " range_" ~ Names[0] ~ ", " ~ _Range_DeclarationList!(Names[1 .. $]);
+        enum string _Range_DeclarationList = "Range_" ~ Names[0] ~ " range_" ~ Names[0] ~ ", " ~ _Range_DeclarationList!(Names[1..$]);
     else
         enum string _Range_DeclarationList = "";
 }
@@ -379,7 +379,7 @@ private template _Range_DeclarationList(Names...)
 private template _Slice_DeclarationList(Names...)
 {
     static if (Names.length)
-        enum string _Slice_DeclarationList = "Slice!(N, Range_" ~ Names[0] ~ ") slice_" ~ Names[0] ~ ", " ~ _Slice_DeclarationList!(Names[1 .. $]);
+        enum string _Slice_DeclarationList = "Slice!(N, Range_" ~ Names[0] ~ ") slice_" ~ Names[0] ~ ", " ~ _Slice_DeclarationList!(Names[1..$]);
     else
         enum string _Slice_DeclarationList = "";
 }
@@ -415,7 +415,7 @@ template assumeSameStructure(Names...)
         ret._lengths = slice0._lengths;
         ret._strides = slice0._strides;
         ret._ptr.ptrs[0] = slice0._ptr;
-        foreach (i, name; Names[1 .. $])
+        foreach (i, name; Names[1..$])
         {
             mixin (`alias slice = slice_` ~ name ~`;`);
             assert (ret._lengths == slice._lengths,
@@ -472,8 +472,8 @@ unittest {
     }
     enum matrix = [1, 2,
                    3, 4].sliced!(ReplaceArrayWithPointer.no)(2, 2);
+    ///Сompile time function evaluation
     static assert (maxAvg(matrix) == 3);
-
 }
 
 
@@ -507,25 +507,44 @@ struct Structure(size_t N)
 Presents an n-dimensional view over a range.
 
 $(H4 Определения)
-Таблица определений вариантов индексов в квадратных скобках `[]`.
+
+Для изменения данных в слайсе с использованием
+перегруженных операторов, таких как `=`, `+=`, `++` должна быть использована
+конструкция вида `<slice to change>[<index and interval sequence...>]`.
+Стоит заметить, что как и для регулярных массивов, операции `a = b`
+и `a[] = b` имеют разный смысл.
+В первом случае после операции `a` просто указывает на теже данные что и `b`,
+и данные, на которые указывало `a` остаются неизменными.
+При этом `а` и `b` должны иметь один и тот же тип.
+Во втором случае `a` продолжает указывать на теже данные что и раньше,
+но сами данные будут изменены. При этом число размерностей `b` может быть
+меньше числа размерностей `a`; `b`  может быть как Слайсом,
+так и обычным многомерным массивом или же просто значением.
+
+В таблице представлены определения встречающиеся при описании
+перегрузки операторов.
+
+
 $(BOOKTABLE
-$(TR $(TH Описание) $(TH Примеры при `N == 3`))
-$(TR $(TD Часть индекса вида `i .. j` называется слайсом.)
-    $(TD `2 .. $ - 3`))
-$(TR $(TD Часть индекса вида `i` называется индексом.)
-    $(TD `3`))
-$(TR $(TD Частично определенным слайсом называется последовательность 
-    состоящая из слайсов и индексов общей длиной строго меньше `N`.)
-    $(TD `[3]`, `[0 .. $]`, `[3, 3]`, `[0 .. $, 0 .. 3]`, `[0 .. $, 2]`))
-$(TR $(TD Полностью определенным индексом называется последовательность 
-    состоящая из только индексов общей длиной равной `N`)
-    $(TD `[2, 3, 1]`))
-$(TR $(TD Полностью определенным слайсом называются пустая последовательность
-    или последовательность состоящая из индексов и хотябы одного слайса общей
-    длиной равной `N`)
-    $(TD `[]`, `[3 .. $, 0 .. 3, 0 .. $ - 1]`, `[2, 0 .. $, 1]`))
+$(TR $(TH Определение) $(TH Примеры при `N == 3`))
+$(TR $(TD Часть последовательности вида `i .. j` называется $(BLUE интервалом).)
+    $(STD `2..$-3`, `0..4`))
+$(TR $(TD Часть последовательности вида `i` называется  $(BLUE индексом).)
+    $(STD `3`, `$-1`))
+$(TR $(TD $(BLUE Частично определенным слайсом) называется последовательность 
+    состоящая из $(BLUE интервалов) и $(BLUE индексов) общей длиной строго меньше `N`.)
+    $(STD `[3]`, `[0..$]`, `[3, 3]`, `[0..$,0..3]`, `[0..$,2]`))
+$(TR $(TD $(BLUE Полностью определенным индексом) называется последовательность 
+    состоящая только из $(BLUE индексов) общей длиной равной `N`)
+    $(STD `[2,3,1]`))
+$(TR $(TD $(BLUE Полностью определенным слайсом) называются пустая последовательность
+    или последовательность состоящая из $(BLUE индексов) и хотябы одного
+    $(BLUE интервала) общей длиной равной `N`)
+    $(STD `[]`, `[3..$,0..3,0..$-1]`, `[2,0..$,1]`))
 )
-See_also: $(LREF sliced)
+
+See_also: $(LREF .Slice.opIndex), $(LREF .Slice.opIndexAssign), $(LREF .Slice.opIndexOpAssign),
+$(LREF .Slice.opUnary).
 +/
 struct Slice(size_t _N, _Range)
     if (_N && _N < 256LU && ((!is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
@@ -1149,7 +1168,7 @@ struct Slice(size_t _N, _Range)
     }
 
     /++
-    Полностью определенный индекс.
+    $(BLUE Полностью определенный индекс).
     +/
     auto ref opIndex(Indexes...)(Indexes _indexes)
         if (isFullPureIndex!Indexes)
@@ -1175,7 +1194,7 @@ struct Slice(size_t _N, _Range)
     }
 
     /++
-    Чачтично или полность опреденный слайс.
+    $(BLUE Чачтично или полность опреденный слайс).
     +/
     auto opIndex(Slices...)(Slices slices)
         if (isPureSlice!Slices)
@@ -1225,16 +1244,20 @@ struct Slice(size_t _N, _Range)
     pure nothrow
     unittest {
         auto slice = new int[15].sliced(5, 3);
+        
+        /// Полность опреденный слайс
         assert(slice[] == slice);
-        auto sublice = slice[0 .. $ - 2, 1 .. $];
+        auto sublice = slice[0..$-2, 1..$];
+        
+        /// Частично определенный слайс
         auto row = slice[3];
-        auto col = slice[0 .. $, 1];
+        auto col = slice[0..$, 1];
     }
 
     static if (rangeHasMutableElements && PureN == N)
     {
         /++
-        Присвоение значание типа `Slice` для полностью опреденного слайса.
+        Присвоение значание типа `Slice` для $(BLUE полностью опреденного слайса).
         +/
         void opIndexAssign(size_t RN, RRange, Slices...)(Slice!(RN, RRange) value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1276,21 +1299,21 @@ struct Slice(size_t _N, _Range)
             auto a = new int[6].sliced(2, 3);
             auto b = [1, 2, 3, 4].sliced(2, 2);
             
-            a[0 .. $, 0 .. $ - 1] = b;
+            a[0..$, 0..$-1] = b;
             assert(a == [[1, 2, 0], [3, 4, 0]]);
 
-            a[0 .. $, 0 .. $ - 1] = b[0];
+            a[0..$, 0..$-1] = b[0];
             assert(a == [[1, 2, 0], [1, 2, 0]]);
 
-            a[1, 0 .. $ - 1] = b[1];
+            a[1, 0..$-1] = b[1];
             assert(a[1] == [3, 4, 0]);
 
-            a[1, 0 .. $ - 1][] = b[0];
+            a[1, 0..$-1][] = b[0];
             assert(a[1] == [1, 2, 0]);
         }
 
         /++
-        Присвоение обычного массива для полностью опреденного слайса.
+        Присвоение обычного многомерного массива для $(BLUE полностью опреденного слайса).
         +/
         void opIndexAssign(T, Slices...)(T[] value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1305,7 +1328,7 @@ struct Slice(size_t _N, _Range)
                 for (; sl.length; sl.popFront)
                 {
                     sl.front = value[0];
-                    value = value[1 .. $];
+                    value = value[1..$];
                 }
             }
             else
@@ -1314,7 +1337,7 @@ struct Slice(size_t _N, _Range)
                 foreach (v; sl)
                 {
                     v[] = value[0];
-                    value = value[1 .. $];
+                    value = value[1..$];
                 }
             }
             else
@@ -1336,21 +1359,21 @@ struct Slice(size_t _N, _Range)
             a[] = [[1, 2, 3], [4, 5, 6]];
             assert(a == [[1, 2, 3], [4, 5, 6]]);
 
-            a[0 .. $, 0 .. $ - 1] = [[1, 2], [3, 4]];
+            a[0..$, 0..$-1] = [[1, 2], [3, 4]];
             assert(a == [[1, 2, 3], [3, 4, 6]]);
 
-            a[0 .. $, 0 .. $ - 1] = [1, 2];
+            a[0..$, 0..$-1] = [1, 2];
             assert(a == [[1, 2, 3], [1, 2, 6]]);
 
-            a[1, 0 .. $ - 1] = [3, 4];
+            a[1, 0..$-1] = [3, 4];
             assert(a[1] == [3, 4, 6]);
 
-            a[1, 0 .. $ - 1][] = [3, 4];
+            a[1, 0..$-1][] = [3, 4];
             assert(a[1] == [3, 4, 6]);
         }
 
         /++
-        Присвоение обычного значения для полностью опреденного слайса.
+        Присвоение обычного значения для $(BLUE полностью опреденного слайса).
         +/
         void opIndexAssign(T, Slices...)(T value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1383,24 +1406,24 @@ struct Slice(size_t _N, _Range)
             a[] = 9;
             assert(a == [[9, 9, 9], [9, 9, 9]]);
 
-            a[0 .. $, 0 .. $ - 1] = 1;
+            a[0..$, 0..$-1] = 1;
             assert(a == [[1, 1, 9], [1, 1, 9]]);
 
-            a[0 .. $, 0 .. $ - 1] = 2;
+            a[0..$, 0..$-1] = 2;
             assert(a == [[2, 2, 9], [2, 2, 9]]);
 
-            a[1, 0 .. $ - 1] = 3;
+            a[1, 0..$-1] = 3;
             assert(a[1] == [3, 3, 9]);
 
-            a[1, 0 .. $ - 1] = 4;
+            a[1, 0..$-1] = 4;
             assert(a[1] == [4, 4, 9]);
 
-            a[1, 0 .. $ - 1][] = 5;
+            a[1, 0..$-1][] = 5;
             assert(a[1] == [5, 5, 9]);
         }
 
         /++
-        Присвоение обычного значения для полностью опреденного индекса.
+        Присвоение обычного значения для $(BLUE полностью опреденного индекса).
         +/
         auto ref opIndexAssign(T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
@@ -1420,7 +1443,7 @@ struct Slice(size_t _N, _Range)
 
         /++
         Op присвоение `op=` обычного значения
-        для полностью опреденного индекса.
+        для $(BLUE полностью опреденного индекса).
         +/
         auto ref opIndexOpAssign(string op, T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
@@ -1440,7 +1463,7 @@ struct Slice(size_t _N, _Range)
 
         static if (hasAccessByRef)
         /++
-        Op присвоение `op=` значание типа `Slice` для полностью опреденного слайса.
+        Op присвоение `op=` значание типа `Slice` для $(BLUE полностью опреденного слайса).
         +/
         void opIndexOpAssign(string op, size_t RN, RRange, Slices...)(Slice!(RN, RRange) value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1482,22 +1505,22 @@ struct Slice(size_t _N, _Range)
             auto a = new int[6].sliced(2, 3);
             auto b = [1, 2, 3, 4].sliced(2, 2);
             
-            a[0 .. $, 0 .. $ - 1] += b;
+            a[0..$, 0..$-1] += b;
             assert(a == [[1, 2, 0], [3, 4, 0]]);
 
-            a[0 .. $, 0 .. $ - 1] += b[0];
+            a[0..$, 0..$-1] += b[0];
             assert(a == [[2, 4, 0], [4, 6, 0]]);
 
-            a[1, 0 .. $ - 1] += b[1];
+            a[1, 0..$-1] += b[1];
             assert(a[1] == [7, 10, 0]);
 
-            a[1, 0 .. $ - 1][] += b[0];
+            a[1, 0..$-1][] += b[0];
             assert(a[1] == [8, 12, 0]);
         }
 
         static if (hasAccessByRef)
         /++
-        Op присвоение `op=` обычного массива для полностью опреденного слайса.
+        Op присвоение `op=` обычного многомерного массива для $(BLUE полностью опреденного слайса).
         +/
         void opIndexOpAssign(string op, T, Slices...)(T[] value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1512,7 +1535,7 @@ struct Slice(size_t _N, _Range)
                 for (; sl.length; sl.popFront)
                 {
                     mixin (`sl.front ` ~ op ~ `= value[0];`);
-                    value = value[1 .. $];
+                    value = value[1..$];
                 }
             }
             else
@@ -1521,7 +1544,7 @@ struct Slice(size_t _N, _Range)
                 foreach (v; sl)
                 {
                     mixin (`v[] ` ~ op ~ `= value[0];`);
-                    value = value[1 .. $];
+                    value = value[1..$];
                 }
             }
             else
@@ -1539,22 +1562,22 @@ struct Slice(size_t _N, _Range)
         unittest {
             auto a = new int[6].sliced(2, 3);
 
-            a[0 .. $, 0 .. $ - 1] += [[1, 2], [3, 4]];
+            a[0..$, 0..$-1] += [[1, 2], [3, 4]];
             assert(a == [[1, 2, 0], [3, 4, 0]]);
 
-            a[0 .. $, 0 .. $ - 1] += [1, 2];
+            a[0..$, 0..$-1] += [1, 2];
             assert(a == [[2, 4, 0], [4, 6, 0]]);
 
-            a[1, 0 .. $ - 1] += [3, 4];
+            a[1, 0..$-1] += [3, 4];
             assert(a[1] == [7, 10, 0]);
 
-            a[1, 0 .. $ - 1][] += [1, 2];
+            a[1, 0..$-1][] += [1, 2];
             assert(a[1] == [8, 12, 0]);
         }
 
         static if (hasAccessByRef)
         /++
-        Op присвоение `op=` обычного значения для полностью опреденного слайса.
+        Op присвоение `op=` обычного значения для $(BLUE полностью опреденного слайса).
         +/
         void opIndexOpAssign(string op, T, Slices...)(T value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1587,15 +1610,15 @@ struct Slice(size_t _N, _Range)
             a[] += 1;
             assert(a == [[1, 1, 1], [1, 1, 1]]);
 
-            a[0 .. $, 0 .. $ - 1] += 2;
+            a[0..$, 0..$-1] += 2;
             assert(a == [[3, 3, 1], [3, 3, 1]]);
 
-            a[1, 0 .. $ - 1] += 3;
+            a[1, 0..$-1] += 3;
             assert(a[1] == [6, 6, 1]);
         }
 
         /++
-        Инкремент и декремент для полностью опреденного индекса.
+        Инкремент и декремент для $(BLUE полностью опреденного индекса).
         +/
         auto ref opIndexUnary(string op, Indexes...)(Indexes _indexes)
             if (isFullPureIndex!Indexes && (op == `++` || op == `--`))
@@ -1615,7 +1638,7 @@ struct Slice(size_t _N, _Range)
 
         static if (hasAccessByRef)
         /++
-        Инкремент и декремент для полностью опреденного слайса.
+        Инкремент и декремент для $(BLUE полностью опреденного слайса).
         +/
         void opIndexUnary(string op, Slices...)(Slices slices)
             if (isFullPureSlice!Slices && (op == `++` || op == `--`))
@@ -1646,7 +1669,7 @@ struct Slice(size_t _N, _Range)
             ++a[];
             assert(a == [[1, 1, 1], [1, 1, 1]]);
 
-            --a[1, 0 .. $ - 1];
+            --a[1, 0..$-1];
             assert(a[1] == [0, 0, 1]);
         }
     }
@@ -1655,8 +1678,6 @@ struct Slice(size_t _N, _Range)
 
 /++
 Slicing, indexing, and arithmetic operations.
-See_also: $(LREF .Slice.opIndex), $(LREF .Slice.opIndexAssign),
-    $(LREF .Slice.opIndexOpAssign), $(LREF .Slice.opUnary)
 +/
 pure nothrow
 unittest {
@@ -1669,8 +1690,8 @@ unittest {
     assert (tensor[1, 2] == tensor[1][2]);
     assert (tensor[1, 2, 3] == tensor[1][2][3]);
 
-    assert ( tensor[0 .. $, 0 .. $, 4] == tensor.transposed!2[4]);
-    assert (&tensor[0 .. $, 0 .. $, 4][1, 2] is &tensor[1, 2, 4]);
+    assert ( tensor[0..$, 0..$, 4] == tensor.transposed!2[4]);
+    assert (&tensor[0..$, 0..$, 4][1, 2] is &tensor[1, 2, 4]);
 
     tensor[1, 2, 3]++; //`opIndex` returns value by reference.
     --tensor[1, 2, 3]; //`opUnary`
@@ -1678,12 +1699,12 @@ unittest {
     ++tensor[];
     tensor[] -= 1;
 
-    // `opIndexAssing` accepts only fully qualified indexes or slices.
+    // `opIndexAssing` accepts only fully qualified indexes and slices.
     // Use an additional empty slice `[]`.
     static assert (!__traits(compiles), tensor[0 .. 2] *= 2);
 
     tensor[0 .. 2][] *= 2;          //OK, empty slice
-    tensor[0 .. 2, 3, 0 .. $] /= 2; //OK, 3 index or slice positions are defined.
+    tensor[0 .. 2, 3, 0..$] /= 2; //OK, 3 index or slice positions are defined.
 
     //fully qualified index may be replaced by a static array
     size_t[3] index = [1, 2, 3];
@@ -1691,9 +1712,7 @@ unittest {
 }
 
 /++
-Operations with rvalue slices
-See_also: $(LREF .Slice.opIndex), $(LREF .Slice.opIndexAssign),
-    $(LREF .Slice.opIndexOpAssign)
+Operations with rvalue slices.
 +/
 pure nothrow
 unittest {
@@ -1703,7 +1722,7 @@ unittest {
     auto matrix = new int[12].sliced(3, 4);
     auto vector = new int[ 3].sliced(3);
 
-    foreach (i; 0 .. 3)
+    foreach (i; 0..3)
         vector[i] = i;
 
     // fills matrix columns
@@ -1735,8 +1754,10 @@ unittest {
     Slice!(2, int*) toMatrix(string str)
     {
         string[][] data = str.lineSplitter.filter!(not!empty).map!split.array;
-        size_t rows = data.length.enforce("empty input");
+        
+        size_t rows    = data   .length.enforce("empty input");
         size_t columns = data[0].length.enforce("empty first row");
+        
         data.each!(a => enforce(a.length == columns, "rows have different lengths"));
 
         auto slice = new int[rows * columns].sliced(rows, columns);
@@ -1747,9 +1768,13 @@ unittest {
     }
 
     auto input = "\r1 2  3\r\n 4 5 6\n";
-    auto ouptut = "1 2 3\n4 5 6\n";
-    auto fmt = "%(%(%s %)\n%)\n";
-    assert (format(fmt, toMatrix(input)) == ouptut);
+
+    auto matrix = toMatrix(input);
+    assert(matrix == [[1, 2, 3], [4, 5, 6]]);
+
+    // back to text
+    auto text2 = format("%(%(%s %)\n%)\n", matrix);
+    assert (text2 == "1 2 3\n4 5 6\n");
 }
 
 // Slicing
@@ -1757,9 +1782,9 @@ unittest {
 unittest {
     import std.range: iota;
     auto a = 1000000.iota.sliced(10, 20, 30, 40);
-    auto b = a[0 .. $, 10, 4 .. 27, 4];
+    auto b = a[0..$, 10, 4 .. 27, 4];
     auto c = b[2 .. 9, 5 .. 10];
-    auto d = b[3 .. $, $ - 2];
+    auto d = b[3..$, $-2];
     assert (b[4, 17] == a[4, 10, 21, 4]);
     assert (c[1, 2] == a[3, 10, 11, 4]);
     assert (d[3] == a[6, 10, 25, 4]);
@@ -2067,11 +2092,11 @@ private template PtrTupleFrontMembers(Names...)
 {
     static if (Names.length)
     {
-        alias Top = Names[0 .. $ - 1];
+        alias Top = Names[0..$-1];
         enum int m = Top.length;
         enum PtrTupleFrontMembers = PtrTupleFrontMembers!Top
         ~ "
-        @property auto ref " ~ Names[$ - 1] ~ "() {
+        @property auto ref " ~ Names[$-1] ~ "() {
             static if (__traits(compiles,{ auto _f = _ptrs__[" ~ m.stringof ~ "].front; }))
                 return _ptrs__[" ~ m.stringof ~ "].front;
             else

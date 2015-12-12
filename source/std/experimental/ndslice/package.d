@@ -276,6 +276,8 @@ License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
+Credits: John Loughran Colvin
+
 Source:    $(PHOBOSSRC std/_experimental/_ndslice/_package.d)
 
 Macros:

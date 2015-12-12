@@ -1,11 +1,11 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
+This is a submodule of $(LINK2 std_experimental_ndslice.html, std.experimental.ndslice).
+
 Slice operators change only strides and lengths.
 A range owned by a slice remains unmodified.
-All operators preserve type of a slice. Some operators are bifacial,
-i.e they have version with template parameters and version with function parameters.
-Versions with template parameters are preferred because compile time checks and optimization reasons.
+All operators preserve type of a slice.
 
 $(BOOKTABLE $(H2 Transpose operators),
 
@@ -19,25 +19,25 @@ See also $(SUBREF selection, evertPack).
 $(BOOKTABLE $(H2 Iteration operators),
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 strided, `1000.iota.sliced(13, 40).strided!(0, 1)(2, 5).shape` equals `[7, 8]`.)
-$(T2 reversed, `slice.reversed!(0, slice.shape.length-1)` returns slice with reversed direction of the iteration for top level and tail level dimensions.)
-$(T2 allReversed, `20.iota.sliced(4, 5).allReversed` equals `20.iota.retro.sliced(4, 5)`.)
+$(T2 strided, `1000.iota.sliced(13, 40).strided!(0, 1)(2, 5).shape` equals to `[7, 8]`.)
+$(T2 reversed, `slice.reversed!0` returns slice with reversed direction of the iteration for top level dimension.)
+$(T2 allReversed, `20.iota.sliced(4, 5).allReversed` equals to `20.iota.retro.sliced(4, 5)`.)
 )
 
 $(BOOKTABLE $(H2 Other operators),
 $(TR $(TH Function Name) $(TH Description))
-$(T2 rotated, `10.iota.sliced(2, 3).rotated.writeln;` prints `[[2, 5], [1, 4], [0, 3]]`.)
+$(T2 rotated, `10.iota.sliced(2, 3).rotated` equals to `[[2, 5], [1, 4], [0, 3]]`.)
 )
 
 $(H4 Drop operators)
 
-$(LREF dropToHypercube), $(LREF dropBack),
-$(LREF drop), $(LREF dropBack),
-$(LREF dropOne), $(LREF dropBackOne),
-$(LREF dropExactly), $(LREF dropBackExactly),
-$(LREF allDrop), $(LREF allDropBack),
-$(LREF allDropOne), $(LREF allDropBackOne),
-$(LREF allDropExactly), $(LREF allDropBackExactly).
+$(LREF dropToHypercube)
+$(LREF drop) $(LREF dropBack)
+$(LREF dropOne) $(LREF dropBackOne)
+$(LREF dropExactly) $(LREF dropBackExactly)
+$(LREF allDrop) $(LREF allDropBack)
+$(LREF allDropOne) $(LREF allDropBackOne)
+$(LREF allDropExactly) $(LREF allDropBackExactly)
 
 $(GRAMMAR
 $(GNAME DropOperatorName):
@@ -54,7 +54,13 @@ $(GNAME DropSuffix):
     $(D Exactly)
 )
 
-$(BOOKTABLE $(H2 Bifacial operators),
+$(H2 Bifacial operators)
+
+Some operators are bifacial,
+i.e they have version with template parameters and version with function parameters.
+Versions with template parameters are preferred because compile time checks and optimization reasons.
+
+$(BOOKTABLE ,
 
 $(TR $(TH Function Name) $(TH Variadic) $(TH Template) $(TH Function))
 $(T4 swapped, No, `slice.swapped!(2, 3)`, `slice.swapped(2, 3)`)
@@ -62,6 +68,13 @@ $(T4 strided, Yes/No, `slice.strided!(1, 2)(20, 40)`, `slice.strided(1, 20).stri
 $(T4 transposed, Yes, `slice.transposed!(1, 4, 3)`, `slice.transposed(1, 4, 3)`)
 $(T4 reversed, Yes, `slice.reversed!(0, 2)`, `slice.reversed(0, 2)`)
 )
+
+$(LREF drop), $(LREF dropBack)
+$(LREF dropExactly) and $(LREF dropBackExactly)
+bifacial interface is identical to $(LREF strided).
+
+$(LREF dropOne) and $(LREF dropBackOne)
+bifacial interface is identical to $(LREF reversed).
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
@@ -530,6 +543,29 @@ body {
 }
 
 ///
+pure nothrow
+unittest {
+    import std.experimental.ndslice.slice;
+    auto slice = [1, 2, 3, 4].sliced(2, 2);
+    assert (slice                    == [[1, 2], [3, 4]]);
+
+    // Template
+    assert (slice.reversed! 0        == [[3, 4], [1, 2]]);
+    assert (slice.reversed! 1        == [[2, 1], [4, 3]]);
+    assert (slice.reversed!(0, 1)    == [[4, 3], [2, 1]]);
+    assert (slice.reversed!(1, 0)    == [[4, 3], [2, 1]]);
+    assert (slice.reversed!(1, 1)    == [[1, 2], [3, 4]]);
+    assert (slice.reversed!(0, 0, 0) == [[3, 4], [1, 2]]);
+
+    // Function
+    assert (slice.reversed (0)       == [[3, 4], [1, 2]]);
+    assert (slice.reversed (1)       == [[2, 1], [4, 3]]);
+    assert (slice.reversed (0, 1)    == [[4, 3], [2, 1]]);
+    assert (slice.reversed (1, 0)    == [[4, 3], [2, 1]]);
+    assert (slice.reversed (1, 1)    == [[1, 2], [3, 4]]);
+    assert (slice.reversed (0, 0, 0) == [[3, 4], [1, 2]]);
+}
+
 @safe @nogc pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -601,6 +637,44 @@ body {
 }
 
 ///
+pure nothrow
+unittest {
+    import std.experimental.ndslice.slice;
+    auto slice
+         = [0,1,2,3,    4,5,6,7,   8,9,10,11].sliced(3, 4);
+
+    assert (slice
+        == [[0,1,2,3], [4,5,6,7], [8,9,10,11]]);
+    
+    // Template
+    assert (slice.strided!0(2)
+        == [[0,1,2,3],            [8,9,10,11]]);
+    
+    assert (slice.strided!1(3)
+        == [[0,    3], [4,    7], [8,     11]]);
+    
+    assert (slice.strided!(0, 1)(2, 3)
+        == [[0,    3],            [8,     11]]);
+    
+    // Function
+    assert (slice.strided(0, 2)
+        == [[0,1,2,3],            [8,9,10,11]]);
+    
+    assert (slice.strided(1, 3)
+        == [[0,    3], [4,    7], [8,     11]]);
+    
+    assert (slice.strided(0, 2).strided(1, 3)
+        == [[0,    3],            [8,     11]]);
+}
+
+///
+@safe @nogc pure nothrow
+unittest {
+    import std.range: iota;
+    static assert (1000.iota.sliced(13, 40).strided!(0, 1)(2, 5).shape == [7, 8]);
+    static assert (100.iota.sliced(93).strided!(0, 0)(7, 3).shape == [5]);
+}
+
 @safe @nogc pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -620,9 +694,6 @@ unittest {
     assert (slice.strided(0, 2).byElement.equal(chain(i0, i2)));
     assert (slice.strided(1, 3).byElement.equal(chain(s0, s1, s2)));
     assert (slice.strided(0, 2).strided(1, 3).byElement.equal(chain(s0, s2)));
-
-    static assert (1000.iota.sliced(13, 40).strided!(0, 1)(2, 5).shape == [7, 8]);
-    static assert (100.iota.sliced(93).strided!(0, 0)(7, 3).shape == [5]);
 }
 
 /++
