@@ -1,45 +1,44 @@
 /+
 ## Guide for Slice/BLAS contributors
 
-1. Pay _unprecedented_ attention to functions to be
+1. Make sure functions are
        a. inlined(!),
        b. `@nogc`,
        c. `nothrow`,
        d. `pure`.
-    95% of functions will be marked with `pragma(inline, true)`. So, use
-    _simple_ `assert`s with messages that can be computed at compile time.
+    For this reason, it is preferable to use _simple_ `assert`s with messages
+    that can be computed at compile time.
     The goals are:
         1. to reduce executable size for _any_ compilation mode
         2. to reduce template bloat in object files
         3. to reduce compilation time
-        4. to allow a user to write an extern C bindings for code based on `Slice`.
+        4. to allow users to write extern C bindings for code libraries on `Slice` type.
 
-2. Do not import `std.format`, `std.string` and `std.conv` to format error
-    messages.`"Use" ~ Concatenation.stringof`.
+2. `std.format`, `std.string`, and `std.conv` should not be used in error
+    message formatting.`"Use" ~ Concatenation.stringof`.
 
-3. Try to use already defined `mixin template`s for pretty error messaging.
+3. `mixin template`s may be used for pretty error message formatting.
 
-4. Do not use `Exception`s/`enforce`s to check indexes and length. Exceptions are
-    allowed only for algorithms where validation of an input data is
-    significantly complex for user. `reshape` is a good example where
-    Exceptions are required. Put an example of Exception handing and workaround
-    for a function that can throw.
+4. `Exception`s/`enforce`s should no be used to check indexes and lengths.
+    Exceptions are only allowed for algorithms where validation of input data is
+    too complicated for the user. `reshape` function is a good example of a case
+    where Exceptions are required.
+    If a function might throw an exception, an example with exception handing should be added.
 
-5. Do not use compile time flags for simple checks like transposition
-    of a matrix. It is much better to have runtime matrix transposition.
-    Furthermore, Slice provide runtime matrix transposition out of the box.
+5.  For simple checks like matrix transposition, compile time flags should not be used.
+    It is much better to opt for runtime matrix transposition.
+    Furthermore, Slice type provides runtime matrix transposition out of the box.
 
-6. Do not use _Fortran_VS_C_ flags. They are about notation,
-    but not about algorithm itself. To care about math world users add
-    appropriate code example in the documentation. `transposed` / `everted`
-    can be used for cash friendly code.
+6.  _Fortran_VS_C_ flags should not be used. They are about notation,
+    but not about the algorithm itself. For math world users,
+    a corresponding code example might be included in the documentation.
+    `transposed` / `everted` can be used in cache-friendly codes.
 
-7. Do not use D compile time power to produce dummy entities like
-    `IdentityMatrix`.
+7. Compile time evaluation should not be used to produce dummy types like `IdentityMatrix`.
 
-8. Try to separate allocation and algorithm logic whenever possible.
+8. Memory allocation and algorithm logic should be separated whenever possible.
 
-9. Add CTFE unittests to new functions.
+9. CTFE unittests should be added to new functions.
 +/
 
 /**
@@ -50,9 +49,9 @@ homogeneously-typed multidimensional data.
 
 
 Note:
-Во многих примерах вместо обычного массива используется
-$(LINK2 std_range.html#iota, std.range.iota).
-Это позволяет проводить тесты без аллокаций памяти.
+In many examples $(LINK2 std_range.html#iota, std.range.iota) is used
+instead of a regular array, which makes it
+possible to carry out tests without memory allocation.
 
 $(SCRIPT inhibitQuickIndex = 1;)
 
@@ -124,13 +123,13 @@ $(LINK2 https://github.com/DlangScience/examples/tree/master/image_processing/me
 /++
 Params:
     filter = unary function. Dimension window 2D is the argument.
-    image = image with dimensions `(h, w, c)`,
+    image = image dimensions `(h, w, c)`,
         where с is the number of channels in the image
     nr = number of rows in the window
     nс = number of columns in the window
 
 Returns:
-    image with dimensions `(h - nr + 1, w - nc + 1, c)`,
+    image dimensions `(h - nr + 1, w - nc + 1, c)`,
         where с is the number of channels in the image.
         Dense data layout is guaranteed.
 +/

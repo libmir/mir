@@ -27,12 +27,12 @@ Creates an `n`-dimensional slice-shell over a `range`.
 Params:
     range = a random access range or an array; only index operator
         `auto opIndex(size_t index)` is required for ranges. The length of the
-        range must be greater or equal to the sum of shift and the product of
+        range must be greater than or equal to the sum of shift and the product of
         lengths.
-    lengths = list of lengths for each dimension
+    lengths = list of lengths for each dimension.
     shift = index of the first element in a `range`.
         The first `shift` elements of range are ignored.
-    Names = names of elements in a slice tuple
+    Names = names of elements in a slice tuple.
 +/
 auto sliced(ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes, Range, Lengths...)(Range range, Lengths lengths)
     if (!isStaticArray!Range && !isNarrowString!Range
@@ -52,7 +52,7 @@ in {
             ~ tailErrorMessage!());
     static if (hasLength!Range)
         assert (lengthsProduct!N(lengths) + shift <= range.length,
-            "Range length must be greater or equal to lengths product plus shift."
+            "Range length must be greater than or equal to the sum of shift and the product of lengths."
             ~ tailErrorMessage!());
 }
 body {
@@ -138,7 +138,7 @@ template sliced(Names...)
         import std.meta: staticMap;
         alias RS = AliasSeq!("  ~_Range_Types!Names ~ ");
         static assert (!anySatisfy!(_isSlice, RS),
-            `Pucked slices are not allowed in slice tuples`
+            `Packed slices are not allowed in slice tuples`
             ~ tailErrorMessage!());
         alias PT = PtrTuple!Names;
         alias SPT = PT!(staticMap!(PrepareRangeType, RS));
@@ -156,7 +156,7 @@ template sliced(Names...)
             mixin (`alias r = range_` ~ name ~`;`);
             static if (hasLength!R)
                 assert (minLength <= r.length,
-                    `length of the range '` ~ name ~ `' must be greater or equal to lengths product plus shift.`
+                    `length of range '` ~ name ~ `' must be greater than or equal to the sum of shift and the product of lengths.`
                     ~ tailErrorMessage!());
             static if (isDynamicArray!T && mod)
                 range.ptrs[i] = r.ptr;
@@ -288,7 +288,7 @@ unittest {
 }
 
 /++
-Allocates an array and creats an n-dimensional slice over it.
+Allocates an array and creates an n-dimensional slice over it.
 See also $(LINK2 std_experimental_allocator.html, std.experimental.allocator).
 +/
 version(Posix)
@@ -403,7 +403,7 @@ template assumeSameStructure(Names...)
         import std.meta: staticMap;
         alias RS = AliasSeq!("  ~_Range_Types!Names ~ ");
         static assert (!anySatisfy!(_isSlice, RS),
-            `Pucked slices not allowed in slice tuples`
+            `Packed slices not allowed in slice tuples`
             ~ tailErrorMessage!());
         alias PT = PtrTuple!Names;
         alias SPT = PT!(staticMap!(PrepareRangeType, RS));
@@ -454,7 +454,7 @@ unittest {
 }
 
 /++
-If `yes`, the array will be replaced with its pointer to increase performance.
+If `yes`, the array will be replaced with its pointer to improve performance.
 Use `no` for compile time function evaluation.
 +/
 alias ReplaceArrayWithPointer = Flag!"replaceArrayWithPointer";
@@ -506,40 +506,40 @@ struct Structure(size_t N)
 /++
 Presents an n-dimensional view over a range.
 
-$(H4 Определения)
+$(H4 Definitions)
 
-Для изменения данных в слайсе с использованием
-перегруженных операторов, таких как `=`, `+=`, `++` должна быть использована
-конструкция вида `<slice to change>[<index and interval sequence...>]`.
-Стоит заметить, что как и для регулярных массивов, операции `a = b`
-и `a[] = b` имеют разный смысл.
-В первом случае после операции `a` просто указывает на теже данные что и `b`,
-и данные, на которые указывало `a` остаются неизменными.
-При этом `а` и `b` должны иметь один и тот же тип.
-Во втором случае `a` продолжает указывать на теже данные что и раньше,
-но сами данные будут изменены. При этом число размерностей `b` может быть
-меньше числа размерностей `a`; `b`  может быть как Слайсом,
-так и обычным многомерным массивом или же просто значением.
+In order to change data in a slice using
+overloaded operators such as `=`, `+=`, `++`,
+a syntactic structure of type
+`<slice to change>[<index and interval sequence...>]` must be used.
+It is worth noting that just like for regular arrays, operations `a = b`
+and `a[] = b` have different meanings.
+In the first case, after the operation is carried out, `a` simply points at the same data as `b`
+does, and the data which `a` previously pointed at remains unmodified.
+Here, `а` and `b` must be of the same type.
+In the second case, `a` points at the same data as before,
+but the data itself will be changed. In this instance, the number of dimensions of `b`
+may be less than the number of dimensions of `а`; and `b` can be a Slice, 
+a regular multidimensional array, or simply a value (e.g. a number).
 
-В таблице представлены определения встречающиеся при описании
-перегрузки операторов.
-
+In the following table you will find the definitions you might come across
+in comments on operator overloading.
 
 $(BOOKTABLE
-$(TR $(TH Определение) $(TH Примеры при `N == 3`))
-$(TR $(TD Часть последовательности вида `i .. j` называется $(BLUE интервалом).)
+$(TR $(TH Definition) $(TH Examples at `N == 3`))
+$(TR $(TD An $(BLUE interval) is a part of a sequence of type `i .. j`.)
     $(STD `2..$-3`, `0..4`))
-$(TR $(TD Часть последовательности вида `i` называется  $(BLUE индексом).)
+$(TR $(TD An $(BLUE index) is a part of a sequence of type `i`.)
     $(STD `3`, `$-1`))
-$(TR $(TD $(BLUE Частично определенным слайсом) называется последовательность 
-    состоящая из $(BLUE интервалов) и $(BLUE индексов) общей длиной строго меньше `N`.)
+$(TR $(TD A $(BLUE partially defined slice) is a sequence composed of
+    $(BLUE intervals) and $(BLUE indexes) with an overall length strictly less than `N`.)
     $(STD `[3]`, `[0..$]`, `[3, 3]`, `[0..$,0..3]`, `[0..$,2]`))
-$(TR $(TD $(BLUE Полностью определенным индексом) называется последовательность 
-    состоящая только из $(BLUE индексов) общей длиной равной `N`)
+$(TR $(TD A $(BLUE fully defined index) is a sequence
+    composed only of $(BLUE indexes) with an overall length equal to `N`.)
     $(STD `[2,3,1]`))
-$(TR $(TD $(BLUE Полностью определенным слайсом) называются пустая последовательность
-    или последовательность состоящая из $(BLUE индексов) и хотябы одного
-    $(BLUE интервала) общей длиной равной `N`)
+$(TR $(TD A $(BLUE fully defined slice) is an empty sequence
+    or a sequence composed of $(BLUE indexes) and at least one
+    $(BLUE interval) with an overall length equal to `N`)
     $(STD `[]`, `[3..$,0..3,0..$-1]`, `[2,0..$,1]`))
 )
 
@@ -573,7 +573,7 @@ struct Slice(size_t _N, _Range)
     }
     alias PureThis = Slice!(PureN, PureRange);
 
-    static assert (PureN < 256, "Slice: Pure N should be less then 256");
+    static assert (PureN < 256, "Slice: Pure N should be less than 256");
 
     static if (N == 1)
         alias ElemType = typeof(Range.init[size_t.init]);
@@ -637,7 +637,7 @@ struct Slice(size_t _N, _Range)
             size_t stride;
             foreach (i; Iota!(0, N)) //static
             {
-                assert (_indexes[0][i] < _lengths[i], "indexStride: index must be less then lengths");
+                assert (_indexes[0][i] < _lengths[i], "indexStride: index must be less than lengths");
                 stride += _strides[i] * _indexes[0][i];
             }
             return stride;
@@ -647,7 +647,7 @@ struct Slice(size_t _N, _Range)
             size_t stride;
             foreach (i, index; _indexes) //static
             {
-                assert (index < _lengths[i], "indexStride: index must be less then lengths");
+                assert (index < _lengths[i], "indexStride: index must be less than lengths");
                 stride += _strides[i] * index;
             }
             return stride;
@@ -739,7 +739,7 @@ struct Slice(size_t _N, _Range)
         assert (1000.iota
             .sliced(3, 4, 50)
             .reversed!2      //makes stride negative
-            .strided!2(6)    //multiplies stride by 6, and changes corresponding length
+            .strided!2(6)    //multiplies stride by 6 and changes corresponding length
             .transposed!2    //brings dimension `2` to the first position
             .structure == Structure!3([9, 3, 4], [-6, 200, 50]));
     }
@@ -947,7 +947,7 @@ struct Slice(size_t _N, _Range)
     void popFront(size_t dimension = 0)()
         if (dimension < N)
     {
-        assert (_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater then 0.");
+        assert (_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater than 0.");
         _lengths[dimension]--;
         _ptr += _strides[dimension];
     }
@@ -956,7 +956,7 @@ struct Slice(size_t _N, _Range)
     void popBack(size_t dimension = 0)()
         if (dimension < N)
     {
-        assert (_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater then 0.");
+        assert (_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater than 0.");
         _lengths[dimension]--;
     }
 
@@ -964,7 +964,7 @@ struct Slice(size_t _N, _Range)
     void popFrontExactly(size_t dimension = 0)(size_t n)
         if (dimension < N)
     {
-        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!" ~ dimension.stringof);
+        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!" ~ dimension.stringof);
         _lengths[dimension] -= n;
         _ptr += _strides[dimension] * n;
     }
@@ -973,7 +973,7 @@ struct Slice(size_t _N, _Range)
     void popBackExactly(size_t dimension = 0)(size_t n)
         if (dimension < N)
     {
-        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!" ~ dimension.stringof);
+        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!" ~ dimension.stringof);
         _lengths[dimension] -= n;
     }
 
@@ -1032,8 +1032,8 @@ struct Slice(size_t _N, _Range)
 
     package void popFront(size_t dimension)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
-        assert (_lengths[dimension], ": length!dim should be greater then 0.");
+        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
+        assert (_lengths[dimension], ": length!dim should be greater than 0.");
         _lengths[dimension]--;
         _ptr += _strides[dimension];
     }
@@ -1041,36 +1041,36 @@ struct Slice(size_t _N, _Range)
 
     package void popBack(size_t dimension)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
-        assert (_lengths[dimension], ": length!dim should be greater then 0.");
+        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
+        assert (_lengths[dimension], ": length!dim should be greater than 0.");
         _lengths[dimension]--;
     }
 
     package void popFrontExactly(size_t dimension, size_t n)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
-        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!dim");
+        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
+        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!dim");
         _lengths[dimension] -= n;
         _ptr += _strides[dimension] * n;
     }
 
     package void popBackExactly(size_t dimension, size_t n)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
-        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less or equal to length!dim");
+        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
+        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!dim");
         _lengths[dimension] -= n;
     }
 
     package void popFrontN(size_t dimension, size_t n)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
         import std.algorithm.comparison: min;
         popFrontExactly(dimension, min(n, _lengths[dimension]));
     }
 
     package void popBackN(size_t dimension, size_t n)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less then N = " ~ N.stringof);
+        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
         import std.algorithm.comparison: min;
         popBackExactly(dimension, min(n, _lengths[dimension]));
     }
@@ -1159,16 +1159,17 @@ struct Slice(size_t _N, _Range)
         if (dimension < N)
     in   {
         assert (i <= j,
-            "Slice.opSlice!" ~ dimension.stringof ~ ": the left bound must be less then or equal to the right bound");
+            "Slice.opSlice!" ~ dimension.stringof ~ ": the left bound must be less than or equal to the right bound.");
         assert (j - i <= _lengths[dimension],
-            "Slice.opSlice!" ~ dimension.stringof ~ ": difference between the right and the left bounds must be less then or equal to the length");
+            "Slice.opSlice!" ~ dimension.stringof ~
+            ": difference between the right and the left bounds must be less than or equal to the length of the given dimension.");
     }
     body {
         return typeof(return)(i, j);
     }
 
     /++
-    $(BLUE Полностью определенный индекс).
+    $(BLUE Fully defined index).
     +/
     auto ref opIndex(Indexes...)(Indexes _indexes)
         if (isFullPureIndex!Indexes)
@@ -1194,7 +1195,7 @@ struct Slice(size_t _N, _Range)
     }
 
     /++
-    $(BLUE Чачтично или полность опреденный слайс).
+    $(BLUE Partially or fully defined slice).
     +/
     auto opIndex(Slices...)(Slices slices)
         if (isPureSlice!Slices)
@@ -1215,7 +1216,7 @@ struct Slice(size_t _N, _Range)
             {
                 static if (isIndex!(Slices[i]))
                 {
-                    assert (slice < _lengths[i], "Slice.opIndex: index must be less then length");
+                    assert (slice < _lengths[i], "Slice.opIndex: index must be less than length");
                     stride += _strides[i] * slice;
                 }
                 else
@@ -1245,11 +1246,11 @@ struct Slice(size_t _N, _Range)
     unittest {
         auto slice = new int[15].sliced(5, 3);
         
-        /// Полность опреденный слайс
+        /// Fully defined slice
         assert(slice[] == slice);
         auto sublice = slice[0..$-2, 1..$];
         
-        /// Частично определенный слайс
+        /// Partially defined slice
         auto row = slice[3];
         auto col = slice[0..$, 1];
     }
@@ -1257,7 +1258,7 @@ struct Slice(size_t _N, _Range)
     static if (rangeHasMutableElements && PureN == N)
     {
         /++
-        Присвоение значание типа `Slice` для $(BLUE полностью опреденного слайса).
+        Assignment of a value of `Slice` type to a $(BLUE fully defined slice).
         +/
         void opIndexAssign(size_t RN, RRange, Slices...)(Slice!(RN, RRange) value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1313,7 +1314,7 @@ struct Slice(size_t _N, _Range)
         }
 
         /++
-        Присвоение обычного многомерного массива для $(BLUE полностью опреденного слайса).
+        Assignment of a regular multidimensional array to a $(BLUE fully defined slice).
         +/
         void opIndexAssign(T, Slices...)(T[] value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1373,7 +1374,7 @@ struct Slice(size_t _N, _Range)
         }
 
         /++
-        Присвоение обычного значения для $(BLUE полностью опреденного слайса).
+        Assignment of a value (e.g. a number) to a $(BLUE fully defined slice).
         +/
         void opIndexAssign(T, Slices...)(T value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1423,7 +1424,7 @@ struct Slice(size_t _N, _Range)
         }
 
         /++
-        Присвоение обычного значения для $(BLUE полностью опреденного индекса).
+        Assignment of a value (e.g. a number) to a $(BLUE fully defined index).
         +/
         auto ref opIndexAssign(T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
@@ -1442,8 +1443,7 @@ struct Slice(size_t _N, _Range)
         }
 
         /++
-        Op присвоение `op=` обычного значения
-        для $(BLUE полностью опреденного индекса).
+        Op Assignment `op=` of a value (e.g. a number) to a $(BLUE fully defined index).
         +/
         auto ref opIndexOpAssign(string op, T, Indexes...)(T value, Indexes _indexes)
             if (isFullPureIndex!Indexes)
@@ -1463,7 +1463,7 @@ struct Slice(size_t _N, _Range)
 
         static if (hasAccessByRef)
         /++
-        Op присвоение `op=` значание типа `Slice` для $(BLUE полностью опреденного слайса).
+        Op Assignment `op=` of a value of `Slice` type to a $(BLUE fully defined slice).
         +/
         void opIndexOpAssign(string op, size_t RN, RRange, Slices...)(Slice!(RN, RRange) value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1520,7 +1520,7 @@ struct Slice(size_t _N, _Range)
 
         static if (hasAccessByRef)
         /++
-        Op присвоение `op=` обычного многомерного массива для $(BLUE полностью опреденного слайса).
+        Op Assignment `op=` of a regular multidimensional array to a $(BLUE fully defined slice).
         +/
         void opIndexOpAssign(string op, T, Slices...)(T[] value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1577,7 +1577,7 @@ struct Slice(size_t _N, _Range)
 
         static if (hasAccessByRef)
         /++
-        Op присвоение `op=` обычного значения для $(BLUE полностью опреденного слайса).
+        Op Assignment `op=` of a value (e.g. a number) to a $(BLUE fully defined slice).
         +/
         void opIndexOpAssign(string op, T, Slices...)(T value, Slices slices)
             if (isFullPureSlice!Slices
@@ -1618,7 +1618,7 @@ struct Slice(size_t _N, _Range)
         }
 
         /++
-        Инкремент и декремент для $(BLUE полностью опреденного индекса).
+        Increment `++` and Decrement `++` operators for a $(BLUE fully defined index).
         +/
         auto ref opIndexUnary(string op, Indexes...)(Indexes _indexes)
             if (isFullPureIndex!Indexes && (op == `++` || op == `--`))
@@ -1638,7 +1638,7 @@ struct Slice(size_t _N, _Range)
 
         static if (hasAccessByRef)
         /++
-        Инкремент и декремент для $(BLUE полностью опреденного слайса).
+        Increment `++` and Decrement `++` operators for a $(BLUE fully defined slice).
         +/
         void opIndexUnary(string op, Slices...)(Slices slices)
             if (isFullPureSlice!Slices && (op == `++` || op == `--`))
@@ -1699,14 +1699,14 @@ unittest {
     ++tensor[];
     tensor[] -= 1;
 
-    // `opIndexAssing` accepts only fully qualified indexes and slices.
+    // `opIndexAssing` accepts only fully defined indexes and slices.
     // Use an additional empty slice `[]`.
     static assert (!__traits(compiles), tensor[0 .. 2] *= 2);
 
     tensor[0 .. 2][] *= 2;          //OK, empty slice
     tensor[0 .. 2, 3, 0..$] /= 2; //OK, 3 index or slice positions are defined.
 
-    //fully qualified index may be replaced by a static array
+    //fully defined index may be replaced by a static array
     size_t[3] index = [1, 2, 3];
     assert (tensor[index] == tensor[1, 2, 3]);
 }
@@ -1865,16 +1865,16 @@ unittest {
 
 // Type deduction
 unittest {
-    //Arrays
+    // Arrays
     foreach (T; AliasSeq!(int, const int, immutable int))
         static assert (is(typeof((T[]).init.sliced(3, 4)) == Slice!(2, T*)));
 
-    //Container Array
+    // Container Array
     import std.container.array;
     Array!int ar;
     static assert (is(typeof(ar[].sliced(3, 4)) == Slice!(2, typeof(ar[]))));
 
-    //An implicitly convertible types to it's unqualified type.
+    // Implicit conversion of a range to its unqualified type.
     import std.range: iota;
     auto      i0 = 100.iota;
     const     i1 = 100.iota;
@@ -1977,7 +1977,7 @@ private auto ptrShell(Range)(Range range, sizediff_t shift = 0)
     return PtrShell!Range(shift, range);
 }
 
-version(none) //Uncomment before merge
+version(none) // TODO: Remove before merge
 // @safe pure nothrow ?
 unittest {
     import std.internal.test.dummyrange;

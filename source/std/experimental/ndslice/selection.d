@@ -3,38 +3,40 @@ $(SCRIPT inhibitQuickIndex = 1;)
 
 This is a submodule of $(LINK2 std_experimental_ndslice.html, std.experimental.ndslice).
 
-Селекторы создают новый тип итератора для тех же данных.
-Сами данные остаются неизменными (to translate).
+Selectors create new views and iteration patterns over the same data, without copying.
 
 $(H2 Subspace selectors)
 
-The goal of subspace selectors is painless generalization and combination of other selectors.
-`pack!K` creates a slice of slices `Slice!(N-K, Slice!(K+1, Range))` by packing last `K` dimensions of highest pack of dimensions,
-so type of element of `slice.byElement` is `Slice!(K, Range)`.
-Another way to use $(LREF pack) is transposition of packs of dimensions using $(LREF evertPack).
-Examples with subspace selectors are available for selectors, $(SUBREF slice, Slice.shape), $(SUBREF slice, Slice.elementsCount).
+Subspace selectors serve to generalize and combine other selectors easily.
+For a slice of `Slice!(N, Range)` type `slice.pack!K` creates a slice of
+slices of `Slice!(N-K, Slice!(K+1, Range))` type by packing
+the last `K` dimensions of the top dimension pack,
+and the type of element of `slice.byElement` is `Slice!(K, Range)`.
+Another way to use $(LREF pack) is transposition of dimension packs using
+$(LREF evertPack). Examples with subspace selectors are available for selectors,
+$(SUBREF slice, Slice.shape), and $(SUBREF slice, Slice.elementsCount).
 
 $(BOOKTABLE ,
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 pack, returns slice of slices.)
-$(T2 unpack, unites all dimension packs.)
-$(T2 evertPack, reverse packs of dimensions.)
+$(T2 pack     , returns slice of slices.)
+$(T2 unpack   , merges all dimension packs.)
+$(T2 evertPack, reverses dimension packs.)
 )
 
 $(BOOKTABLE $(H2 Selectors),
 
 $(TR $(TH Function Name) $(TH Description))
 $(T2 byElement, a random access range of all elements with `index` property)
-$(T2 byElementInStandardSimplex, an input range of all elements in standard simplex in hypercube.
-    В двумерном случае это рэндж с элементами из left upper triangular matrix.)
-$(T2 indexSlice, returns a slice with elements equals to initial index.)
-$(T2 reshape, returns new slice for the same data)
-$(T2 diagonal, 1-dimensional slice of diagonal elements)
-$(T2 blocks, n-dimensional slice of n-dimensional non-overlapping blocks.
-    В двумерном случае это блочная матрица.)
-$(T2 windows, n-dimensional slice of n-dimensional overlapping  windows.
-    В одномерном случае это скользящее окно.)
+$(T2 byElementInStandardSimplex, an input range of all elements in standard simplex of hypercube with `index` property.
+    If the slice has two dimensions, it is a range of all elements of upper left triangular matrix.)
+$(T2 indexSlice, returns a slice with elements equal to the initial index.)
+$(T2 reshape, returns a new slice for the same data)
+$(T2 diagonal, 1-dimensional slice composed of diagonal elements)
+$(T2 blocks, n-dimensional slice composed of n-dimensional non-overlapping blocks.
+    If the slice has two dimensions, it is a block matrix.)
+$(T2 windows, n-dimensional slice of n-dimensional overlapping windows.
+    If the slice has two dimensions, it is a sliding window.)
 )
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
@@ -58,9 +60,12 @@ import std.experimental.ndslice.internal;
 import std.experimental.ndslice.slice; //: Slice;
 
 /++
-Packs a slice into the composed slice, i.e. slice of slices.
+Packs a slice into a composed slice, i.e. slice of slices.
+The function does not carry out any calculations, it simply returns an identical
+binary representation of a different type.
+
 Params:
-    K = sizes of packs of dimensions
+    K = sizes of dimension packs
 Returns:
     `pack!K` returns `Slice!(N-K, Slice!(K+1, Range))`;
     `slice.pack!(K1, K2, ..., Kn)` is the same as `slice.pacKed!K1.pacKed!K2. ... pacKed!Kn`.
@@ -78,7 +83,7 @@ template pack(K...)
                 else
                 static assert (0,
                     "Sum of all lengths of packs " ~ K.stringof
-                    ~ " should be less then N = "~ N.stringof
+                    ~ " should be less than N = "~ N.stringof
                     ~ tailErrorMessage!());
             }
             else
@@ -100,7 +105,7 @@ unittest
     import std.algorithm.comparison: equal;
     auto r = 100000000.iota;
     auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
-    auto b = a.pack!(2, 3); // the same as `a.pack!2.pack!3`
+    auto b = a.pack!(2, 3); // same as `a.pack!2.pack!3`
     auto c = b[1, 2, 3, 4];
     auto d = c[5, 6, 7];
     auto e = d[8, 9];
@@ -137,7 +142,11 @@ unittest {
 }
 
 /++
-Unpacks a composed slice.
+Unpacks a packed slice.
+
+The function does not carry out any calculations, it simply returns an identical
+binary representation of a different type.
+
 See_also: $(LREF pack), $(LREF evertPack)
 +/
 Slice!(N, Range).PureThis unpack(size_t N, Range)(auto ref Slice!(N, Range) slice)
@@ -160,8 +169,9 @@ unittest
 }
 
 /++
-Reverses order of packs.
+Reverses the order of dimension packs.
 This function is used in functional pipeline with other selectors.
+
 See_also: $(LREF pack), $(LREF unpack)
 +/
 SliceFromSeq!(Slice!(N, Range).PureRange, NSeqEvert!(Slice!(N, Range).NSeq))
@@ -256,9 +266,9 @@ unittest {
 }
 
 /++
-Returns 1-dimensional slice over main diagonal of n-dimensional slice.
-`diagonal` can be generalized with other selectors, for example
-$(LREF blocks)(diagonal blocks) and $(LREF windows) (multi-diagonal slice).
+Returns a 1-dimensional slice over the main diagonal of an n-dimensional slice.
+`diagonal` can be generalized with other selectors, for example,
+$(LREF blocks) (diagonal blocks) and $(LREF windows) (multi-diagonal slice).
 +/
 Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
@@ -439,19 +449,19 @@ unittest {
 }
 
 /++
-Returns n-dimensional slice of n-dimensional non-overlapping blocks.
+Returns an n-dimensional slice of n-dimensional non-overlapping blocks.
 `blocks` can be generalized with other selectors.
-For example, `blocks` in combination with $(LREF diagonal) can be used to get slice of diagonal blocks.
+For example, `blocks` in combination with $(LREF diagonal) can be used to get a slice of diagonal blocks.
 Params:
     N = dimension count
-    slice = slice to split on blocks
-    lengths = N dimensions for block size, residual blocks are ignored
+    slice = slice to be split into blocks
+    lengths = dimensions of block, residual blocks are ignored
 +/
 Slice!(N, Slice!(N+1, Range)) blocks(size_t N, Range, Lengths...)(auto ref Slice!(N, Range) slice, Lengths lengths)
     if (allSatisfy!(isIndex, Lengths) && Lengths.length == N)
 in {
     foreach (i, length; lengths)
-        assert (length > 0, "length for dimension = " ~ i.stringof ~ " must be positive"
+        assert (length > 0, "length of dimension = " ~ i.stringof ~ " must be positive"
             ~ tailErrorMessage!());
 }
 body {
@@ -462,13 +472,13 @@ body {
         ret._strides[dimension] = slice._strides[dimension];
         if (ret._lengths[dimension]) //do not remove `if (...)`
             ret._strides[dimension] *= lengths[dimension];
-        ret._lengths[dimension+N] = lengths[dimension];
-        ret._strides[dimension+N] = slice._strides[dimension];
+        ret._lengths[dimension + N] = lengths[dimension];
+        ret._strides[dimension + N] = slice._strides[dimension];
     }
     foreach (dimension; Iota!(N, slice.PureN))
     {
-        ret._lengths[dimension+N] = slice._lengths[dimension];
-        ret._strides[dimension+N] = slice._strides[dimension];
+        ret._lengths[dimension + N] = slice._lengths[dimension];
+        ret._strides[dimension + N] = slice._strides[dimension];
     }
     ret._ptr = slice._ptr;
     return ret;
@@ -500,7 +510,7 @@ unittest {
          [0, 0, 0,  0, 0, 0,  0, 0]]);
 }
 
-///Diagonal blocks
+/// Diagonal blocks
 pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -531,7 +541,7 @@ unittest {
          [0, 0, 0, 0, 0, 0, 0, 0]]);
 }
 
-///Vertical blocks for matrix
+/// Matrix divided into vertical blocks
 pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -556,19 +566,19 @@ unittest {
 }
 
 /++
-Returns n-dimensional slice of n-dimensional overlapping windows.
+Returns an n-dimensional slice of n-dimensional overlapping windows.
 `windows` can be generalized with other selectors.
-For example, `windows` in combination with $(LREF diagonal) can be used to get multi-diagonal slice.
+For example, `windows` in combination with $(LREF diagonal) can be used to get a multi-diagonal slice.
 Params:
     N = dimension count
-    slice = slice to iterate
-    lengths = N dimensions for size of the window
+    slice = slice to be iterated
+    lengths = dimensions of windows
 +/
 Slice!(N, Slice!(N+1, Range)) windows(size_t N, Range, Lengths...)(auto ref Slice!(N, Range) slice, Lengths lengths)
     if (allSatisfy!(isIndex, Lengths) && Lengths.length == N)
 in {
     foreach (i, length; lengths)
-        assert (length > 0, "length for dimension = " ~ i.stringof ~ " must be positive"
+        assert (length > 0, "length of dimension = " ~ i.stringof ~ " must be positive"
             ~ tailErrorMessage!());
 }
 body {
@@ -578,13 +588,13 @@ body {
         ret._lengths[dimension] = slice._lengths[dimension] >= lengths[dimension] ?
                                   slice._lengths[dimension] - lengths[dimension] + 1: 0;
         ret._strides[dimension] = slice._strides[dimension];
-        ret._lengths[dimension+N] = lengths[dimension];
-        ret._strides[dimension+N] = slice._strides[dimension];
+        ret._lengths[dimension + N] = lengths[dimension];
+        ret._strides[dimension + N] = slice._strides[dimension];
     }
     foreach (dimension; Iota!(N, slice.PureN))
     {
-        ret._lengths[dimension+N] = slice._lengths[dimension];
-        ret._strides[dimension+N] = slice._strides[dimension];
+        ret._lengths[dimension + N] = slice._lengths[dimension];
+        ret._strides[dimension +  N] = slice._strides[dimension];
     }
     ret._ptr = slice._ptr;
     return ret;
@@ -629,7 +639,7 @@ unittest {
          [0, 0,  0, 0, 0,  0, 0, 0]]);
 }
 
-///Multi-diagonal
+/// Multi-diagonal matrix
 pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -653,7 +663,7 @@ unittest {
          [0, 0, 0, 0, 0,  1, 1, 1]]);
 }
 
-///Vertical windows for matrix
+/// Sliding window over matrix columns
 pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -678,13 +688,13 @@ unittest {
 }
 
 /++
-Returns new slice for the same data.
+Returns a new slice for the same data.
 Params:
-    slice = slice to reshape
+    slice = slice to be reshaped
     lengths = list of new dimensions. Single length can be set to `-1`.
-        In this case, the corresponding dimension is inferred.
+        In this case, the corresponding dimension is inferable.
 Throws:
-    $(ReshapeException) if `slice` con not be reshaped with `lengths`.
+    $(LREF ReshapeException) if the slice cannot be reshaped with the input lengths.
 +/
 Slice!(Lengths.length, Range)
     reshape
@@ -720,7 +730,7 @@ Slice!(Lengths.length, Range)
             slice._lengths.dup,
             slice._strides.dup,
             ret.  _lengths.dup,
-            "total elements count should be the same");
+            "total element count should be the same");
 
     for (size_t oi, ni, oj, nj; oi < slice.N && ni < ret.N; oi = oj, ni = nj)
     {
@@ -782,26 +792,29 @@ unittest {
          [ 2,  1, 0]]);
 }
 
-/// Reshape with memory reallocation
+/// Reshaping with memory allocation
 pure
 unittest {
     import std.experimental.ndslice.slice;
     import std.experimental.ndslice.iteration: reversed;
-    import std.array: array;
-    import std.range: iota;
+
     auto reshape2(S, L...)(S slice, L lengths)
     {
-        // Try to reshape without reallocation
+        // Tries to reshape without allocation
         try return slice.reshape(lengths);
         catch(ReshapeException e)
-            //reallocate elements and slice
+            //allocates the elements and creates a slice
             //Note: -1 length is not supported by reshape2
             return slice.byElement.array.sliced(lengths);
     }
-    auto slice = 100.iota
-        .array //cast to array
+
+    auto slice = 
+        [0, 1,  2,  3, 
+         4, 5,  6,  7, 
+         8, 9, 10, 11]
         .sliced(3, 4)
         .reversed!0;
+
     assert (reshape2(slice, 4, 3) ==
         [[ 8, 9, 10],
          [11, 4,  5],
@@ -823,7 +836,7 @@ unittest {
           [[[[ 2], [ 1], [0]]]]]]);
 }
 
-///Exception class for $(LREF reshape).
+/// See_also: $(LREF reshape)
 class ReshapeException: Exception
 {
     /// Old lengths
@@ -852,7 +865,7 @@ class ReshapeException: Exception
 
 /++
 Returns a random access range of all elements of a slice.
-Order of elements is preserved.
+The order of elements is preserved.
 `byElement` can be generalized with other selectors.
 +/
 auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
@@ -860,7 +873,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
     with (Slice!(N, Range))
     {
         /++
-        ByElement shifts range's `_ptr` without modifying strides and lengths.
+        ByElement shifts the range's `_ptr` without modifying its strides and lengths.
         +/
         static struct ByElement
         {
@@ -888,7 +901,9 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             {
                 assert (!this.empty);
                 static if (N == PureN)
+                {
                     return _slice._ptr[0];
+                }
                 else with (_slice)
                 {
                     alias M = DeepElemType.PureN;
@@ -949,7 +964,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             }
             body {
                 _length -= n;
-                //calculate shift and new indexes
+                //calculates shift and new indexes
                 sizediff_t _shift;
                 n += _indexes[N-1];
                 foreach_reverse(i; Iota!(1, N)) with (_slice)
@@ -977,7 +992,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 _length -= n;
             }
 
-            //calculate shift for index n
+            //calculates shift for index n
             private sizediff_t getShift(size_t n)
             in {
                 assert (n < _length);
@@ -1020,12 +1035,12 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             alias opDollar = length;
 
             _Slice opSlice(size_t pos : 0)(size_t i, size_t j)
-            in   {
+            in {
                 assert (i <= j,
-                    "left bound must be less then or equal right bound"
+                    "the left bound must be less than or equal to the right bound"
                     ~ tailErrorMessage!());
                 assert (j - i <= _length,
-                    "difference between right and left bounds must be less then or equal length"
+                    "the difference between the right and the left bound must be less than or equal to range length"
                     ~ tailErrorMessage!());
             }
             body {
@@ -1041,7 +1056,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
     }
 }
 
-/// Common slice
+/// Regular slice
 @safe @nogc pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -1123,8 +1138,7 @@ unittest {
 }
 
 /++
-Random access and backward access are more expensive
-comparing with forward access.
+Forward access works faster than random access or backward access.
 Use $(SUBREF iteration, allReversed) in pipeline before
 `byElement` to achieve fast backward access.
 +/
@@ -1163,7 +1177,7 @@ unittest {
     static assert (hasSlicing!(typeof(elems)));
 }
 
-// Check strides
+// Checks strides
 @safe @nogc pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -1224,9 +1238,9 @@ unittest {
 }
 
 /++
-Returns an input range of all elements of a slice in standard simplex,
-i.g. it is set of elements in left upper triangular matrix in case of 2D slice.
-Order of elements is preserved.
+Returns an input range of all elements of standard simplex of a slice.
+In case the slice has two dimensions, it is composed of elements of upper left triangular matrix.
+The order of elements is preserved.
 `byElementInStandardSimplex` can be generalized with other selectors.
 +/
 auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t maxCobeLength = size_t.max)
@@ -1234,7 +1248,7 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
     with (Slice!(N, Range))
     {
         /++
-        ByElementInTopSimplex shifts range's `_ptr` without modifying strides and lengths.
+        ByElementInTopSimplex shifts the range's `_ptr` without modifying its strides and lengths.
         +/
         static struct ByElementInTopSimplex
         {
@@ -1354,7 +1368,7 @@ unittest {
 }
 
 
-/// properties
+/// Properties
 @safe @nogc pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -1373,7 +1387,7 @@ unittest {
 
 
 /++
-Returns the slice with elements equals to initial index.
+Returns the slice with elements equal to the initial index.
 See_also: $(LREF IndexSlice)
 +/
 IndexSlice!(Lengths.length) indexSlice(Lengths...)(Lengths lengths)
@@ -1405,7 +1419,7 @@ unittest {
 }
 
 /++
-Slice of indexes.
+Slice composed of indexes.
 See_also: $(LREF indexSlice)
 +/
 template IndexSlice(size_t N)

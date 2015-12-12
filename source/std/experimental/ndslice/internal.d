@@ -10,7 +10,7 @@ enum string tailErrorMessage(
     string pfun = __PRETTY_FUNCTION__) =
 "
 - - -
-Emitted by function
+Error in function
 " ~ fun ~ "
 - - -
 Function prototype
@@ -30,13 +30,13 @@ mixin template DimensionsCountCTError()
 {
     static assert (Dimensions.length <= N,
         "Dimensions list length = " ~ Dimensions.length.stringof
-        ~ " should be less or equal N = " ~ N.stringof
+        ~ " should be less than or equal to N = " ~ N.stringof
         ~ tailErrorMessage!());
 }
 
 enum DimensionsCountRTError = q{
     assert (dimensions.length <= N,
-        "Dimensions list length should be less or equal N = " ~ N.stringof
+        "Dimensions list length should be less than or equal to N = " ~ N.stringof
         ~ tailErrorMessage!());
 };
 
@@ -44,19 +44,19 @@ mixin template DimensionCTError()
 {
     static assert (dimension >= 0,
         "dimension = " ~ dimension.stringof ~ " at position "
-        ~ i.stringof ~ " should be greater or equal 0"
+        ~ i.stringof ~ " should be greater than or equal to 0"
         ~ tailErrorMessage!());
     static assert (dimension < N,
         "dimension = " ~ dimension.stringof ~ " at position "
-        ~ i.stringof ~ " should be less then N = " ~ N.stringof
+        ~ i.stringof ~ " should be less than N = " ~ N.stringof
         ~ tailErrorMessage!());
 }
 
 enum DimensionRTError = q{
     static if (isSigned!(typeof(dimension)))
-    assert (dimension >= 0, "dimension should be greater or equal 0"
+    assert (dimension >= 0, "dimension should be greater than or equal to 0"
         ~ tailErrorMessage!());
-    assert (dimension < N, "dimension should be less then N = " ~ N.stringof
+    assert (dimension < N, "dimension should be less than N = " ~ N.stringof
         ~ tailErrorMessage!());
 };
 
@@ -150,10 +150,10 @@ enum hasReference(T) = anySatisfy!(isReference, RepresentationTypeTuple!T);
 
 alias ImplicitlyUnqual(T) = Select!(isImplicitlyConvertible!(T, Unqual!T), Unqual!T, T);
 
-//TODO: replace with static foreach
+//TODO: replace with `static foreach`
 template Iota(size_t i, size_t j)
 {
-    static assert (i <= j, "Iota: i should be less or equal to j");
+    static assert (i <= j, "Iota: i should be less than or equal to j");
     static if (i == j)
         alias Iota = AliasSeq!();
     else

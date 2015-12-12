@@ -3,9 +3,9 @@ $(SCRIPT inhibitQuickIndex = 1;)
 
 This is a submodule of $(LINK2 std_experimental_ndslice.html, std.experimental.ndslice).
 
-Slice operators change only strides and lengths.
-A range owned by a slice remains unmodified.
-All operators preserve type of a slice.
+Operators only change strides and lengths of a slice.
+The range of a slice remains unmodified.
+All operators return slice of the same type as the type of the argument.
 
 $(BOOKTABLE $(H2 Transpose operators),
 
@@ -20,7 +20,7 @@ $(BOOKTABLE $(H2 Iteration operators),
 
 $(TR $(TH Function Name) $(TH Description))
 $(T2 strided, `1000.iota.sliced(13, 40).strided!(0, 1)(2, 5).shape` equals to `[7, 8]`.)
-$(T2 reversed, `slice.reversed!0` returns slice with reversed direction of the iteration for top level dimension.)
+$(T2 reversed, `slice.reversed!0` returns the slice with reversed direction of iteration for top level dimension.)
 $(T2 allReversed, `20.iota.sliced(4, 5).allReversed` equals to `20.iota.retro.sliced(4, 5)`.)
 )
 
@@ -57,8 +57,9 @@ $(GNAME DropSuffix):
 $(H2 Bifacial operators)
 
 Some operators are bifacial,
-i.e they have version with template parameters and version with function parameters.
-Versions with template parameters are preferred because compile time checks and optimization reasons.
+i.e. they have two versions: one with template parameters, and another one
+with function parameters. The versions with template parameters are preferable
+because they allow compile time checks and can be optimized better.
 
 $(BOOKTABLE ,
 
@@ -70,7 +71,7 @@ $(T4 reversed, Yes, `slice.reversed!(0, 2)`, `slice.reversed(0, 2)`)
 )
 
 $(LREF drop), $(LREF dropBack)
-$(LREF dropExactly) and $(LREF dropBackExactly)
+$(LREF dropExactly), and $(LREF dropBackExactly)
 bifacial interface is identical to $(LREF strided).
 
 $(LREF dropOne) and $(LREF dropBackOne)
@@ -211,11 +212,12 @@ private enum _rotatedCode = q{
 
 /++
 Rotates two selected dimensions by `k*90` degrees.
-Order of dimensions is matter.
-For 2d-sliced the default direction is counterclockwise.
+The order of dimensions is important.
+If the slice has two dimensions, the default direction is counterclockwise.
+
 Params:
     dimensionA = first dimension
-    dimensionA = second dimension
+    dimensionB = second dimension
     slice = input slice
     k = rotation counter, can be negative
 +/
@@ -298,7 +300,7 @@ unittest {
 }
 
 /++
-Reverses order of dimensions.
+Reverses the order of dimensions.
 See_also: $(LREF swapped), $(LREF transposed)
 +/
 Slice!(N, Range) everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
@@ -370,11 +372,11 @@ private size_t[N] completeTranspose(size_t N)(in size_t[] dimensions)
 
 /++
 N-dimensional transpose operator.
-Brings selected dimensions on top.
+Brings selected dimensions to the first position.
 Params:
-    Dimensions = indexes of dimensions to bring on top
-    dimensions = indexes of dimensions to bring on top
-    dimension = indexes of dimension to bring on top
+    Dimensions = indexes of dimensions to bring to the first position
+    dimensions = indexes of dimensions to bring to the first position
+    dimension = index of dimension to bring to the first position
 See_also: $(LREF swapped), $(LREF everted)
 +/
 template transposed(Dimensions...)
@@ -451,7 +453,7 @@ unittest {
         .shape == cast(size_t[5])[7, 4, 3, 5, 6]);
 }
 
-/// Function with single argument
+/// Single-argument function
 @safe @nogc pure nothrow
 unittest {
     import std.experimental.ndslice.slice;
@@ -482,7 +484,7 @@ private enum _reversedCode = q{
 };
 
 /++
-Reverses direction of iteration for all dimensions.
+Reverses the direction of iteration for all dimensions.
 +/
 Slice!(N, Range) allReversed(size_t N, Range)(Slice!(N, Range) slice)
 {
@@ -504,7 +506,7 @@ unittest {
 }
 
 /++
-Reverses direction of the iteration for selected dimensions.
+Reverses the direction of iteration for selected dimensions.
 +/
 template reversed(Dimensions...)
     if (Dimensions.length)
@@ -605,11 +607,11 @@ private enum _stridedCode = q{
 };
 
 /++
-Multiplies a stride of selected dimension by the factor.
+Multiplies the stride of the selected dimension by the factor.
 Params:
     Dimensions = list of dimension numbers
     dimension = dimension number
-    factor = step extension factor
+    factors = list of step extension factors
 +/
 template strided(Dimensions...)
     if (Dimensions.length)
@@ -697,9 +699,9 @@ unittest {
 }
 
 /++
-Convenience function which calls `slice.popFront!dimension()` for each dimension and returns `slice`.
+Convenience function which calls `slice.popFront!dimension()` for each dimension and returns the slice.
 
-`allDropBackOne` provides the same functionality but instead calls `slice.popBack!dimension()`.
+`allDropBackOne` provides the same functionality but calls `slice.popBack!dimension()` instead.
 +/
 Slice!(N, Range) allDropOne(size_t N, Range)(Slice!(N, Range) slice)
 {
@@ -730,14 +732,15 @@ unittest {
 }
 
 /++
-Similar to `allDrop` and `allDropBack` but they call
+These functions are similar to `allDrop` and `allDropBack` but they call
 `slice.popFrontExactly!dimension(n)` and `slice.popBackExactly!dimension(n)` instead.
 
 Note:
-Unlike `allDrop`, `allDropExactly` will assume that the slice holds at least n-dimensional cube.
+Unlike `allDrop`, `allDropExactly(n)` assume that the slice holds
+a multi-dimensional cube with a size of at least n.
 This makes `allDropExactly` faster than `allDrop`.
-Only use `allDropExactly` when it is guaranteed that slice
-holds at least n-dimensional cube.
+Only use `allDropExactly` when it is guaranteed that the slice holds
+a multi-dimensional cube with a size of at least n.
 +/
 Slice!(N, Range) allDropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 {
@@ -768,12 +771,12 @@ unittest {
 }
 
 /++
-Convenience function which calls `slice.popFrontN!dimension(n)` for each dimension and returns slice.
+Convenience function which calls `slice.popFrontN!dimension(n)` for each dimension and returns the slice.
 
-`allDropBack` provides the same functionality but instead calls `slice.popBackN!dimension(n)`.
+`allDropBack` provides the same functionality but calls `slice.popBackN!dimension(n)` instead.
 
 Note:
-`allDrop` and `allDropBack` will only pop up to n elements but will stop if the slice is empty first.
+`allDrop` and `allDropBack` remove up to n elements and stop when the slice is empty.
 +/
 Slice!(N, Range) allDrop(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 {
@@ -807,9 +810,9 @@ unittest {
 }
 
 /++
-Convenience function which calls `slice.popFront!dimension()` for selected dimensions and returns `slice`.
+Convenience function which calls `slice.popFront!dimension()` for selected dimensions and returns the slice.
 
-`dropBackOne` provides the same functionality but instead calls `slice.popBack!dimension()`.
+`dropBackOne` provides the same functionality but calls `slice.popBack!dimension()` instead.
 +/
 template dropOne(Dimensions...)
     if (Dimensions.length)
@@ -925,12 +928,12 @@ unittest {
 
 
 /++
-Similar to `drop` and `dropBack` but they call
+These functions are similar to `drop` and `dropBack` but they call
 `slice.popFrontExactly!dimension(n)` and `slice.popBackExactly!dimension(n)` instead.
 
 Note:
-Unlike `drop`, `dropExactly` will assume that the slice holds enough elements in
-selected dimension.
+Unlike `drop`, `dropExactly` assumes that the slice holds enough elements in
+the selected dimension.
 This makes `dropExactly` faster than `drop`.
 +/
 template dropExactly(Dimensions...)
@@ -1001,12 +1004,13 @@ unittest {
 }
 
 /++
-Convenience function which calls `slice.popFrontN!dimension(n)` for each dimension and returns slice.
+Convenience function which calls `slice.popFrontN!dimension(n)` for the selected
+dimension and returns the slice.
 
-`dropBack` provides the same functionality but instead calls `slice.popBackN!dimension(n)`.
+`dropBack` provides the same functionality but calls `slice.popBackN!dimension(n)` instead.
 
 Note:
-`drop` and `dropBack` will only pop up to n elements but will stop if the slice is empty first.
+`drop` and `dropBack` remove up to n elements and stop when the slice is empty.
 +/
 template drop(Dimensions...)
     if (Dimensions.length)
