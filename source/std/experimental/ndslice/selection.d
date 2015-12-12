@@ -160,8 +160,8 @@ unittest
 }
 
 /++
-Inverts composition of a slice.
-This function is used for transposition and in functional pipeline with $(LREF byElement).
+Reverses order of packs.
+This function is used in functional pipeline with other selectors.
 See_also: $(LREF pack), $(LREF unpack)
 +/
 SliceFromSeq!(Slice!(N, Range).PureRange, NSeqEvert!(Slice!(N, Range).NSeq))

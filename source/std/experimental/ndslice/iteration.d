@@ -298,7 +298,7 @@ unittest {
 }
 
 /++
-Everts dimensions in the reverse order.
+Reverses order of dimensions.
 See_also: $(LREF swapped), $(LREF transposed)
 +/
 Slice!(N, Range) everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
