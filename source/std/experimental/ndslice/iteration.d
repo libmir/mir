@@ -58,7 +58,7 @@ $(H2 Bifacial operators)
 
 Some operators are bifacial,
 i.e. they have two versions: one with template parameters, and another one
-with function parameters. The versions with template parameters are preferable
+with function parameters. Versions with template parameters are preferable
 because they allow compile time checks and can be optimized better.
 
 $(BOOKTABLE ,
@@ -70,12 +70,12 @@ $(T4 transposed, Yes, `slice.transposed!(1, 4, 3)`, `slice.transposed(1, 4, 3)`)
 $(T4 reversed, Yes, `slice.reversed!(0, 2)`, `slice.reversed(0, 2)`)
 )
 
-$(LREF drop), $(LREF dropBack)
+Bifacial interface of $(LREF drop), $(LREF dropBack)
 $(LREF dropExactly), and $(LREF dropBackExactly)
-bifacial interface is identical to $(LREF strided).
+is identical to that of $(LREF strided).
 
-$(LREF dropOne) and $(LREF dropBackOne)
-bifacial interface is identical to $(LREF reversed).
+Bifacial interface of $(LREF dropOne) and $(LREF dropBackOne)
+is identical to that of $(LREF reversed).
 
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
@@ -374,9 +374,9 @@ private size_t[N] completeTranspose(size_t N)(in size_t[] dimensions)
 N-dimensional transpose operator.
 Brings selected dimensions to the first position.
 Params:
-    Dimensions = indexes of dimensions to bring to the first position
-    dimensions = indexes of dimensions to bring to the first position
-    dimension = index of dimension to bring to the first position
+    Dimensions = indexes of dimensions to be brought to the first position
+    dimensions = indexes of dimensions to be brought to the first position
+    dimension = index of dimension to be brought to the first position
 See_also: $(LREF swapped), $(LREF everted)
 +/
 template transposed(Dimensions...)
@@ -647,24 +647,24 @@ unittest {
 
     assert (slice
         == [[0,1,2,3], [4,5,6,7], [8,9,10,11]]);
-    
+
     // Template
     assert (slice.strided!0(2)
         == [[0,1,2,3],            [8,9,10,11]]);
-    
+
     assert (slice.strided!1(3)
         == [[0,    3], [4,    7], [8,     11]]);
-    
+
     assert (slice.strided!(0, 1)(2, 3)
         == [[0,    3],            [8,     11]]);
-    
+
     // Function
     assert (slice.strided(0, 2)
         == [[0,1,2,3],            [8,9,10,11]]);
-    
+
     assert (slice.strided(1, 3)
         == [[0,    3], [4,    7], [8,     11]]);
-    
+
     assert (slice.strided(0, 2).strided(1, 3)
         == [[0,    3],            [8,     11]]);
 }

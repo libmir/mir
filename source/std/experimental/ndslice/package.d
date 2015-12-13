@@ -42,7 +42,7 @@
 +/
 
 /**
-The package is designed for applications such as linear algebra, physics and 
+The package is designed for applications such as linear algebra, physics and
 statistics. It would be well suited to creating machine learning and image
 processing algorithms, but should also be general enough for use anywhere with
 homogeneously-typed multidimensional data.
@@ -110,10 +110,10 @@ $(LINK2 https://en.wikipedia.org/wiki/Sobel_operator, Sobel operator).
 Each window is transferred to a `filter`, which calculates the value of the
 pixel that corresponds to the given window.
 
-This function does not calculate the border cases in which a window overlaps
+This function does not calculate border cases in which a window overlaps
 the image partially. However, the function can still be used to carry out such
 calculations. That can be done by creating an amplified image, with the edges
-reflected from the given image, and then applying the given function to the
+reflected from the original image, and then applying the given function to the
 new file.
 
 Note: You can find the example at
@@ -170,9 +170,8 @@ Slice!(3, C*) movingWindowByChannel(alias filter, C)
         // The only memory allocation in this function.
         .array
         // 9. 3D
-        // Returns the slice with the corresponding shape.
+        // Returns slice with corresponding shape.
         .sliced(wnds.shape);
-
 }
 ---
 
@@ -211,7 +210,7 @@ void main(string[] args)
     uint nr, nc, def = 3;
     auto helpInformation = args.getopt(
         "nr", "number of rows in window, default value is " ~ def.to!string, &nr,
-        "nc", "number of columns in window default value equals to nr", &nc);
+        "nc", "number of columns in window, default value is equal to nr", &nc);
     if (helpInformation.helpWanted)
     {
         defaultGetoptPrinter(
@@ -265,7 +264,7 @@ functions not represented in `numpy` may find that the built-in functions
 implemented specifically for `numpy` are not enough, and their Python
 implementations work at a very low speed. Extending `numpy` can be done, but
 is somewhat laborious as even the most basic `numpy` functions that refer
-directly to `ndarray` data must be implemented in C for reasonable performance. 
+directly to `ndarray` data must be implemented in C for reasonable performance.
 
 At the same time, while working with `ndslice`, an engineer has access to the
 whole set of standard D library, so the functions he creates will be as

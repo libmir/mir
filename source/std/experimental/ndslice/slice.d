@@ -29,10 +29,10 @@ Params:
         `auto opIndex(size_t index)` is required for ranges. The length of the
         range must be greater than or equal to the sum of shift and the product of
         lengths.
-    lengths = list of lengths for each dimension.
-    shift = index of the first element in a `range`.
+    lengths = list of lengths for each dimension
+    shift = index of the first element of a `range`.
         The first `shift` elements of range are ignored.
-    Names = names of elements in a slice tuple.
+    Names = names of elements in a slice tuple
 +/
 auto sliced(ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes, Range, Lengths...)(Range range, Lengths lengths)
     if (!isStaticArray!Range && !isNarrowString!Range
@@ -519,7 +519,7 @@ does, and the data which `a` previously pointed at remains unmodified.
 Here, `а` and `b` must be of the same type.
 In the second case, `a` points at the same data as before,
 but the data itself will be changed. In this instance, the number of dimensions of `b`
-may be less than the number of dimensions of `а`; and `b` can be a Slice, 
+may be less than the number of dimensions of `а`; and `b` can be a Slice,
 a regular multidimensional array, or simply a value (e.g. a number).
 
 In the following table you will find the definitions you might come across
@@ -539,7 +539,7 @@ $(TR $(TD A $(BLUE fully defined index) is a sequence
     $(STD `[2,3,1]`))
 $(TR $(TD A $(BLUE fully defined slice) is an empty sequence
     or a sequence composed of $(BLUE indexes) and at least one
-    $(BLUE interval) with an overall length equal to `N`)
+    $(BLUE interval) with an overall length equal to `N`.)
     $(STD `[]`, `[3..$,0..3,0..$-1]`, `[2,0..$,1]`))
 )
 
@@ -1076,7 +1076,7 @@ struct Slice(size_t _N, _Range)
     }
 
     /++
-    Returns: number of all elements in a slice
+    Returns: total number of elements in a slice
     +/
     size_t elementsCount() const
     {
@@ -1245,11 +1245,11 @@ struct Slice(size_t _N, _Range)
     pure nothrow
     unittest {
         auto slice = new int[15].sliced(5, 3);
-        
+
         /// Fully defined slice
         assert(slice[] == slice);
         auto sublice = slice[0..$-2, 1..$];
-        
+
         /// Partially defined slice
         auto row = slice[3];
         auto col = slice[0..$, 1];
@@ -1299,7 +1299,7 @@ struct Slice(size_t _N, _Range)
         unittest {
             auto a = new int[6].sliced(2, 3);
             auto b = [1, 2, 3, 4].sliced(2, 2);
-            
+
             a[0..$, 0..$-1] = b;
             assert(a == [[1, 2, 0], [3, 4, 0]]);
 
@@ -1504,7 +1504,7 @@ struct Slice(size_t _N, _Range)
         unittest {
             auto a = new int[6].sliced(2, 3);
             auto b = [1, 2, 3, 4].sliced(2, 2);
-            
+
             a[0..$, 0..$-1] += b;
             assert(a == [[1, 2, 0], [3, 4, 0]]);
 
@@ -1754,10 +1754,10 @@ unittest {
     Slice!(2, int*) toMatrix(string str)
     {
         string[][] data = str.lineSplitter.filter!(not!empty).map!split.array;
-        
+
         size_t rows    = data   .length.enforce("empty input");
         size_t columns = data[0].length.enforce("empty first row");
-        
+
         data.each!(a => enforce(a.length == columns, "rows have different lengths"));
 
         auto slice = new int[rows * columns].sliced(rows, columns);

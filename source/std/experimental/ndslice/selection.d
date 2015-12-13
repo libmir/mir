@@ -13,15 +13,15 @@ slices of `Slice!(N-K, Slice!(K+1, Range))` type by packing
 the last `K` dimensions of the top dimension pack,
 and the type of element of `slice.byElement` is `Slice!(K, Range)`.
 Another way to use $(LREF pack) is transposition of dimension packs using
-$(LREF evertPack). Examples with subspace selectors are available for selectors,
+$(LREF evertPack). Examples of use of subspace selectors are available for selectors,
 $(SUBREF slice, Slice.shape), and $(SUBREF slice, Slice.elementsCount).
 
 $(BOOKTABLE ,
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 pack     , returns slice of slices.)
-$(T2 unpack   , merges all dimension packs.)
-$(T2 evertPack, reverses dimension packs.)
+$(T2 pack     , returns slice of slices)
+$(T2 unpack   , merges all dimension packs)
+$(T2 evertPack, reverses dimension packs)
 )
 
 $(BOOKTABLE $(H2 Selectors),
@@ -30,7 +30,7 @@ $(TR $(TH Function Name) $(TH Description))
 $(T2 byElement, a random access range of all elements with `index` property)
 $(T2 byElementInStandardSimplex, an input range of all elements in standard simplex of hypercube with `index` property.
     If the slice has two dimensions, it is a range of all elements of upper left triangular matrix.)
-$(T2 indexSlice, returns a slice with elements equal to the initial index.)
+$(T2 indexSlice, returns a slice with elements equal to the initial index)
 $(T2 reshape, returns a new slice for the same data)
 $(T2 diagonal, 1-dimensional slice composed of diagonal elements)
 $(T2 blocks, n-dimensional slice composed of n-dimensional non-overlapping blocks.
@@ -60,9 +60,9 @@ import std.experimental.ndslice.internal;
 import std.experimental.ndslice.slice; //: Slice;
 
 /++
-Packs a slice into a composed slice, i.e. slice of slices.
-The function does not carry out any calculations, it simply returns an identical
-binary representation of a different type.
+Creates a packed slice, i.e. slice of slices.
+The function does not carry out any calculations, it simply returns the same
+binary data presented differently.
 
 Params:
     K = sizes of dimension packs
@@ -144,8 +144,8 @@ unittest {
 /++
 Unpacks a packed slice.
 
-The function does not carry out any calculations, it simply returns an identical
-binary representation of a different type.
+The function does not carry out any calculations, it simply returns the same
+binary data presented differently.
 
 See_also: $(LREF pack), $(LREF evertPack)
 +/
@@ -170,7 +170,7 @@ unittest
 
 /++
 Reverses the order of dimension packs.
-This function is used in functional pipeline with other selectors.
+This function is used in a functional pipeline with other selectors.
 
 See_also: $(LREF pack), $(LREF unpack)
 +/
@@ -267,7 +267,7 @@ unittest {
 
 /++
 Returns a 1-dimensional slice over the main diagonal of an n-dimensional slice.
-`diagonal` can be generalized with other selectors, for example,
+`diagonal` can be generalized with other selectors such as
 $(LREF blocks) (diagonal blocks) and $(LREF windows) (multi-diagonal slice).
 +/
 Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
@@ -691,7 +691,7 @@ unittest {
 Returns a new slice for the same data.
 Params:
     slice = slice to be reshaped
-    lengths = list of new dimensions. Single length can be set to `-1`.
+    lengths = list of new dimensions. One of the lengths can be set to `-1`.
         In this case, the corresponding dimension is inferable.
 Throws:
     $(LREF ReshapeException) if the slice cannot be reshaped with the input lengths.
@@ -797,6 +797,7 @@ pure
 unittest {
     import std.experimental.ndslice.slice;
     import std.experimental.ndslice.iteration: reversed;
+    import std.array: array;
 
     auto reshape2(S, L...)(S slice, L lengths)
     {
@@ -808,9 +809,9 @@ unittest {
             return slice.byElement.array.sliced(lengths);
     }
 
-    auto slice = 
-        [0, 1,  2,  3, 
-         4, 5,  6,  7, 
+    auto slice =
+        [0, 1,  2,  3,
+         4, 5,  6,  7,
          8, 9, 10, 11]
         .sliced(3, 4)
         .reversed!0;
@@ -1110,7 +1111,7 @@ unittest {
         size_t[2] index = elems.index;
         elems.front = index[0] * 10 + index[1] * 3;
     }
-    assert(slice == 
+    assert(slice ==
         [[ 0,  3,  6,  9],
          [10, 13, 16, 19],
          [20, 23, 26, 29],
@@ -1148,17 +1149,17 @@ unittest {
     import std.experimental.ndslice.iteration: allReversed;
 
     auto slice = 100.iota.sliced(3, 4, 5);
-    
+
     /// Slow backward iteration #1
     foreach (ref e; slice.byElement.retro)
     {
-        //... 
+        //...
     }
 
     /// Slow backward iteration #2
     foreach_reverse (ref e; slice.byElement)
     {
-        //... 
+        //...
     }
 
     /// Fast backward iteration
@@ -1387,7 +1388,7 @@ unittest {
 
 
 /++
-Returns the slice with elements equal to the initial index.
+Returns a slice, the elements of which are equal to the initial index value.
 See_also: $(LREF IndexSlice)
 +/
 IndexSlice!(Lengths.length) indexSlice(Lengths...)(Lengths lengths)
