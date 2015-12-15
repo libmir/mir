@@ -32,7 +32,9 @@ Params:
     lengths = list of lengths for each dimension
     shift = index of the first element of a `range`.
         The first `shift` elements of range are ignored.
-    Names = names of elements in a slice tuple
+    Names = names of elements in a slice tuple.
+        Slice tuple is a slice, which holds single set of lengths and strides
+        for a number of ranges.
 +/
 auto sliced(ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes, Range, Lengths...)(Range range, Lengths lengths)
     if (!isStaticArray!Range && !isNarrowString!Range
@@ -385,9 +387,9 @@ private template _Slice_DeclarationList(Names...)
 }
 
 /++
-Groups slices into a slice tuple.
-The slices must have identical structure.
-
+Groups slices into a slice tuple. The slices must have identical structure.
+Slice tuple is a slice, which holds single set of lengths and strides
+for a number of ranges.
 See_also: $(LREF .Slice.structure).
 +/
 template assumeSameStructure(Names...)
@@ -1618,7 +1620,7 @@ struct Slice(size_t _N, _Range)
         }
 
         /++
-        Increment `++` and Decrement `++` operators for a $(BLUE fully defined index).
+        Increment `++` and Decrement `--` operators for a $(BLUE fully defined index).
         +/
         auto ref opIndexUnary(string op, Indexes...)(Indexes _indexes)
             if (isFullPureIndex!Indexes && (op == `++` || op == `--`))
@@ -1638,7 +1640,7 @@ struct Slice(size_t _N, _Range)
 
         static if (hasAccessByRef)
         /++
-        Increment `++` and Decrement `++` operators for a $(BLUE fully defined slice).
+        Increment `++` and Decrement `--` operators for a $(BLUE fully defined slice).
         +/
         void opIndexUnary(string op, Slices...)(Slices slices)
             if (isFullPureSlice!Slices && (op == `++` || op == `--`))
