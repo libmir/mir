@@ -28,25 +28,25 @@ mixin template _DefineRet()
 
 mixin template DimensionsCountCTError()
 {
-    static assert (Dimensions.length <= N,
+    static assert(Dimensions.length <= N,
         "Dimensions list length = " ~ Dimensions.length.stringof
         ~ " should be less than or equal to N = " ~ N.stringof
         ~ tailErrorMessage!());
 }
 
 enum DimensionsCountRTError = q{
-    assert (dimensions.length <= N,
+    assert(dimensions.length <= N,
         "Dimensions list length should be less than or equal to N = " ~ N.stringof
         ~ tailErrorMessage!());
 };
 
 mixin template DimensionCTError()
 {
-    static assert (dimension >= 0,
+    static assert(dimension >= 0,
         "dimension = " ~ dimension.stringof ~ " at position "
         ~ i.stringof ~ " should be greater than or equal to 0"
         ~ tailErrorMessage!());
-    static assert (dimension < N,
+    static assert(dimension < N,
         "dimension = " ~ dimension.stringof ~ " at position "
         ~ i.stringof ~ " should be less than N = " ~ N.stringof
         ~ tailErrorMessage!());
@@ -54,9 +54,9 @@ mixin template DimensionCTError()
 
 enum DimensionRTError = q{
     static if (isSigned!(typeof(dimension)))
-    assert (dimension >= 0, "dimension should be greater than or equal to 0"
+    assert(dimension >= 0, "dimension should be greater than or equal to 0"
         ~ tailErrorMessage!());
-    assert (dimension < N, "dimension should be less than N = " ~ N.stringof
+    assert(dimension < N, "dimension should be less than N = " ~ N.stringof
         ~ tailErrorMessage!());
 };
 
@@ -153,7 +153,7 @@ alias ImplicitlyUnqual(T) = Select!(isImplicitlyConvertible!(T, Unqual!T), Unqua
 //TODO: replace with `static foreach`
 template Iota(size_t i, size_t j)
 {
-    static assert (i <= j, "Iota: i should be less than or equal to j");
+    static assert(i <= j, "Iota: i should be less than or equal to j");
     static if (i == j)
         alias Iota = AliasSeq!();
     else
@@ -176,13 +176,19 @@ size_t lengthsProduct(size_t N)(auto ref in size_t[N] lengths)
     return length;
 }
 
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     const size_t[3] lengths = [3, 4, 5];
-    assert (lengthsProduct(lengths) == 60);
-    assert (lengthsProduct([3, 4, 5]) == 60);
+    assert(lengthsProduct(lengths) == 60);
+    assert(lengthsProduct([3, 4, 5]) == 60);
 }
 
-enum canSave(T) = isPointer!T || isDynamicArray!T || __traits(compiles, { T _unused; _unused = T.init.save; });
+enum canSave(T) = isPointer!T || isDynamicArray!T ||
+    __traits(compiles,
+    {
+        T r1 = T.init;
+        auto s1 = r1.save;
+        static assert (is(typeof(s1) == T));
+    });
 
 struct _Slice { size_t i, j; }

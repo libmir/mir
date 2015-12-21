@@ -23,7 +23,7 @@ import std.typecons; //: Flag;
 import std.experimental.ndslice.internal;
 
 /++
-Creates an `n`-dimensional slice-shell over a `range`.
+Creates an n-dimensional slice-shell over a `range`.
 Params:
     range = a random access range or an array; only index operator
         `auto opIndex(size_t index)` is required for ranges. The length of the
@@ -35,6 +35,8 @@ Params:
     Names = names of elements in a slice tuple.
         Slice tuple is a slice, which holds single set of lengths and strides
         for a number of ranges.
+Returns:
+    n-dimensional slice
 +/
 auto sliced(ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes, Range, Lengths...)(Range range, Lengths lengths)
     if (!isStaticArray!Range && !isNarrowString!Range
@@ -49,11 +51,11 @@ auto sliced(ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes, size_t N,
 in {
     import std.range.primitives: hasLength;
     foreach (len; lengths)
-        assert (len > 0,
+        assert(len > 0,
             "All lengths must be positive."
             ~ tailErrorMessage!());
     static if (hasLength!Range)
-        assert (lengthsProduct!N(lengths) + shift <= range.length,
+        assert(lengthsProduct!N(lengths) + shift <= range.length,
             "Range length must be greater than or equal to the sum of shift and the product of lengths."
             ~ tailErrorMessage!());
 }
@@ -136,62 +138,64 @@ template sliced(Names...)
             auto ref in size_t[N] lengths,
             size_t shift = 0)
     {
-        import std.range.primitives: hasLength;
-        import std.meta: staticMap;
-        alias RS = AliasSeq!("  ~_Range_Types!Names ~ ");
-        static assert (!anySatisfy!(_isSlice, RS),
-            `Packed slices are not allowed in slice tuples`
-            ~ tailErrorMessage!());
-        alias PT = PtrTuple!Names;
-        alias SPT = PT!(staticMap!(PrepareRangeType, RS));
-        static if (hasElaborateAssign!SPT)
-            SPT range;
-        else
-            SPT range = void;
-        version(assert) immutable minLength = lengthsProduct!N(lengths) + shift;
-        foreach (i, name; Names)
-        {
-            alias T = typeof(range.ptrs[i]);
-            alias R = RS[i];
-            static assert (!isStaticArray!R);
-            static assert (!isNarrowString!R);
-            mixin (`alias r = range_` ~ name ~`;`);
-            static if (hasLength!R)
-                assert (minLength <= r.length,
-                    `length of range '` ~ name ~ `' must be greater than or equal to the sum of shift and the product of lengths.`
-                    ~ tailErrorMessage!());
-            static if (isDynamicArray!T && mod)
-                range.ptrs[i] = r.ptr;
+        alias RS = AliasSeq!(" ~ _Range_Types!Names ~ ");"
+        ~ q{
+            import std.range.primitives: hasLength;
+            import std.meta: staticMap;
+            static assert(!anySatisfy!(_isSlice, RS),
+                `Packed slices are not allowed in slice tuples`
+                ~ tailErrorMessage!());
+            alias PT = PtrTuple!Names;
+            alias SPT = PT!(staticMap!(PrepareRangeType, RS));
+            static if (hasElaborateAssign!SPT)
+                SPT range;
             else
-                range.ptrs[i] = T(0, r);
+                SPT range = void;
+            version(assert) immutable minLength = lengthsProduct!N(lengths) + shift;
+            foreach (i, name; Names)
+            {
+                alias T = typeof(range.ptrs[i]);
+                alias R = RS[i];
+                static assert(!isStaticArray!R);
+                static assert(!isNarrowString!R);
+                mixin (`alias r = range_` ~ name ~`;`);
+                static if (hasLength!R)
+                    assert(minLength <= r.length,
+                        `length of range '` ~ name ~`' must be greater than or equal `
+                        ~ `to the sum of shift and the product of lengths.`
+                        ~ tailErrorMessage!());
+                static if (isDynamicArray!T && mod)
+                    range.ptrs[i] = r.ptr;
+                else
+                    range.ptrs[i] = T(0, r);
+            }
+            return .sliced!(mod, N, SPT)(range, lengths, shift);
         }
-        return .sliced!(mod, N, SPT)(range, lengths, shift);
-    }
-    ");
+    ~ "}");
 }
 
 /// Creates a slice from an array.
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     auto slice = new int [1000].sliced(5, 6, 7);
-    assert (slice.length == 5);
-    assert (slice.elementsCount == 5 * 6 * 7);
-    static assert (is(typeof(slice) == Slice!(3, int*)));
+    assert(slice.length == 5);
+    assert(slice.elementsCount == 5 * 6 * 7);
+    static assert(is(typeof(slice) == Slice!(3, int*)));
 }
 
 /// Creates a slice using shift parameter.
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.range: iota;
     auto slice = 1000.iota.sliced([5, 6, 7], 9);
-    assert (slice.length == 5);
-    assert (slice.elementsCount == 5 * 6 * 7);
-    assert (slice[0, 0, 0] == 9);
+    assert(slice.length == 5);
+    assert(slice.elementsCount == 5 * 6 * 7);
+    assert(slice[0, 0, 0] == 9);
 }
 
 /// $(LINK2 https://en.wikipedia.org/wiki/Vandermonde_matrix, Vandermonde matrix)
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     pure nothrow
     Slice!(2, double*) vandermondeMatrix(Slice!(1, double*) x)
     {
@@ -205,7 +209,7 @@ unittest {
 
     auto x = [1.0, 2, 3, 4, 5].sliced(5);
     auto v = vandermondeMatrix(x);
-    assert (v ==
+    assert(v ==
         [[  1.0,   1,   1,   1,   1],
          [  1.0,   2,   4,   8,  16],
          [  1.0,   3,   9,  27,  81],
@@ -217,8 +221,8 @@ unittest {
 Creates a slice composed of named elements, each one of which corresponds
 to a given argument. See also $(LREF assumeSameStructure).
 +/
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     import std.algorithm.comparison: equal;
     import std.experimental.ndslice.selection: byElement;
     import std.range: iota;
@@ -230,19 +234,19 @@ unittest {
     foreach (r; m)
         foreach (e; r)
             e.b = e.a;
-    assert (equal(alpha, beta));
+    assert(equal(alpha, beta));
 
     beta[] = 0;
     foreach (e; m.byElement)
         e.b = e.a;
-    assert (equal(alpha, beta));
+    assert(equal(alpha, beta));
 }
 
 /++
 Creates an array and an n-dimensional slice over it.
 +/
-pure nothrow
-unittest {
+pure nothrow unittest
+{
 
     auto createSlice(T, Lengths...)(Lengths lengths)
     {
@@ -256,9 +260,9 @@ unittest {
     }
 
     auto slice = createSlice!int(5, 6, 7);
-    assert (slice.length == 5);
-    assert (slice.elementsCount == 5 * 6 * 7);
-    static assert (is(typeof(slice) == Slice!(3, int*)));
+    assert(slice.length == 5);
+    assert(slice.elementsCount == 5 * 6 * 7);
+    static assert(is(typeof(slice) == Slice!(3, int*)));
 
     auto duplicate = createSlice2!int(slice.shape);
     duplicate[] = slice;
@@ -267,8 +271,8 @@ unittest {
 /++
 Creates a common n-dimensional array.
 +/
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     auto ndarray(size_t N, Range)(auto ref Slice!(N, Range) slice)
     {
         import std.array: array;
@@ -285,8 +289,8 @@ unittest {
 
     import std.range: iota;
     auto ar = ndarray(100.iota.sliced(3, 4));
-    static assert (is(typeof(ar) == int[][]));
-    assert (ar == [[0,1,2,3], [4,5,6,7], [8,9,10,11]]);
+    static assert(is(typeof(ar) == int[][]));
+    assert(ar == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
 }
 
 /++
@@ -294,7 +298,8 @@ Allocates an array and creates an n-dimensional slice over it.
 See also $(LINK2 std_experimental_allocator.html, std.experimental.allocator).
 +/
 version(Posix)
-unittest {
+unittest
+{
     import std.experimental.allocator;
 
 
@@ -313,45 +318,45 @@ unittest {
 
     auto tup = makeSlice!int(theAllocator, 2, 3, 4);
 
-    static assert (is(typeof(tup.array) == int[]));
-    static assert (is(typeof(tup.slice) == Slice!(3, int*)));
+    static assert(is(typeof(tup.array) == int[]));
+    static assert(is(typeof(tup.slice) == Slice!(3, int*)));
 
-    assert (tup.array.length           == 24);
-    assert (tup.slice.elementsCount    == 24);
-    assert (tup.array.ptr == &tup.slice[0, 0, 0]);
+    assert(tup.array.length           == 24);
+    assert(tup.slice.elementsCount    == 24);
+    assert(tup.array.ptr == &tup.slice[0, 0, 0]);
 
     theAllocator.dispose(tup.array);
 }
 
 // sliced slice
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     import std.range: iota;
     auto data = new int[24];
     foreach (int i,ref e; data)
         e = i;
     auto a =    data.sliced(10).sliced(2, 3);
     auto b = 24.iota.sliced(10).sliced(2, 3);
-    assert (a == b);
+    assert(a == b);
     a[] += b;
     foreach (int i, e; data[0..6])
-        assert (e == 2*i);
+        assert(e == 2*i);
     foreach (int i, e; data[6..$])
-        assert (e == i+6);
+        assert(e == i+6);
     auto c  =    data.sliced(12, 2).sliced(2, 3);
     auto d  = 24.iota.sliced(12, 2).sliced(2, 3);
     auto cc =    data.sliced(2, 3, 2);
     auto dc = 24.iota.sliced(2, 3, 2);
-    assert (c._lengths == cc._lengths);
-    assert (c._strides == cc._strides);
-    assert (d._lengths == dc._lengths);
-    assert (d._strides == dc._strides);
-    assert (cc == c);
-    assert (dc == d);
+    assert(c._lengths == cc._lengths);
+    assert(c._strides == cc._strides);
+    assert(d._lengths == dc._lengths);
+    assert(d._strides == dc._strides);
+    assert(cc == c);
+    assert(dc == d);
     auto e  =    data.sliced(8, 3).sliced(5);
     auto f  = 24.iota.sliced(8, 3).sliced(5);
-    assert (e ==    data.sliced(5, 3));
-    assert (f == 24.iota.sliced(5, 3));
+    assert(e ==    data.sliced(5, 3));
+    assert(f == 24.iota.sliced(5, 3));
 }
 
 private template _Range_Types(Names...)
@@ -390,6 +395,10 @@ private template _Slice_DeclarationList(Names...)
 Groups slices into a slice tuple. The slices must have identical structure.
 Slice tuple is a slice, which holds single set of lengths and strides
 for a number of ranges.
+Params:
+    Names = names of elements in a slice tuple
+Returns:
+    n-dimensional slice
 See_also: $(LREF .Slice.structure).
 +/
 template assumeSameStructure(Names...)
@@ -402,40 +411,41 @@ template assumeSameStructure(Names...)
             size_t N, " ~ _Range_Types!Names ~ ")
             (" ~ _Slice_DeclarationList!Names ~ ")
     {
-        import std.meta: staticMap;
-        alias RS = AliasSeq!("  ~_Range_Types!Names ~ ");
-        static assert (!anySatisfy!(_isSlice, RS),
-            `Packed slices not allowed in slice tuples`
-            ~ tailErrorMessage!());
-        alias PT = PtrTuple!Names;
-        alias SPT = PT!(staticMap!(PrepareRangeType, RS));
-        static if (hasElaborateAssign!SPT)
-            Slice!(N, SPT) ret;
-        else
-            Slice!(N, SPT) ret = void;
-        mixin (`alias slice0 = slice_` ~ Names[0] ~`;`);
-        ret._lengths = slice0._lengths;
-        ret._strides = slice0._strides;
-        ret._ptr.ptrs[0] = slice0._ptr;
-        foreach (i, name; Names[1..$])
-        {
-            mixin (`alias slice = slice_` ~ name ~`;`);
-            assert (ret._lengths == slice._lengths,
-                `Shapes must be identical`
+        alias RS = AliasSeq!("  ~_Range_Types!Names ~ ");"
+        ~ q{
+            import std.meta: staticMap;
+            static assert(!anySatisfy!(_isSlice, RS),
+                `Packed slices not allowed in slice tuples`
                 ~ tailErrorMessage!());
-            assert (ret._strides == slice._strides,
-                `Strides must be identical`
-                ~ tailErrorMessage!());
-            ret._ptr.ptrs[i+1] = slice._ptr;
+            alias PT = PtrTuple!Names;
+            alias SPT = PT!(staticMap!(PrepareRangeType, RS));
+            static if (hasElaborateAssign!SPT)
+                Slice!(N, SPT) ret;
+            else
+                Slice!(N, SPT) ret = void;
+            mixin (`alias slice0 = slice_` ~ Names[0] ~`;`);
+            ret._lengths = slice0._lengths;
+            ret._strides = slice0._strides;
+            ret._ptr.ptrs[0] = slice0._ptr;
+            foreach (i, name; Names[1..$])
+            {
+                mixin (`alias slice = slice_` ~ name ~`;`);
+                assert(ret._lengths == slice._lengths,
+                    `Shapes must be identical`
+                    ~ tailErrorMessage!());
+                assert(ret._strides == slice._strides,
+                    `Strides must be identical`
+                    ~ tailErrorMessage!());
+                ret._ptr.ptrs[i+1] = slice._ptr;
+            }
+            return ret;
         }
-        return ret;
-    }
-    ");
+    ~ "}");
 }
 
 ///
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     import std.algorithm.comparison: equal;
     import std.experimental.ndslice.selection: byElement;
     import std.range: iota;
@@ -447,12 +457,12 @@ unittest {
     foreach (r; m)
         foreach (e; r)
             e.b = e.a;
-    assert (equal(alpha, beta));
+    assert(equal(alpha, beta));
 
     beta[] = 0;
     foreach (e; m.byElement)
         e.b = e.a;
-    assert (equal(alpha, beta));
+    assert(equal(alpha, beta));
 }
 
 /++
@@ -462,8 +472,8 @@ Use `no` for compile time function evaluation.
 alias ReplaceArrayWithPointer = Flag!"replaceArrayWithPointer";
 
 ///
-@safe pure nothrow
-unittest {
+@safe pure nothrow unittest
+{
     import std.algorithm.iteration: map, sum, reduce;
     import std.algorithm.comparison: max;
     import std.experimental.ndslice.iteration: transposed;
@@ -475,7 +485,7 @@ unittest {
     enum matrix = [1, 2,
                    3, 4].sliced!(ReplaceArrayWithPointer.no)(2, 2);
     ///Сompile time function evaluation
-    static assert (maxAvg(matrix) == 3);
+    static assert(maxAvg(matrix) == 3);
 }
 
 
@@ -485,13 +495,14 @@ Returns the element type of the `Slice` type.
 alias DeepElementType(S : Slice!(N, Range), size_t N, Range) = S.DeepElemType;
 
 ///
-unittest {
+unittest
+{
     import std.range: iota;
-    static assert (is(DeepElementType!(Slice!(4, const(int)[]))     == const(int)));
-    static assert (is(DeepElementType!(Slice!(4, immutable(int)*))  == immutable(int)));
-    static assert (is(DeepElementType!(Slice!(4, typeof(100.iota))) == int));
+    static assert(is(DeepElementType!(Slice!(4, const(int)[]))     == const(int)));
+    static assert(is(DeepElementType!(Slice!(4, immutable(int)*))  == immutable(int)));
+    static assert(is(DeepElementType!(Slice!(4, typeof(100.iota))) == int));
     //packed slice
-    static assert (is(DeepElementType!(Slice!(2, Slice!(5, int*)))  == Slice!(4, int*)));
+    static assert(is(DeepElementType!(Slice!(2, Slice!(5, int*)))  == Slice!(4, int*)));
 }
 
 /++
@@ -575,7 +586,7 @@ struct Slice(size_t _N, _Range)
     }
     alias PureThis = Slice!(PureN, PureRange);
 
-    static assert (PureN < 256, "Slice: Pure N should be less than 256");
+    static assert(PureN < 256, "Slice: Pure N should be less than 256");
 
     static if (N == 1)
         alias ElemType = typeof(Range.init[size_t.init]);
@@ -639,7 +650,7 @@ struct Slice(size_t _N, _Range)
             size_t stride;
             foreach (i; Iota!(0, N)) //static
             {
-                assert (_indexes[0][i] < _lengths[i], "indexStride: index must be less than lengths");
+                assert(_indexes[0][i] < _lengths[i], "indexStride: index must be less than lengths");
                 stride += _strides[i] * _indexes[0][i];
             }
             return stride;
@@ -649,7 +660,7 @@ struct Slice(size_t _N, _Range)
             size_t stride;
             foreach (i, index; _indexes) //static
             {
-                assert (index < _lengths[i], "indexStride: index must be less than lengths");
+                assert(index < _lengths[i], "indexStride: index must be less than lengths");
                 stride += _strides[i] * index;
             }
             return stride;
@@ -692,21 +703,21 @@ struct Slice(size_t _N, _Range)
 
     static if (doUnittest)
     /// Regular slice
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.range: iota;
-        assert (100.iota
+        assert(100.iota
             .sliced(3, 4, 5)
             .shape == cast(size_t[3])[3, 4, 5]);
     }
 
     static if (doUnittest)
     /// Packed slice
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.experimental.ndslice.selection: pack;
         import std.range: iota;
-        assert (10000.iota
+        assert(10000.iota
             .sliced(3, 4, 5, 6, 7)
             .pack!2
             .shape == cast(size_t[3])[3, 4, 5]);
@@ -723,22 +734,22 @@ struct Slice(size_t _N, _Range)
 
     static if (doUnittest)
     /// Regular slice
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.range: iota;
-        assert (100.iota
+        assert(100.iota
             .sliced(3, 4, 5)
             .structure == Structure!3([3, 4, 5], [20, 5, 1]));
     }
 
     static if (doUnittest)
     /// Modified regular slice
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.experimental.ndslice.selection: pack;
         import std.experimental.ndslice.iteration: reversed, strided, transposed;
         import std.range: iota;
-        assert (1000.iota
+        assert(1000.iota
             .sliced(3, 4, 50)
             .reversed!2      //makes stride negative
             .strided!2(6)    //multiplies stride by 6 and changes corresponding length
@@ -748,11 +759,11 @@ struct Slice(size_t _N, _Range)
 
     static if (doUnittest)
     /// Packed slice
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.experimental.ndslice.selection: pack;
         import std.range: iota;
-        assert (10000.iota
+        assert(10000.iota
             .sliced(3, 4, 5, 6, 7)
             .pack!2
             .structure == Structure!3([3, 4, 5], [20 * 42, 5 * 42, 1 * 42]));
@@ -773,16 +784,16 @@ struct Slice(size_t _N, _Range)
 
     static if (doUnittest)
     /// Forward range
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.range: iota;
         auto slice = 100.iota.sliced(2, 3).save;
     }
 
     static if (doUnittest)
     /// Pointer type.
-    pure nothrow
-    unittest {
+    pure nothrow unittest
+    {
          //slice type is `Slice!(2, int*)`
          auto slice = new int[6].sliced(2, 3).save;
     }
@@ -801,14 +812,14 @@ struct Slice(size_t _N, _Range)
 
     static if (doUnittest)
     ///
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.range: iota;
         auto slice = 100.iota.sliced(3, 4, 5);
-        assert (slice.length   == 3);
-        assert (slice.length!0 == 3);
-        assert (slice.length!1 == 4);
-        assert (slice.length!2 == 5);
+        assert(slice.length   == 3);
+        assert(slice.length!0 == 3);
+        assert(slice.length!1 == 4);
+        assert(slice.length!2 == 5);
     }
 
     alias opDollar = length;
@@ -826,23 +837,23 @@ struct Slice(size_t _N, _Range)
 
     static if (doUnittest)
     /// Regular slice
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.range: iota;
         auto slice = 100.iota.sliced(3, 4, 5);
-        assert (slice.stride   == 20);
-        assert (slice.stride!0 == 20);
-        assert (slice.stride!1 == 5);
-        assert (slice.stride!2 == 1);
+        assert(slice.stride   == 20);
+        assert(slice.stride!0 == 20);
+        assert(slice.stride!1 == 5);
+        assert(slice.stride!2 == 1);
     }
 
     static if (doUnittest)
     /// Modified regular slice
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.experimental.ndslice.iteration: reversed, strided, swapped;
         import std.range: iota;
-        assert (1000.iota
+        assert(1000.iota
             .sliced(3, 4, 50)
             .reversed!2      //makes stride negative
             .strided!2(6)    //multiplies stride by 6 and changes the corresponding length
@@ -864,7 +875,7 @@ struct Slice(size_t _N, _Range)
     auto ref front(size_t dimension = 0)() @property
         if (dimension < N)
     {
-        assert (!empty!dimension);
+        assert(!empty!dimension);
         static if (PureN == 1)
         {
             static if (__traits(compiles,{ auto _f = _ptr.front; }))
@@ -899,7 +910,7 @@ struct Slice(size_t _N, _Range)
         auto front(size_t dimension = 0, T)(T value) @property
             if (dimension == 0)
         {
-            assert (!empty!dimension);
+            assert(!empty!dimension);
             return _ptr.front = value;
         }
     }
@@ -908,7 +919,7 @@ struct Slice(size_t _N, _Range)
     auto ref back(size_t dimension = 0)() @property
         if (dimension < N)
     {
-        assert (!empty!dimension);
+        assert(!empty!dimension);
         static if (PureN == 1)
         {
             return _ptr[backIndex];
@@ -940,7 +951,7 @@ struct Slice(size_t _N, _Range)
         auto back(size_t dimension = 0, T)(T value) @property
             if (dimension == 0)
         {
-            assert (!empty!dimension);
+            assert(!empty!dimension);
             return _ptr[backIndex] = value;
         }
     }
@@ -949,7 +960,7 @@ struct Slice(size_t _N, _Range)
     void popFront(size_t dimension = 0)()
         if (dimension < N)
     {
-        assert (_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater than 0.");
+        assert(_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater than 0.");
         _lengths[dimension]--;
         _ptr += _strides[dimension];
     }
@@ -958,7 +969,7 @@ struct Slice(size_t _N, _Range)
     void popBack(size_t dimension = 0)()
         if (dimension < N)
     {
-        assert (_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater than 0.");
+        assert(_lengths[dimension], __FUNCTION__ ~ ": length!" ~ dimension.stringof ~ " should be greater than 0.");
         _lengths[dimension]--;
     }
 
@@ -966,7 +977,7 @@ struct Slice(size_t _N, _Range)
     void popFrontExactly(size_t dimension = 0)(size_t n)
         if (dimension < N)
     {
-        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!" ~ dimension.stringof);
+        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!" ~ dimension.stringof);
         _lengths[dimension] -= n;
         _ptr += _strides[dimension] * n;
     }
@@ -975,7 +986,7 @@ struct Slice(size_t _N, _Range)
     void popBackExactly(size_t dimension = 0)(size_t n)
         if (dimension < N)
     {
-        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!" ~ dimension.stringof);
+        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!" ~ dimension.stringof);
         _lengths[dimension] -= n;
     }
 
@@ -997,45 +1008,45 @@ struct Slice(size_t _N, _Range)
 
     static if (doUnittest)
     ///
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.range: iota;
         import std.range.primitives;
         auto slice = 10000.iota.sliced(10, 20, 30);
 
-        static assert (isRandomAccessRange!(typeof(slice)));
-        static assert (hasSlicing!(typeof(slice)));
-        static assert (hasLength!(typeof(slice)));
+        static assert(isRandomAccessRange!(typeof(slice)));
+        static assert(hasSlicing!(typeof(slice)));
+        static assert(hasLength!(typeof(slice)));
 
-        assert (slice.shape == cast(size_t[3])[10, 20, 30]);
+        assert(slice.shape == cast(size_t[3])[10, 20, 30]);
         slice.popFront;
         slice.popFront!1;
         slice.popBackExactly!2(4);
-        assert (slice.shape == cast(size_t[3])[9, 19, 26]);
+        assert(slice.shape == cast(size_t[3])[9, 19, 26]);
 
         auto matrix = slice.front!1;
-        assert (matrix.shape == cast(size_t[2])[9, 26]);
+        assert(matrix.shape == cast(size_t[2])[9, 26]);
 
         auto column = matrix.back!1;
-        assert (column.shape == cast(size_t[1])[9]);
+        assert(column.shape == cast(size_t[1])[9]);
 
         slice.popFrontExactly!1(slice.length!1);
-        assert (slice.empty   == false);
-        assert (slice.empty!1 == true);
-        assert (slice.empty!2 == false);
-        assert (slice.shape == cast(size_t[3])[9, 0, 26]);
+        assert(slice.empty   == false);
+        assert(slice.empty!1 == true);
+        assert(slice.empty!2 == false);
+        assert(slice.shape == cast(size_t[3])[9, 0, 26]);
 
-        assert (slice.back.front!1.empty);
+        assert(slice.back.front!1.empty);
 
         slice.popFrontN!0(40);
         slice.popFrontN!2(40);
-        assert (slice.shape == cast(size_t[3])[0, 0, 0]);
+        assert(slice.shape == cast(size_t[3])[0, 0, 0]);
     }
 
     package void popFront(size_t dimension)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
-        assert (_lengths[dimension], ": length!dim should be greater than 0.");
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
+        assert(_lengths[dimension], ": length!dim should be greater than 0.");
         _lengths[dimension]--;
         _ptr += _strides[dimension];
     }
@@ -1043,36 +1054,36 @@ struct Slice(size_t _N, _Range)
 
     package void popBack(size_t dimension)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
-        assert (_lengths[dimension], ": length!dim should be greater than 0.");
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
+        assert(_lengths[dimension], ": length!dim should be greater than 0.");
         _lengths[dimension]--;
     }
 
     package void popFrontExactly(size_t dimension, size_t n)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
-        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!dim");
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
+        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!dim");
         _lengths[dimension] -= n;
         _ptr += _strides[dimension] * n;
     }
 
     package void popBackExactly(size_t dimension, size_t n)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
-        assert (n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!dim");
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
+        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!dim");
         _lengths[dimension] -= n;
     }
 
     package void popFrontN(size_t dimension, size_t n)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
         import std.algorithm.comparison: min;
         popFrontExactly(dimension, min(n, _lengths[dimension]));
     }
 
     package void popBackN(size_t dimension, size_t n)
     {
-        assert (dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
+        assert(dimension < N, __FUNCTION__ ~ ": dimension should be less than N = " ~ N.stringof);
         import std.algorithm.comparison: min;
         popBackExactly(dimension, min(n, _lengths[dimension]));
     }
@@ -1090,24 +1101,24 @@ struct Slice(size_t _N, _Range)
 
     static if (doUnittest)
     /// Regular slice
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.range: iota;
-        assert (100.iota.sliced(3, 4, 5).elementsCount == 60);
+        assert(100.iota.sliced(3, 4, 5).elementsCount == 60);
     }
 
 
     static if (doUnittest)
     /// Packed slice
-    @safe @nogc pure nothrow
-    unittest {
+    @safe @nogc pure nothrow unittest
+    {
         import std.experimental.ndslice.selection: pack, evertPack;
         import std.range: iota;
         auto slice = 50000.iota.sliced(3, 4, 5, 6, 7, 8);
         auto p = slice.pack!2;
-        assert (p.elementsCount == 360);
-        assert (p[0, 0, 0, 0].elementsCount == 56);
-        assert (p.evertPack.elementsCount == 56);
+        assert(p.elementsCount == 360);
+        assert(p[0, 0, 0, 0].elementsCount == 56);
+        assert(p.evertPack.elementsCount == 56);
     }
 
     /++
@@ -1143,8 +1154,8 @@ struct Slice(size_t _N, _Range)
 
     static if (doUnittest)
     ///
-    pure nothrow
-    unittest {
+    pure nothrow unittest
+    {
         auto a = [1, 2, 3, 4].sliced(2, 2);
 
         assert(a != [1, 2, 3, 4, 5, 6].sliced(2, 3));
@@ -1160,9 +1171,9 @@ struct Slice(size_t _N, _Range)
     _Slice opSlice(size_t dimension)(size_t i, size_t j)
         if (dimension < N)
     in   {
-        assert (i <= j,
+        assert(i <= j,
             "Slice.opSlice!" ~ dimension.stringof ~ ": the left bound must be less than or equal to the right bound.");
-        assert (j - i <= _lengths[dimension],
+        assert(j - i <= _lengths[dimension],
             "Slice.opSlice!" ~ dimension.stringof ~
             ": difference between the right and the left bounds must be less than or equal to the length of the given dimension.");
     }
@@ -1184,8 +1195,8 @@ struct Slice(size_t _N, _Range)
 
     static if(doUnittest)
     ///
-    pure nothrow
-    unittest {
+    pure nothrow unittest
+    {
         auto slice = new int[10].sliced(5, 2);
 
         auto p = &slice[1, 1];
@@ -1208,7 +1219,7 @@ struct Slice(size_t _N, _Range)
             enum size_t j(size_t n) = n - Filter!(isIndex, Slices[0 .. n+1]).length;
             enum size_t F = PureIndexLength!Slices;
             enum size_t S = Slices.length;
-            static assert (N-F > 0);
+            static assert(N-F > 0);
             size_t stride;
             static if (hasElaborateAssign!PureRange)
                 Slice!(N-F, Range) ret;
@@ -1218,7 +1229,7 @@ struct Slice(size_t _N, _Range)
             {
                 static if (isIndex!(Slices[i]))
                 {
-                    assert (slice < _lengths[i], "Slice.opIndex: index must be less than length");
+                    assert(slice < _lengths[i], "Slice.opIndex: index must be less than length");
                     stride += _strides[i] * slice;
                 }
                 else
@@ -1244,8 +1255,8 @@ struct Slice(size_t _N, _Range)
 
     static if(doUnittest)
     ///
-    pure nothrow
-    unittest {
+    pure nothrow unittest
+    {
         auto slice = new int[15].sliced(5, 3);
 
         /// Fully defined slice
@@ -1268,7 +1279,7 @@ struct Slice(size_t _N, _Range)
         {
             auto sl = this[slices];
             static if (sl.N == RN)
-                assert (sl.length == value.length, "opIndexAssign: argument must have the same length.");
+                assert(sl.length == value.length, "opIndexAssign: argument must have the same length.");
             static if (sl.N == 1)
             {
                 for (; sl.length; sl.popFront)
@@ -1297,8 +1308,8 @@ struct Slice(size_t _N, _Range)
 
         static if(doUnittest)
         ///
-        pure nothrow
-        unittest {
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced(2, 3);
             auto b = [1, 2, 3, 4].sliced(2, 2);
 
@@ -1325,7 +1336,7 @@ struct Slice(size_t _N, _Range)
         {
             auto sl = this[slices];
             static if (sl.N == DynamicArrayDimensionsCount!(T[]))
-                assert (sl.length == value.length, "opIndexAssign: argument must have the same length.");
+                assert(sl.length == value.length, "opIndexAssign: argument must have the same length.");
             static if (sl.N == 1)
             {
                 for (; sl.length; sl.popFront)
@@ -1354,8 +1365,8 @@ struct Slice(size_t _N, _Range)
 
         static if(doUnittest)
         ///
-        pure nothrow
-        unittest {
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced(2, 3);
             auto b = [[1, 2], [3, 4]];
 
@@ -1402,8 +1413,8 @@ struct Slice(size_t _N, _Range)
 
         static if(doUnittest)
         ///
-        pure nothrow
-        unittest {
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced(2, 3);
 
             a[] = 9;
@@ -1436,8 +1447,8 @@ struct Slice(size_t _N, _Range)
 
         static if(doUnittest)
         ///
-        pure nothrow
-        unittest {
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced(2, 3);
 
             a[1, 2] = 3;
@@ -1455,8 +1466,8 @@ struct Slice(size_t _N, _Range)
 
         static if(doUnittest)
         ///
-        pure nothrow
-        unittest {
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced(2, 3);
 
             a[1, 2] += 3;
@@ -1473,7 +1484,7 @@ struct Slice(size_t _N, _Range)
         {
             auto sl = this[slices];
             static if (sl.N == RN)
-                assert (sl.length == value.length, "opIndexOpAssign!" ~ op ~ ":,  argument must have the same length.");
+                assert(sl.length == value.length, "opIndexOpAssign!" ~ op ~ ":,  argument must have the same length.");
             static if (sl.N == 1)
             {
                 for (; sl.length; sl.popFront)
@@ -1502,8 +1513,8 @@ struct Slice(size_t _N, _Range)
 
         static if(doUnittest)
         ///
-        pure nothrow
-        unittest {
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced(2, 3);
             auto b = [1, 2, 3, 4].sliced(2, 2);
 
@@ -1531,7 +1542,7 @@ struct Slice(size_t _N, _Range)
         {
             auto sl = this[slices];
             static if (sl.N == DynamicArrayDimensionsCount!(T[]))
-                assert (sl.length == value.length, "opIndexOpAssign!" ~ op ~ ":,  argument must have the same length.");
+                assert(sl.length == value.length, "opIndexOpAssign!" ~ op ~ ":,  argument must have the same length.");
             static if (sl.N == 1)
             {
                 for (; sl.length; sl.popFront)
@@ -1560,8 +1571,8 @@ struct Slice(size_t _N, _Range)
 
         static if(doUnittest)
         ///
-        pure nothrow
-        unittest {
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced(2, 3);
 
             a[0..$, 0..$-1] += [[1, 2], [3, 4]];
@@ -1605,8 +1616,8 @@ struct Slice(size_t _N, _Range)
 
         static if(doUnittest)
         ///
-        pure nothrow
-        unittest {
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced(2, 3);
 
             a[] += 1;
@@ -1630,8 +1641,8 @@ struct Slice(size_t _N, _Range)
 
         static if(doUnittest)
         ///
-        pure nothrow
-        unittest {
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced(2, 3);
 
             ++a[1, 2];
@@ -1664,8 +1675,8 @@ struct Slice(size_t _N, _Range)
 
         static if(doUnittest)
         ///
-        pure nothrow
-        unittest {
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced(2, 3);
 
             ++a[];
@@ -1681,19 +1692,19 @@ struct Slice(size_t _N, _Range)
 /++
 Slicing, indexing, and arithmetic operations.
 +/
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     import std.array: array;
     import std.range: iota;
     import std.experimental.ndslice.iteration: transposed;
 
     auto tensor = 60.iota.array.sliced(3, 4, 5);
 
-    assert (tensor[1, 2] == tensor[1][2]);
-    assert (tensor[1, 2, 3] == tensor[1][2][3]);
+    assert(tensor[1, 2] == tensor[1][2]);
+    assert(tensor[1, 2, 3] == tensor[1][2][3]);
 
-    assert ( tensor[0..$, 0..$, 4] == tensor.transposed!2[4]);
-    assert (&tensor[0..$, 0..$, 4][1, 2] is &tensor[1, 2, 4]);
+    assert( tensor[0..$, 0..$, 4] == tensor.transposed!2[4]);
+    assert(&tensor[0..$, 0..$, 4][1, 2] is &tensor[1, 2, 4]);
 
     tensor[1, 2, 3]++; //`opIndex` returns value by reference.
     --tensor[1, 2, 3]; //`opUnary`
@@ -1703,21 +1714,21 @@ unittest {
 
     // `opIndexAssing` accepts only fully defined indexes and slices.
     // Use an additional empty slice `[]`.
-    static assert (!__traits(compiles), tensor[0 .. 2] *= 2);
+    static assert(!__traits(compiles), tensor[0 .. 2] *= 2);
 
     tensor[0 .. 2][] *= 2;          //OK, empty slice
     tensor[0 .. 2, 3, 0..$] /= 2; //OK, 3 index or slice positions are defined.
 
     //fully defined index may be replaced by a static array
     size_t[3] index = [1, 2, 3];
-    assert (tensor[index] == tensor[1, 2, 3]);
+    assert(tensor[index] == tensor[1, 2, 3]);
 }
 
 /++
 Operations with rvalue slices.
 +/
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     import std.experimental.ndslice.iteration: transposed, everted;
 
     auto tensor = new int[60].sliced(3, 4, 5);
@@ -1749,7 +1760,8 @@ unittest {
 Creating a slice from text.
 See also $(LINK2 std_format.html, std.format).
 +/
-unittest {
+unittest
+{
     import std.algorithm,  std.conv, std.exception, std.format,
         std.functional, std.string, std.range;
 
@@ -1776,25 +1788,25 @@ unittest {
 
     // back to text
     auto text2 = format("%(%(%s %)\n%)\n", matrix);
-    assert (text2 == "1 2 3\n4 5 6\n");
+    assert(text2 == "1 2 3\n4 5 6\n");
 }
 
 // Slicing
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.range: iota;
     auto a = 1000000.iota.sliced(10, 20, 30, 40);
     auto b = a[0..$, 10, 4 .. 27, 4];
     auto c = b[2 .. 9, 5 .. 10];
     auto d = b[3..$, $-2];
-    assert (b[4, 17] == a[4, 10, 21, 4]);
-    assert (c[1, 2] == a[3, 10, 11, 4]);
-    assert (d[3] == a[6, 10, 25, 4]);
+    assert(b[4, 17] == a[4, 10, 21, 4]);
+    assert(c[1, 2] == a[3, 10, 11, 4]);
+    assert(d[3] == a[6, 10, 25, 4]);
 }
 
 // Operator overloading. # 1
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     import std.range: iota;
     import std.array: array;
     auto fun(ref int x) { x *= 3; }
@@ -1807,16 +1819,16 @@ unittest {
     ++tensor[];
     fun(tensor[0, 0, 0]);
 
-    assert (tensor[0, 0, 0] == 3);
+    assert(tensor[0, 0, 0] == 3);
 
     tensor[0, 0, 0] *= 4;
     tensor[0, 0, 0]--;
-    assert (tensor[0, 0, 0] == 11);
+    assert(tensor[0, 0, 0] == 11);
 }
 
 // Operator overloading. # 2
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     import std.algorithm.iteration: map;
     import std.array: array;
     import std.bigint;
@@ -1832,14 +1844,14 @@ unittest {
     foreach (i; 0 .. 8)
         foreach (j; 0 .. 9)
             if (i >= 3 && i < 6 && j == 2)
-                assert (matrix[i, j] >= 100);
+                assert(matrix[i, j] >= 100);
             else
-                assert (matrix[i, j] < 100);
+                assert(matrix[i, j] < 100);
 }
 
 // Operator overloading. # 3
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     import std.algorithm.comparison: equal;
     import std.algorithm.iteration: map;
     import std.array: array;
@@ -1852,29 +1864,30 @@ unittest {
 
     matrix[] = matrix;
     matrix[] += matrix;
-    assert (matrix[2, 3] == (2 * 9 + 3) * 2);
+    assert(matrix[2, 3] == (2 * 9 + 3) * 2);
 
     auto vec = iota(100, 200).sliced(9);
     matrix[] = vec;
     foreach (v; matrix)
-        assert (v.equal(vec));
+        assert(v.equal(vec));
 
     matrix[] += vec;
     foreach (vector; matrix)
         foreach (elem; vector)
-            assert (elem >= 200);
+            assert(elem >= 200);
 }
 
 // Type deduction
-unittest {
+unittest
+{
     // Arrays
     foreach (T; AliasSeq!(int, const int, immutable int))
-        static assert (is(typeof((T[]).init.sliced(3, 4)) == Slice!(2, T*)));
+        static assert(is(typeof((T[]).init.sliced(3, 4)) == Slice!(2, T*)));
 
     // Container Array
     import std.container.array;
     Array!int ar;
-    static assert (is(typeof(ar[].sliced(3, 4)) == Slice!(2, typeof(ar[]))));
+    static assert(is(typeof(ar[].sliced(3, 4)) == Slice!(2, typeof(ar[]))));
 
     // Implicit conversion of a range to its unqualified type.
     import std.range: iota;
@@ -1883,7 +1896,56 @@ unittest {
     immutable i2 = 100.iota;
     alias S = Slice!(3, typeof(iota(0)));
     foreach (i; AliasSeq!(i0, i1, i2))
-        static assert (is(typeof(i.sliced(3, 4, 5)) == S));
+        static assert(is(typeof(i.sliced(3, 4, 5)) == S));
+}
+
+// Test for map #1
+unittest
+{
+    import std.algorithm.iteration: map;
+    import std.range.primitives;
+    auto slice = [1, 2, 3, 4].sliced(2, 2);
+
+    auto r = slice.map!(a => a.map!(a => a * 6));
+    assert(r.front.front == 6);
+    assert(r.front.back == 12);
+    assert(r.back.front == 18);
+    assert(r.back.back == 24);
+    assert(r[0][0] ==  6);
+    assert(r[0][1] == 12);
+    assert(r[1][0] == 18);
+    assert(r[1][1] == 24);
+    static assert(hasSlicing!(typeof(r)));
+    static assert(isForwardRange!(typeof(r)));
+    static assert(isRandomAccessRange!(typeof(r)));
+
+}
+
+// Test for map #2
+unittest
+{
+    import std.algorithm.iteration: map;
+    import std.range.primitives;
+    auto data = [1, 2, 3, 4].map!(a => a * 2);
+    static assert(hasSlicing!(typeof(data)));
+    static assert(isForwardRange!(typeof(data)));
+    static assert(isRandomAccessRange!(typeof(data)));
+    auto slice = data.sliced(2, 2);
+    static assert(hasSlicing!(typeof(slice)));
+    static assert(isForwardRange!(typeof(slice)));
+    static assert(isRandomAccessRange!(typeof(slice)));
+    auto r = slice.map!(a => a.map!(a => a * 3));
+    static assert(hasSlicing!(typeof(r)));
+    static assert(isForwardRange!(typeof(r)));
+    static assert(isRandomAccessRange!(typeof(r)));
+    assert(r.front.front == 6);
+    assert(r.front.back == 12);
+    assert(r.back.front == 18);
+    assert(r.back.back == 24);
+    assert(r[0][0] ==  6);
+    assert(r[0][1] == 12);
+    assert(r[1][0] == 18);
+    assert(r[1][1] == 24);
 }
 
 private bool opEqualsImpl
@@ -1891,7 +1953,7 @@ private bool opEqualsImpl
     auto ref Slice!(NL, RangeL) ls,
     auto ref Slice!(NR, RangeR) rs)
 in {
-    assert (ls._lengths == rs._lengths);
+    assert(ls._lengths == rs._lengths);
 }
 body {
     foreach (i; 0 .. ls.length)
@@ -1932,10 +1994,10 @@ private struct PtrShell(Range)
 
     auto ref opIndex(sizediff_t index)
     in {
-        assert (_shift + index >= 0);
+        assert(_shift + index >= 0);
         import std.range.primitives: hasLength;
         static if (hasLength!Range)
-            assert (_shift + index <= _range.length);
+            assert(_shift + index <= _range.length);
     }
     body {
         return _range[_shift + index];
@@ -1945,9 +2007,9 @@ private struct PtrShell(Range)
     {
         auto ref opIndexAssign(T)(T value, sizediff_t index)
         in {
-            assert (_shift + index >= 0);
+            assert(_shift + index >= 0);
             static if (hasLength!Range)
-                assert (_shift + index <= _range.length);
+                assert(_shift + index <= _range.length);
         }
         body {
             return _range[_shift + index] = value;
@@ -1955,9 +2017,9 @@ private struct PtrShell(Range)
 
         auto ref opIndexOpAssign(string op, T)(T value, sizediff_t index)
         in {
-            assert (_shift + index >= 0);
+            assert(_shift + index >= 0);
             static if (hasLength!Range)
-                assert (_shift + index <= _range.length);
+                assert(_shift + index <= _range.length);
         }
         body {
             mixin (`return _range[_shift + index] ` ~ op ~ `= value;`);
@@ -1981,20 +2043,21 @@ private auto ptrShell(Range)(Range range, sizediff_t shift = 0)
 
 version(none) // TODO: Remove before merge
 // @safe pure nothrow ?
-unittest {
+unittest
+{
     import std.internal.test.dummyrange;
     foreach (RB; AliasSeq!(ReturnBy.Reference, ReturnBy.Value))
     {
         DummyRange!(RB, Length.Yes, RangeType.Random) range;
-        assert (range.length >= 10);
+        assert(range.length >= 10);
         auto ptr = range.ptrShell;
-        assert (ptr[0] == range[0]);
+        assert(ptr[0] == range[0]);
         auto save0 = range[0];
         ptr[0] += 10;
         ++ptr[0];
-        assert (ptr[0] == save0 + 11);
+        assert(ptr[0] == save0 + 11);
         (ptr + 5)[2] = 333;
-        assert (range[7] == 333);
+        assert(range[7] == 333);
     }
 }
 
@@ -2072,8 +2135,8 @@ private template PtrTuple(Names...)
     }
 }
 
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     auto a = new int[20], b = new int[20];
     import std.stdio;
     alias T = PtrTuple!("a", "b");
@@ -2082,11 +2145,11 @@ unittest {
     t[4].a++;
     auto r = t[4];
     r.b = r.a * 2;
-    assert (b[4] == 2);
+    assert(b[4] == 2);
     t.front.a++;
     r = t.front;
     r.b = r.a * 2;
-    assert (b[0] == 2);
+    assert(b[0] == 2);
 }
 
 private template PtrTupleFrontMembers(Names...)

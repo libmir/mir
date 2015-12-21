@@ -9,7 +9,7 @@ All operators return slice of the same type as the type of the argument.
 
 $(BOOKTABLE $(H2 Transpose operators),
 
-$(TR $(TH Function Name) $(TH Description))
+$(TR $(TH Function Name) $(TH Descriprottion))
 $(T2 transposed, `100000.iota.sliced(3, 4, 5, 6, 7).transposed!(4, 0, 1).shape` returns `[7, 3, 4, 5, 6]`.)
 $(T2 swapped, `1000.iota.sliced(3, 4, 5).swapped!(1, 2).shape` returns `[3, 5, 4]`.)
 $(T2 everted, `1000.iota.sliced(3, 4, 5).everted.shape` returns `[5, 4, 3]`.)
@@ -65,6 +65,7 @@ $(BOOKTABLE ,
 
 $(TR $(TH Function Name) $(TH Variadic) $(TH Template) $(TH Function))
 $(T4 swapped, No, `slice.swapped!(2, 3)`, `slice.swapped(2, 3)`)
+$(T4 rotated, No, `slice.rotated!(2, 3)(-1)`, `slice.rotated(2, 3, -1)`)
 $(T4 strided, Yes/No, `slice.strided!(1, 2)(20, 40)`, `slice.strided(1, 20).strided(2, 40)`)
 $(T4 transposed, Yes, `slice.transposed!(1, 4, 3)`, `slice.transposed(1, 4, 3)`)
 $(T4 reversed, Yes, `slice.reversed!(0, 2)`, `slice.reversed(0, 2)`)
@@ -111,6 +112,13 @@ private enum _swappedCode = q{
 
 /++
 Swaps two dimensions.
+
+Params:
+    slice = input slice
+    dimensionA = first dimension
+    dimensionB = second dimension
+Returns:
+    n-dimensional slice of the same type
 See_also: $(LREF everted), $(LREF transposed)
 +/
 template swapped(size_t dimensionA, size_t dimensionB)
@@ -154,33 +162,33 @@ body {
 }
 
 /// Template
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota;
-    assert (10000.iota
+    assert(10000.iota
         .sliced(3, 4, 5, 6)
         .swapped!(3, 1)
         .shape == cast(size_t[4])[3, 6, 5, 4]);
 }
 
 /// Function
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota;
-    assert (10000.iota
+    assert(10000.iota
         .sliced(3, 4, 5, 6)
         .swapped(1, 3)
         .shape == cast(size_t[4])[3, 6, 5, 4]);
 }
 
 /// 2D
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota;
-    assert (10000.iota
+    assert(10000.iota
         .sliced(3, 4)
         .swapped
         .shape == cast(size_t[2])[4, 3]);
@@ -216,10 +224,12 @@ The order of dimensions is important.
 If the slice has two dimensions, the default direction is counterclockwise.
 
 Params:
+    slice = input slice
     dimensionA = first dimension
     dimensionB = second dimension
-    slice = input slice
     k = rotation counter, can be negative
+Returns:
+    n-dimensional slice of the same type
 +/
 template rotated(size_t dimensionA, size_t dimensionB)
 {
@@ -262,8 +272,8 @@ body {
 }
 
 /// Template
-@safe pure nothrow
-unittest {
+@safe pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota;
     auto slice = 10.iota.sliced(2, 3);
@@ -282,25 +292,30 @@ unittest {
               [4, 1],
               [5, 2]];
 
-    assert (slice.rotated       ( 4) == a);
-    assert (slice.rotated!(0, 1)(-4) == a);
-    assert (slice.rotated (1, 0,  8) == a);
+    assert(slice.rotated       ( 4) == a);
+    assert(slice.rotated!(0, 1)(-4) == a);
+    assert(slice.rotated (1, 0,  8) == a);
 
-    assert (slice.rotated            == b);
-    assert (slice.rotated!(0, 1)(-3) == b);
-    assert (slice.rotated (1, 0,  3) == b);
+    assert(slice.rotated            == b);
+    assert(slice.rotated!(0, 1)(-3) == b);
+    assert(slice.rotated (1, 0,  3) == b);
 
-    assert (slice.rotated       ( 6) == c);
-    assert (slice.rotated!(0, 1)( 2) == c);
-    assert (slice.rotated (0, 1, -2) == c);
+    assert(slice.rotated       ( 6) == c);
+    assert(slice.rotated!(0, 1)( 2) == c);
+    assert(slice.rotated (0, 1, -2) == c);
 
-    assert (slice.rotated       ( 7) == d);
-    assert (slice.rotated!(0, 1)( 3) == d);
-    assert (slice.rotated (1, 0,   ) == d);
+    assert(slice.rotated       ( 7) == d);
+    assert(slice.rotated!(0, 1)( 3) == d);
+    assert(slice.rotated (1, 0,   ) == d);
 }
 
 /++
 Reverses the order of dimensions.
+
+Params:
+    slice = input slice
+Returns:
+    n-dimensional slice of the same type
 See_also: $(LREF swapped), $(LREF transposed)
 +/
 Slice!(N, Range) everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
@@ -324,11 +339,11 @@ Slice!(N, Range) everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 }
 
 ///
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota;
-    assert (1000.iota
+    assert(1000.iota
         .sliced(3, 4, 5)
         .everted
         .shape == cast(size_t[3])[5, 4, 3]);
@@ -355,7 +370,7 @@ private enum _transposedCode = q{
 
 private size_t[N] completeTranspose(size_t N)(in size_t[] dimensions)
 {
-    assert (dimensions.length <= N);
+    assert(dimensions.length <= N);
     size_t[N] ctr;
     uint[N] mask;
     foreach (i, ref dimension; dimensions)
@@ -374,9 +389,12 @@ private size_t[N] completeTranspose(size_t N)(in size_t[] dimensions)
 N-dimensional transpose operator.
 Brings selected dimensions to the first position.
 Params:
+    slice = input slice
     Dimensions = indexes of dimensions to be brought to the first position
     dimensions = indexes of dimensions to be brought to the first position
     dimension = index of dimension to be brought to the first position
+Returns:
+    n-dimensional slice of the same type
 See_also: $(LREF swapped), $(LREF everted)
 +/
 template transposed(Dimensions...)
@@ -387,11 +405,11 @@ template transposed(Dimensions...)
         mixin DimensionsCountCTError;
         foreach (i, dimension; Dimensions)
             mixin DimensionCTError;
-        static assert (isValidPartialPermutation!N([Dimensions]),
+        static assert(isValidPartialPermutation!N([Dimensions]),
             "Failed to complete permutation of dimensions " ~ Dimensions.stringof
             ~ tailErrorMessage!());
         enum perm = completeTranspose!N([Dimensions]);
-        static assert (perm.isPermutation, __PRETTY_FUNCTION__ ~ ": internal error.");
+        static assert(perm.isPermutation, __PRETTY_FUNCTION__ ~ ": internal error.");
         mixin (_transposedCode);
     }
 }
@@ -405,7 +423,7 @@ body {
     size_t[1] permutation = void;
     permutation[0] = dimension;
     immutable perm = completeTranspose!N(permutation);
-    assert (perm.isPermutation, __PRETTY_FUNCTION__  ~ ": internal error.");
+    assert(perm.isPermutation, __PRETTY_FUNCTION__  ~ ": internal error.");
     mixin (_transposedCode);
 }
 
@@ -417,11 +435,11 @@ in {
         mixin (DimensionRTError);
 }
 body {
-    assert (dimensions.isValidPartialPermutation!N,
+    assert(dimensions.isValidPartialPermutation!N,
         "Failed to complete permutation of dimensions."
         ~ tailErrorMessage!());
     immutable perm = completeTranspose!N(dimensions);
-    assert (perm.isPermutation, __PRETTY_FUNCTION__ ~ ": internal error.");
+    assert(perm.isPermutation, __PRETTY_FUNCTION__ ~ ": internal error.");
     mixin (_transposedCode);
 }
 
@@ -432,44 +450,44 @@ Slice!(2, Range) transposed(Range)(auto ref Slice!(2, Range) slice)
 }
 
 /// Template
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota;
-    assert (100000.iota
+    assert(100000.iota
         .sliced(3, 4, 5, 6, 7)
         .transposed!(4, 1, 0)
         .shape == cast(size_t[5])[7, 4, 3, 5, 6]);
 }
 
 /// Function
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota;
-    assert (100000.iota
+    assert(100000.iota
         .sliced(3, 4, 5, 6, 7)
         .transposed(4, 1, 0)
         .shape == cast(size_t[5])[7, 4, 3, 5, 6]);
 }
 
 /// Single-argument function
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota;
-    assert (100000.iota
+    assert(100000.iota
         .sliced(3, 4, 5, 6, 7)
         .transposed(4)
         .shape == cast(size_t[5])[7, 3, 4, 5, 6]);
 }
 
 /// `2`-dimensional transpose
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota;
-    assert (100.iota
+    assert(100.iota
         .sliced(3, 4)
         .transposed
         .shape == cast(size_t[2])[4, 3]);
@@ -478,13 +496,18 @@ unittest {
 private enum _reversedCode = q{
     with (slice)
     {
-        _ptr += _strides[dimension] * (_lengths[dimension] - 1);
+        if (_lengths[dimension])
+            _ptr += _strides[dimension] * (_lengths[dimension] - 1);
         _strides[dimension] = -_strides[dimension];
     }
 };
 
 /++
 Reverses the direction of iteration for all dimensions.
+Params:
+    slice = input slice
+Returns:
+    n-dimensional slice of the same type
 +/
 Slice!(N, Range) allReversed(size_t N, Range)(Slice!(N, Range) slice)
 {
@@ -496,17 +519,25 @@ Slice!(N, Range) allReversed(size_t N, Range)(Slice!(N, Range) slice)
 }
 
 ///
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5).allReversed;
     auto b = 20.iota.retro.sliced(4, 5);
-    assert (a == b);
+    assert(a == b);
 }
 
 /++
 Reverses the direction of iteration for selected dimensions.
+
+Params:
+    slice = input slice
+    Dimensions = indexes of dimensions to reverse order of iteration
+    dimensions = indexes of dimensions to reverse order of iteration
+    dimension = index of dimension to reverse order of iteration
+Returns:
+    n-dimensional slice of the same type
 +/
 template reversed(Dimensions...)
     if (Dimensions.length)
@@ -545,31 +576,31 @@ body {
 }
 
 ///
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     auto slice = [1, 2, 3, 4].sliced(2, 2);
-    assert (slice                    == [[1, 2], [3, 4]]);
+    assert(slice                    == [[1, 2], [3, 4]]);
 
     // Template
-    assert (slice.reversed! 0        == [[3, 4], [1, 2]]);
-    assert (slice.reversed! 1        == [[2, 1], [4, 3]]);
-    assert (slice.reversed!(0, 1)    == [[4, 3], [2, 1]]);
-    assert (slice.reversed!(1, 0)    == [[4, 3], [2, 1]]);
-    assert (slice.reversed!(1, 1)    == [[1, 2], [3, 4]]);
-    assert (slice.reversed!(0, 0, 0) == [[3, 4], [1, 2]]);
+    assert(slice.reversed! 0        == [[3, 4], [1, 2]]);
+    assert(slice.reversed! 1        == [[2, 1], [4, 3]]);
+    assert(slice.reversed!(0, 1)    == [[4, 3], [2, 1]]);
+    assert(slice.reversed!(1, 0)    == [[4, 3], [2, 1]]);
+    assert(slice.reversed!(1, 1)    == [[1, 2], [3, 4]]);
+    assert(slice.reversed!(0, 0, 0) == [[3, 4], [1, 2]]);
 
     // Function
-    assert (slice.reversed (0)       == [[3, 4], [1, 2]]);
-    assert (slice.reversed (1)       == [[2, 1], [4, 3]]);
-    assert (slice.reversed (0, 1)    == [[4, 3], [2, 1]]);
-    assert (slice.reversed (1, 0)    == [[4, 3], [2, 1]]);
-    assert (slice.reversed (1, 1)    == [[1, 2], [3, 4]]);
-    assert (slice.reversed (0, 0, 0) == [[3, 4], [1, 2]]);
+    assert(slice.reversed (0)       == [[3, 4], [1, 2]]);
+    assert(slice.reversed (1)       == [[2, 1], [4, 3]]);
+    assert(slice.reversed (0, 1)    == [[4, 3], [2, 1]]);
+    assert(slice.reversed (1, 0)    == [[4, 3], [2, 1]]);
+    assert(slice.reversed (1, 1)    == [[1, 2], [3, 4]]);
+    assert(slice.reversed (0, 0, 0) == [[3, 4], [1, 2]]);
 }
 
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.experimental.ndslice.selection;
     import std.algorithm.comparison: equal;
@@ -578,25 +609,25 @@ unittest {
     auto i1 = iota(4,  8); auto r1 = i1.retro;
     auto i2 = iota(8, 12); auto r2 = i2.retro;
     auto slice = 100.iota.sliced(3, 4);
-    assert (slice                   .byElement.equal(chain(i0, i1, i2)));
+    assert(slice                   .byElement.equal(chain(i0, i1, i2)));
     // Template
-    assert (slice.reversed!(0)      .byElement.equal(chain(i2, i1, i0)));
-    assert (slice.reversed!(1)      .byElement.equal(chain(r0, r1, r2)));
-    assert (slice.reversed!(0, 1)   .byElement.equal(chain(r2, r1, r0)));
-    assert (slice.reversed!(1, 0)   .byElement.equal(chain(r2, r1, r0)));
-    assert (slice.reversed!(1, 1)   .byElement.equal(chain(i0, i1, i2)));
-    assert (slice.reversed!(0, 0, 0).byElement.equal(chain(i2, i1, i0)));
+    assert(slice.reversed!(0)      .byElement.equal(chain(i2, i1, i0)));
+    assert(slice.reversed!(1)      .byElement.equal(chain(r0, r1, r2)));
+    assert(slice.reversed!(0, 1)   .byElement.equal(chain(r2, r1, r0)));
+    assert(slice.reversed!(1, 0)   .byElement.equal(chain(r2, r1, r0)));
+    assert(slice.reversed!(1, 1)   .byElement.equal(chain(i0, i1, i2)));
+    assert(slice.reversed!(0, 0, 0).byElement.equal(chain(i2, i1, i0)));
     // Function
-    assert (slice.reversed (0)      .byElement.equal(chain(i2, i1, i0)));
-    assert (slice.reversed (1)      .byElement.equal(chain(r0, r1, r2)));
-    assert (slice.reversed (0, 1)   .byElement.equal(chain(r2, r1, r0)));
-    assert (slice.reversed (1, 0)   .byElement.equal(chain(r2, r1, r0)));
-    assert (slice.reversed (1, 1)   .byElement.equal(chain(i0, i1, i2)));
-    assert (slice.reversed (0, 0, 0).byElement.equal(chain(i2, i1, i0)));
+    assert(slice.reversed (0)      .byElement.equal(chain(i2, i1, i0)));
+    assert(slice.reversed (1)      .byElement.equal(chain(r0, r1, r2)));
+    assert(slice.reversed (0, 1)   .byElement.equal(chain(r2, r1, r0)));
+    assert(slice.reversed (1, 0)   .byElement.equal(chain(r2, r1, r0)));
+    assert(slice.reversed (1, 1)   .byElement.equal(chain(i0, i1, i2)));
+    assert(slice.reversed (0, 0, 0).byElement.equal(chain(i2, i1, i0)));
 }
 
 private enum _stridedCode = q{
-    assert (factor > 0, "factor must be positive"
+    assert(factor > 0, "factor must be positive"
         ~ tailErrorMessage!());
     immutable rem = slice._lengths[dimension] % factor;
     slice._lengths[dimension] /= factor;
@@ -608,10 +639,15 @@ private enum _stridedCode = q{
 
 /++
 Multiplies the stride of the selected dimension by the factor.
+
 Params:
-    Dimensions = list of dimension numbers
-    dimension = dimension number
+    slice = input slice
+    Dimensions = indexes of dimensions to be strided
+    dimensions = indexes of dimensions to be strided
     factors = list of step extension factors
+    factor = step extension factors
+Returns:
+    n-dimensional slice of the same type
 +/
 template strided(Dimensions...)
     if (Dimensions.length)
@@ -639,46 +675,46 @@ body {
 }
 
 ///
-pure nothrow
-unittest {
+pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     auto slice
          = [0,1,2,3,    4,5,6,7,   8,9,10,11].sliced(3, 4);
 
-    assert (slice
+    assert(slice
         == [[0,1,2,3], [4,5,6,7], [8,9,10,11]]);
 
     // Template
-    assert (slice.strided!0(2)
+    assert(slice.strided!0(2)
         == [[0,1,2,3],            [8,9,10,11]]);
 
-    assert (slice.strided!1(3)
+    assert(slice.strided!1(3)
         == [[0,    3], [4,    7], [8,     11]]);
 
-    assert (slice.strided!(0, 1)(2, 3)
+    assert(slice.strided!(0, 1)(2, 3)
         == [[0,    3],            [8,     11]]);
 
     // Function
-    assert (slice.strided(0, 2)
+    assert(slice.strided(0, 2)
         == [[0,1,2,3],            [8,9,10,11]]);
 
-    assert (slice.strided(1, 3)
+    assert(slice.strided(1, 3)
         == [[0,    3], [4,    7], [8,     11]]);
 
-    assert (slice.strided(0, 2).strided(1, 3)
+    assert(slice.strided(0, 2).strided(1, 3)
         == [[0,    3],            [8,     11]]);
 }
 
 ///
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.range: iota;
-    static assert (1000.iota.sliced(13, 40).strided!(0, 1)(2, 5).shape == [7, 8]);
-    static assert (100.iota.sliced(93).strided!(0, 0)(7, 3).shape == [5]);
+    static assert(1000.iota.sliced(13, 40).strided!(0, 1)(2, 5).shape == [7, 8]);
+    static assert(100.iota.sliced(93).strided!(0, 0)(7, 3).shape == [5]);
 }
 
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.experimental.ndslice.selection;
     import std.algorithm.comparison: equal;
@@ -687,21 +723,26 @@ unittest {
     auto i1 = iota(4,  8); auto s1 = i1.stride(3);
     auto i2 = iota(8, 12); auto s2 = i2.stride(3);
     auto slice = 100.iota.sliced(3, 4);
-    assert (slice              .byElement.equal(chain(i0, i1, i2)));
+    assert(slice              .byElement.equal(chain(i0, i1, i2)));
     // Template
-    assert (slice.strided!0(2) .byElement.equal(chain(i0, i2)));
-    assert (slice.strided!1(3) .byElement.equal(chain(s0, s1, s2)));
-    assert (slice.strided!(0, 1)(2, 3).byElement.equal(chain(s0, s2)));
+    assert(slice.strided!0(2) .byElement.equal(chain(i0, i2)));
+    assert(slice.strided!1(3) .byElement.equal(chain(s0, s1, s2)));
+    assert(slice.strided!(0, 1)(2, 3).byElement.equal(chain(s0, s2)));
     // Function
-    assert (slice.strided(0, 2).byElement.equal(chain(i0, i2)));
-    assert (slice.strided(1, 3).byElement.equal(chain(s0, s1, s2)));
-    assert (slice.strided(0, 2).strided(1, 3).byElement.equal(chain(s0, s2)));
+    assert(slice.strided(0, 2).byElement.equal(chain(i0, i2)));
+    assert(slice.strided(1, 3).byElement.equal(chain(s0, s1, s2)));
+    assert(slice.strided(0, 2).strided(1, 3).byElement.equal(chain(s0, s2)));
 }
 
 /++
 Convenience function which calls `slice.popFront!dimension()` for each dimension and returns the slice.
 
 `allDropBackOne` provides the same functionality but calls `slice.popBack!dimension()` instead.
+
+Params:
+    slice = input slice
+Returns:
+    n-dimensional slice of the same type
 +/
 Slice!(N, Range) allDropOne(size_t N, Range)(Slice!(N, Range) slice)
 {
@@ -719,16 +760,16 @@ Slice!(N, Range) allDropBackOne(size_t N, Range)(Slice!(N, Range) slice)
 }
 
 ///
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
-    assert (a.allDropOne[0, 0] == 6);
-    assert (a.allDropOne.shape == cast(size_t[2])[3, 4]);
-    assert (a.allDropBackOne[$ - 1, $ - 1] == 13);
-    assert (a.allDropBackOne.shape == cast(size_t[2])[3, 4]);
+    assert(a.allDropOne[0, 0] == 6);
+    assert(a.allDropOne.shape == cast(size_t[2])[3, 4]);
+    assert(a.allDropBackOne[$ - 1, $ - 1] == 13);
+    assert(a.allDropBackOne.shape == cast(size_t[2])[3, 4]);
 }
 
 /++
@@ -741,6 +782,12 @@ a multi-dimensional cube with a size of at least n.
 This makes `allDropExactly` faster than `allDrop`.
 Only use `allDropExactly` when it is guaranteed that the slice holds
 a multi-dimensional cube with a size of at least n.
+
+Params:
+    slice = input slice
+    n = number of elements to drop
+Returns:
+    n-dimensional slice of the same type
 +/
 Slice!(N, Range) allDropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 {
@@ -758,16 +805,16 @@ Slice!(N, Range) allDropBackExactly(size_t N, Range)(Slice!(N, Range) slice, siz
 }
 
 ///
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
-    assert (a.allDropExactly(2)[0, 0] == 12);
-    assert (a.allDropExactly(2).shape == cast(size_t[2])[2, 3]);
-    assert (a.allDropBackExactly(2)[$ - 1, $ - 1] == 7);
-    assert (a.allDropBackExactly(2).shape == cast(size_t[2])[2, 3]);
+    assert(a.allDropExactly(2)[0, 0] == 12);
+    assert(a.allDropExactly(2).shape == cast(size_t[2])[2, 3]);
+    assert(a.allDropBackExactly(2)[$ - 1, $ - 1] == 7);
+    assert(a.allDropBackExactly(2).shape == cast(size_t[2])[2, 3]);
 }
 
 /++
@@ -777,6 +824,12 @@ Convenience function which calls `slice.popFrontN!dimension(n)` for each dimensi
 
 Note:
 `allDrop` and `allDropBack` remove up to n elements and stop when the slice is empty.
+
+Params:
+    slice = input slice
+    n = number of elements to drop
+Returns:
+    n-dimensional slice of the same type
 +/
 Slice!(N, Range) allDrop(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 {
@@ -794,25 +847,30 @@ Slice!(N, Range) allDropBack(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 }
 
 ///
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
-    assert (a.allDrop(2)[0, 0] == 12);
-    assert (a.allDrop(2).shape == cast(size_t[2])[2, 3]);
-    assert (a.allDropBack(2)[$ - 1, $ - 1] == 7);
-    assert (a.allDropBack(2).shape == cast(size_t[2])[2, 3]);
+    assert(a.allDrop(2)[0, 0] == 12);
+    assert(a.allDrop(2).shape == cast(size_t[2])[2, 3]);
+    assert(a.allDropBack(2)[$ - 1, $ - 1] == 7);
+    assert(a.allDropBack(2).shape == cast(size_t[2])[2, 3]);
 
-    assert (a.allDrop    (5).shape == cast(size_t[2])[0, 0]);
-    assert (a.allDropBack(5).shape == cast(size_t[2])[0, 0]);
+    assert(a.allDrop    (5).shape == cast(size_t[2])[0, 0]);
+    assert(a.allDropBack(5).shape == cast(size_t[2])[0, 0]);
 }
 
 /++
 Convenience function which calls `slice.popFront!dimension()` for selected dimensions and returns the slice.
 
 `dropBackOne` provides the same functionality but calls `slice.popBack!dimension()` instead.
+
+Params:
+    slice = input slice
+Returns:
+    n-dimensional slice of the same type
 +/
 template dropOne(Dimensions...)
     if (Dimensions.length)
@@ -889,41 +947,41 @@ body {
 
 
 ///
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
-    assert (a.dropOne!(1, 0)[0, 0] == 6);
-    assert (a.dropOne (1, 0)[0, 0] == 6);
-    assert (a.dropOne!(1, 0).shape == cast(size_t[2])[3, 4]);
-    assert (a.dropOne (1, 0).shape == cast(size_t[2])[3, 4]);
-    assert (a.dropBackOne!(1, 0)[$ - 1, $ - 1] == 13);
-    assert (a.dropBackOne (1, 0)[$ - 1, $ - 1] == 13);
-    assert (a.dropBackOne!(1, 0).shape == cast(size_t[2])[3, 4]);
-    assert (a.dropBackOne (1, 0).shape == cast(size_t[2])[3, 4]);
+    assert(a.dropOne!(1, 0)[0, 0] == 6);
+    assert(a.dropOne (1, 0)[0, 0] == 6);
+    assert(a.dropOne!(1, 0).shape == cast(size_t[2])[3, 4]);
+    assert(a.dropOne (1, 0).shape == cast(size_t[2])[3, 4]);
+    assert(a.dropBackOne!(1, 0)[$ - 1, $ - 1] == 13);
+    assert(a.dropBackOne (1, 0)[$ - 1, $ - 1] == 13);
+    assert(a.dropBackOne!(1, 0).shape == cast(size_t[2])[3, 4]);
+    assert(a.dropBackOne (1, 0).shape == cast(size_t[2])[3, 4]);
 
-    assert (a.dropOne!(0, 0)[0, 0] == 10);
-    assert (a.dropOne (0, 0)[0, 0] == 10);
-    assert (a.dropOne!(0, 0).shape == cast(size_t[2])[2, 5]);
-    assert (a.dropOne (0, 0).shape == cast(size_t[2])[2, 5]);
-    assert (a.dropBackOne!(1, 1)[$ - 1, $ - 1] == 17);
-    assert (a.dropBackOne (1, 1)[$ - 1, $ - 1] == 17);
-    assert (a.dropBackOne!(1, 1).shape == cast(size_t[2])[4, 3]);
-    assert (a.dropBackOne (1, 1).shape == cast(size_t[2])[4, 3]);
+    assert(a.dropOne!(0, 0)[0, 0] == 10);
+    assert(a.dropOne (0, 0)[0, 0] == 10);
+    assert(a.dropOne!(0, 0).shape == cast(size_t[2])[2, 5]);
+    assert(a.dropOne (0, 0).shape == cast(size_t[2])[2, 5]);
+    assert(a.dropBackOne!(1, 1)[$ - 1, $ - 1] == 17);
+    assert(a.dropBackOne (1, 1)[$ - 1, $ - 1] == 17);
+    assert(a.dropBackOne!(1, 1).shape == cast(size_t[2])[4, 3]);
+    assert(a.dropBackOne (1, 1).shape == cast(size_t[2])[4, 3]);
 }
 
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
-    assert (a.dropOne(0).dropOne(0)[0, 0] == 10);
-    assert (a.dropOne(0).dropOne(0).shape == cast(size_t[2])[2, 5]);
-    assert (a.dropBackOne(1).dropBackOne(1)[$ - 1, $ - 1] == 17);
-    assert (a.dropBackOne(1).dropBackOne(1).shape == cast(size_t[2])[4, 3]);
+    assert(a.dropOne(0).dropOne(0)[0, 0] == 10);
+    assert(a.dropOne(0).dropOne(0).shape == cast(size_t[2])[2, 5]);
+    assert(a.dropBackOne(1).dropBackOne(1)[$ - 1, $ - 1] == 17);
+    assert(a.dropBackOne(1).dropBackOne(1).shape == cast(size_t[2])[4, 3]);
 }
 
 
@@ -935,6 +993,13 @@ Note:
 Unlike `drop`, `dropExactly` assumes that the slice holds enough elements in
 the selected dimension.
 This makes `dropExactly` faster than `drop`.
+
+Params:
+    slice = input slice
+    ns = list of numbers of elements to drop
+    n = number of elements to drop
+Returns:
+    n-dimensional slice of the same type
 +/
 template dropExactly(Dimensions...)
     if (Dimensions.length)
@@ -986,21 +1051,21 @@ body {
 }
 
 ///
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
-    assert (a.dropExactly    !(1, 0)(2, 3)[0, 0] == 17);
-    assert (a.dropExactly    !(1, 0)(2, 3).shape == cast(size_t[2])[1, 3]);
-    assert (a.dropBackExactly!(0, 1)(2, 3)[$ - 1, $ - 1] == 6);
-    assert (a.dropBackExactly!(0, 1)(2, 3).shape == cast(size_t[2])[2, 2]);
+    assert(a.dropExactly    !(1, 0)(2, 3)[0, 0] == 17);
+    assert(a.dropExactly    !(1, 0)(2, 3).shape == cast(size_t[2])[1, 3]);
+    assert(a.dropBackExactly!(0, 1)(2, 3)[$ - 1, $ - 1] == 6);
+    assert(a.dropBackExactly!(0, 1)(2, 3).shape == cast(size_t[2])[2, 2]);
 
-    assert (a.dropExactly(1, 2).dropExactly(0, 3)[0, 0] == 17);
-    assert (a.dropExactly(1, 2).dropExactly(0, 3).shape == cast(size_t[2])[1, 3]);
-    assert (a.dropBackExactly(0, 2).dropBackExactly(1, 3)[$ - 1, $ - 1] == 6);
-    assert (a.dropBackExactly(0, 2).dropBackExactly(1, 3).shape == cast(size_t[2])[2, 2]);
+    assert(a.dropExactly(1, 2).dropExactly(0, 3)[0, 0] == 17);
+    assert(a.dropExactly(1, 2).dropExactly(0, 3).shape == cast(size_t[2])[1, 3]);
+    assert(a.dropBackExactly(0, 2).dropBackExactly(1, 3)[$ - 1, $ - 1] == 6);
+    assert(a.dropBackExactly(0, 2).dropBackExactly(1, 3).shape == cast(size_t[2])[2, 2]);
 }
 
 /++
@@ -1011,6 +1076,13 @@ dimension and returns the slice.
 
 Note:
 `drop` and `dropBack` remove up to n elements and stop when the slice is empty.
+
+Params:
+    slice = input slice
+    ns = list of numbers of elements to drop
+    n = number of elements to drop
+Returns:
+    n-dimensional slice of the same type
 +/
 template drop(Dimensions...)
     if (Dimensions.length)
@@ -1063,28 +1135,33 @@ body {
 
 
 ///
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
-    assert (a.drop    !(1, 0)(2, 3)[0, 0] == 17);
-    assert (a.drop    !(1, 0)(2, 3).shape == cast(size_t[2])[1, 3]);
-    assert (a.dropBack!(0, 1)(2, 3)[$ - 1, $ - 1] == 6);
-    assert (a.dropBack!(0, 1)(2, 3).shape == cast(size_t[2])[2, 2]);
-    assert (a.dropBack!(0, 1)(5, 5).shape == cast(size_t[2])[0, 0]);
+    assert(a.drop    !(1, 0)(2, 3)[0, 0] == 17);
+    assert(a.drop    !(1, 0)(2, 3).shape == cast(size_t[2])[1, 3]);
+    assert(a.dropBack!(0, 1)(2, 3)[$ - 1, $ - 1] == 6);
+    assert(a.dropBack!(0, 1)(2, 3).shape == cast(size_t[2])[2, 2]);
+    assert(a.dropBack!(0, 1)(5, 5).shape == cast(size_t[2])[0, 0]);
 
 
-    assert (a.drop(1, 2).drop(0, 3)[0, 0] == 17);
-    assert (a.drop(1, 2).drop(0, 3).shape == cast(size_t[2])[1, 3]);
-    assert (a.dropBack(0, 2).dropBack(1, 3)[$ - 1, $ - 1] == 6);
-    assert (a.dropBack(0, 2).dropBack(1, 3).shape == cast(size_t[2])[2, 2]);
-    assert (a.dropBack(0, 5).dropBack(1, 5).shape == cast(size_t[2])[0, 0]);
+    assert(a.drop(1, 2).drop(0, 3)[0, 0] == 17);
+    assert(a.drop(1, 2).drop(0, 3).shape == cast(size_t[2])[1, 3]);
+    assert(a.dropBack(0, 2).dropBack(1, 3)[$ - 1, $ - 1] == 6);
+    assert(a.dropBack(0, 2).dropBack(1, 3).shape == cast(size_t[2])[2, 2]);
+    assert(a.dropBack(0, 5).dropBack(1, 5).shape == cast(size_t[2])[0, 0]);
 }
 
 /++
 Returns maximal multidimensional cube.
+
+Params:
+    slice = input slice
+Returns:
+    n-dimensional slice of the same type
 +/
 Slice!(N, Range) dropToHypercube(size_t N, Range)(Slice!(N, Range) slice)
 body {
@@ -1098,11 +1175,11 @@ body {
 }
 
 ///
-@safe @nogc pure nothrow
-unittest {
+@safe @nogc pure nothrow unittest
+{
     import std.experimental.ndslice.slice;
     import std.range: iota, retro;
-    assert (1000.iota
+    assert(1000.iota
         .sliced(5, 3, 6, 7)
         .dropToHypercube
         .shape == cast(size_t[4])[3, 3, 3, 3]);
