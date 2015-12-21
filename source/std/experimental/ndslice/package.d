@@ -268,7 +268,7 @@ For ranges, a shell is used instead of a pointer.
 This shell contains a shift of the current initial element of a multidimensional slice
 and the range itself. With the exception of overloaded operators, no functions in this
 package change or copy data. The operations are only carried out on lengths, strides,
-and pointers. If a slice is defined over a range, only a shift of the initial element
+and pointers. If a slice is defined over a range, only the shift of the initial element
 changes instead of the pointer.
 
 $(H3 Internal Representation for Pointers)
