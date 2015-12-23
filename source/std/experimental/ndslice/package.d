@@ -42,7 +42,7 @@
 +/
 
 /**
-$(H1 Multidimensional random access ranges)
+$(H1 Multidimensional Random Access Ranges)
 
 The package is designed for applications such as linear algebra, physics and
 statistics. It would be well suited to creating machine learning and image

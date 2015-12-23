@@ -555,9 +555,6 @@ $(TR $(TD A $(BLUE fully defined slice) is an empty sequence
     $(BLUE interval) with an overall length equal to `N`.)
     $(STD `[]`, `[3..$,0..3,0..$-1]`, `[2,0..$,1]`))
 )
-
-See_also: $(LREF .Slice.opIndex), $(LREF .Slice.opIndexAssign), $(LREF .Slice.opIndexOpAssign),
-$(LREF .Slice.opUnary).
 +/
 struct Slice(size_t _N, _Range)
     if (_N && _N < 256LU && ((!is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
