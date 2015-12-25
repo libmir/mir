@@ -297,6 +297,8 @@ pure nothrow unittest
 Allocates an array and creates an n-dimensional slice over it.
 See also $(LINK2 std_experimental_allocator.html, std.experimental.allocator).
 +/
+import std.compiler: version_minor;
+static if (version_minor >= 69)
 version(Posix)
 unittest
 {
