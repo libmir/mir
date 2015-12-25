@@ -1,14 +1,6 @@
 sudo: false
 
-os:
-  - linux
-  - osx
-
 language: d
-
-d:
-  - dmd-2.069.2
-  - ldc2-0.17.0-alpha1
 
 install:
   - wget -O doveralls "https://github.com/ColdenCullen/doveralls/releases/download/v1.1.6/doveralls_linux_travis"
