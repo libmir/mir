@@ -7,3 +7,5 @@ __dummy.html
 __test__library__
 
 dub.selections.json
+
+*.a

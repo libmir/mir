@@ -44,11 +44,20 @@
 /**
 $(H1 Multidimensional Random Access Ranges)
 
-The package is designed for applications such as linear algebra, physics and
-statistics. It would be well suited to creating machine learning and image
+The package provides a multidimensional array implementation, 
+It would be well suited to creating machine learning and image
 processing algorithms, but should also be general enough for use anywhere with
-homogeneously-typed multidimensional data.
+homogeneously-typed multidimensional data. 
+In addition, it includes various functions for iteration, accessing, and manipulation.
 
+Quick_Start:
+$(SUBREF slice, sliced) is a function designed to create
+a multidimensional view over a range.
+Multidimensional view is presented by $(SUBREF slice, Slice) type.
+------
+auto matrix = new double[12].sliced(3, 4);
+matrix[] = 0;
+------
 
 Note:
 In many examples $(LINK2 std_range.html#iota, std.range.iota) is used
@@ -259,154 +268,6 @@ options:
      --nr number of rows in window, default value is 3
      --nc number of columns in window default value equals to nr
 -h --help This help information.
--------
-
-$(H2 Internal Binary Representation)
-
-Multidimensional $(SUBREF slice, Slice) is a structure that consists of lengths, strides, and a pointer.
-For ranges, a shell is used instead of a pointer.
-This shell contains a shift of the current initial element of a multidimensional slice
-and the range itself. With the exception of overloaded operators, no functions in this
-package change or copy data. The operations are only carried out on lengths, strides,
-and pointers. If a slice is defined over a range, only the shift of the initial element
-changes instead of the pointer.
-
-$(H3 Internal Representation for Pointers)
-
-Type definition
-
--------
-Slice!(N, T*)
--------
-
-Schema
-
--------
-Slice!(N, T*)
-    size_t[N]     lengths
-    sizediff_t[N] strides
-    T*            ptr
--------
-
-Example:
-
-Definitions
-
--------
-auto a = new double[24];
-Slice!(3, double*) s = a.sliced(2, 3, 4);
-Slice!(3, double*) t = s.transposed!(1, 2, 0);
-Slice!(3, double*) r = r.reversed!1;
--------
-
-Representation
-
--------
-s________________________
-    lengths[0] ::=  2
-    lengths[1] ::=  3
-    lengths[2] ::=  4
-
-    strides[0] ::= 12
-    strides[1] ::=  4
-    strides[2] ::=  1
-
-    ptr        ::= &a[0]
-
-t____transposed!(1, 2, 0)
-    lengths[0] ::=  3
-    lengths[1] ::=  4
-    lengths[2] ::=  2
-
-    strides[0] ::=  4
-    strides[1] ::=  1
-    strides[2] ::= 12
-
-    ptr        ::= &a[0]
-
-r______________reversed!1
-    lengths[0] ::=  2
-    lengths[1] ::=  3
-    lengths[2] ::=  4
-
-    strides[0] ::= 12
-    strides[1] ::= -4
-    strides[2] ::=  1
-
-    ptr        ::= &a[8] // (old_strides[1] * (lengths[1] - 1)) = 8
--------
-
-$(H3 Internal Representation for Ranges)
-
-Type definition
-
--------
-Slice!(N, Range)
--------
-
-Representation
-
--------
-Slice!(N, Range)
-    size_t[N]     lengths
-    sizediff_t[N] strides
-    PtrShell!T    ptr
-        sizediff_t shift
-        Range      range
--------
-
-
-Example:
-
-Definitions
-
--------
-import std.range: iota;
-auto a = iota(24);
-alias A = typeof(a);
-Slice!(3, A) s = a.sliced(2, 3, 4);
-Slice!(3, A) t = s.transposed!(1, 2, 0);
-Slice!(3, A) r = r.reversed!1;
--------
-
-Representation
-
--------
-s________________________
-    lengths[0] ::=  2
-    lengths[1] ::=  3
-    lengths[2] ::=  4
-
-    strides[0] ::= 12
-    strides[1] ::=  4
-    strides[2] ::=  1
-
-        shift  ::=  0
-        range  ::=  a
-
-t____transposed!(1, 2, 0)
-    lengths[0] ::=  3
-    lengths[1] ::=  4
-    lengths[2] ::=  2
-
-    strides[0] ::=  4
-    strides[1] ::=  1
-    strides[2] ::= 12
-
-        shift  ::=  0
-        range  ::=  a
-
-r______________reversed!1
-    lengths[0] ::=  2
-    lengths[1] ::=  3
-    lengths[2] ::=  4
-
-    strides[0] ::= 12
-    strides[1] ::= -4
-    strides[2] ::=  1
-
-        shift  ::=  8 // (old_strides[1] * (lengths[1] - 1)) = 8
-        range  ::=  a
 -------
 
 $(H2 Compared with `numpy.ndarray`)

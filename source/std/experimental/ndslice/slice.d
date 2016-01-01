@@ -16,6 +16,10 @@ STD = $(TD $(SMALL $0))
 */
 module std.experimental.ndslice.slice;
 
+pragma(msg, "Warning: '9il/dip80-ndslice' was moved to 'DlangScience/mir'.\n"
+    ~ "\tPlease update your dub configuration file\n"
+    ~ "\tand import 'mir.ndslice' instead of 'std.experimental.ndslice'.");
+
 import std.traits;
 import std.meta;
 import std.typecons; //: Flag;
@@ -48,7 +52,8 @@ auto sliced(ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes, Range, Le
 ///ditto
 auto sliced(ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes, size_t N, Range)(Range range, auto ref in size_t[N] lengths, size_t shift = 0)
     if (!isStaticArray!Range && !isNarrowString!Range && N)
-in {
+in
+{
     import std.range.primitives: hasLength;
     foreach (len; lengths)
         assert(len > 0,
@@ -59,7 +64,8 @@ in {
             "Range length must be greater than or equal to the sum of shift and the product of lengths."
             ~ tailErrorMessage!());
 }
-body {
+body
+{
     static if (isDynamicArray!Range && mod)
     {
         Slice!(N, typeof(range.ptr)) ret = void;
@@ -247,7 +253,6 @@ Creates an array and an n-dimensional slice over it.
 +/
 pure nothrow unittest
 {
-
     auto createSlice(T, Lengths...)(Lengths lengths)
     {
         return createSlice2!(T, Lengths.length)(cast(size_t[Lengths.length])[lengths]);
@@ -256,7 +261,10 @@ pure nothrow unittest
     ///ditto
     auto createSlice2(T, size_t N)(auto ref size_t[N] lengths)
     {
-        return new T[lengths.lengthsProduct].sliced(lengths);
+        size_t length = lengths[0];
+        foreach (len; lengths[1 .. N])
+                length *= len;
+        return new T[length].sliced(lengths);
     }
 
     auto slice = createSlice!int(5, 6, 7);
@@ -294,8 +302,10 @@ pure nothrow unittest
 }
 
 /++
-Allocates an array and creates an n-dimensional slice over it.
+Allocates an array through a specified allocator and creates an n-dimensional slice over it.
 See also $(LINK2 std_experimental_allocator.html, std.experimental.allocator).
+
+$(RED Warning: allocators are experimental.)
 +/
 import std.compiler: version_minor;
 static if (version_minor >= 69)
@@ -328,6 +338,55 @@ unittest
     assert(tup.array.ptr == &tup.slice[0, 0, 0]);
 
     theAllocator.dispose(tup.array);
+}
+
+/// Input range primitives for slices over user defined types
+pure nothrow @nogc unittest
+{
+    struct MyIota
+    {
+        //`[index]` operator overloading
+        auto opIndex(size_t index)
+        {
+            return index;
+        }
+    }
+
+    alias S = Slice!(3, MyIota);
+    auto slice = MyIota().sliced(20, 10);
+
+    import std.range.primitives;
+    static assert(hasLength!S);
+    static assert(isInputRange!S);
+    static assert(isForwardRange!S == false);
+}
+
+/// Random access range primitives for slices over user defined types
+pure nothrow @nogc unittest
+{
+    struct MyIota
+    {
+        //`[index]` operator overloading
+        auto opIndex(size_t index)
+        {
+            return index;
+        }
+        // `save` property to allow a slice to be a forward range
+        auto save() @property
+        {
+            return this;
+        }
+    }
+
+    alias S = Slice!(3, MyIota);
+    auto slice = MyIota().sliced(20, 10);
+
+    import std.range.primitives;
+    static assert(hasLength!S);
+    static assert(hasSlicing!S);
+    static assert(isForwardRange!S);
+    static assert(isBidirectionalRange!S);
+    static assert(isRandomAccessRange!S);
 }
 
 // sliced slice
@@ -521,7 +580,7 @@ struct Structure(size_t N)
 /++
 Presents an n-dimensional view over a range.
 
-$(H4 Definitions)
+$(H3 Definitions)
 
 In order to change data in a slice using
 overloaded operators such as `=`, `+=`, `++`,
@@ -557,6 +616,156 @@ $(TR $(TD A $(BLUE fully defined slice) is an empty sequence
     $(BLUE interval) with an overall length equal to `N`.)
     $(STD `[]`, `[3..$,0..3,0..$-1]`, `[2,0..$,1]`))
 )
+
+$(H3 Internal Binary Representation)
+
+Multidimensional $(SUBREF slice, Slice) is a structure that consists of lengths, strides, and a pointer.
+For ranges, a shell is used instead of a pointer.
+This shell contains a shift of the current initial element of a multidimensional slice
+and the range itself. With the exception of overloaded operators, no functions in this
+package change or copy data. The operations are only carried out on lengths, strides,
+and pointers. If a slice is defined over a range, only the shift of the initial element
+changes instead of the pointer.
+
+$(H4 Internal Representation for Pointers)
+
+Type definition
+
+-------
+Slice!(N, T*)
+-------
+
+Schema
+
+-------
+Slice!(N, T*)
+    size_t[N]     lengths
+    sizediff_t[N] strides
+    T*            ptr
+-------
+
+Example:
+
+Definitions
+
+-------
+import std.experimental.ndslice;
+auto a = new double[24];
+Slice!(3, double*) s = a.sliced(2, 3, 4);
+Slice!(3, double*) t = s.transposed!(1, 2, 0);
+Slice!(3, double*) r = r.reversed!1;
+-------
+
+Representation
+
+-------
+s________________________
+    lengths[0] ::=  2
+    lengths[1] ::=  3
+    lengths[2] ::=  4
+
+    strides[0] ::= 12
+    strides[1] ::=  4
+    strides[2] ::=  1
+
+    ptr        ::= &a[0]
+
+t____transposed!(1, 2, 0)
+    lengths[0] ::=  3
+    lengths[1] ::=  4
+    lengths[2] ::=  2
+
+    strides[0] ::=  4
+    strides[1] ::=  1
+    strides[2] ::= 12
+
+    ptr        ::= &a[0]
+
+r______________reversed!1
+    lengths[0] ::=  2
+    lengths[1] ::=  3
+    lengths[2] ::=  4
+
+    strides[0] ::= 12
+    strides[1] ::= -4
+    strides[2] ::=  1
+
+    ptr        ::= &a[8] // (old_strides[1] * (lengths[1] - 1)) = 8
+-------
+
+$(H4 Internal Representation for Ranges)
+
+Type definition
+
+-------
+Slice!(N, Range)
+-------
+
+Representation
+
+-------
+Slice!(N, Range)
+    size_t[N]     lengths
+    sizediff_t[N] strides
+    PtrShell!T    ptr
+        sizediff_t shift
+        Range      range
+-------
+
+
+Example:
+
+Definitions
+
+-------
+import std.experimental.ndslice;
+import std.range: iota;
+auto a = iota(24);
+alias A = typeof(a);
+Slice!(3, A) s = a.sliced(2, 3, 4);
+Slice!(3, A) t = s.transposed!(1, 2, 0);
+Slice!(3, A) r = r.reversed!1;
+-------
+
+Representation
+
+-------
+s________________________
+    lengths[0] ::=  2
+    lengths[1] ::=  3
+    lengths[2] ::=  4
+
+    strides[0] ::= 12
+    strides[1] ::=  4
+    strides[2] ::=  1
+
+        shift  ::=  0
+        range  ::=  a
+
+t____transposed!(1, 2, 0)
+    lengths[0] ::=  3
+    lengths[1] ::=  4
+    lengths[2] ::=  2
+
+    strides[0] ::=  4
+    strides[1] ::=  1
+    strides[2] ::= 12
+
+        shift  ::=  0
+        range  ::=  a
+
+r______________reversed!1
+    lengths[0] ::=  2
+    lengths[1] ::=  3
+    lengths[2] ::=  4
+
+    strides[0] ::= 12
+    strides[1] ::= -4
+    strides[2] ::=  1
+
+        shift  ::=  8 // (old_strides[1] * (lengths[1] - 1)) = 8
+        range  ::=  a
+-------
 +/
 struct Slice(size_t _N, _Range)
     if (_N && _N < 256LU && ((!is(Unqual!_Range : Slice!(N0, Range0), size_t N0, Range0)
@@ -1186,7 +1395,8 @@ struct Slice(size_t _N, _Range)
             "Slice.opSlice!" ~ dimension.stringof ~
             ": difference between the right and the left bounds must be less than or equal to the length of the given dimension.");
     }
-    body {
+    body
+    {
         pragma(inline, true);
         return typeof(return)(i, j);
     }
@@ -1971,10 +2181,12 @@ private bool opEqualsImpl
     (size_t NL, RangeL, size_t NR, RangeR)(
     auto ref Slice!(NL, RangeL) ls,
     auto ref Slice!(NR, RangeR) rs)
-in {
+in
+{
     assert(ls._lengths == rs._lengths);
 }
-body {
+body
+{
     foreach (i; 0 .. ls.length)
     {
         static if (Slice!(NL, RangeL).PureN == 1)
@@ -2013,35 +2225,41 @@ private struct PtrShell(Range)
     }
 
     auto ref opIndex(sizediff_t index)
-    in {
+    in
+    {
         assert(_shift + index >= 0);
         import std.range.primitives: hasLength;
         static if (hasLength!Range)
             assert(_shift + index <= _range.length);
     }
-    body {
+    body
+    {
         return _range[_shift + index];
     }
 
     static if (!hasAccessByRef)
     {
         auto ref opIndexAssign(T)(T value, sizediff_t index)
-        in {
+        in
+        {
             assert(_shift + index >= 0);
             static if (hasLength!Range)
                 assert(_shift + index <= _range.length);
         }
-        body {
+        body
+        {
             return _range[_shift + index] = value;
         }
 
         auto ref opIndexOpAssign(string op, T)(T value, sizediff_t index)
-        in {
+        in
+        {
             assert(_shift + index >= 0);
             static if (hasLength!Range)
                 assert(_shift + index <= _range.length);
         }
-        body {
+        body
+        {
             mixin (`return _range[_shift + index] ` ~ op ~ `= value;`);
         }
     }

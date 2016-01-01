@@ -475,12 +475,14 @@ Returns:
 +/
 Slice!(N, Slice!(N+1, Range)) blocks(size_t N, Range, Lengths...)(auto ref Slice!(N, Range) slice, Lengths lengths)
     if (allSatisfy!(isIndex, Lengths) && Lengths.length == N)
-in {
+in
+{
     foreach (i, length; lengths)
         assert(length > 0, "length of dimension = " ~ i.stringof ~ " must be positive"
             ~ tailErrorMessage!());
 }
-body {
+body
+{
     mixin _DefineRet;
     foreach (dimension; Iota!(0, N))
     {
@@ -595,12 +597,14 @@ Returns:
 +/
 Slice!(N, Slice!(N+1, Range)) windows(size_t N, Range, Lengths...)(auto ref Slice!(N, Range) slice, Lengths lengths)
     if (allSatisfy!(isIndex, Lengths) && Lengths.length == N)
-in {
+in
+{
     foreach (i, length; lengths)
         assert(length > 0, "length of dimension = " ~ i.stringof ~ " must be positive"
             ~ tailErrorMessage!());
 }
-body {
+body
+{
     mixin _DefineRet;
     foreach (dimension; Iota!(0, N))
     {
@@ -991,10 +995,12 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             }
 
             void popFrontExactly(size_t n)
-            in {
+            in
+            {
                 assert(n <= _length);
             }
-            body {
+            body
+            {
                 _length -= n;
                 //calculates shift and new indexes
                 sizediff_t _shift;
@@ -1017,20 +1023,24 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             }
 
             void popBackExactly(size_t n)
-            in {
+            in
+            {
                 assert(n <= _length);
             }
-            body {
+            body
+            {
                 pragma(inline, true);
                 _length -= n;
             }
 
             //calculates shift for index n
             private sizediff_t getShift(size_t n)
-            in {
+            in
+            {
                 assert(n < _length);
             }
-            body {
+            body
+            {
                 sizediff_t _shift;
                 n += _indexes[N-1];
                 foreach_reverse(i; Iota!(1, N)) with (_slice)
@@ -1068,7 +1078,8 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             alias opDollar = length;
 
             _Slice opSlice(size_t pos : 0)(size_t i, size_t j)
-            in {
+            in
+            {
                 assert(i <= j,
                     "the left bound must be less than or equal to the right bound"
                     ~ tailErrorMessage!());
@@ -1076,7 +1087,8 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                     "the difference between the right and the left bound must be less than or equal to range length"
                     ~ tailErrorMessage!());
             }
-            body {
+            body
+            {
                 pragma(inline, true);
                 return typeof(return)(i, j);
             }

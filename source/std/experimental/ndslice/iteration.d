@@ -151,13 +151,15 @@ in{
         mixin (DimensionRTError);
     }
 }
-body {
+body
+{
     mixin (_swappedCode);
 }
 
 /// ditto
 Slice!(2, Range) swapped(Range)(Slice!(2, Range) slice)
-body {
+body
+{
     return slice.swapped!(0, 1);
 }
 
@@ -261,13 +263,15 @@ in{
         mixin (DimensionRTError);
     }
 }
-body {
+body
+{
     mixin (_rotatedCode);
 }
 
 /// ditto
 Slice!(2, Range) rotated(Range)(Slice!(2, Range) slice, sizediff_t k = 1)
-body {
+body
+{
     return slice.rotated!(0, 1)(k);
 }
 
@@ -416,10 +420,12 @@ template transposed(Dimensions...)
 
 ///ditto
 Slice!(N, Range) transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimension)
-in {
+in
+{
     mixin (DimensionRTError);
 }
-body {
+body
+{
     size_t[1] permutation = void;
     permutation[0] = dimension;
     immutable perm = completeTranspose!N(permutation);
@@ -429,12 +435,14 @@ body {
 
 ///ditto
 Slice!(N, Range) transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] dimensions...)
-in {
+in
+{
     mixin (DimensionsCountRTError);
     foreach (dimension; dimensions)
         mixin (DimensionRTError);
 }
-body {
+body
+{
     assert(dimensions.isValidPartialPermutation!N,
         "Failed to complete permutation of dimensions."
         ~ tailErrorMessage!());
@@ -555,21 +563,25 @@ template reversed(Dimensions...)
 
 ///ditto
 Slice!(N, Range) reversed(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
-in {
+in
+{
     mixin (DimensionRTError);
 }
-body {
+body
+{
     mixin (_reversedCode);
     return slice;
 }
 
 ///ditto
 Slice!(N, Range) reversed(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
-in {
+in
+{
     foreach (dimension; dimensions)
         mixin (DimensionRTError);
 }
-body {
+body
+{
     foreach (dimension; dimensions)
         mixin (_reversedCode);
     return slice;
@@ -653,7 +665,8 @@ template strided(Dimensions...)
     if (Dimensions.length)
 {
     auto strided(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) factors)
-    body {
+    body
+    {
         foreach (i, dimension; Dimensions)
         {
             mixin DimensionCTError;
@@ -666,10 +679,12 @@ template strided(Dimensions...)
 
 ///ditto
 Slice!(N, Range) strided(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t factor)
-in {
+in
+{
     mixin (DimensionRTError);
 }
-body {
+body
+{
     mixin (_stridedCode);
     return slice;
 }
@@ -888,21 +903,25 @@ template dropOne(Dimensions...)
 
 ///ditto
 Slice!(N, Range) dropOne(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
-in {
+in
+{
     mixin (DimensionRTError);
 }
-body {
+body
+{
     slice.popFront(dimension);
     return slice;
 }
 
 ///ditto
 Slice!(N, Range) dropOne(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
-in {
+in
+{
     foreach (dimension; dimensions)
         mixin (DimensionRTError);
 }
-body {
+body
+{
     foreach (dimension; dimensions)
         slice.popFront(dimension);
     return slice;
@@ -925,21 +944,25 @@ template dropBackOne(Dimensions...)
 
 ///ditto
 Slice!(N, Range) dropBackOne(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
-in {
+in
+{
     mixin (DimensionRTError);
 }
-body {
+body
+{
     slice.popBack(dimension);
     return slice;
 }
 
 ///ditto
 Slice!(N, Range) dropBackOne(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
-in {
+in
+{
     foreach (dimension; dimensions)
         mixin (DimensionRTError);
 }
-body {
+body
+{
     foreach (dimension; dimensions)
         slice.popBack(dimension);
     return slice;
@@ -1005,7 +1028,8 @@ template dropExactly(Dimensions...)
     if (Dimensions.length)
 {
     Slice!(N, Range) dropExactly(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
-    body {
+    body
+    {
         foreach (i, dimension; Dimensions)
         {
             mixin DimensionCTError;
@@ -1017,10 +1041,12 @@ template dropExactly(Dimensions...)
 
 ///ditto
 Slice!(N, Range) dropExactly(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
-in {
+in
+{
     mixin (DimensionRTError);
 }
-body {
+body
+{
     slice.popFrontExactly(dimension, n);
     return slice;
 }
@@ -1030,7 +1056,8 @@ template dropBackExactly(Dimensions...)
     if (Dimensions.length)
 {
     Slice!(N, Range) dropBackExactly(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
-    body {
+    body
+    {
         foreach (i, dimension; Dimensions)
         {
             mixin DimensionCTError;
@@ -1042,10 +1069,12 @@ template dropBackExactly(Dimensions...)
 
 ///ditto
 Slice!(N, Range) dropBackExactly(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
-in {
+in
+{
     mixin (DimensionRTError);
 }
-body {
+body
+{
     slice.popBackExactly(dimension, n);
     return slice;
 }
@@ -1088,7 +1117,8 @@ template drop(Dimensions...)
     if (Dimensions.length)
 {
     Slice!(N, Range) drop(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
-    body {
+    body
+    {
         foreach (i, dimension; Dimensions)
         {
             mixin DimensionCTError;
@@ -1100,10 +1130,12 @@ template drop(Dimensions...)
 
 ///ditto
 Slice!(N, Range) drop(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
-in {
+in
+{
     mixin (DimensionRTError);
 }
-body {
+body
+{
     slice.popFrontN(dimension, n);
     return slice;
 }
@@ -1113,7 +1145,8 @@ template dropBack(Dimensions...)
     if (Dimensions.length)
 {
     Slice!(N, Range) dropBack(size_t N, Range)(Slice!(N, Range) slice, Repeat!(size_t, Dimensions.length) ns)
-    body {
+    body
+    {
         foreach (i, dimension; Dimensions)
         {
             mixin DimensionCTError;
@@ -1125,10 +1158,12 @@ template dropBack(Dimensions...)
 
 ///ditto
 Slice!(N, Range) dropBack(size_t N, Range)(Slice!(N, Range) slice, size_t dimension, size_t n)
-in {
+in
+{
     mixin (DimensionRTError);
 }
-body {
+body
+{
     slice.popBackN(dimension, n);
     return slice;
 }
@@ -1164,7 +1199,8 @@ Returns:
     n-dimensional slice of the same type
 +/
 Slice!(N, Range) dropToHypercube(size_t N, Range)(Slice!(N, Range) slice)
-body {
+body
+{
     size_t length = slice._lengths[0];
     foreach (i; Iota!(1, N))
         if (length > slice._lengths[i])
