@@ -8,4 +8,6 @@ install:
 
 script:
   - dub test -b unittest-cov
-  - ./doveralls
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
