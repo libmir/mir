@@ -294,16 +294,16 @@ Acknowledgements:   John Loughran Colvin
 Source:    $(PHOBOSSRC std/_experimental/_ndslice/_package.d)
 
 Macros:
-SUBMODULE = $(LINK2 std_experimental_ndslice_$1.html, std.experimental.ndslice.$1)
-SUBREF = $(LINK2 std_experimental_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
+SUBMODULE = $(LINK2 mir_ndslice_$1.html, mir.ndslice.$1)
+SUBREF = $(LINK2 mir_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
-module std.experimental.ndslice;
+module mir.ndslice;
 
-public import std.experimental.ndslice.slice;
-public import std.experimental.ndslice.iteration;
-public import std.experimental.ndslice.selection;
+public import mir.ndslice.slice;
+public import mir.ndslice.iteration;
+public import mir.ndslice.selection;
 
 // relaxed example
 unittest
@@ -502,7 +502,7 @@ pure nothrow unittest
 
 pure nothrow unittest
 {
-    import std.experimental.ndslice.internal: Iota;
+    import mir.ndslice.internal: Iota;
     import std.meta: AliasSeq;
     import std.range;
     import std.typecons: Tuple;
@@ -533,7 +533,7 @@ pure nothrow unittest
 
 pure nothrow unittest
 {
-    import std.experimental.ndslice.selection: pack;
+    import mir.ndslice.selection: pack;
     auto slice = new int[24].sliced(2, 3, 4);
     auto r0 = slice.pack!1[1, 2];
     slice.pack!1[1, 2][] = 4;

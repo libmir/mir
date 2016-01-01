@@ -1,3 +1,4 @@
-# dip80-ndslice
-https://github.com/D-Programming-Language/phobos/pull/3397
+# Mir - Dlang Numeric Library
 
+## Packages
+ - `ndslice` Multidimensional Random Access Arrays and Ranges

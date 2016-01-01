@@ -1,11 +1,9 @@
-.dub
-docs.json
 __dummy.html
+__test__library__
 *.o
 *.obj
-
-__test__library__
-
-dub.selections.json
-
 *.a
+.dub
+dub.selections.json
+docs.json
+

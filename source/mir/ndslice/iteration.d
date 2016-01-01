@@ -1,7 +1,7 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
-This is a submodule of $(LINK2 std_experimental_ndslice.html, std.experimental.ndslice).
+This is a submodule of $(LINK2 mir_ndslice.html, mir.ndslice).
 
 Operators only change strides and lengths of a slice.
 The range of a slice remains unmodified.
@@ -85,17 +85,17 @@ Authors:   Ilya Yaroshenko
 Source:    $(PHOBOSSRC std/_experimental/_ndslice/_iteration.d)
 
 Macros:
-SUBMODULE = $(LINK2 std_experimental_ndslice_$1.html, std.experimental.ndslice.$1)
-SUBREF = $(LINK2 std_experimental_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
+SUBMODULE = $(LINK2 mir_ndslice_$1.html, mir.ndslice.$1)
+SUBREF = $(LINK2 mir_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
-module std.experimental.ndslice.iteration;
+module mir.ndslice.iteration;
 
 import std.traits;
 
-import std.experimental.ndslice.internal;
-import std.experimental.ndslice.slice; //: Slice;
+import mir.ndslice.internal;
+import mir.ndslice.slice; //: Slice;
 
 private enum _swappedCode = q{
     with (slice)
@@ -166,7 +166,7 @@ body
 /// Template
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota;
     assert(10000.iota
         .sliced(3, 4, 5, 6)
@@ -177,7 +177,7 @@ body
 /// Function
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota;
     assert(10000.iota
         .sliced(3, 4, 5, 6)
@@ -188,7 +188,7 @@ body
 /// 2D
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota;
     assert(10000.iota
         .sliced(3, 4)
@@ -278,7 +278,7 @@ body
 /// Template
 @safe pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota;
     auto slice = 10.iota.sliced(2, 3);
 
@@ -345,7 +345,7 @@ Slice!(N, Range) everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
 ///
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota;
     assert(1000.iota
         .sliced(3, 4, 5)
@@ -460,7 +460,7 @@ Slice!(2, Range) transposed(Range)(auto ref Slice!(2, Range) slice)
 /// Template
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota;
     assert(100000.iota
         .sliced(3, 4, 5, 6, 7)
@@ -471,7 +471,7 @@ Slice!(2, Range) transposed(Range)(auto ref Slice!(2, Range) slice)
 /// Function
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota;
     assert(100000.iota
         .sliced(3, 4, 5, 6, 7)
@@ -482,7 +482,7 @@ Slice!(2, Range) transposed(Range)(auto ref Slice!(2, Range) slice)
 /// Single-argument function
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota;
     assert(100000.iota
         .sliced(3, 4, 5, 6, 7)
@@ -493,7 +493,7 @@ Slice!(2, Range) transposed(Range)(auto ref Slice!(2, Range) slice)
 /// `2`-dimensional transpose
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota;
     assert(100.iota
         .sliced(3, 4)
@@ -529,7 +529,7 @@ Slice!(N, Range) allReversed(size_t N, Range)(Slice!(N, Range) slice)
 ///
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5).allReversed;
     auto b = 20.iota.retro.sliced(4, 5);
@@ -590,7 +590,7 @@ body
 ///
 pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     auto slice = [1, 2, 3, 4].sliced(2, 2);
     assert(slice                    == [[1, 2], [3, 4]]);
 
@@ -613,8 +613,8 @@ pure nothrow unittest
 
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
-    import std.experimental.ndslice.selection;
+    import mir.ndslice.slice;
+    import mir.ndslice.selection;
     import std.algorithm.comparison: equal;
     import std.range: iota, retro, chain;
     auto i0 = iota(0,  4); auto r0 = i0.retro;
@@ -692,7 +692,7 @@ body
 ///
 pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     auto slice
          = [0,1,2,3,    4,5,6,7,   8,9,10,11].sliced(3, 4);
 
@@ -730,8 +730,8 @@ pure nothrow unittest
 
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
-    import std.experimental.ndslice.selection;
+    import mir.ndslice.slice;
+    import mir.ndslice.selection;
     import std.algorithm.comparison: equal;
     import std.range: iota, stride, chain;
     auto i0 = iota(0,  4); auto s0 = i0.stride(3);
@@ -777,7 +777,7 @@ Slice!(N, Range) allDropBackOne(size_t N, Range)(Slice!(N, Range) slice)
 ///
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
@@ -822,7 +822,7 @@ Slice!(N, Range) allDropBackExactly(size_t N, Range)(Slice!(N, Range) slice, siz
 ///
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
@@ -864,7 +864,7 @@ Slice!(N, Range) allDropBack(size_t N, Range)(Slice!(N, Range) slice, size_t n)
 ///
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
@@ -972,7 +972,7 @@ body
 ///
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
@@ -997,7 +997,7 @@ body
 
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
@@ -1082,7 +1082,7 @@ body
 ///
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
@@ -1172,7 +1172,7 @@ body
 ///
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota, retro;
     auto a = 20.iota.sliced(4, 5);
 
@@ -1213,7 +1213,7 @@ body
 ///
 @safe @nogc pure nothrow unittest
 {
-    import std.experimental.ndslice.slice;
+    import mir.ndslice.slice;
     import std.range: iota, retro;
     assert(1000.iota
         .sliced(5, 3, 6, 7)

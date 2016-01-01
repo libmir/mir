@@ -1,4 +1,4 @@
-module std.experimental.ndslice.internal;
+module mir.ndslice.internal;
 
 import std.traits;
 import std.meta; //: AliasSeq, anySatisfy, Filter, Reverse;
@@ -94,7 +94,7 @@ template SliceFromSeq(Range, Seq...)
         alias SliceFromSeq = Range;
     else
     {
-        import std.experimental.ndslice.slice: Slice;
+        import mir.ndslice.slice: Slice;
         alias SliceFromSeq = SliceFromSeq!(Slice!(Seq[$ - 1], Range), Seq[0 .. $ - 1]);
     }
 }

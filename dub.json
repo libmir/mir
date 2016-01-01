@@ -1,6 +1,6 @@
 {
-	"name": "dip80-ndslice",
-	"description": "This module provides basic utilities for creating n-dimensional random access ranges.",
+	"name": "mir",
+	"description": "Numeric library for Dlang",
 	"copyright": "Copyright © 2015, Ilya Yaroshenko",
 	"authors": ["Ilya Yaroshenko"],
 	"license": "BSL-1.0",
