@@ -16,10 +16,6 @@ STD = $(TD $(SMALL $0))
 */
 module mir.ndslice.slice;
 
-pragma(msg, "Warning: '9il/dip80-ndslice' was moved to 'DlangScience/mir'.\n"
-    ~ "\tPlease update your dub configuration file\n"
-    ~ "\tand import 'mir.ndslice' instead of 'mir.ndslice'.");
-
 import std.traits;
 import std.meta;
 import std.typecons; //: Flag;
