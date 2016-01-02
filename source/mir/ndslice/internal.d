@@ -101,7 +101,7 @@ template SliceFromSeq(Range, Seq...)
 
 template DynamicArrayDimensionsCount(T)
 {
-    static if(isDynamicArray!T)
+    static if (isDynamicArray!T)
         enum size_t DynamicArrayDimensionsCount = 1 + DynamicArrayDimensionsCount!(typeof(T.init[0]));
     else
         enum size_t DynamicArrayDimensionsCount = 0;
