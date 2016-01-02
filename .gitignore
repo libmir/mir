@@ -7,3 +7,5 @@ __test__library__
 dub.selections.json
 docs.json
 
+
+__test__d_source_library__
