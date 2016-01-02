@@ -4,4 +4,10 @@
 	"copyright": "Copyright © 2015, Ilya Yaroshenko",
 	"authors": ["Ilya Yaroshenko"],
 	"license": "BSL-1.0",
+	"configurations": [
+		{
+			"name": "d_source_library",
+			"targetType": "sourceLibrary",
+		},
+	]
 }
