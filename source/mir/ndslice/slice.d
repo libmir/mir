@@ -2386,6 +2386,7 @@ private auto ptrShell(Range)(Range range, sizediff_t shift = 0)
     return PtrShell!Range(shift, range);
 }
 
+version(none)
 @safe pure nothrow @nogc unittest
 {
     import std.internal.test.dummyrange;
@@ -2404,6 +2405,7 @@ private auto ptrShell(Range)(Range range, sizediff_t shift = 0)
     }
 }
 
+version(none)
 pure nothrow @nogc unittest
 {
     import std.internal.test.dummyrange;
