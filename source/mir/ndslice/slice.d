@@ -2571,7 +2571,7 @@ private void _indexAssign(bool lastStrideEquals1, string op, size_t N, size_t RN
     }
 }
 
-void _indexAssign(bool lastStrideEquals1, string op, size_t N, Range, T)(Slice!(N, Range) slice, T[] value)
+private void _indexAssign(bool lastStrideEquals1, string op, size_t N, Range, T)(Slice!(N, Range) slice, T[] value)
     if (DynamicArrayDimensionsCount!(T[]) <= N)
 {
     assert(slice.length == value.length, __FUNCTION__ ~ ": argument must have the same length.");
@@ -2620,7 +2620,7 @@ void _indexAssign(bool lastStrideEquals1, string op, size_t N, Range, T)(Slice!(
     }
 }
 
-void _indexAssign(bool lastStrideEquals1, string op, size_t N, Range, T)(Slice!(N, Range) slice, T value)
+private void _indexAssign(bool lastStrideEquals1, string op, size_t N, Range, T)(Slice!(N, Range) slice, T value)
     if ((!isDynamicArray!T || isDynamicArray!(Slice!(N, Range).DeepElemType))
                 && !is(T : Slice!(RN, RRange), size_t RN, RRange))
 {
