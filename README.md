@@ -8,4 +8,4 @@ Mir
 Numeric library and mirror for upcoming numeric packages for the Dlang standard library.
 
 ## Packages
- - `ndslice` [Multidimensional Random Access Arrays and Ranges](http://dtest.thecybershadow.net/artifact/website-8566711a7833f9dcdf044cac5c48bfe666251245-1b1f44a3f35545b790eac434df7d7835/web/phobos-prerelease/std_experimental_ndslice.html)
+ - `ndslice` [Multidimensional Random Access Arrays and Ranges](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
