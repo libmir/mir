@@ -2387,12 +2387,13 @@ private auto ptrShell(Range)(Range range, sizediff_t shift = 0)
 }
 
 version(none)
-@safe pure nothrow @nogc unittest
+@safe pure nothrow unittest
 {
     import std.internal.test.dummyrange;
     foreach (RB; AliasSeq!(ReturnBy.Reference, ReturnBy.Value))
     {
         DummyRange!(RB, Length.Yes, RangeType.Random) range;
+        range.reinit;
         assert(range.length >= 10);
         auto ptr = range.ptrShell;
         assert(ptr[0] == range[0]);
@@ -2406,12 +2407,13 @@ version(none)
 }
 
 version(none)
-pure nothrow @nogc unittest
+pure nothrow unittest
 {
     import std.internal.test.dummyrange;
     foreach (RB; AliasSeq!(ReturnBy.Reference, ReturnBy.Value))
     {
         DummyRange!(RB, Length.Yes, RangeType.Random) range;
+        range.reinit;
         assert(range.length >= 10);
         auto slice = range.sliced(10);
         assert(slice[0] == range[0]);
