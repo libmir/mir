@@ -12,4 +12,4 @@ Numeric library and mirror for upcoming numeric packages for the Dlang standard 
 - Mir is going to be a testing package for the future Dlang BLAS implementation.
 
 ## Packages
- - `ndslice` [Multidimensional Random Access Arrays and Ranges](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
+ - `ndslice` [Multidimensional Random Access Ranges and Arrays](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
