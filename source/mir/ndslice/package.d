@@ -44,10 +44,10 @@
 /**
 $(H1 Multidimensional Random Access Ranges)
 
-The package provides a multidimensional array implementation, 
+The package provides a multidimensional array implementation,
 It would be well suited to creating machine learning and image
 processing algorithms, but should also be general enough for use anywhere with
-homogeneously-typed multidimensional data. 
+homogeneously-typed multidimensional data.
 In addition, it includes various functions for iteration, accessing, and manipulation.
 
 Quick_Start:
@@ -370,7 +370,7 @@ unittest
 {
     import std.algorithm.comparison: equal;
     import std.range: iota;
-    immutable r = 1_000_000.iota;
+    immutable r = 1000.iota;
 
     auto t0 = r.sliced(1000);
     assert(t0.front == 0);
@@ -400,7 +400,7 @@ pure nothrow unittest
     import std.algorithm.comparison: equal;
     import std.array: array;
     import std.range: iota;
-    auto r = 1_000.iota.array;
+    auto r = 1000.iota.array;
 
     auto t0 = r.sliced(1000);
     assert(t0.length == 1000);
@@ -526,7 +526,7 @@ pure nothrow unittest
 
 pure nothrow unittest
 {
-    auto tensor = new int[100].sliced(3, 4, 8);
+    auto tensor = new int[3 * 4 * 8].sliced(3, 4, 8);
     assert(&(tensor.back.back.back()) is &tensor[2, 3, 7]);
     assert(&(tensor.front.front.front()) is &tensor[0, 0, 0]);
 }
