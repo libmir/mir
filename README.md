@@ -7,5 +7,9 @@ Mir
 ======
 Numeric library and mirror for upcoming numeric packages for the Dlang standard library.
 
+- `mir.ndslice` is a development version of the `std.experimental.ndslice` package.
+- Mir can be used with DMD (reference D compiler) front end >= `2.068`. So ndslice can be used with LDC (LLVM D Compiler) `0.17.0-alpha`.
+- Mir is going to be a testing package for the future Dlang BLAS implementation.
+
 ## Packages
- - `ndslice` [Multidimensional Random Access Arrays and Ranges](http://dtest.thecybershadow.net/artifact/website-8566711a7833f9dcdf044cac5c48bfe666251245-1b1f44a3f35545b790eac434df7d7835/web/phobos-prerelease/std_experimental_ndslice.html)
+ - `ndslice` [Multidimensional Random Access Ranges and Arrays](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
