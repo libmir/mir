@@ -27,7 +27,9 @@ Creates an n-dimensional slice-shell over a `range`.
 Params:
     range = a random access range or an array; only index operator
         `auto opIndex(size_t index)` is required for ranges. The length of the
-        range must be greater than or equal to the sum of shift and the product of
+        range should be equal to the sum of shift and the product of
+        lengths. If `allowDownsize`, the length of the
+        range should be greater than or equal to the sum of shift and the product of
         lengths.
     lengths = list of lengths for each dimension
     shift = index of the first element of a `range`.
@@ -38,15 +40,21 @@ Params:
 Returns:
     n-dimensional slice
 +/
-auto sliced(ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes, Range, Lengths...)(Range range, Lengths lengths)
+auto sliced(
+    ReplaceArrayWithPointer replaceArrayWithPointer = ReplaceArrayWithPointer.yes,
+    AllowDownsize allowDownsize = AllowDownsize.no,
+    Range, Lengths...)(Range range, Lengths lengths)
     if (!isStaticArray!Range && !isNarrowString!Range
         && allSatisfy!(isIndex, Lengths) && Lengths.length)
 {
-    return .sliced!(mod, Lengths.length, Range)(range, [lengths]);
+    return .sliced!(replaceArrayWithPointer, allowDownsize, Lengths.length, Range)(range, [lengths]);
 }
 
 ///ditto
-auto sliced(ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes, size_t N, Range)(Range range, auto ref in size_t[N] lengths, size_t shift = 0)
+auto sliced(
+    ReplaceArrayWithPointer replaceArrayWithPointer = ReplaceArrayWithPointer.yes,
+    AllowDownsize allowDownsize = AllowDownsize.no,
+    size_t N, Range)(Range range, auto ref in size_t[N] lengths, size_t shift = 0)
     if (!isStaticArray!Range && !isNarrowString!Range && N)
 in
 {
@@ -56,13 +64,24 @@ in
             "All lengths must be positive."
             ~ tailErrorMessage!());
     static if (hasLength!Range)
-        assert(lengthsProduct!N(lengths) + shift <= range.length,
-            "Range length must be greater than or equal to the sum of shift and the product of lengths."
-            ~ tailErrorMessage!());
+    {
+        static if (allowDownsize)
+        {
+            assert(lengthsProduct!N(lengths) + shift <= range.length,
+                "Range length must be greater than or equal to the sum of shift and the product of lengths."
+                ~ tailErrorMessage!());
+        }
+        else
+        {
+            assert(lengthsProduct!N(lengths) + shift == range.length,
+                "Range length must be equal to the sum of shift and the product of lengths."
+                ~ tailErrorMessage!());
+        }
+    }
 }
 body
 {
-    static if (isDynamicArray!Range && mod)
+    static if (isDynamicArray!Range && replaceArrayWithPointer)
     {
         Slice!(N, typeof(range.ptr)) ret = void;
         ret._ptr = range.ptr + shift;
@@ -123,18 +142,21 @@ template sliced(Names...)
     mixin (
     "
     auto sliced(
-            ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes,
+            ReplaceArrayWithPointer replaceArrayWithPointer = ReplaceArrayWithPointer.yes,
+            AllowDownsize allowDownsize = AllowDownsize.no,
             " ~ _Range_Types!Names ~ "
             Lengths...)
             (" ~ _Range_DeclarationList!Names ~
             "Lengths lengths)
     if (allSatisfy!(isIndex, Lengths))
     {
-        return .sliced!Names(" ~ _Range_Values!Names ~ "[lengths]);
+        alias sliced = .sliced!Names;
+        return sliced!(replaceArrayWithPointer, allowDownsize)(" ~ _Range_Values!Names ~ "[lengths]);
     }
 
     auto sliced(
-            ReplaceArrayWithPointer mod = ReplaceArrayWithPointer.yes,
+            ReplaceArrayWithPointer replaceArrayWithPointer = ReplaceArrayWithPointer.yes,
+            AllowDownsize allowDownsize = AllowDownsize.no,
             size_t N, " ~ _Range_Types!Names ~ ")
             (" ~ _Range_DeclarationList!Names ~"
             auto ref in size_t[N] lengths,
@@ -162,16 +184,28 @@ template sliced(Names...)
                 static assert(!isNarrowString!R);
                 mixin (`alias r = range_` ~ name ~`;`);
                 static if (hasLength!R)
-                    assert(minLength <= r.length,
-                        `length of range '` ~ name ~`' must be greater than or equal `
-                        ~ `to the sum of shift and the product of lengths.`
-                        ~ tailErrorMessage!());
-                static if (isDynamicArray!T && mod)
+                {
+                    static if (allowDownsize)
+                    {
+                        assert(minLength <= r.length,
+                            `length of range '` ~ name ~`' must be greater than or equal `
+                            ~ `to the sum of shift and the product of lengths.`
+                            ~ tailErrorMessage!());
+                    }
+                    else
+                    {
+                        assert(minLength == r.length,
+                            `length of range '` ~ name ~`' must be equal `
+                            ~ `to the sum of shift and the product of lengths.`
+                            ~ tailErrorMessage!());
+                    }
+                }
+                static if (isDynamicArray!T && replaceArrayWithPointer)
                     range.ptrs[i] = r.ptr;
                 else
                     range.ptrs[i] = T(0, r);
             }
-            return .sliced!(mod, N, SPT)(range, lengths, shift);
+            return .sliced!(replaceArrayWithPointer, allowDownsize, N, SPT)(range, lengths, shift);
         }
     ~ "}");
 }
@@ -179,7 +213,7 @@ template sliced(Names...)
 /// Creates a slice from an array.
 pure nothrow unittest
 {
-    auto slice = new int [1000].sliced(5, 6, 7);
+    auto slice = new int [5 * 6 * 7].sliced(5, 6, 7);
     assert(slice.length == 5);
     assert(slice.elementsCount == 5 * 6 * 7);
     static assert(is(typeof(slice) == Slice!(3, int*)));
@@ -189,7 +223,7 @@ pure nothrow unittest
 @safe @nogc pure nothrow unittest
 {
     import std.range: iota;
-    auto slice = 1000.iota.sliced([5, 6, 7], 9);
+    auto slice = (5 * 6 * 7 + 9).iota.sliced([5, 6, 7], 9);
     assert(slice.length == 5);
     assert(slice.elementsCount == 5 * 6 * 7);
     assert(slice[0, 0, 0] == 9);
@@ -198,8 +232,7 @@ pure nothrow unittest
 /// $(LINK2 https://en.wikipedia.org/wiki/Vandermonde_matrix, Vandermonde matrix)
 pure nothrow unittest
 {
-    pure nothrow
-    Slice!(2, double*) vandermondeMatrix(Slice!(1, double*) x)
+    auto vandermondeMatrix(Slice!(1, double*) x)
     {
         auto ret = new double[x.length ^^ 2]
             .sliced(x.length, x.length);
@@ -292,7 +325,7 @@ pure nothrow unittest
     }
 
     import std.range: iota;
-    auto ar = ndarray(100.iota.sliced(3, 4));
+    auto ar = ndarray(12.iota.sliced(3, 4));
     static assert(is(typeof(ar) == int[][]));
     assert(ar == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
 }
@@ -385,6 +418,17 @@ pure nothrow @nogc unittest
     static assert(isRandomAccessRange!S);
 }
 
+///
+pure nothrow @nogc unittest
+{
+    static immutable a = [1, 2, 3, 4, 5, 6];
+    static immutable b = [1.0, 2, 3, 4, 5, 6];
+    alias namedSliced = sliced!("a", "b");
+    auto slice = namedSliced!(ReplaceArrayWithPointer.no, AllowDownsize.yes)
+        (a, b, 2, 3);
+    assert(slice[1, 2].a == slice[1, 2].b);
+}
+
 // sliced slice
 pure nothrow unittest
 {
@@ -392,28 +436,28 @@ pure nothrow unittest
     auto data = new int[24];
     foreach (int i,ref e; data)
         e = i;
-    auto a =    data.sliced(10).sliced(2, 3);
-    auto b = 24.iota.sliced(10).sliced(2, 3);
+    auto a = data[0..10].sliced(10)[0..6].sliced(2, 3);
+    auto b = 10.iota.sliced(10)[0..6].sliced(2, 3);
     assert(a == b);
     a[] += b;
     foreach (int i, e; data[0..6])
         assert(e == 2*i);
     foreach (int i, e; data[6..$])
         assert(e == i+6);
-    auto c  =    data.sliced(12, 2).sliced(2, 3);
-    auto d  = 24.iota.sliced(12, 2).sliced(2, 3);
-    auto cc =    data.sliced(2, 3, 2);
-    auto dc = 24.iota.sliced(2, 3, 2);
+    auto c  = data.sliced(12, 2)[0..6].sliced(2, 3);
+    auto d  = 24.iota.sliced(12, 2)[0..6].sliced(2, 3);
+    auto cc = data[0..12].sliced(2, 3, 2);
+    auto dc = 12.iota.sliced(2, 3, 2);
     assert(c._lengths == cc._lengths);
     assert(c._strides == cc._strides);
     assert(d._lengths == dc._lengths);
     assert(d._strides == dc._strides);
     assert(cc == c);
     assert(dc == d);
-    auto e  =    data.sliced(8, 3).sliced(5);
-    auto f  = 24.iota.sliced(8, 3).sliced(5);
-    assert(e ==    data.sliced(5, 3));
-    assert(f == 24.iota.sliced(5, 3));
+    auto e  =    data.sliced(8, 3)[0..5].sliced(5);
+    auto f  = 24.iota.sliced(8, 3)[0..5].sliced(5);
+    assert(e ==    data[0..15].sliced(5, 3));
+    assert(f == 15.iota.sliced(5, 3));
 }
 
 private template _Range_Types(Names...)
@@ -528,7 +572,7 @@ Use `no` for compile time function evaluation.
 alias ReplaceArrayWithPointer = Flag!"replaceArrayWithPointer";
 
 ///
-@safe pure nothrow unittest
+@safe @nogc pure nothrow unittest
 {
     import std.algorithm.iteration: map, sum, reduce;
     import std.algorithm.comparison: max;
@@ -544,6 +588,13 @@ alias ReplaceArrayWithPointer = Flag!"replaceArrayWithPointer";
     static assert(maxAvg(matrix) == 3);
 }
 
+/++
+If `yes`, range length can be greater than sum of shift and the product of lengths.
+
+See_also:
+    $(LREF sliced)
++/
+alias AllowDownsize = Flag!"allowDownsize";
 
 /++
 Returns the element type of the `Slice` type.
@@ -850,7 +901,10 @@ struct Slice(size_t _N, _Range)
             size_t stride;
             foreach (i; Iota!(0, N)) //static
             {
-                assert(_indexes[0][i] < _lengths[i], "indexStride: index must be less than lengths");
+                assert(_indexes[0][i] < _lengths[i],
+                    "indexStride: index at position "
+                    ~ i.stringof ~ " (from range [0 .." ~ N.stringof ~ ")) "
+                    ~ " must be less than corresponding length");
                 stride += _strides[i] * _indexes[0][i];
             }
             return stride;
@@ -860,7 +914,10 @@ struct Slice(size_t _N, _Range)
             size_t stride;
             foreach (i, index; _indexes) //static
             {
-                assert(index < _lengths[i], "indexStride: index must be less than lengths");
+                assert(index < _lengths[i],
+                    "indexStride: index at position "
+                    ~ i.stringof ~ " (from range [0 .." ~ N.stringof ~ ")) "
+                    ~ " must be less than corresponding length");
                 stride += _strides[i] * index;
             }
             return stride;
@@ -907,7 +964,7 @@ struct Slice(size_t _N, _Range)
     @safe @nogc pure nothrow unittest
     {
         import std.range: iota;
-        assert(100.iota
+        assert(60.iota
             .sliced(3, 4, 5)
             .shape == cast(size_t[3])[3, 4, 5]);
     }
@@ -918,7 +975,7 @@ struct Slice(size_t _N, _Range)
     {
         import mir.ndslice.selection: pack;
         import std.range: iota;
-        assert(10000.iota
+        assert((3 * 4 * 5 * 6 * 7).iota
             .sliced(3, 4, 5, 6, 7)
             .pack!2
             .shape == cast(size_t[3])[3, 4, 5]);
@@ -939,7 +996,7 @@ struct Slice(size_t _N, _Range)
     @safe @nogc pure nothrow unittest
     {
         import std.range: iota;
-        assert(100.iota
+        assert(60.iota
             .sliced(3, 4, 5)
             .structure == Structure!3([3, 4, 5], [20, 5, 1]));
     }
@@ -951,7 +1008,7 @@ struct Slice(size_t _N, _Range)
         import mir.ndslice.selection: pack;
         import mir.ndslice.iteration: reversed, strided, transposed;
         import std.range: iota;
-        assert(1000.iota
+        assert(600.iota
             .sliced(3, 4, 50)
             .reversed!2      //makes stride negative
             .strided!2(6)    //multiplies stride by 6 and changes corresponding length
@@ -965,7 +1022,7 @@ struct Slice(size_t _N, _Range)
     {
         import mir.ndslice.selection: pack;
         import std.range: iota;
-        assert(10000.iota
+        assert((3 * 4 * 5 * 6 * 7).iota
             .sliced(3, 4, 5, 6, 7)
             .pack!2
             .structure == Structure!3([3, 4, 5], [20 * 42, 5 * 42, 1 * 42]));
@@ -989,7 +1046,7 @@ struct Slice(size_t _N, _Range)
     @safe @nogc pure nothrow unittest
     {
         import std.range: iota;
-        auto slice = 100.iota.sliced(2, 3).save;
+        auto slice = 6.iota.sliced(2, 3).save;
     }
 
     static if (doUnittest)
@@ -1018,7 +1075,7 @@ struct Slice(size_t _N, _Range)
     @safe @nogc pure nothrow unittest
     {
         import std.range: iota;
-        auto slice = 100.iota.sliced(3, 4, 5);
+        auto slice = 60.iota.sliced(3, 4, 5);
         assert(slice.length   == 3);
         assert(slice.length!0 == 3);
         assert(slice.length!1 == 4);
@@ -1043,7 +1100,7 @@ struct Slice(size_t _N, _Range)
     @safe @nogc pure nothrow unittest
     {
         import std.range: iota;
-        auto slice = 100.iota.sliced(3, 4, 5);
+        auto slice = 60.iota.sliced(3, 4, 5);
         assert(slice.stride   == 20);
         assert(slice.stride!0 == 20);
         assert(slice.stride!1 == 5);
@@ -1056,7 +1113,7 @@ struct Slice(size_t _N, _Range)
     {
         import mir.ndslice.iteration: reversed, strided, swapped;
         import std.range: iota;
-        assert(1000.iota
+        assert(600.iota
             .sliced(3, 4, 50)
             .reversed!2      //makes stride negative
             .strided!2(6)    //multiplies stride by 6 and changes the corresponding length
@@ -1225,7 +1282,7 @@ struct Slice(size_t _N, _Range)
     {
         import std.range: iota;
         import std.range.primitives;
-        auto slice = 10000.iota.sliced(10, 20, 30);
+        auto slice = 6000.iota.sliced(10, 20, 30);
 
         static assert(isRandomAccessRange!(typeof(slice)));
         static assert(hasSlicing!(typeof(slice)));
@@ -1317,7 +1374,7 @@ struct Slice(size_t _N, _Range)
     @safe @nogc pure nothrow unittest
     {
         import std.range: iota;
-        assert(100.iota.sliced(3, 4, 5).elementsCount == 60);
+        assert(60.iota.sliced(3, 4, 5).elementsCount == 60);
     }
 
 
@@ -1327,7 +1384,8 @@ struct Slice(size_t _N, _Range)
     {
         import mir.ndslice.selection: pack, evertPack;
         import std.range: iota;
-        auto slice = 50000.iota.sliced(3, 4, 5, 6, 7, 8);
+        auto slice = (3 * 4 * 5 * 6 * 7 * 8).iota
+            .sliced(3, 4, 5, 6, 7, 8);
         auto p = slice.pack!2;
         assert(p.elementsCount == 360);
         assert(p[0, 0, 0, 0].elementsCount == 56);
@@ -2116,7 +2174,7 @@ unittest
 @safe @nogc pure nothrow unittest
 {
     import std.range: iota;
-    auto a = 1000000.iota.sliced(10, 20, 30, 40);
+    auto a = 240000.iota.sliced(10, 20, 30, 40);
     auto b = a[0..$, 10, 4 .. 27, 4];
     auto c = b[2 .. 9, 5 .. 10];
     auto d = b[3..$, $-2];
@@ -2132,7 +2190,7 @@ pure nothrow unittest
     import std.array: array;
     auto fun(ref int x) { x *= 3; }
 
-    auto tensor = 1000
+    auto tensor = 720
         .iota
         .array
         .sliced(8, 9, 10);
@@ -2155,7 +2213,7 @@ pure nothrow unittest
     import std.bigint;
     import std.range: iota;
 
-    auto matrix = 100
+    auto matrix = 72
         .iota
         .map!(i => BigInt(i))
         .array
@@ -2177,7 +2235,7 @@ pure nothrow unittest
     import std.array: array;
     import std.range: iota;
 
-    auto matrix = 100
+    auto matrix = 72
         .iota
         .array
         .sliced(8, 9);
@@ -2186,7 +2244,7 @@ pure nothrow unittest
     matrix[] += matrix;
     assert(matrix[2, 3] == (2 * 9 + 3) * 2);
 
-    auto vec = iota(100, 200).sliced(9);
+    auto vec = iota(100, 109).sliced(9);
     matrix[] = vec;
     foreach (v; matrix)
         assert(v == vec);
@@ -2211,9 +2269,9 @@ unittest
 
     // Implicit conversion of a range to its unqualified type.
     import std.range: iota;
-    auto      i0 = 100.iota;
-    const     i1 = 100.iota;
-    immutable i2 = 100.iota;
+    auto      i0 = 60.iota;
+    const     i1 = 60.iota;
+    immutable i2 = 60.iota;
     alias S = Slice!(3, typeof(iota(0)));
     foreach (i; AliasSeq!(i0, i1, i2))
         static assert(is(typeof(i.sliced(3, 4, 5)) == S));
