@@ -1063,7 +1063,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 {
                     return _slice._ptr[getShift(index)];
                 }
-                else with(_slice)
+                else with (_slice)
                 {
                     alias M = DeepElemType.PureN;
                     return DeepElemType(_lengths[$ - M .. $], _strides[$ - M .. $], _ptr);
@@ -1081,7 +1081,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 {
                     static assert(0,
                         "ByElement.opIndexAssign is not implemented for packed slices."
-                        ~ "Use additional slice `elemsOfSlice[index][] = value`"
+                        ~ "Use additional empty slicing `elemsOfSlice[index][] = value`"
                         ~ tailErrorMessage());
                 }
             }
