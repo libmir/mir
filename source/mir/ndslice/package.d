@@ -57,6 +57,12 @@ Multidimensional view is presented by $(SUBREF slice, Slice) type.
 ------
 auto matrix = new double[12].sliced(3, 4);
 matrix[] = 0;
+matrix.diagonal[] = 1;
+
+auto raw = matrix[2];
+raw[3] = 6;
+assert(matrix[2, 3] == 6); // D & C index order
+assert(matrix(3, 2) == 6); // Math & Fortran index order
 ------
 
 Note:
@@ -304,6 +310,18 @@ module mir.ndslice;
 public import mir.ndslice.slice;
 public import mir.ndslice.iteration;
 public import mir.ndslice.selection;
+
+unittest
+{
+    auto matrix = new double[12].sliced(3, 4);
+    matrix[] = 0;
+    matrix.diagonal[] = 1;
+
+    auto raw = matrix[2];
+    raw[3] = 6;
+    assert(matrix[2, 3] == 6); // D & C index order
+    assert(matrix(3, 2) == 6); // Math & Fortran index order
+}
 
 // relaxed example
 unittest
