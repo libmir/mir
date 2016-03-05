@@ -13,3 +13,7 @@ Numeric library and mirror for upcoming numeric packages for the Dlang standard 
 
 ## Packages
  - `ndslice` [Multidimensional Random Access Ranges and Arrays](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
+
+## Comparison with NumPy
+
+You can browse an comparison of what methods of NumPy are already covered by `mir` in the [wiki](https://github.com/DlangScience/mir/wiki/NumPy).
