@@ -9,7 +9,7 @@ Numeric library and mirror for upcoming numeric packages for the Dlang standard 
 
 ## Packages
  - `mir.ndslice` [Multidimensional Random Access Ranges and Arrays](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
- - `mir.las.sum` Funcions and Output Ranges for Summation Algorithms. Works with user-defined types.
+ - `mir.las.sum` Functions and Output Ranges for Summation Algorithms. Works with user-defined types.
   - Precise algorithm: improved analog of Python's `fsum`
   - Pairwise algorithm: fast version for Input Ranges
   - Kahan, KBN, and KB2 algorithms
