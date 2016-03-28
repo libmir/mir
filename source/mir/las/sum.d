@@ -176,7 +176,6 @@ nothrow @nogc unittest
     assert(N+N == e.sum()); //finite number
 }
 
-
 /// Moving mean 
 unittest
 {
@@ -218,6 +217,29 @@ unittest
     /// move by 10 elements
     put(ma, iota(1000.0, 1010.0));
     assert(ma.avg == (1010*1009/2 - 10*9/2) / 1000.0);
+}
+
+version(X86)
+    version = X86_Any;
+version(X86_64)
+    version = X86_Any;
+
+/// SIMD Vectors
+version(none)
+version(X86_Any)
+unittest
+{
+    import std.meta: AliasSeq;
+    import core.simd;
+    double2 a = 1, b = 2, c = 3, d = 6;
+    with(Summation)
+    {
+        foreach(algo; AliasSeq!(pairwise))
+        {
+            //assert([a, b, c].sum!algo.array == d.array);
+            assert([a, b].sum!algo(c).array == d.array);
+        }
+    }
 }
 
 import std.traits;
@@ -954,6 +976,7 @@ public:
     value semantics across iterations (i.e. handling -inf + inf).
     Preconditions: $(D isFinite(x)).
     +/
+    version(none)
     static if (summation == Summation.precise)
     package void unsafePut(F x)
     in {
