@@ -854,75 +854,299 @@ public:
             static if(fastPairwise && isRandomAccessRange!Range && hasLength!Range)
             {
                 import core.bitop: bsf;
-                immutable size_t length = r.length;
-                immutable size_t lengthM = length >> _pow2 << _pow2;
-                size_t i;
-                F[0x10] v = void;
+                version(DMD)
+                    enum SIMDOptimization = false;
+                else
+                    enum SIMDOptimization = is(Unqual!Range : F[]) && (is(F == double) || is(F == float));
+                static if(SIMDOptimization)
+                    F[0x20] v = void;
+                else
+                    F[0x10] v = void;
 
-                for(; i < lengthM; i += 16)
+                static if (hasSlicing!Range)
                 {
-                    v[0x0] = cast(F) r[i + 0x0];
-                    v[0x1] = cast(F) r[i + 0x1];
-                    v[0x2] = cast(F) r[i + 0x2];
-                    v[0x3] = cast(F) r[i + 0x3];
-                    v[0x4] = cast(F) r[i + 0x4];
-                    v[0x5] = cast(F) r[i + 0x5];
-                    v[0x6] = cast(F) r[i + 0x6];
-                    v[0x7] = cast(F) r[i + 0x7];
-                    v[0x8] = cast(F) r[i + 0x8];
-                    v[0x9] = cast(F) r[i + 0x9];
-                    v[0xA] = cast(F) r[i + 0xA];
-                    v[0xB] = cast(F) r[i + 0xB];
-                    v[0xC] = cast(F) r[i + 0xC];
-                    v[0xD] = cast(F) r[i + 0xD];
-                    v[0xE] = cast(F) r[i + 0xE];
-                    v[0xF] = cast(F) r[i + 0xF];
-                    
-                    v[0x0] += v[0x8];
-                    v[0x1] += v[0x9];
-                    v[0x2] += v[0xA];
-                    v[0x3] += v[0xB];
-                    v[0x4] += v[0xC];
-                    v[0x5] += v[0xD];
-                    v[0x6] += v[0xE];
-                    v[0x7] += v[0xF];
-                    
-                    v[0x0] += v[0x4];
-                    v[0x1] += v[0x5];
-                    v[0x2] += v[0x6];
-                    v[0x3] += v[0x7];
-                    
-                    v[0x0] += v[0x2];
-                    v[0x1] += v[0x3];
+                    static if (SIMDOptimization)
+                    while (r.length >= 0x20)
+                    {
+                        v[0x00] = cast(F) r[0x00];
+                        v[0x01] = cast(F) r[0x01];
+                        v[0x02] = cast(F) r[0x02];
+                        v[0x03] = cast(F) r[0x03];
+                        v[0x04] = cast(F) r[0x04];
+                        v[0x05] = cast(F) r[0x05];
+                        v[0x06] = cast(F) r[0x06];
+                        v[0x07] = cast(F) r[0x07];
+                        v[0x08] = cast(F) r[0x08];
+                        v[0x09] = cast(F) r[0x09];
+                        v[0x0A] = cast(F) r[0x0A];
+                        v[0x0B] = cast(F) r[0x0B];
+                        v[0x0C] = cast(F) r[0x0C];
+                        v[0x0D] = cast(F) r[0x0D];
+                        v[0x0E] = cast(F) r[0x0E];
+                        v[0x0F] = cast(F) r[0x0F];
+                        v[0x10] = cast(F) r[0x10];
+                        v[0x11] = cast(F) r[0x11];
+                        v[0x12] = cast(F) r[0x12];
+                        v[0x13] = cast(F) r[0x13];
+                        v[0x14] = cast(F) r[0x14];
+                        v[0x15] = cast(F) r[0x15];
+                        v[0x16] = cast(F) r[0x16];
+                        v[0x17] = cast(F) r[0x17];
+                        v[0x18] = cast(F) r[0x18];
+                        v[0x19] = cast(F) r[0x19];
+                        v[0x1A] = cast(F) r[0x1A];
+                        v[0x1B] = cast(F) r[0x1B];
+                        v[0x1C] = cast(F) r[0x1C];
+                        v[0x1D] = cast(F) r[0x1D];
+                        v[0x1E] = cast(F) r[0x1E];
+                        v[0x1F] = cast(F) r[0x1F];
 
-                    v[0x0] += v[0x1];
+                        v[0x0] += r[0x10];
+                        v[0x1] += r[0x11];
+                        v[0x2] += r[0x12];
+                        v[0x3] += r[0x13];
+                        v[0x4] += r[0x14];
+                        v[0x5] += r[0x15];
+                        v[0x6] += r[0x16];
+                        v[0x7] += r[0x17];
+                        v[0x8] += r[0x18];
+                        v[0x9] += r[0x19];
+                        v[0xA] += r[0x1A];
+                        v[0xB] += r[0x1B];
+                        v[0xC] += r[0x1C];
+                        v[0xD] += r[0x1D];
+                        v[0xE] += r[0x1E];
+                        v[0xF] += r[0x1F];
+                        
+                        v[0x0] += v[0x8];
+                        v[0x1] += v[0x9];
+                        v[0x2] += v[0xA];
+                        v[0x3] += v[0xB];
+                        v[0x4] += v[0xC];
+                        v[0x5] += v[0xD];
+                        v[0x6] += v[0xE];
+                        v[0x7] += v[0xF];
+                        
+                        v[0x0] += v[0x4];
+                        v[0x1] += v[0x5];
+                        v[0x2] += v[0x6];
+                        v[0x3] += v[0x7];
+                        
+                        v[0x0] += v[0x2];
+                        v[0x1] += v[0x3];
 
-                    put(v[0x0]);
-                }
-                if(size_t rem = length - i)
-                {
-                    foreach(size_t j; 0 .. rem)
-                        v[j] = r[i + j];
-                    while (rem > 8)
-                    {
-                        rem--;
-                        v[rem - 8] += v[rem];
-                    }
-                    while (rem > 4)
-                    {
-                        rem--;
-                        v[rem - 4] += v[rem];
-                    }
-                    while (rem > 2)
-                    {
-                        rem--;
-                        v[rem - 2] += v[rem];
-                    }
-                    if (rem == 2)
-                    {
                         v[0x0] += v[0x1];
+
+                        r.popFrontExactly(0x20);
+
+                        put(v[0x0]);
+                    }                    
+                    L: if (r.length >= 0x10)
+                    {
+                        v[0x0] = cast(F) r[0x0];
+                        v[0x1] = cast(F) r[0x1];
+                        v[0x2] = cast(F) r[0x2];
+                        v[0x3] = cast(F) r[0x3];
+                        v[0x4] = cast(F) r[0x4];
+                        v[0x5] = cast(F) r[0x5];
+                        v[0x6] = cast(F) r[0x6];
+                        v[0x7] = cast(F) r[0x7];
+                        v[0x8] = cast(F) r[0x8];
+                        v[0x9] = cast(F) r[0x9];
+                        v[0xA] = cast(F) r[0xA];
+                        v[0xB] = cast(F) r[0xB];
+                        v[0xC] = cast(F) r[0xC];
+                        v[0xD] = cast(F) r[0xD];
+                        v[0xE] = cast(F) r[0xE];
+                        v[0xF] = cast(F) r[0xF];
+                        
+                        v[0x0] += v[0x8];
+                        v[0x1] += v[0x9];
+                        v[0x2] += v[0xA];
+                        v[0x3] += v[0xB];
+                        v[0x4] += v[0xC];
+                        v[0x5] += v[0xD];
+                        v[0x6] += v[0xE];
+                        v[0x7] += v[0xF];
+                        
+                        v[0x0] += v[0x4];
+                        v[0x1] += v[0x5];
+                        v[0x2] += v[0x6];
+                        v[0x3] += v[0x7];
+                        
+                        v[0x0] += v[0x2];
+                        v[0x1] += v[0x3];
+
+                        v[0x0] += v[0x1];
+
+                        r.popFrontExactly(0x10);
+
+                        put(v[0x0]);
+
+                        static if(!SIMDOptimization)
+                            goto L;
                     }
-                    put(v[0x0]);
+                    if (r.length >= 8)
+                    {
+                        v[0x0] = cast(F) r[0x0];
+                        v[0x1] = cast(F) r[0x1];
+                        v[0x2] = cast(F) r[0x2];
+                        v[0x3] = cast(F) r[0x3];
+                        v[0x4] = cast(F) r[0x4];
+                        v[0x5] = cast(F) r[0x5];
+                        v[0x6] = cast(F) r[0x6];
+                        v[0x7] = cast(F) r[0x7];
+
+                        v[0x0] += v[0x4];
+                        v[0x1] += v[0x5];
+                        v[0x2] += v[0x6];
+                        v[0x3] += v[0x7];
+                        
+                        v[0x0] += v[0x2];
+                        v[0x1] += v[0x3];
+
+                        v[0x0] += v[0x1];
+
+                        r.popFrontExactly(8);
+
+                        put(v[0x0]);
+                    }
+                    if (r.length >= 4)
+                    {
+                        v[0x0] = cast(F) r[0x0];
+                        v[0x1] = cast(F) r[0x1];
+                        v[0x2] = cast(F) r[0x2];
+                        v[0x3] = cast(F) r[0x3];
+                        
+                        v[0x0] += v[0x2];
+                        v[0x1] += v[0x3];
+
+                        v[0x0] += v[0x1];
+
+                        r.popFrontExactly(4);
+
+                        put(v[0x0]);
+                    }
+                    if (r.length >= 2)
+                    {
+                        v[0x0] = cast(F) r[0x0];
+                        v[0x1] = cast(F) r[0x1];
+                        
+                        v[0x0] += v[0x1];
+
+                        r.popFrontExactly(2);
+
+                        put(v[0x0]);
+                    }
+                    if (r.length)
+                    {
+                        v[0x0] = cast(F) r[0x0];
+                        
+                        put(v[0x0]);
+                    }
+                }
+                else
+                {
+                    size_t i;
+                    immutable size_t length = r.length;
+                    while (length - i > 16)
+                    {
+                        v[0x0] = cast(F) r[i++];
+                        v[0x1] = cast(F) r[i++];
+                        v[0x2] = cast(F) r[i++];
+                        v[0x3] = cast(F) r[i++];
+                        v[0x4] = cast(F) r[i++];
+                        v[0x5] = cast(F) r[i++];
+                        v[0x6] = cast(F) r[i++];
+                        v[0x7] = cast(F) r[i++];
+                        v[0x8] = cast(F) r[i++];
+                        v[0x9] = cast(F) r[i++];
+                        v[0xA] = cast(F) r[i++];
+                        v[0xB] = cast(F) r[i++];
+                        v[0xC] = cast(F) r[i++];
+                        v[0xD] = cast(F) r[i++];
+                        v[0xE] = cast(F) r[i++];
+                        v[0xF] = cast(F) r[i++];
+                        
+                        v[0x0] += v[0x8];
+                        v[0x1] += v[0x9];
+                        v[0x2] += v[0xA];
+                        v[0x3] += v[0xB];
+                        v[0x4] += v[0xC];
+                        v[0x5] += v[0xD];
+                        v[0x6] += v[0xE];
+                        v[0x7] += v[0xF];
+                        
+                        v[0x0] += v[0x4];
+                        v[0x1] += v[0x5];
+                        v[0x2] += v[0x6];
+                        v[0x3] += v[0x7];
+                        
+                        v[0x0] += v[0x2];
+                        v[0x1] += v[0x3];
+
+                        v[0x0] += v[0x1];
+
+                        put(v[0x0]);
+                    }
+                    if (length - i >= 8)
+                    {
+                        v[0x0] = cast(F) r[i++];
+                        v[0x1] = cast(F) r[i++];
+                        v[0x2] = cast(F) r[i++];
+                        v[0x3] = cast(F) r[i++];
+                        v[0x4] = cast(F) r[i++];
+                        v[0x5] = cast(F) r[i++];
+                        v[0x6] = cast(F) r[i++];
+                        v[0x7] = cast(F) r[i++];
+
+                        v[0x0] += v[0x4];
+                        v[0x1] += v[0x5];
+                        v[0x2] += v[0x6];
+                        v[0x3] += v[0x7];
+                        
+                        v[0x0] += v[0x2];
+                        v[0x1] += v[0x3];
+
+                        v[0x0] += v[0x1];
+
+                        r.popFrontExactly(8);
+
+                        put(v[0x0]);
+                    }
+                    if (length - i >= 4)
+                    {
+                        v[0x0] = cast(F) r[i++];
+                        v[0x1] = cast(F) r[i++];
+                        v[0x2] = cast(F) r[i++];
+                        v[0x3] = cast(F) r[i++];
+                        
+                        v[0x0] += v[0x2];
+                        v[0x1] += v[0x3];
+
+                        v[0x0] += v[0x1];
+
+                        r.popFrontExactly(4);
+
+                        put(v[0x0]);
+                    }
+                    if (length - i >= 2)
+                    {
+                        v[0x0] = cast(F) r[i++];
+                        v[0x1] = cast(F) r[i++];
+                        
+                        v[0x0] += v[0x1];
+
+                        r.popFrontExactly(2);
+
+                        put(v[0x0]);
+                    }
+                    if (length - i)
+                    {
+                        v[0x0] = cast(F) r[i];
+                        
+                        put(v[0x0]);
+                    }
                 }
             }
             else
