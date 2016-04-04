@@ -140,6 +140,7 @@ private bool isValidPartialPermutationImpl(size_t N)(in size_t[] perm, ref int[N
 }
 
 enum isIndex(I) = is(I : size_t);
+enum is_Slice(S) = is(S : _Slice);
 
 private enum isReference(P) =
     hasIndirections!P

@@ -872,13 +872,13 @@ struct Slice(size_t _N, _Range)
     enum isPureSlice(Slices...) =
            Slices.length <= N
         && PureIndexLength!Slices < N
-        && Filter!(isStaticArray, Slices).length == 0;
+        && allSatisfy!(templateOr!(isIndex, is_Slice), Slices);
 
     enum isFullPureSlice(Slices...) =
            Slices.length == 0
         || Slices.length == N
         && PureIndexLength!Slices < N
-        && Filter!(isStaticArray, Slices).length == 0;
+        && allSatisfy!(templateOr!(isIndex, is_Slice), Slices);
 
     size_t[PureN] _lengths;
     sizediff_t[PureN] _strides;
