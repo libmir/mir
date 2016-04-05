@@ -7,7 +7,7 @@ os:
 language: d
 
 d:
- - dmd-2.071.0-b1
+ - dmd-2.071.0-b2
  - dmd-2.070.2
  - dmd-2.069.2
  - dmd-2.068.2
@@ -15,7 +15,7 @@ d:
  - ldc-0.17.0
 
 install:
-  - wget -O doveralls "https://github.com/ColdenCullen/doveralls/releases/download/v1.1.6/doveralls_linux_travis"
+  - wget -O doveralls "https://github.com/ColdenCullen/doveralls/releases/download/v1.2.0/doveralls_linux_travis"
   - chmod +x doveralls
 
 script:
