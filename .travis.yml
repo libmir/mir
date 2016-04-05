@@ -1,11 +1,8 @@
 sudo: false
-
 os:
  - linux
  - osx
-
 language: d
-
 d:
  - dmd-2.071.0-b2
  - dmd-2.070.2
@@ -13,13 +10,46 @@ d:
  - dmd-2.068.2
  - ldc-1.0.0-alpha1
  - ldc-0.17.0
-
 install:
-  - wget -O doveralls "https://github.com/ColdenCullen/doveralls/releases/download/v1.2.0/doveralls_linux_travis"
-  - chmod +x doveralls
-
+ - wget -O doveralls "https://github.com/ColdenCullen/doveralls/releases/download/v1.2.0/doveralls_linux_travis"
+ - chmod +x doveralls
 script:
-  - dub test -b unittest-cov
-
+ - dub test -b unittest-cov
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+ - bash <(curl -s https://codecov.io/bash)
+before_deploy:
+ - dub fetch ddox --version=0.13.3
+ - 'sed -i ''s/libdparse": "0.5.0/libdparse": "0.6.0/'' $HOME/.dub/packages/ddox-0.13.3/dub.selections.json'
+ - dub build -b ddox
+ - GIT_TAG=$(git describe --tags --abbrev=0)
+deploy:
+  - provider: s3
+    access_key_id: AKIAIQO2FAQJAHV7ICTQ
+    secret_access_key:
+      secure: vcx6qhOSW+wPqrFDmQbwnyb0opJ7r4LQiyDd1okJuZzsMPpwWTMIFI1mgP5BlxAf8FFtrJVr6nRqGzLzQ2TruY35zb2rnH6dMjNACcxyh9BI5f2phtDtHX6iniGFBPv/x6ip5xoMvyXwMlzi+Of3oTG2MFAS7PkGFQ2voA/Fu1wOFrvp1ZG0LPxaW4oeH6S9uhHo1oBk5wEwslmxnkzHPb7LZANFkNfKU8u2zEwsDn+idZzxAIZ7Jle8tX1I7htDicHj2u43IrHXwpaLVrXdJ8xITwn5m99JgtECsStQJfY7d3uV1WvVjP7xPXG8k6Yxxj0svGWmFx5hrk5DkGp7HJNGOIDD9DJI5LzGW6qyDrC1z8aX5/yaW8k8/09bJ9XIv2IT/GxMi/EZHDfineqcvMiQPcUtTbLhYVMenkytG+rCvLBGcQxqueJdNTxlcr45QgSGSl3e9P/7J1S10tjnGxnXeqNTgVnIWn4VBpN7nQk28j2QN39GVb0COQi5wZT9bLjemyH2hUvohtgVRAapFBCGdKk9Rppjif4W8nWta+ZT9YqG3XBdvriWyRq139NWCi2LBd1fbovjtqmStzP8UTT82AezvBiq03vZsrz+gH7qHMZGfN2Bw+Rx34n116A5whnyFOxDSKeOe3VGR/+Ys+IWcUufaWVo/L0TUGhOUNw=
+    bucket: docs.mir.dlang.io
+    upload-dir: latest
+    local-dir: docs
+    acl: public-read
+    detect_encoding: true
+    skip_cleanup: true
+    region: eu-west-1
+    on:
+      branch: master
+      repo: DlangScience/mir
+      condition: "$(dmd --help | head -n 1 | cut -d ' ' -f 4) == 'v2.070.2' && $TRAVIS_OS_NAME == 'linux'"
+  - provider: s3
+    access_key_id: AKIAIQO2FAQJAHV7ICTQ
+    secret_access_key:
+      secure: vcx6qhOSW+wPqrFDmQbwnyb0opJ7r4LQiyDd1okJuZzsMPpwWTMIFI1mgP5BlxAf8FFtrJVr6nRqGzLzQ2TruY35zb2rnH6dMjNACcxyh9BI5f2phtDtHX6iniGFBPv/x6ip5xoMvyXwMlzi+Of3oTG2MFAS7PkGFQ2voA/Fu1wOFrvp1ZG0LPxaW4oeH6S9uhHo1oBk5wEwslmxnkzHPb7LZANFkNfKU8u2zEwsDn+idZzxAIZ7Jle8tX1I7htDicHj2u43IrHXwpaLVrXdJ8xITwn5m99JgtECsStQJfY7d3uV1WvVjP7xPXG8k6Yxxj0svGWmFx5hrk5DkGp7HJNGOIDD9DJI5LzGW6qyDrC1z8aX5/yaW8k8/09bJ9XIv2IT/GxMi/EZHDfineqcvMiQPcUtTbLhYVMenkytG+rCvLBGcQxqueJdNTxlcr45QgSGSl3e9P/7J1S10tjnGxnXeqNTgVnIWn4VBpN7nQk28j2QN39GVb0COQi5wZT9bLjemyH2hUvohtgVRAapFBCGdKk9Rppjif4W8nWta+ZT9YqG3XBdvriWyRq139NWCi2LBd1fbovjtqmStzP8UTT82AezvBiq03vZsrz+gH7qHMZGfN2Bw+Rx34n116A5whnyFOxDSKeOe3VGR/+Ys+IWcUufaWVo/L0TUGhOUNw=
+    bucket: docs.mir.dlang.io
+    upload-dir: "$GIT_TAG"
+    local-dir: docs
+    acl: public-read
+    detect_encoding: true
+    skip_cleanup: true
+    region: eu-west-1
+    on:
+      branch: master
+      repo: DlangScience/mir
+      condition: "$(dmd --help | head -n 1 | cut -d ' ' -f 4) == 'v2.070.2' && $TRAVIS_OS_NAME == 'linux'"
