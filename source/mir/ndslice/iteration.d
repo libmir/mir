@@ -93,6 +93,7 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 module mir.ndslice.iteration;
 
 import std.traits;
+import std.meta;
 
 import mir.ndslice.internal;
 import mir.ndslice.slice; //: Slice;
