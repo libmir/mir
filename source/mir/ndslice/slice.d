@@ -859,16 +859,7 @@ struct Slice(size_t _N, _Range)
         __traits(compiles, { auto a = &(_ptr[0]); } );
 
     enum PureIndexLength(Slices...) = Filter!(isIndex, Slices).length;
-    template isFullPureIndex(Indexes...)
-    {
-        static if (allSatisfy!(isIndex, Indexes))
-            enum isFullPureIndex  = Indexes.length == N;
-        else
-        static if (Indexes.length == 1 && isStaticArray!(Indexes[0]))
-            enum isFullPureIndex = Indexes[0].length == N && isIndex!(ForeachType!(Indexes[0]));
-        else
-            enum isFullPureIndex = false;
-    }
+
     enum isPureSlice(Slices...) =
            Slices.length <= N
         && PureIndexLength!Slices < N
@@ -893,66 +884,25 @@ struct Slice(size_t _N, _Range)
         return _strides[dimension] * (_lengths[dimension] - 1);
     }
 
-    size_t indexStride(Indexes...)(Indexes _indexes)
-        if (isFullPureIndex!Indexes)
+    size_t indexStride(Indexes...)(Indexes _indexes) const
+        if (allSatisfy!(isIndex, Indexes))
     {
-        static if (isStaticArray!(Indexes[0]))
-        {
-            size_t stride;
-            foreach (i; Iota!(0, N)) //static
-            {
-                assert(_indexes[0][i] < _lengths[i],
-                    "indexStride: index at position "
-                    ~ i.stringof ~ " (from the range [0 .." ~ N.stringof ~ ")) "
-                    ~ " must be less than corresponding length");
-                stride += _strides[i] * _indexes[0][i];
-            }
-            return stride;
-        }
-        else
-        {
-            size_t stride;
-            foreach (i, index; _indexes) //static
-            {
-                assert(index < _lengths[i],
-                    "indexStride: index at position "
-                    ~ i.stringof ~ " (from the range [0 .." ~ N.stringof ~ ")) "
-                    ~ " must be less than corresponding length");
-                stride += _strides[i] * index;
-            }
-            return stride;
-        }
+        mixin(indexStrideCode);
     }
 
-    size_t mathIndexStride(Indexes...)(Indexes _indexes)
-        if (isFullPureIndex!Indexes)
+    size_t indexStride(size_t[N] _indexes) const
     {
-        static if (isStaticArray!(Indexes[0]))
-        {
-            size_t stride;
-            foreach_reverse (i; Iota!(0, N)) //static
-            {
-                assert(_indexes[0][i] < _lengths[N - 1 - i],
-                    "mathIndexStride: index at position "
-                    ~ i.stringof ~ " (from the range [0 .." ~ N.stringof ~ ")) "
-                    ~ " must be less than corresponding length");
-                stride += _strides[N - 1 - i] * _indexes[0][i];
-            }
-            return stride;
-        }
-        else
-        {
-            size_t stride;
-            foreach_reverse (i, index; _indexes) //static
-            {
-                assert(index < _lengths[N - 1 - i],
-                    "mathIndexStride: index at position "
-                    ~ i.stringof ~ " (from the range [0 .." ~ N.stringof ~ ")) "
-                    ~ " must be less than corresponding length");
-                stride += _strides[N - 1 - i] * index;
-            }
-            return stride;
-        }
+        mixin(indexStrideCode);
+    }
+
+    size_t mathIndexStride(Indexes...)(Indexes _indexes) const
+    {
+        mixin(mathIndexStrideCode);
+    }
+
+    size_t mathIndexStride(size_t[N] _indexes) const
+    {
+        mixin(mathIndexStrideCode);
     }
 
     this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PureRange range)
@@ -1488,8 +1438,7 @@ struct Slice(size_t _N, _Range)
     /++
     $(BLUE Fully defined index).
     +/
-    auto ref opIndex(Indexes...)(Indexes _indexes)
-        if (isFullPureIndex!Indexes)
+    auto ref opIndex(Repeat!(N, size_t) _indexes)
     {
         static if (PureN == N)
             return _ptr[indexStride(_indexes)];
@@ -1498,8 +1447,25 @@ struct Slice(size_t _N, _Range)
     }
 
     ///ditto
-    auto ref opCall(Indexes...)(Indexes _indexes)
-        if (isFullPureIndex!Indexes)
+    auto ref opIndex(size_t[N] _indexes)
+    {
+        static if (PureN == N)
+            return _ptr[indexStride(_indexes)];
+        else
+            return DeepElemType(_lengths[N .. $], _strides[N .. $], _ptr + indexStride(_indexes));
+    }
+
+    ///ditto
+    auto ref opCall(Repeat!(N, size_t) _indexes)
+    {
+        static if (PureN == N)
+            return _ptr[mathIndexStride(_indexes)];
+        else
+            return DeepElemType(_lengths[N .. $], _strides[N .. $], _ptr + mathIndexStride(_indexes));
+    }
+
+    ///ditto
+    auto ref opCall(size_t[N] _indexes)
     {
         static if (PureN == N)
             return _ptr[mathIndexStride(_indexes)];
@@ -1843,8 +1809,13 @@ struct Slice(size_t _N, _Range)
         /++
         Assignment of a value (e.g. a number) to a $(BLUE fully defined index).
         +/
-        auto ref opIndexAssign(T, Indexes...)(T value, Indexes _indexes)
-            if (isFullPureIndex!Indexes)
+        auto ref opIndexAssign(T)(T value, Repeat!(N, size_t) _indexes)
+        {
+            return _ptr[indexStride(_indexes)] = value;
+        }
+
+        /// ditto
+        auto ref opIndexAssign(T)(T value, size_t[N] _indexes)
         {
             return _ptr[indexStride(_indexes)] = value;
         }
@@ -1868,11 +1839,34 @@ struct Slice(size_t _N, _Range)
             assert(a[1, 2] == 3);
         }
 
+        static if (doUnittest)
+        pure nothrow unittest
+        {
+            auto a = new int[6].sliced(2, 3);
+
+            a[[1, 2]] = 3;
+            assert(a[[1, 2]] == 3);
+        }
+
+        static if (doUnittest)
+        pure nothrow unittest
+        {
+            auto a = new int[6].sliced!(ReplaceArrayWithPointer.no)(2, 3);
+
+            a[[1, 2]] = 3;
+            assert(a[[1, 2]] == 3);
+        }
+
         /++
         Op Assignment `op=` of a value (e.g. a number) to a $(BLUE fully defined index).
         +/
-        auto ref opIndexOpAssign(string op, T, Indexes...)(T value, Indexes _indexes)
-            if (isFullPureIndex!Indexes)
+        auto ref opIndexOpAssign(string op, T)(T value, Repeat!(N, size_t) _indexes)
+        {
+            mixin (`return _ptr[indexStride(_indexes)] ` ~ op ~ `= value;`);
+        }
+
+        /// ditto
+        auto ref opIndexOpAssign(string op, T)(T value, size_t[N] _indexes)
         {
             mixin (`return _ptr[indexStride(_indexes)] ` ~ op ~ `= value;`);
         }
@@ -1890,10 +1884,28 @@ struct Slice(size_t _N, _Range)
         static if (doUnittest)
         pure nothrow unittest
         {
+            auto a = new int[6].sliced(2, 3);
+
+            a[[1, 2]] += 3;
+            assert(a[[1, 2]] == 3);
+        }
+
+        static if (doUnittest)
+        pure nothrow unittest
+        {
             auto a = new int[6].sliced!(ReplaceArrayWithPointer.no)(2, 3);
 
             a[1, 2] += 3;
             assert(a[1, 2] == 3);
+        }
+
+        static if (doUnittest)
+        pure nothrow unittest
+        {
+            auto a = new int[6].sliced!(ReplaceArrayWithPointer.no)(2, 3);
+
+            a[[1, 2]] += 3;
+            assert(a[[1, 2]] == 3);
         }
 
         /++
@@ -2038,8 +2050,15 @@ struct Slice(size_t _N, _Range)
         /++
         Increment `++` and Decrement `--` operators for a $(BLUE fully defined index).
         +/
-        auto ref opIndexUnary(string op, Indexes...)(Indexes _indexes)
-            if (isFullPureIndex!Indexes && (op == `++` || op == `--`))
+        auto ref opIndexUnary(string op)(Repeat!(N, size_t) _indexes)
+            if (op == `++` || op == `--`)
+        {
+            mixin (`return ` ~ op ~ `_ptr[indexStride(_indexes)];`);
+        }
+
+        ///ditto
+        auto ref opIndexUnary(string op)(size_t[N] _indexes)
+            if (op == `++` || op == `--`)
         {
             mixin (`return ` ~ op ~ `_ptr[indexStride(_indexes)];`);
         }
@@ -2061,6 +2080,24 @@ struct Slice(size_t _N, _Range)
 
             ++a[1, 2];
             assert(a[1, 2] == 1);
+        }
+
+        static if (doUnittest)
+        pure nothrow unittest
+        {
+            auto a = new int[6].sliced(2, 3);
+
+            ++a[[1, 2]];
+            assert(a[[1, 2]] == 1);
+        }
+
+        static if (doUnittest)
+        pure nothrow unittest
+        {
+            auto a = new int[6].sliced!(ReplaceArrayWithPointer.no)(2, 3);
+
+            ++a[[1, 2]];
+            assert(a[[1, 2]] == 1);
         }
 
         /++
