@@ -3,7 +3,7 @@
 [![codecov.io](https://codecov.io/github/DlangScience/mir/coverage.svg?branch=master)](https://codecov.io/github/DlangScience/mir?branch=master)
 [![License](https://img.shields.io/dub/l/mir.svg)](http://code.dlang.org/packages/mir)
 [![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
-[![Join the chat at https://gitter.im/DlangScience/public](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/DlangScience/public?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Gitter](https://img.shields.io/gitter/room/DlangScience/public.svg)](https://gitter.im/DlangScience/public)
 
 Mir
 ======
