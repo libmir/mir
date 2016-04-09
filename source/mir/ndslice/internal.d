@@ -33,7 +33,7 @@ static if(version_minor < 71)
     }
 }
 
-enum indexError(size_t pos, size_t N) = 
+enum indexError(size_t pos, size_t N) =
     "index at position " ~ pos.stringof
     ~ " from the range [0 .." ~ N.stringof ~ ")"
     ~ " must be less than corresponding length.";
@@ -58,7 +58,7 @@ enum indexStrideCode = q{
 
 enum mathIndexStrideCode = q{
     static if(_indexes.length)
-    {        
+    {
         size_t stride = _strides[0] * _indexes[N - 1];
         assert(_indexes[N - 1] < _lengths[0], indexError!(N - 1, N));
         foreach_reverse (i; Iota!(0, N - 1)) //static
