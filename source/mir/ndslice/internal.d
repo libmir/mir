@@ -35,7 +35,7 @@ static if(version_minor < 71)
 
 enum indexError(size_t pos, size_t N) =
     "index at position " ~ pos.stringof
-    ~ " from the range [0 .." ~ N.stringof ~ ")"
+    ~ " from the range [0 .. " ~ N.stringof ~ ")"
     ~ " must be less than corresponding length.";
 
 enum indexStrideCode = q{
