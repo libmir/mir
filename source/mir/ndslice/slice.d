@@ -602,7 +602,7 @@ auto makeSlice(T,
     return Result(array, _slice);
 }
 
-static if (__VERSION__ >= 2069)
+static if (__VERSION__ >= 2070)
 ///
 @nogc unittest
 {
@@ -627,7 +627,7 @@ static if (__VERSION__ >= 2069)
     Mallocator.instance.dispose(dup.array);
 }
 
-static if (__VERSION__ >= 2069)
+static if (__VERSION__ >= 2070)
 /// Initialization with default value
 @nogc unittest
 {
