@@ -494,6 +494,7 @@ pure nothrow unittest
 Creates an array and an n-dimensional slice over it.
 Params:
     lengths = list of lengths for each dimension
+    slice = slice to copy shape and data from
 Returns:
     n-dimensional slice
 +/
@@ -513,8 +514,17 @@ createSlice(T,
     size_t N)(auto ref in size_t[N] lengths)
 {
     immutable len = lengthsProduct(lengths);
-    assert(len, "Cannot create empty slice");
     return new T[len].sliced!replaceArrayWithPointer(lengths);
+}
+
+/// ditto
+auto createSlice(
+    Flag!`replaceArrayWithPointer` replaceArrayWithPointer = Yes.replaceArrayWithPointer,
+    size_t N, Range)(auto ref Slice!(N, Range) slice)
+{
+    import std.array: array;
+    import mir.ndslice.selection: byElement;
+    return slice.byElement.array.sliced!replaceArrayWithPointer(slice.shape);
 }
 
 ///
@@ -525,8 +535,9 @@ pure nothrow unittest
     assert(slice.elementsCount == 5 * 6 * 7);
     static assert(is(typeof(slice) == Slice!(3, int*)));
 
-    auto duplicate = createSlice!int(slice.shape);
-    duplicate[] = slice;
+    // creates duplicate using `createSlice`
+    auto dup = createSlice(slice);
+    assert(dup == slice);
 }
 
 /++
@@ -536,6 +547,7 @@ Params:
     alloc = allocator
     lengths = list of lengths for each dimension
     init = default value for array initialization
+    slice = slice to copy shape and data from
 Returns:
     a structure with fields `array` and `slice`
 +/
@@ -557,7 +569,6 @@ auto makeSlice(T,
     import std.experimental.allocator: makeArray;
     static struct Result { T[] array; Slice!(N, Select!(replaceArrayWithPointer, T*, T[])) slice; }
     immutable len = lengthsProduct(lengths);
-    assert(len, "Cannot make empty slice");
     auto array = alloc.makeArray!T(len);
     auto slice = array.sliced!replaceArrayWithPointer(lengths);
     return Result(array, slice);
@@ -572,15 +583,28 @@ auto makeSlice(T,
     import std.experimental.allocator: makeArray;
     static struct Result { T[] array; Slice!(N, Select!(replaceArrayWithPointer, T*, T[])) slice; }
     immutable len = lengthsProduct(lengths);
-    assert(len, "Cannot make empty slice");
     auto array = alloc.makeArray!T(len, init);
     auto slice = array.sliced!replaceArrayWithPointer(lengths);
     return Result(array, slice);
 }
 
+/// ditto
+auto makeSlice(T,
+    Flag!`replaceArrayWithPointer` replaceArrayWithPointer = Yes.replaceArrayWithPointer,
+    Allocator,
+    size_t N, Range)(auto ref Allocator alloc, auto ref Slice!(N, Range) slice)
+{
+    import std.experimental.allocator: makeArray;
+    import mir.ndslice.selection: byElement;
+    static struct Result { T[] array; Slice!(N, Select!(replaceArrayWithPointer, T*, T[])) slice; }
+    auto array = alloc.makeArray!T(slice.byElement);
+    auto _slice = array.sliced!replaceArrayWithPointer(slice.shape);
+    return Result(array, _slice);
+}
+
 static if (__VERSION__ >= 2069)
 ///
-unittest
+@nogc unittest
 {
     import std.experimental.allocator;
     import std.experimental.allocator.mallocator;
@@ -594,12 +618,18 @@ unittest
     assert(tup.slice.elementsCount    == 24);
     assert(tup.array.ptr == &tup.slice[0, 0, 0]);
 
+    // makes duplicate using `createSlice`
+    tup.slice[0, 0, 0] = 3;
+    auto dup = makeSlice!int(Mallocator.instance, tup.slice);
+    assert(dup.slice == tup.slice);
+
     Mallocator.instance.dispose(tup.array);
+    Mallocator.instance.dispose(dup.array);
 }
 
 static if (__VERSION__ >= 2069)
 /// Initialization with default value
-unittest
+@nogc unittest
 {
     import std.experimental.allocator;
     import std.experimental.allocator.mallocator;
