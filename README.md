@@ -16,6 +16,15 @@ Numeric library and mirror for upcoming numeric packages for the Dlang standard 
   - Pairwise algorithm: fast version for Input Ranges
   - Kahan, KBN, and KB2 algorithms
 
+## TODO
+ - `mir.sparse` [multidimensional sparse arrays](https://github.com/DlangScience/mir/issues/43)
+ - `mir.fft` [multidimensional FFT](https://github.com/DlangScience/mir/issues/45)
+ - `mir.random` [non-uniform random generators](https://github.com/DlangScience/mir/issues/46)
+ - `mir.data` [sci data formats](https://github.com/DlangScience/mir/issues/47)
+ - `mir.las` [linear algebra subroutines](https://github.com/DlangScience/mir/issues/48)
+ - `mir.stat` [statistical functions](https://github.com/DlangScience/mir/issues/49)
+ - `mir.probcounting` [hyperloglog algorithm implementation](https://github.com/DlangScience/mir/issues/54)
+
 ## Notes
 - `mir.ndslice` is a development version of the `std.experimental.ndslice` package.
 - Mir can be used with DMD (reference D compiler) front end >= `2.068`. So ndslice can be used with LDC (LLVM D Compiler) `0.17.0`+.
