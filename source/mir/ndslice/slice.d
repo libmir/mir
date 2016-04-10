@@ -499,17 +499,17 @@ Returns:
     n-dimensional slice
 +/
 Slice!(Lengths.length, Select!(replaceArrayWithPointer, T*, T[]))
-createSlice(T,
+slice(T,
     Flag!`replaceArrayWithPointer` replaceArrayWithPointer = Yes.replaceArrayWithPointer,
     Lengths...)(Lengths lengths)
     if (allSatisfy!(isIndex, Lengths) && Lengths.length)
 {
-    return .createSlice!(T, replaceArrayWithPointer)([lengths]);
+    return .slice!(T, replaceArrayWithPointer)([lengths]);
 }
 
 /// ditto
 Slice!(N, Select!(replaceArrayWithPointer, T*, T[]))
-createSlice(T,
+slice(T,
     Flag!`replaceArrayWithPointer` replaceArrayWithPointer = Yes.replaceArrayWithPointer,
     size_t N)(auto ref in size_t[N] lengths)
 {
@@ -518,7 +518,7 @@ createSlice(T,
 }
 
 /// ditto
-auto createSlice(
+auto slice(
     Flag!`replaceArrayWithPointer` replaceArrayWithPointer = Yes.replaceArrayWithPointer,
     size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
@@ -530,13 +530,13 @@ auto createSlice(
 ///
 pure nothrow unittest
 {
-    auto slice = createSlice!int(5, 6, 7);
+    auto slice = slice!int(5, 6, 7);
     assert(slice.length == 5);
     assert(slice.elementsCount == 5 * 6 * 7);
     static assert(is(typeof(slice) == Slice!(3, int*)));
 
-    // creates duplicate using `createSlice`
-    auto dup = createSlice(slice);
+    // creates duplicate using `slice`
+    auto dup = .slice(slice);
     assert(dup == slice);
 }
 
@@ -618,7 +618,7 @@ static if (__VERSION__ >= 2070)
     assert(tup.slice.elementsCount    == 24);
     assert(tup.array.ptr == &tup.slice[0, 0, 0]);
 
-    // makes duplicate using `createSlice`
+    // makes duplicate using `slice`
     tup.slice[0, 0, 0] = 3;
     auto dup = makeSlice!int(Mallocator.instance, tup.slice);
     assert(dup.slice == tup.slice);
@@ -755,7 +755,7 @@ auto shape(T)(T[] array) @property
 unittest
 {
     auto array = [[1, 2, 3], [4, 5, 6]];
-    auto slice = array.shape.createSlice!int;
+    auto slice = array.shape.slice!int;
     slice[] = [[1, 2, 3], [4, 5, 6]];
     assert(slice == array);
 }
