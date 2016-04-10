@@ -23,7 +23,8 @@ Numeric library and mirror for upcoming numeric packages for the Dlang standard 
  - `mir.data` [sci data formats](https://github.com/DlangScience/mir/issues/47)
  - `mir.las` [linear algebra subroutines](https://github.com/DlangScience/mir/issues/48)
  - `mir.stat` [statistical functions](https://github.com/DlangScience/mir/issues/49)
- - `mir.probcounting` [hyperloglog algorithm implementation](https://github.com/DlangScience/mir/issues/54)
+  - `mir.stat.probcounting` hyperloglog algorithm implementation
+
 
 ## Notes
 - `mir.ndslice` is a development version of the `std.experimental.ndslice` package.
