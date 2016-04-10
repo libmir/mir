@@ -30,7 +30,8 @@ $(TR $(TH Function Name) $(TH Description))
 $(T2 byElement, a random access range of all elements with `index` property)
 $(T2 byElementInStandardSimplex, an input range of all elements in standard simplex of hypercube with `index` property.
     If the slice has two dimensions, it is a range of all elements of upper left triangular matrix.)
-$(T2 indexSlice, returns a slice with elements equal to the initial index)
+$(T2 indexSlice, returns a lazy slice with elements equal to the initial multidimensional index)
+$(T2 iotaSlice, returns a lazy slice with elements equal to the initial flattened (continuous) index)
 $(T2 reshape, returns a new slice for the same data)
 $(T2 diagonal, 1-dimensional slice composed of diagonal elements)
 $(T2 blocks, n-dimensional slice composed of n-dimensional non-overlapping blocks.
