@@ -19,6 +19,7 @@ module mir.ndslice.slice;
 import std.traits;
 import std.meta;
 import std.typecons; //: Flag;
+import std.range.primitives; //: hasLength;
 
 import mir.ndslice.internal;
 
@@ -58,7 +59,6 @@ auto sliced(
     if (!isStaticArray!Range && !isNarrowString!Range && N)
 in
 {
-    import std.range.primitives: hasLength;
     foreach (len; lengths)
         assert(len > 0,
             "All lengths must be positive."
@@ -164,7 +164,6 @@ template sliced(Names...)
     {
         alias RS = AliasSeq!(" ~ _Range_Types!Names ~ ");"
         ~ q{
-            import std.range.primitives: hasLength;
             import std.meta: staticMap;
             static assert(!anySatisfy!(_isSlice, RS),
                 `Packed slices are not allowed in slice tuples`
@@ -210,6 +209,16 @@ template sliced(Names...)
     ~ "}");
 }
 
+/// ditto
+auto sliced(
+    Flag!"replaceArrayWithPointer" replaceArrayWithPointer = Yes.replaceArrayWithPointer,
+    Flag!"allowDownsize" allowDownsize = No.allowDownsize,
+    Range)(Range range)
+    if (!isStaticArray!Range && !isNarrowString!Range && hasLength!Range)
+{
+    return .sliced!(replaceArrayWithPointer, allowDownsize, 1, Range)(range, [range.length]);
+}
+
 /// Creates a slice from an array.
 pure nothrow unittest
 {
@@ -227,6 +236,14 @@ pure nothrow unittest
     assert(slice.length == 5);
     assert(slice.elementsCount == 5 * 6 * 7);
     assert(slice[0, 0, 0] == 9);
+}
+
+/// Creates an 1-dimensional slice over a range.
+@safe @nogc pure nothrow unittest
+{
+    import std.range: iota;
+    auto slice = 10.iota.sliced;
+    assert(slice.length == 10);
 }
 
 /// $(LINK2 https://en.wikipedia.org/wiki/Vandermonde_matrix, Vandermonde matrix)
@@ -2647,7 +2664,6 @@ private struct PtrShell(Range)
     auto ref opIndex(sizediff_t index)
     in
     {
-        import std.range.primitives: hasLength;
         assert(_shift + index >= 0);
         static if (hasLength!Range)
             assert(_shift + index <= _range.length);
@@ -2662,7 +2678,6 @@ private struct PtrShell(Range)
         auto ref opIndexAssign(T)(T value, sizediff_t index)
         in
         {
-            import std.range.primitives: hasLength;
             assert(_shift + index >= 0);
             static if (hasLength!Range)
                 assert(_shift + index <= _range.length);
@@ -2675,7 +2690,6 @@ private struct PtrShell(Range)
         auto ref opIndexOpAssign(string op, T)(T value, sizediff_t index)
         in
         {
-            import std.range.primitives: hasLength;
             assert(_shift + index >= 0);
             static if (hasLength!Range)
                 assert(_shift + index <= _range.length);
@@ -2688,7 +2702,6 @@ private struct PtrShell(Range)
         auto ref opIndexUnary(string op)(sizediff_t index)
         in
         {
-            import std.range.primitives: hasLength;
             assert(_shift + index >= 0);
             static if (hasLength!Range)
                 assert(_shift + index <= _range.length);
