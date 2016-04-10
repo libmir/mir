@@ -680,6 +680,81 @@ unittest
 }
 
 /++
+Shape of a common n-dimensional array.
+Params:
+    array = common n-dimensional array
+Returns:
+    static array of dimensions type of `size_t[n]`
+Throws:
+    $(LREF SliceException) if the array is not an n-dimensional parallelotope.
++/
+auto shape(T)(T[] array) @property
+{
+    static if (isDynamicArray!T)
+    {
+        size_t[1 + typeof(shape(T.init)).length] ret;
+        if (array.length)
+        {
+            ret[0] = array.length;
+            ret[1..$] = shape(array[0]);
+            foreach (ar; array)
+                if (shape(ar) != ret[1..$])
+                    throw new SliceException("ndarray should be an n-dimensional parallelotope.");
+        }
+        return ret;
+    }
+    else
+    {
+        size_t[1] ret = void;
+        ret[0] = array.length;
+        return ret;
+    }
+}
+
+///
+@safe pure unittest
+{
+    size_t[2] shape = [[1, 2, 3], [4, 5, 6]].shape;
+    assert(shape == [2, 3]);
+
+    import std.exception: assertThrown;
+    assertThrown([[1, 2], [4, 5, 6]].shape);
+}
+
+/// Slice from ndarray
+unittest
+{
+    auto array = [[1, 2, 3], [4, 5, 6]];
+    auto slice = array.shape.createSlice!int;
+    slice[] = [[1, 2, 3], [4, 5, 6]];
+    assert(slice == array);
+}
+
+@safe pure unittest
+{
+    size_t[2] shape = (int[][]).init.shape;
+    assert(shape[0] == 0);
+    assert(shape[1] == 0);
+}
+
+/++
+Base Exception class for $(LINK2 mir_ndslice.html, mir.ndslice).
++/
+class SliceException: Exception
+{
+    ///
+    this(
+        string msg,
+        string file = __FILE__,
+        uint line = cast(uint)__LINE__,
+        Throwable next = null
+        ) pure nothrow @nogc @safe
+    {
+        super(msg, file, line, next);
+    }
+}
+
+/++
 Returns the element type of the `Slice` type.
 +/
 alias DeepElementType(S : Slice!(N, Range), size_t N, Range) = S.DeepElemType;
