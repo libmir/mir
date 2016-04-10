@@ -1186,8 +1186,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
         .byElement()
         .drop(1)
         .front
-        .byElement
-        .equal(iota(6 * 7, 6 * 7 * 2)));
+         == iotaSlice([6, 7], 6 * 7));
 }
 
 /// Properties
