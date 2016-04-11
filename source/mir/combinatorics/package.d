@@ -8,7 +8,6 @@ License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 module mir.combinatorics;
 
 import std.range.primitives: isInputRange, hasLength;
-import std.traits: isFloatingPoint;
 
 /**
 Checks whether we can do basic arithmetic operations, comparisons, modulo and
@@ -65,69 +64,58 @@ Returns:
 */
 
 R binomial(R = ulong, T)(T n, T k)
-    if ((isArithmetic!(R, T) || isFloatingPoint!R) &&
+    if (isArithmetic!(R, T) &&
         ((is(typeof(T.min < 0)) && is(typeof(T.init & 1))) || !is(typeof(T.min < 0))) )
 {
-    import std.traits: isFloatingPoint;
-    static if (!isFloatingPoint!R)
-    {
-        R result = 1;
+    R result = 1;
 
-        enum hasMinProperty = is(typeof(T.min < 0));
-        // only add negative support if possible
-        static if ((hasMinProperty && T.min < 0) || !hasMinProperty)
+    enum hasMinProperty = is(typeof(T.min < 0));
+    // only add negative support if possible
+    static if ((hasMinProperty && T.min < 0) || !hasMinProperty)
+    {
+        if (n < 0)
         {
-            if (n < 0)
+            if (k >= 0)
             {
-                if (k >= 0)
-                {
-                    return (k & 1 ? -1 : 1) * binomial!(R, T)(-n + k-1, k);
-                }
-                else if (k <= n)
-                {
-                    return ((n-k) & 1 ? -1 : 1) * binomial!(R, T)(-k-1, n-k);
-                }
+                return (k & 1 ? -1 : 1) * binomial!(R, T)(-n + k-1, k);
             }
-            if (k < 0)
+            else if (k <= n)
             {
-                result = 0;
-                return result;
+                return ((n-k) & 1 ? -1 : 1) * binomial!(R, T)(-k-1, n-k);
             }
         }
-
-        if (k > n)
+        if (k < 0)
         {
             result = 0;
             return result;
         }
-        if (k > n - k)
-        {
-            k = n - k;
-        }
-        // make a copy of n (could be a custom type)
-        for (T i = 1, m = n; i <= k; i++, m--)
-        {
-            // check whether an overflow can happen
-            // hasMember!(Result, "max") doesn't work with dmd2.068 and ldc 0.17
-            static if (is(typeof(0 > R.max)))
-            {
-                if (result / i > R.max / m) return 0;
-                result = result / i * m + result % i * m / i;
-            }
-            else
-            {
-                result = result * m / i;
-            }
-        }
+    }
+
+    if (k > n)
+    {
+        result = 0;
         return result;
     }
-    else
+    if (k > n - k)
     {
-        import std.math: exp;
-        import std.mathspecial: logGamma;
-        real x = exp(logGamma(n+1)-logGamma(k+1)-logGamma(n-k+1));
-        return x;
+        k = n - k;
     }
+    // make a copy of n (could be a custom type)
+    for (T i = 1, m = n; i <= k; i++, m--)
+    {
+        // check whether an overflow can happen
+        // hasMember!(Result, "max") doesn't work with dmd2.068 and ldc 0.17
+        static if (is(typeof(0 > R.max)))
+        {
+            if (result / i > R.max / m) return 0;
+            result = result / i * m + result % i * m / i;
+        }
+        else
+        {
+            result = result * m / i;
+        }
+    }
+    return result;
 }
 
 ///
@@ -177,22 +165,9 @@ unittest
     assert(binomial!BigInt(-5, 3) == -35);
     assert(binomial!BigInt(5, -3) == 0);
     assert(binomial!BigInt(-5, -7) == 15);
-
-    // floating point
-    import std.math: approxEqual;
-    assert(binomial!real(5.8, 3).approxEqual(17.632, 0.001));
-    assert(binomial!real(20.8, 3.2).approxEqual(1783.34, 0.01));
-    assert(binomial!real(-5.3, 4).approxEqual(84.2958375, 0.0001));
-    assert(binomial!real(-5.6, -3.4).approxEqual(0.00998410, 0.00001));
-    assert(binomial!real(-5.7, -7.6).approxEqual(20.1795, 0.0001));
-
-    // big floating point
-    assert(binomial!real(1.2e10, 2.3).approxEqual(5.66794e22, 0.0001));
-    // TODO: rounding errors seem to sum up here
-    //assert(binomial!real(2.245e15, 5.7).approxEqual(7.68342e84, 0.1));
 }
 
-private struct IndexedRoR(Collection, Range)
+struct IndexedRoR(Collection, Range)
 if (isInputRange!Range)
 {
     import std.range : indexed, isForwardRange;
@@ -206,16 +181,19 @@ if (isInputRange!Range)
         this.r = range;
     }
 
+    ///
     @property auto ref front()
     {
         return r.indexed(c.front);
     }
 
+    ///
     void popFront()
     {
         c.popFront;
     }
 
+    ///
     @property bool empty()
     {
         return c.empty;
@@ -223,6 +201,7 @@ if (isInputRange!Range)
 
     static if(hasLength!Collection)
     {
+        ///
         @property size_t length()
         {
             return c.length;
@@ -231,6 +210,7 @@ if (isInputRange!Range)
 
     static if(isForwardRange!Collection)
     {
+        ///
         @property typeof(this) save()
         {
             return IndexedRoR!(Collection, Range)(c.save, r);
@@ -241,6 +221,13 @@ if (isInputRange!Range)
 /**
 Creates a projection of `collection` Range (e.g. `Combinations`)
 onto a custom `range`.
+
+Params:
+    collenction = Range to be projected from
+    range = Range to be projected to
+
+Returns:
+    Range with a projection to range for every element of collection
 */
 IndexedRoR!(Collection, Range) indexedRoR(Collection, Range)(Collection c, Range r)
 if (isInputRange!Range)
@@ -263,7 +250,7 @@ Params:
     alloc = custom Allocator
 
 Returns:
-    Forward range which yields the permutations
+    Forward range, which yields the permutations
 */
 Permutations permutations(size_t n) @safe pure nothrow
 {
@@ -321,7 +308,15 @@ Permutations makePermutations(Allocator)(auto ref Allocator alloc, size_t n)
     return Permutations(state, indices);
 }
 
-/// Dispose a Permutations object
+/*
+Disposes a Permutations object. It destroys and then deallocates the
+Permutations object pointed to by a pointer.
+It is assumed the respective entities had been allocated with the same allocator.
+
+Params:
+    alloc = Custom allocator
+    perm = Permutations object
+*/
 void dispose(Allocator)(auto ref Allocator alloc, auto ref Permutations perm)
 {
     import std.experimental.allocator: dispose;
@@ -344,7 +339,7 @@ static if (__VERSION__ > 2069) @nogc unittest
 }
 
 /// ditto
-private struct Permutations
+struct Permutations
 {
     private uint[] indices, state;
     private bool _empty;
@@ -367,11 +362,13 @@ private struct Permutations
         _empty = indices.length == 0;
     }
 
+    ///
     @property uint[] front() @safe pure nothrow @nogc
     {
         return indices;
     }
 
+    ///
     void popFront() @safe pure nothrow @nogc
     {
         import std.algorithm.mutation : swapAt;
@@ -398,11 +395,13 @@ private struct Permutations
         }
     }
 
+    ///
     @property bool empty() @safe pure nothrow @nogc
     {
         return _empty;
     }
 
+    ///
     @property Permutations save() @safe pure nothrow
     {
         typeof(this) c = this;
@@ -429,7 +428,7 @@ Params:
     alloc = custom Allocator
 
 Returns:
-    Forward range which yields the product items
+    Forward range, which yields the product items
 */
 CartesianPower cartesianPower(size_t n, size_t repeat = 1) @safe pure nothrow
 in
@@ -465,14 +464,23 @@ body
     return CartesianPower(n, alloc.makeArray!uint(repeat));
 }
 
-/// Dispose a CartesianPower object
+/*
+Disposes a CartesianPower object. It destroys and then deallocates the
+CartesianPower object pointed to by a pointer.
+It is assumed the respective entities had been allocated with the same allocator.
+
+Params:
+    alloc = Custom allocator
+    perm = CartesianPower object
+*/
+
 void dispose(Allocator)(auto ref Allocator alloc, auto ref CartesianPower cartesianPower)
 {
     import std.experimental.allocator: dispose;
     dispose(alloc, cartesianPower._state);
 }
 
-private struct CartesianPower
+struct CartesianPower
 {
 
 private:
@@ -493,18 +501,13 @@ public:
         _max_states = pow(n, state.length);
     }
 
-    @property CartesianPower save() @safe pure nothrow
-    {
-        typeof(this) c = this;
-        c._state = _state.dup;
-        return c;
-    }
-
+    ///
     @property uint[] front() @safe pure nothrow @nogc
     {
         return _state;
     }
 
+    ///
     void popFront() @safe pure nothrow @nogc
     {
         assert(!empty);
@@ -529,14 +532,24 @@ public:
         }
     }
 
+    ///
     @property size_t length() @safe pure nothrow @nogc
     {
         return _max_states - _pos;
     }
 
+    ///
     @property bool empty() @safe pure nothrow @nogc
     {
         return _pos == _max_states;
+    }
+
+    ///
+    @property CartesianPower save() @safe pure nothrow
+    {
+        typeof(this) c = this;
+        c._state = _state.dup;
+        return c;
     }
 }
 
@@ -617,7 +630,7 @@ Params:
     alloc = custom Allocator
 
 Returns:
-    Forward range which yields the k-combinations items
+    Forward range, which yields the k-combinations items
 */
 Combinations combinations(size_t n, size_t k = 1) @safe pure nothrow
 in
@@ -653,14 +666,23 @@ body
     return Combinations(cast(uint) n, alloc.makeArray!uint(cast(uint) repeat));
 }
 
-/// Dispose a Combinations object
+/*
+Disposes a Combinations object. It destroys and then deallocates the
+Combinations object pointed to by a pointer.
+It is assumed the respective entities had been allocated with the same allocator.
+
+Params:
+    alloc = Custom allocator
+    perm = Combinations object
+*/
+
 void dispose(Allocator)(auto ref Allocator alloc, auto ref Combinations combs)
 {
     import std.experimental.allocator: dispose;
     dispose(alloc, combs.state);
 }
 
-private struct Combinations
+struct Combinations
 {
 
 private:
@@ -694,11 +716,13 @@ public:
         }
     }
 
+    ///
     @property uint[] front() @safe pure nothrow @nogc
     {
         return state;
     }
 
+    ///
     void popFront() @safe pure nothrow @nogc
     {
         assert(!empty);
@@ -739,16 +763,19 @@ public:
         }
     }
 
+    ///
     @property size_t length() @safe pure nothrow @nogc
     {
         return max_states - pos;
     }
 
+    ///
     @property bool empty() @safe pure nothrow @nogc
     {
         return pos == max_states;
     }
 
+    ///
     @property Combinations save() @safe pure nothrow
     {
         typeof(this) c = this;
@@ -883,7 +910,7 @@ Params:
     alloc = custom Allocator
 
 Returns:
-    Forward range which yields the k-multicombinations items
+    Forward range, which yields the k-multicombinations items
 */
 CombinationsRepeat combinationsRepeat(size_t n, size_t k = 1) @safe pure nothrow
 in
@@ -919,14 +946,23 @@ body
     return CombinationsRepeat(n, alloc.makeArray!uint(repeat));
 }
 
-/// Dispose a CombinationsRepeat object
+/*
+Disposes a CombinationsRepeat object. It destroys and then deallocates the
+CombinationsRepeat object pointed to by a pointer.
+It is assumed the respective entities had been allocated with the same allocator.
+
+Params:
+    alloc = Custom allocator
+    perm = CombinationsRepeat object
+*/
+
 void dispose(Allocator)(auto ref Allocator alloc, auto ref CombinationsRepeat combs)
 {
     import std.experimental.allocator: dispose;
     dispose(alloc, combs.state);
 }
 
-private struct CombinationsRepeat
+struct CombinationsRepeat
 {
 
 private:
@@ -949,11 +985,13 @@ public:
         }
     }
 
+    ///
     @property uint[] front() @safe pure nothrow @nogc
     {
         return state;
     }
 
+    ///
     void popFront() @safe pure nothrow @nogc
     {
         assert(!empty);
@@ -981,16 +1019,19 @@ public:
         }
     }
 
+    ///
     @property size_t length() @safe pure nothrow @nogc
     {
         return max_states - pos;
     }
 
+    ///
     @property bool empty() @safe pure nothrow @nogc
     {
         return pos == max_states;
     }
 
+    ///
     @property CombinationsRepeat save() @safe pure nothrow
     {
         typeof(this) c = this;
