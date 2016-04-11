@@ -705,14 +705,17 @@ auto makeNdarray(T, Allocator, size_t N, Range)( Allocator alloc,  Slice!(N, Ran
     }
     else
     {
-        import std.algorithm.iteration: map;
-        return makeArray!(typeof(makeNdarray!T(alloc, slice.front)))(alloc, slice.map!(a => makeNdarray!T(alloc, a)));
+        alias E = typeof(makeNdarray!T(alloc, slice[0]));
+        auto ret = makeArray!E(alloc, slice.length);
+        foreach(i, ref e; ret)
+            e = .makeNdarray!T(alloc, slice[i]);
+        return ret;
     }
 }
 
 static if (__VERSION__ >= 2069)
 ///
-unittest
+@nogc unittest
 {
     import std.experimental.allocator;
     import std.experimental.allocator.mallocator;
@@ -720,7 +723,8 @@ unittest
     auto slice = 12.iota.sliced(3, 4);
     auto m = Mallocator.instance.makeNdarray!int(slice);
     static assert(is(typeof(m) == int[][]));
-    assert(m == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
+    static immutable ar = [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]];
+    assert(m == ar);
     foreach(ref row; m)
         Mallocator.instance.dispose(row);
     Mallocator.instance.dispose(m);
