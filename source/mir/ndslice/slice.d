@@ -713,7 +713,7 @@ auto makeNdarray(T, Allocator, size_t N, Range)( Allocator alloc,  Slice!(N, Ran
     }
 }
 
-static if (__VERSION__ >= 2069)
+static if (__VERSION__ >= 2070)
 ///
 @nogc unittest
 {
