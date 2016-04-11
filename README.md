@@ -18,7 +18,7 @@ Documentation can be found at http://docs.mir.dlang.io/.
   - Precise algorithm: improved analog of Python's `fsum`
   - Pairwise algorithm: fast version for Input Ranges
   - Kahan, KBN, and KB2 algorithms
- - `mir,combinatorics`
+ - `mir.combinatorics`
   - `combinations`
   - `permutations`
   - `cartesianPower`
