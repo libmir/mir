@@ -696,7 +696,7 @@ Params:
 Returns:
     multidimensional D array
 +/
-auto makeNdarray(T, Allocator, size_t N, Range)( Allocator alloc,  Slice!(N, Range) slice)
+auto makeNdarray(T, Allocator, size_t N, Range)(auto ref Allocator alloc,  Slice!(N, Range) slice)
 {
     import std.experimental.allocator: makeArray;
     static if (N == 1)
