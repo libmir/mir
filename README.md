@@ -9,12 +9,16 @@ Mir
 ======
 Numeric library and mirror for upcoming numeric packages for the Dlang standard library.
 
+Documentaion can be found at http://docs.mir.dlang.io/.
+
 ## Packages
  - `mir.ndslice` [Multidimensional Random Access Ranges and Arrays](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
  - `mir.las.sum` Functions and Output Ranges for Summation Algorithms. Works with user-defined types.
   - Precise algorithm: improved analog of Python's `fsum`
   - Pairwise algorithm: fast version for Input Ranges
   - Kahan, KBN, and KB2 algorithms
+ - `mir.combinatorics`
+  - 
 
 ## TODO
  - `mir.sparse` [multidimensional sparse arrays](https://github.com/DlangScience/mir/issues/43)
