@@ -338,7 +338,6 @@ static if (__VERSION__ > 2069) @nogc unittest
     dispose(Mallocator.instance, rp);
 }
 
-/// ditto
 struct Permutations
 {
     private uint[] indices, state;
@@ -363,7 +362,7 @@ struct Permutations
     }
 
     ///
-    @property uint[] front() @safe pure nothrow @nogc
+    @property const(uint)[] front() @safe pure nothrow @nogc
     {
         return indices;
     }
@@ -502,7 +501,7 @@ public:
     }
 
     ///
-    @property uint[] front() @safe pure nothrow @nogc
+    @property const(uint)[] front() @safe pure nothrow @nogc
     {
         return _state;
     }
@@ -717,7 +716,7 @@ public:
     }
 
     ///
-    @property uint[] front() @safe pure nothrow @nogc
+    @property const(uint)[] front() @safe pure nothrow @nogc
     {
         return state;
     }
@@ -986,7 +985,7 @@ public:
     }
 
     ///
-    @property uint[] front() @safe pure nothrow @nogc
+    @property const(uint)[] front() @safe pure nothrow @nogc
     {
         return state;
     }
