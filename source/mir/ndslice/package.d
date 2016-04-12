@@ -127,6 +127,12 @@ $(TR $(TDNW Advanced Level $(BR)
         $(SUBREF selection, ReshapeException)
     )
 )
+$(TR $(TDNW Mutable Sparse Tensors $(BR)
+     $(SMALL Multidimensional compressed analog of Dictionary of Keys (DOK) matrix format))
+     $(TD
+        $(SUBREF sparse, sparseSlice)
+    )
+)
 ))
 
 $(H2 Example: Image Processing)
