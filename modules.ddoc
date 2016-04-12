@@ -1,4 +1,8 @@
 MODULES = 
-	$(MODULE mir.las.sum)
+	$(MODULE mir.sum)
+	$(MODULE mir.ndslice.sparse)
+	$(MODULE mir.sparse_blas.dot)
+	$(MODULE mir.sparse_blas.axpy)
+	$(MODULE mir.sparse_blas.gemv)
+	$(MODULE mir.sparse_blas.gemm)
 	$(MODULE mir.combinatorics.package)
-

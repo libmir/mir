@@ -7,7 +7,7 @@ Authors: Ilya Yaroshenko
 
 Source: $(PHOBOSSRC std/experimental/las/_sum.d)
 */
-module mir.las.sum;
+module mir.sum;
 
 ///
 unittest
@@ -2130,7 +2130,7 @@ private template sumType(Range)
     alias sumType = typeof(T.init + T.init);
 }
 
-package(mir.las):
+package:
 
 template isSummable(F)
 {
