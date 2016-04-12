@@ -127,6 +127,19 @@ $(TR $(TDNW Advanced Level $(BR)
         $(SUBREF selection, ReshapeException)
     )
 )
+$(TR $(TDNW Sparse Tensors $(BR)
+     $(SMALL Multidimensional compressed analog of Dictionary of Keys (DOK) matrix format))
+     $(TD
+        $(SUBREF sparse, sparseSlice)
+    )
+)
+$(TR $(TDNW Dlang Compressed Sparse Tensors $(BR)
+     $(SMALL Generalization of Compressed Sparse Row (CSR) matrix format))
+     $(TDNW $(SUBMODULE sparse))
+     $(TD
+        $(SUBREF sparse, sparse)
+    )
+)
 ))
 
 $(H2 Example: Image Processing)
@@ -319,6 +332,7 @@ module mir.ndslice;
 public import mir.ndslice.slice;
 public import mir.ndslice.iteration;
 public import mir.ndslice.selection;
+public import mir.ndslice.sparse;
 
 unittest
 {

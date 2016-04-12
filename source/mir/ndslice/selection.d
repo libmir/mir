@@ -272,7 +272,7 @@ Params:
     N = dimension count
     slice = input slice
 Returns:
-    packed `1`-dimensional composed of `N`-dimensional slices
+    1-dimensional slice composed of diagonal elements
 +/
 Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
@@ -1168,8 +1168,6 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
 /// Packed slice
 @safe @nogc pure nothrow unittest
 {
-    import mir.ndslice.slice;
-    import mir.ndslice.iteration;
     import std.range: drop;
     assert(iotaSlice(3, 4, 5, 6, 7)
         .pack!2
