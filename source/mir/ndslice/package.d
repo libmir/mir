@@ -323,6 +323,7 @@ module mir.ndslice;
 public import mir.ndslice.slice;
 public import mir.ndslice.iteration;
 public import mir.ndslice.selection;
+public import mir.ndslice.sparse;
 
 unittest
 {
