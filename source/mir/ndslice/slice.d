@@ -23,6 +23,29 @@ import std.range.primitives; //: hasLength;
 
 import mir.ndslice.internal;
 
+/*
+Checks whether a type is Slice.
+**/
+template isSlice(T)
+{
+    import std.traits: TemplateOf;
+    enum bool isSlice = __traits(compiles, __traits(isSame, TemplateOf!(T), Slice));
+}
+
+///
+unittest
+{
+    import std.range : iota;
+
+    static assert(!isSlice!(int[]));
+
+    auto r = iota(10);
+    auto s = iota(10).sliced(2, 5);
+
+    static assert(!isSlice!(typeof(r)));
+    static assert(isSlice!(typeof(s)));
+}
+
 /++
 Creates an n-dimensional slice-shell over a `range`.
 Params:
