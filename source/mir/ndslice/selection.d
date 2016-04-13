@@ -1681,17 +1681,17 @@ See_also: $(LREF iotaSlice)
 template IotaSlice(size_t N)
     if (N)
 {
-    alias IotaSlice = Slice!(N, IotaMap);
+    alias IotaSlice = Slice!(N, IotaMap!());
 }
 
 // undocumented
 // zero cost variant of `std.range.iota`
-struct IotaMap
+struct IotaMap()
 {
     enum bool empty = false;
     enum IotaMap save = IotaMap.init;
 
-    static size_t opIndex(size_t index) @safe pure nothrow @nogc @property 
+    static size_t opIndex()(size_t index) @safe pure nothrow @nogc @property 
     {
         pragma(inline, true);
         return index;
