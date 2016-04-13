@@ -1697,3 +1697,111 @@ struct IotaMap
         return index;
     }
 }
+
+/**
+Element-wise iteration over a slice.
+In contrast to byElement, it only returns a bidirectional forward range access.
+However it is faster for such operations.
+*/
+auto byElementIterator(size_t N, Range)(auto ref Slice!(N, Range) slice)
+{
+    alias UserSlice = Slice!(N, Range);
+    static struct ByElementIterator
+    {
+        import mir.ndslice.internal: canSave;
+        private UserSlice slice;
+        size_t _front;
+        size_t _back;
+        size_t _length;
+
+        static if (canSave!Range)
+        auto save() @property
+        {
+            return typeof(this)(slice.save, _front, _back, _length);
+        }
+
+        size_t length() const @property
+        {
+            return _length - _front - _back;
+        }
+
+        bool empty()
+        {
+            //pragma(inline, true);
+            return length() == 0;
+        }
+
+        auto ref front() @property
+        {
+            return slice._ptr[_front];
+        }
+
+        void popFront()
+        {
+            _front++;
+        }
+
+        auto ref back() @property
+        {
+            return slice._ptr[_length - _back - 1];
+        }
+
+        void popBack()
+        {
+            _back++;
+        }
+    }
+    return ByElementIterator(slice, 0, 0, slice.elementsCount);
+}
+
+@nogc unittest
+{
+    import mir.ndslice.selection: iotaSlice;
+    import std.algorithm.comparison: equal;
+    import std.range: iota, retro;
+    auto ndarr = iotaSlice(2, 3);
+    auto a = byElementIterator(ndarr);
+    assert(a.equal(iota(6)));
+    assert(a.retro.equal(iota(6).retro));
+}
+
+unittest
+{
+    import mir.ndslice.selection: iotaSlice;
+    import std.algorithm.comparison: equal;
+    import std.range: iota, dropOne;
+    import std.array: array;
+
+    auto ndarr = slice!int(2, 3);
+    ndarr[] = iota(6).sliced(2, 3);
+    auto a = byElementIterator(ndarr);
+    assert(a.length == 6);
+    a.front = 7;
+    assert(ndarr[0, 0] == 7);
+
+    // should be able to save
+    assert(a.save.dropOne.front == 1);
+    assert(a.front == 7);
+}
+
+// apply a transformation
+unittest
+{
+    import mir.ndslice.iteration: reversed;
+    import std.range: iota;
+
+    auto ndarr = iota(6).sliced(2, 3).slice.reversed!0;
+    auto b = byElementIterator(ndarr);
+    b.front = 7;
+    assert(ndarr == [[7, 4, 5], [0, 1, 2]]);
+}
+
+// slicing
+unittest
+{
+    import std.range: iota;
+    auto ndarr = iota(6).sliced(2, 3).slice;
+    auto b = byElementIterator(ndarr[1..$, 1..$]);
+    b.front = 7;
+    assert(ndarr == [[0, 1, 2], [3, 7, 5]]);
+}
