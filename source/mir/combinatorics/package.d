@@ -119,13 +119,13 @@ R binomial(R = ulong, T)(T n, T k)
 }
 
 ///
-pure @safe unittest
+pure unittest
 {
     assert(binomial(5, 2) == 10);
     assert(binomial(6, 4) == 15);
     assert(binomial(3, 1) == 3);
 
-    import std.bigint;
+    import std.bigint: BigInt;
     assert(binomial!BigInt(1000, 10) == BigInt("263409560461970212832400"));
 }
 
@@ -697,7 +697,7 @@ public:
 
         uint repeatLen = cast(uint) state.length;
         this.n = cast(uint) n;
-        this.max_states = binomial(n, repeatLen);
+        this.max_states = cast(size_t) binomial(n, repeatLen);
         this.state = state;
 
         // set initial state and calculate max possibilities
@@ -980,7 +980,7 @@ public:
         // set initial state and calculate max possibilities
         if (n > 0)
         {
-            max_states = binomial(n + repeatLen - 1, repeatLen);
+            max_states = cast(size_t) binomial(n + repeatLen - 1, repeatLen);
         }
     }
 
