@@ -1,5 +1,6 @@
 [![Dub version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
 [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir)
+[![Build status](https://ci.appveyor.com/api/projects/status/ir2k3o3j0isqp7pw/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master)
 [![codecov.io](https://codecov.io/github/DlangScience/mir/coverage.svg?branch=master)](https://codecov.io/github/DlangScience/mir?branch=master)
 [![License](https://img.shields.io/dub/l/mir.svg)](http://code.dlang.org/packages/mir)
 [![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
