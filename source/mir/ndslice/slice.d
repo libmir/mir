@@ -2644,7 +2644,7 @@ body
     return true;
 }
 
-private struct PtrShell(Range)
+package struct PtrShell(Range)
 {
     sizediff_t _shift;
     Range _range;
