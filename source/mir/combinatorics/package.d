@@ -7,7 +7,18 @@ License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 */
 module mir.combinatorics;
 
-import std.range.primitives: isInputRange, hasLength;
+import std.range.primitives: isRandomAccessRange, hasLength;
+
+///
+unittest
+{
+    import std.algorithm.comparison: equal;
+
+    assert([0, 1].permutations.equal!equal([[0, 1], [1, 0]]));
+    assert([0, 1].cartesianPower(2).equal!equal([[0, 0], [0, 1], [1, 0], [1, 1]]));
+    assert([0, 1].combinations(2).equal!equal([[0, 1]]));
+    assert([0, 1].combinationsRepeat(2).equal!equal([[0, 0], [0, 1], [1, 1]]));
+}
 
 /**
 Checks whether we can do basic arithmetic operations, comparisons, modulo and
@@ -49,7 +60,7 @@ private template isArithmetic(R, S)
 /**
 Computes the $(WEB en.wikipedia.org/wiki/Binomial_coefficient, binomial coefficient)
 of n and k.
-It is also known as "n choose k" or more formally as $(D _n!/_k!(_n-_k)).
+It is also known as "n choose k" or more formally as `_n!/_k!(_n-_k)`.
 If a fixed-length integer type is used and an overflow happens, `0` is returned.
 
 Uses the generalized binomial coefficient for negative integers and floating
@@ -62,7 +73,6 @@ Params:
 Returns:
     Binomial coefficient
 */
-
 R binomial(R = ulong, T)(T n, T k)
     if (isArithmetic!(R, T) &&
         ((is(typeof(T.min < 0)) && is(typeof(T.init & 1))) || !is(typeof(T.min < 0))) )
@@ -149,10 +159,10 @@ unittest
     import std.bigint;
 
     // test larger numbers
-    assert(binomial(100, 10) == 17310309456440);
-    assert(binomial(999, 5) == 8209039793949);
-    assert(binomial(300, 10) == 1398320233241701770LU);
-    assert(binomial(300LU, 10LU) == 1398320233241701770LU);
+    assert(binomial(100, 10) == 17_310_309_456_440);
+    assert(binomial(999, 5) == 82_09_039_793_949);
+    assert(binomial(300, 10) == 1_398_320_233_241_701_770LU);
+    assert(binomial(300LU, 10LU) == 1_398_320_233_241_701_770LU);
 
     // test overflow
     assert(binomial(500, 10) == 0);
@@ -167,14 +177,37 @@ unittest
     assert(binomial!BigInt(-5, -7) == 15);
 }
 
+/**
+Creates a projection of a generalized `Collection` range for the numeric case
+case starting from `0` onto a custom `range` of any type.
+
+Params:
+    collection = range to be projected from
+    range = random access range to be projected to
+
+Returns:
+    Range with a projection to range for every element of collection
+
+See_Also:
+    $(LREF permutations), $(LREF cartesianPower), $(LREF combinations),
+    $(LREF combinationsRepeat)
+*/
+IndexedRoR!(Collection, Range) indexedRoR(Collection, Range)(Collection c, Range r)
+if (isRandomAccessRange!Range)
+{
+    return IndexedRoR!(Collection, Range)(c, r);
+}
+
+/// ditto
 struct IndexedRoR(Collection, Range)
-if (isInputRange!Range)
+if (isRandomAccessRange!Range)
 {
     import std.range : indexed, isForwardRange;
 
     private Collection c;
     private Range r;
 
+    ///
     this(Collection collection, Range range)
     {
         this.c = collection;
@@ -182,7 +215,7 @@ if (isInputRange!Range)
     }
 
     ///
-    @property auto ref front()
+    auto ref front() @property
     {
         return r.indexed(c.front);
     }
@@ -194,7 +227,7 @@ if (isInputRange!Range)
     }
 
     ///
-    @property bool empty()
+    bool empty() @property const
     {
         return c.empty;
     }
@@ -202,7 +235,7 @@ if (isInputRange!Range)
     static if(hasLength!Collection)
     {
         ///
-        @property size_t length()
+        @property size_t length() const
         {
             return c.length;
         }
@@ -211,31 +244,62 @@ if (isInputRange!Range)
     static if(isForwardRange!Collection)
     {
         ///
-        @property typeof(this) save()
+        typeof(this) save() @property
         {
             return IndexedRoR!(Collection, Range)(c.save, r);
         }
     }
 }
 
-/**
-Creates a projection of `collection` Range (e.g. `Combinations`)
-onto a custom `range`.
-
-Params:
-    collenction = Range to be projected from
-    range = Range to be projected to
-
-Returns:
-    Range with a projection to range for every element of collection
-*/
-IndexedRoR!(Collection, Range) indexedRoR(Collection, Range)(Collection c, Range r)
-if (isInputRange!Range)
+///
+@safe pure nothrow unittest
 {
-    return IndexedRoR!(Collection, Range)(c, r);
+    import std.algorithm.comparison: equal;
+
+    auto perms = 2.permutations;
+    assert(perms.save.equal!equal([[0, 1], [1, 0]]));
+
+    auto projection = perms.indexedRoR([1, 2]);
+    assert(projection.equal!equal([[1, 2], [2, 1]]));
 }
 
+///
+unittest
+{
+    import std.algorithm.comparison: equal;
+    import std.range: only;
 
+    auto projectionD = 2.permutations.indexedRoR("ab"d);
+    assert(projectionD.equal!equal([['a', 'b'], ['b', 'a']]));
+
+    auto projectionC = 2.permutations.indexedRoR(only('a', 'b'));
+    assert(projectionC.equal!equal([['a', 'b'], ['b', 'a']]));
+}
+
+@safe pure nothrow unittest
+{
+    import std.algorithm.comparison: equal;
+    import std.range: dropOne;
+
+    auto perms = 2.permutations;
+    auto projection = perms.indexedRoR([1, 2]);
+    assert(projection.length == 2);
+
+    // can save
+    assert(projection.save.dropOne.front.equal([2, 1]));
+    assert(projection.front.equal([1, 2]));
+}
+
+@safe nothrow @nogc unittest
+{
+    import std.algorithm.comparison: equal;
+    static perms = 2.permutations;
+    static immutable projectionArray = [1, 2];
+    auto projection = perms.indexedRoR(projectionArray);
+
+    static immutable result = [[1, 2], [2, 1]];
+    assert(projection.equal!equal(result));
+}
 
 /**
 Lazily computes all _permutations of `r` using $(WEB
@@ -246,11 +310,14 @@ the number of permutations is `|n|!`.
 
 Params:
     n = number of elements (`|r|`)
-    r = $(REF_ALTTEXT Input range, isInputRange, std, range, primitives)
+    r = $(REF_ALTTEXT Random access range, isRandomAccessRange, std, range, primitives)
     alloc = custom Allocator
 
 Returns:
     Forward range, which yields the permutations
+
+See_Also:
+    $(LREF Permutations)
 */
 Permutations permutations(size_t n) @safe pure nothrow
 {
@@ -260,42 +327,9 @@ Permutations permutations(size_t n) @safe pure nothrow
 
 /// ditto
 IndexedRoR!(Permutations, Range) permutations(Range)(Range r) @safe pure nothrow
-if (isInputRange!Range && hasLength!Range)
+if (isRandomAccessRange!Range)
 {
     return permutations(r.length).indexedRoR(r);
-}
-
-///
-pure @safe nothrow unittest
-{
-    import std.algorithm.comparison : equal;
-    import std.range : iota;
-
-    auto expectedRes = [[0, 1, 2],
-         [1, 0, 2],
-         [2, 0, 1],
-         [0, 2, 1],
-         [1, 2, 0],
-         [2, 1, 0]];
-
-    auto r = iota(3);
-    auto rp = permutations(r.length).indexedRoR(r);
-    assert(rp.equal!equal(expectedRes));
-
-    // direct style
-    auto rp2 = iota(3).permutations;
-    assert(rp2.equal!equal(expectedRes));
-}
-
-pure @safe nothrow unittest
-{
-    // is copyable?
-    import std.algorithm: equal;
-    import std.range: iota, dropOne;
-    auto a = iota(2).permutations;
-    assert(a.front.equal([0, 1]));
-    assert(a.save.dropOne.front.equal([1, 0]));
-    assert(a.front.equal([0, 1]));
 }
 
 /// ditto
@@ -308,41 +342,29 @@ Permutations makePermutations(Allocator)(auto ref Allocator alloc, size_t n)
     return Permutations(state, indices);
 }
 
-/*
-Disposes a Permutations object. It destroys and then deallocates the
-Permutations object pointed to by a pointer.
-It is assumed the respective entities had been allocated with the same allocator.
+/**
+Lazy Forward range of permutations using $(WEB
+en.wikipedia.org/wiki/Heap%27s_algorithm, Heap's algorithm).
 
-Params:
-    alloc = Custom allocator
-    perm = Permutations object
+It always generates the permutations from 0 to `n - 1`,
+use $(LREF indexedRoR) to map it to your range.
+
+Generating a new item is in `O(k)` (amortized `O(1)`),
+the total number of elements is `n^k`.
+
+See_Also:
+    $(LREF permutations), $(LREF makePermutations)
 */
-void dispose(Allocator)(auto ref Allocator alloc, auto ref Permutations perm)
-{
-    import std.experimental.allocator: dispose;
-    dispose(alloc, perm.state);
-    dispose(alloc, perm.indices);
-}
-
-static if (__VERSION__ > 2069) @nogc unittest
-{
-    import std.algorithm: equal;
-    import std.range : iota;
-
-    import std.experimental.allocator.mallocator;
-
-    static immutable expected2 = [[0, 1], [1, 0]];
-    auto r = iota(2);
-    auto rp = makePermutations(Mallocator.instance, r.length);
-    assert(rp.indexedRoR(r).equal!equal(expected2));
-    dispose(Mallocator.instance, rp);
-}
-
 struct Permutations
 {
     private uint[] indices, state;
     private bool _empty;
+    size_t _max_states = 1, _pos;
 
+    /**
+    state should have the length of `n - 1`,
+    whereas the length of indices should be `n`
+    */
     this(uint[] state, uint[] indices) @safe pure nothrow @nogc
     in
     {
@@ -359,6 +381,10 @@ struct Permutations
         this.state = state;
 
         _empty = indices.length == 0;
+
+        // factorial
+        foreach (i; 1..indices.length + 1)
+            _max_states *= i;
     }
 
     ///
@@ -371,6 +397,10 @@ struct Permutations
     void popFront() @safe pure nothrow @nogc
     {
         import std.algorithm.mutation : swapAt;
+
+        assert(!empty);
+        _pos++;
+
         for (uint h = 0;;h++)
         {
             if (h+2 > indices.length)
@@ -395,9 +425,15 @@ struct Permutations
     }
 
     ///
-    @property bool empty() @safe pure nothrow @nogc
+    @property bool empty() @safe pure nothrow @nogc const
     {
         return _empty;
+    }
+
+    ///
+    @property size_t length() @safe pure nothrow @nogc const
+    {
+        return _max_states - _pos;
     }
 
     ///
@@ -410,24 +446,110 @@ struct Permutations
     }
 }
 
+///
+pure @safe nothrow unittest
+{
+    import std.algorithm.comparison : equal;
+    import std.range : iota;
+
+    auto expectedRes = [[0, 1, 2],
+         [1, 0, 2],
+         [2, 0, 1],
+         [0, 2, 1],
+         [1, 2, 0],
+         [2, 1, 0]];
+
+    auto r = iota(3);
+    auto rp = permutations(r.length).indexedRoR(r);
+    assert(rp.equal!equal(expectedRes));
+
+    // direct style
+    auto rp2 = iota(3).permutations;
+    assert(rp2.equal!equal(expectedRes));
+}
+
+///
+static if (__VERSION__ > 2069) @nogc unittest
+{
+    import std.algorithm: equal;
+    import std.range : iota;
+
+    import std.experimental.allocator.mallocator;
+
+    static immutable expected2 = [[0, 1], [1, 0]];
+    auto r = iota(2);
+    auto rp = makePermutations(Mallocator.instance, r.length);
+    assert(rp.indexedRoR(r).equal!equal(expected2));
+    dispose(Mallocator.instance, rp);
+}
+
+pure @safe nothrow unittest
+{
+    // is copyable?
+    import std.algorithm: equal;
+    import std.range: iota, dropOne;
+    auto a = iota(2).permutations;
+    assert(a.front.equal([0, 1]));
+    assert(a.save.dropOne.front.equal([1, 0]));
+    assert(a.front.equal([0, 1]));
+
+    // length
+    assert(1.permutations.length == 1);
+    assert(2.permutations.length == 2);
+    assert(3.permutations.length == 6);
+    assert(4.permutations.length == 24);
+    assert(10.permutations.length == 3628800);
+}
+
+static if (__VERSION__ > 2069) unittest
+{
+    // check invalid
+    import std.exception: assertThrown;
+    import core.exception: AssertError;
+    import std.experimental.allocator.mallocator: Mallocator;
+
+    assertThrown!AssertError(0.permutations);
+    assertThrown!AssertError(Mallocator.instance.makePermutations(0));
+}
+
 /**
-Lazily computes the Cartesian power of $(D r) with itself
-for a number of repetitions $(D repeat).
+Disposes a Permutations object. It destroys and then deallocates the
+Permutations object pointed to by a pointer.
+It is assumed the respective entities had been allocated with the same allocator.
+
+Params:
+    alloc = Custom allocator
+    perm = Permutations object
+
+See_Also:
+    $(LREF makePermutations)
+*/
+void dispose(Allocator)(auto ref Allocator alloc, auto ref Permutations perm)
+{
+    import std.experimental.allocator: dispose;
+    dispose(alloc, perm.state);
+    dispose(alloc, perm.indices);
+}
+
+/**
+Lazily computes the Cartesian power of `r` with itself
+for a number of repetitions `D repeat`.
 If the input is sorted, the product is in lexicographic order.
 
 While generating a new item is in `O(k)` (amortized `O(1)`),
 the total number of elements is `n^k`.
 
-For example $(D"AB".cartesianPower(2).array) returns $(D["AA", "AB", "BA", "BB"])
-
 Params:
     n = number of elements (`|r|`)
-    r = $(REF_ALTTEXT Input range, isInputRange, std, range, primitives)
+    r = $(REF_ALTTEXT Random access range, isRandomAccessRange, std, range, primitives)
     repeat = number of repetitions
     alloc = custom Allocator
 
 Returns:
     Forward range, which yields the product items
+
+See_Also:
+    $(LREF CartesianPower)
 */
 CartesianPower cartesianPower(size_t n, size_t repeat = 1) @safe pure nothrow
 in
@@ -441,7 +563,7 @@ body
 
 /// ditto
 IndexedRoR!(CartesianPower, Range) cartesianPower(Range)(Range r, size_t repeat = 1)
-if (isInputRange!Range && hasLength!Range)
+if (isRandomAccessRange!Range)
 in
 {
     assert(repeat >= 1, "Invalid number of repetitions");
@@ -452,7 +574,7 @@ body
 }
 
 /// ditto
-CartesianPower makeCartesianPower(Allocator)(size_t n, size_t repeat, auto ref Allocator alloc)
+CartesianPower makeCartesianPower(Allocator)(auto ref Allocator alloc, size_t n, size_t repeat)
 in
 {
     assert(repeat >= 1, "Invalid number of repetitions");
@@ -463,22 +585,17 @@ body
     return CartesianPower(n, alloc.makeArray!uint(repeat));
 }
 
-/*
-Disposes a CartesianPower object. It destroys and then deallocates the
-CartesianPower object pointed to by a pointer.
-It is assumed the respective entities had been allocated with the same allocator.
+/**
+Lazy Forward range of Cartesian Power.
+It always generates Cartesian Power from 0 to `n - 1`,
+use $(LREF indexedRoR) to map it to your range.
 
-Params:
-    alloc = Custom allocator
-    perm = CartesianPower object
+Generating a new item is in `O(k)` (amortized `O(1)`),
+the total number of elements is `n^k`.
+
+See_Also:
+    $(LREF cartesianPower), $(LREF makeCartesianPower)
 */
-
-void dispose(Allocator)(auto ref Allocator alloc, auto ref CartesianPower cartesianPower)
-{
-    import std.experimental.allocator: dispose;
-    dispose(alloc, cartesianPower._state);
-}
-
 struct CartesianPower
 {
 
@@ -489,6 +606,7 @@ private:
 
 public:
 
+    /// state should have the length of `repeat`
     this(size_t n, uint[] state) @safe pure nothrow @nogc
     {
         assert(state.length >= 1, "Invalid number of repetitions");
@@ -532,13 +650,13 @@ public:
     }
 
     ///
-    @property size_t length() @safe pure nothrow @nogc
+    @property size_t length() @safe pure nothrow @nogc const
     {
         return _max_states - _pos;
     }
 
     ///
-    @property bool empty() @safe pure nothrow @nogc
+    @property bool empty() @safe pure nothrow @nogc const
     {
         return _pos == _max_states;
     }
@@ -551,7 +669,6 @@ public:
         return c;
     }
 }
-
 
 ///
 pure nothrow @safe unittest
@@ -567,19 +684,20 @@ pure nothrow @safe unittest
     assert("AB"d.cartesianPower(2).equal!equal(["AA"d, "AB"d, "BA"d, "BB"d]));
 }
 
+///
 static if (__VERSION__ > 2069) @nogc unittest
 {
     import std.algorithm: equal;
     import std.range: iota;
 
-    import std.experimental.allocator.mallocator;
+    import std.experimental.allocator.mallocator: Mallocator;
     auto alloc = Mallocator.instance;
 
     static immutable expected2r2 = [[0, 0], [0, 1], [1, 0], [1, 1]];
     auto r = iota(2);
-    auto rc = makeCartesianPower(r.length, 2, alloc);
+    auto rc = alloc.makeCartesianPower(r.length, 2);
     assert(rc.indexedRoR(r).equal!equal(expected2r2));
-    dispose(alloc, rc);
+    alloc.dispose(rc);
 }
 
 pure nothrow @safe unittest
@@ -613,23 +731,69 @@ pure nothrow @safe unittest
     assert(d.length == 1);
 }
 
+static if (__VERSION__ > 2069) unittest
+{
+    // check invalid
+    import std.exception: assertThrown;
+    import core.exception: AssertError;
+    import std.experimental.allocator.mallocator : Mallocator;
+
+    assertThrown!AssertError(0.cartesianPower(0));
+    assertThrown!AssertError(Mallocator.instance.makeCartesianPower(0, 0));
+}
+
+// length
+pure nothrow @safe unittest
+{
+    assert(1.cartesianPower(1).length == 1);
+    assert(1.cartesianPower(2).length == 1);
+    assert(2.cartesianPower(1).length == 2);
+    assert(2.cartesianPower(2).length == 4);
+    assert(2.cartesianPower(3).length == 8);
+    assert(3.cartesianPower(1).length == 3);
+    assert(3.cartesianPower(2).length == 9);
+    assert(3.cartesianPower(3).length == 27);
+    assert(3.cartesianPower(4).length == 81);
+    assert(4.cartesianPower(10).length == 1048576);
+    assert(14.cartesianPower(7).length == 105413504);
+}
+
 /**
-Lazily computes all k-combinations of $(D r).
+Disposes a CartesianPower object. It destroys and then deallocates the
+CartesianPower object pointed to by a pointer.
+It is assumed the respective entities had been allocated with the same allocator.
+
+Params:
+    alloc = Custom allocator
+    perm = CartesianPower object
+
+See_Also:
+    $(LREF makeCartesianPower)
+*/
+void dispose(Allocator)(auto ref Allocator alloc, auto ref CartesianPower cartesianPower)
+{
+    import std.experimental.allocator: dispose;
+    dispose(alloc, cartesianPower._state);
+}
+
+/**
+Lazily computes all k-combinations of `r`.
 Imagine this as the $(LREF cartesianPower) filtered for only strictly ordered items.
 
 While generating a new combination is in `O(k)`,
 the number of combinations is `binomial(n, k)`.
 
-For example $(D"AB".combinations(2).array) returns $(D["AB"]).
-
 Params:
     n = number of elements (`|r|`)
-    r = $(REF_ALTTEXT Input range, isInputRange, std, range, primitives)
+    r = $(REF_ALTTEXT Random access range, isRandomAccessRange, std, range, primitives)
     k = number of combinations
     alloc = custom Allocator
 
 Returns:
     Forward range, which yields the k-combinations items
+
+See_Also:
+    $(LREF Combinations)
 */
 Combinations combinations(size_t n, size_t k = 1) @safe pure nothrow
 in
@@ -643,7 +807,7 @@ body
 
 /// ditto
 IndexedRoR!(Combinations, Range) combinations(Range)(Range r, uint k = 1)
-if (isInputRange!Range && hasLength!Range)
+if (isRandomAccessRange!Range)
 in
 {
     assert(k >= 1, "Invalid number of combinations");
@@ -654,7 +818,7 @@ body
 }
 
 /// ditto
-Combinations makeCombinations(Allocator)(size_t n, size_t repeat, auto ref Allocator alloc)
+Combinations makeCombinations(Allocator)(auto ref Allocator alloc, size_t n, size_t repeat)
 in
 {
     assert(repeat >= 1, "Invalid number of repetitions");
@@ -665,22 +829,17 @@ body
     return Combinations(cast(uint) n, alloc.makeArray!uint(cast(uint) repeat));
 }
 
-/*
-Disposes a Combinations object. It destroys and then deallocates the
-Combinations object pointed to by a pointer.
-It is assumed the respective entities had been allocated with the same allocator.
+/**
+Lazy Forward range of Combinations.
+It always generates combinations from 0 to `n - 1`,
+use $(LREF indexedRoR) to map it to your range.
 
-Params:
-    alloc = Custom allocator
-    perm = Combinations object
+Generating a new combination is in `O(k)`,
+the number of combinations is `binomial(n, k)`.
+
+See_Also:
+    $(LREF combinations), $(LREF makeCombinations)
 */
-
-void dispose(Allocator)(auto ref Allocator alloc, auto ref Combinations combs)
-{
-    import std.experimental.allocator: dispose;
-    dispose(alloc, combs.state);
-}
-
 struct Combinations
 {
 
@@ -691,6 +850,7 @@ private:
 
 public:
 
+    /// state should have the length of `repeat`
     this(size_t n, uint[] state) @safe pure nothrow @nogc
     {
         import std.range: iota;
@@ -763,13 +923,13 @@ public:
     }
 
     ///
-    @property size_t length() @safe pure nothrow @nogc
+    @property size_t length() @safe pure nothrow @nogc const
     {
         return max_states - pos;
     }
 
     ///
-    @property bool empty() @safe pure nothrow @nogc
+    @property bool empty() @safe pure nothrow @nogc const
     {
         return pos == max_states;
     }
@@ -783,7 +943,6 @@ public:
     }
 }
 
-
 ///
 pure nothrow @safe unittest
 {
@@ -795,6 +954,7 @@ pure nothrow @safe unittest
     assert("ABC"d.combinations(2).equal!equal(["AB"d, "AC"d, "BC"d]));
 }
 
+///
 static if (__VERSION__ > 2069) @nogc unittest
 {
     import std.algorithm: equal;
@@ -805,7 +965,7 @@ static if (__VERSION__ > 2069) @nogc unittest
 
     static immutable expected3r2 = [[0, 1], [0, 2], [1, 2]];
     auto r = iota(3);
-    auto rc = makeCombinations(r.length, 2, alloc);
+    auto rc = alloc.makeCombinations(r.length, 2);
     assert(rc.indexedRoR(r).equal!equal(expected3r2));
     alloc.dispose(rc);
 }
@@ -890,26 +1050,75 @@ pure nothrow @safe unittest
     assert(iota(7).combinations(5).equal!equal(expected7r5));
 }
 
+// length
+pure nothrow @safe unittest
+{
+    assert(1.combinations(1).length == 1);
+    assert(1.combinations(2).length == 0);
+    assert(2.combinations(1).length == 2);
+    assert(2.combinations(2).length == 1);
+    assert(2.combinations(3).length == 0);
+    assert(3.combinations(1).length == 3);
+    assert(3.combinations(2).length == 3);
+    assert(3.combinations(3).length == 1);
+    assert(3.combinations(4).length == 0);
+    assert(4.combinations(10).length == 0);
+    assert(14.combinations(11).length == 364);
+    assert(20.combinations(7).length == 77520);
+    assert(30.combinations(10).length == 30045015);
+    assert(30.combinations(15).length == 155117520);
+}
+
+static if (__VERSION__ > 2069) unittest
+{
+    // check invalid
+    import std.exception: assertThrown;
+    import core.exception: AssertError;
+    import std.experimental.allocator.mallocator: Mallocator;
+
+    assertThrown!AssertError(0.combinations(0));
+    assertThrown!AssertError(Mallocator.instance.makeCombinations(0, 0));
+}
+
 /**
-Lazily computes all k-combinations of $(D r) with repetitions.
+Disposes a Combinations object. It destroys and then deallocates the
+Combinations object pointed to by a pointer.
+It is assumed the respective entities had been allocated with the same allocator.
+
+Params:
+    alloc = Custom allocator
+    perm = Combinations object
+
+See_Also:
+    $(LREF makeCombinations)
+*/
+void dispose(Allocator)(auto ref Allocator alloc, auto ref Combinations combs)
+{
+    import std.experimental.allocator: dispose;
+    dispose(alloc, combs.state);
+}
+
+/**
+Lazily computes all k-combinations of `r` with repetitions.
 A k-combination with repetitions, or k-multicombination,
 or multisubset of size k from a set S is given by a sequence of k
 not necessarily distinct elements of S, where order is not taken into account.
 Imagine this as the cartesianPower filtered for only ordered items.
 
-While generating a new combination is in `O(k)`,
-the number of combinations is `binomial(n + k - 1, k)`.
-
-For example $(D"AB".combinationsRepeat(2).array) returns $(D["AA", "AB", "BB"]).
+While generating a new combination with repeats is in `O(k)`,
+the number of combinations with repeats is `binomial(n + k - 1, k)`.
 
 Params:
     n = number of elements (`|r|`)
-    r = $(REF_ALTTEXT Input range, isInputRange, std, range, primitives)
+    r = $(REF_ALTTEXT Random access range, isRandomAccessRange, std, range, primitives)
     k = number of combinations
     alloc = custom Allocator
 
 Returns:
     Forward range, which yields the k-multicombinations items
+
+See_Also:
+    $(LREF CombinationsRepeat)
 */
 CombinationsRepeat combinationsRepeat(size_t n, size_t k = 1) @safe pure nothrow
 in
@@ -923,7 +1132,7 @@ body
 
 /// ditto
 IndexedRoR!(CombinationsRepeat, Range) combinationsRepeat(Range)(Range r, size_t k = 1)
-if (isInputRange!Range && hasLength!Range)
+if (isRandomAccessRange!Range)
 in
 {
     assert(k >= 1, "Invalid number of combinations");
@@ -934,7 +1143,7 @@ body
 }
 
 /// ditto
-CombinationsRepeat makeCombinationsRepeat(Allocator)(size_t n, size_t repeat, auto ref Allocator alloc)
+CombinationsRepeat makeCombinationsRepeat(Allocator)(auto ref Allocator alloc, size_t n, size_t repeat)
 in
 {
     assert(repeat >= 1, "Invalid number of repetitions");
@@ -945,22 +1154,17 @@ body
     return CombinationsRepeat(n, alloc.makeArray!uint(repeat));
 }
 
-/*
-Disposes a CombinationsRepeat object. It destroys and then deallocates the
-CombinationsRepeat object pointed to by a pointer.
-It is assumed the respective entities had been allocated with the same allocator.
+/**
+Lazy Forward range of combinations with repeats.
+It always generates combinations with repeats from 0 to `n - 1`,
+use $(LREF indexedRoR) to map it to your range.
 
-Params:
-    alloc = Custom allocator
-    perm = CombinationsRepeat object
+Generating a new combination with repeats is in `O(k)`,
+the number of combinations with repeats is `binomial(n, k)`.
+
+See_Also:
+    $(LREF combinationsRepeat), $(LREF makeCombinationsRepeat)
 */
-
-void dispose(Allocator)(auto ref Allocator alloc, auto ref CombinationsRepeat combs)
-{
-    import std.experimental.allocator: dispose;
-    dispose(alloc, combs.state);
-}
-
 struct CombinationsRepeat
 {
 
@@ -971,6 +1175,8 @@ private:
     size_t max_states, pos;
 
 public:
+
+    /// state should have the length of `repeat`
     this(size_t n, uint[] state) @safe pure nothrow @nogc
     {
         this.n = cast(uint) n;
@@ -1019,13 +1225,13 @@ public:
     }
 
     ///
-    @property size_t length() @safe pure nothrow @nogc
+    @property size_t length() @safe pure nothrow @nogc const
     {
         return max_states - pos;
     }
 
     ///
-    @property bool empty() @safe pure nothrow @nogc
+    @property bool empty() @safe pure nothrow @nogc const
     {
         return pos == max_states;
     }
@@ -1049,6 +1255,22 @@ pure nothrow @safe unittest
     assert(iota(2).combinationsRepeat(2).equal!equal([[0, 0], [0, 1], [1, 1]]));
     assert(iota(3).combinationsRepeat(2).equal!equal([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2]]));
     assert("AB"d.combinationsRepeat(2).equal!equal(["AA"d, "AB"d,  "BB"d]));
+}
+
+///
+static if (__VERSION__ > 2069) @nogc unittest
+{
+    import std.algorithm: equal;
+    import std.range: iota;
+
+    import std.experimental.allocator.mallocator;
+    auto alloc = Mallocator.instance;
+
+    static immutable expected3r1 = [[0], [1], [2]];
+    auto r = iota(3);
+    auto rc = alloc.makeCombinationsRepeat(r.length, 1);
+    assert(rc.indexedRoR(r).equal!equal(expected3r1));
+    alloc.dispose(rc);
 }
 
 unittest
@@ -1078,6 +1300,25 @@ unittest
     assert(d.length == 2);
     d.popFront;
     assert(d.length == 1);
+}
+
+// length
+pure nothrow @safe unittest
+{
+    assert(1.combinationsRepeat(1).length == 1);
+    assert(1.combinationsRepeat(2).length == 1);
+    assert(2.combinationsRepeat(1).length == 2);
+    assert(2.combinationsRepeat(2).length == 3);
+    assert(2.combinationsRepeat(3).length == 4);
+    assert(3.combinationsRepeat(1).length == 3);
+    assert(3.combinationsRepeat(2).length == 6);
+    assert(3.combinationsRepeat(3).length == 10);
+    assert(3.combinationsRepeat(4).length == 15);
+    assert(4.combinationsRepeat(10).length == 286);
+    assert(11.combinationsRepeat(14).length == 1961256);
+    assert(20.combinationsRepeat(7).length == 657800);
+    assert(20.combinationsRepeat(10).length == 20030010);
+    assert(30.combinationsRepeat(10).length == 635745396);
 }
 
 pure nothrow @safe unittest
@@ -1133,17 +1374,31 @@ pure nothrow @safe unittest
     assert(iota(5).combinationsRepeat(2).equal!equal(expected5r2));
 }
 
-static if (__VERSION__ > 2069) @nogc unittest
+static if (__VERSION__ > 2069) unittest
 {
-    import std.algorithm: equal;
-    import std.range: iota;
+    // check invalid
+    import std.exception: assertThrown;
+    import core.exception: AssertError;
+    import std.experimental.allocator.mallocator: Mallocator;
 
-    import std.experimental.allocator.mallocator;
-    auto alloc = Mallocator.instance;
+    assertThrown!AssertError(0.combinationsRepeat(0));
+    assertThrown!AssertError(Mallocator.instance.makeCombinationsRepeat(0, 0));
+}
 
-    static immutable expected3r1 = [[0], [1], [2]];
-    auto r = iota(3);
-    auto rc = makeCombinationsRepeat(r.length, 1, alloc);
-    assert(rc.indexedRoR(r).equal!equal(expected3r1));
-    alloc.dispose(rc);
+/**
+Disposes a CombinationsRepeat object. It destroys and then deallocates the
+CombinationsRepeat object pointed to by a pointer.
+It is assumed the respective entities had been allocated with the same allocator.
+
+Params:
+    alloc = Custom allocator
+    perm = CombinationsRepeat object
+
+See_Also:
+    $(LREF makeCombinationsRepeat)
+*/
+void dispose(Allocator)(auto ref Allocator alloc, auto ref CombinationsRepeat combs)
+{
+    import std.experimental.allocator: dispose;
+    dispose(alloc, combs.state);
 }

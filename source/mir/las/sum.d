@@ -13,8 +13,8 @@ module mir.las.sum;
 unittest
 {
     import std.algorithm.iteration: map;
-    auto ar = [1, 1e100, 1, -1e100].map!(a => a*10000);
-    const r = 20000;
+    auto ar = [1, 1e100, 1, -1e100].map!(a => a*10_000);
+    const r = 20_000;
     assert(r == ar.sum!(Summation.kbn));
     assert(r == ar.sum!(Summation.kb2));
     assert(r == ar.sum!(Summation.precise));
@@ -117,12 +117,12 @@ unittest
 
     //with integral promotion
     assert(sum([false, true, true, false, true]) == 3);
-    assert(sum(ubyte.max.repeat(100)) == 25500);
+    assert(sum(ubyte.max.repeat(100)) == 25_500);
 
     //The result may overflow
-    assert(uint.max.repeat(3).sum()           ==  4294967293U );
+    assert(uint.max.repeat(3).sum()           ==  4_294_967_293U );
     //But a seed can be used to change the summation primitive
-    assert(uint.max.repeat(3).sum(ulong.init) == 12884901885UL);
+    assert(uint.max.repeat(3).sum(ulong.init) == 12_884_901_885UL);
 
     //Floating point summation
     assert(sum([1.0, 2.0, 3.0, 4.0]) == 10);
@@ -176,7 +176,7 @@ nothrow @nogc unittest
     assert(N+N == e.sum()); //finite number
 }
 
-/// Moving mean 
+/// Moving mean
 unittest
 {
     class MovingAverage
@@ -185,7 +185,7 @@ unittest
         double[] circularBuffer;
         size_t frontIndex;
 
-        double avg() @property
+        double avg() @property const
         {
             return summator.sum() / circularBuffer.length;
         }
@@ -274,7 +274,7 @@ enum Summation
         "Adaptive Precision Floating-Point Arithmetic and Fast Robust Geometric Predicates", Jonathan Richard Shewchuk),
         $(LINK2 http://bugs.python.org/file10357/msum4.py, Mark Dickinson's post at bugs.python.org).
     +/
-    
+
     /+
     Precise summation function as msum() by Raymond Hettinger in
     <http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/393090>,
@@ -374,9 +374,9 @@ struct Summator(T, Summation summation)
         @disable this();
 
     static if(summation == Summation.pairwise)
-        enum bool fastPairwise = 
-            isFloatingPoint!F || 
-            isComplex!F || 
+        private enum bool fastPairwise =
+            isFloatingPoint!F ||
+            isComplex!F ||
             is(F : __vector(W[N]), W, size_t N);
             //false;
 
@@ -388,7 +388,8 @@ struct Summator(T, Summation summation)
         }
         else
         {
-            static assert(summation == Summation.kahan, "internal error in mir.las.sum.Summator: template constraints is broken.");
+            static assert(summation == Summation.kahan,
+                "internal error in mir.las.sum.Summator: template constraints is broken.");
             alias F = T;
         }
     }
@@ -500,7 +501,8 @@ struct Summator(T, Summation summation)
                 }
                 else
                 {
-                    if (!.isInfinity(cast(T)y) || partials.length > 1 && !signbit(l * partials[$-2]) && t == l)
+                    if (!.isInfinity(cast(T)y) ||
+                        ((partials.length > 1 && !signbit(l * partials[$-2])) && t == l))
                         return 0;
                 }
             }
@@ -917,7 +919,7 @@ public:
                         v[0xD] += r[0x1D];
                         v[0xE] += r[0x1E];
                         v[0xF] += r[0x1F];
-                        
+
                         v[0x0] += v[0x8];
                         v[0x1] += v[0x9];
                         v[0x2] += v[0xA];
@@ -926,12 +928,12 @@ public:
                         v[0x5] += v[0xD];
                         v[0x6] += v[0xE];
                         v[0x7] += v[0xF];
-                        
+
                         v[0x0] += v[0x4];
                         v[0x1] += v[0x5];
                         v[0x2] += v[0x6];
                         v[0x3] += v[0x7];
-                        
+
                         v[0x0] += v[0x2];
                         v[0x1] += v[0x3];
 
@@ -940,7 +942,7 @@ public:
                         r.popFrontExactly(0x20);
 
                         put(v[0x0]);
-                    }                    
+                    }
                     L: if (r.length >= 0x10)
                     {
                         v[0x0] = cast(F) r[0x0];
@@ -959,7 +961,7 @@ public:
                         v[0xD] = cast(F) r[0xD];
                         v[0xE] = cast(F) r[0xE];
                         v[0xF] = cast(F) r[0xF];
-                        
+
                         v[0x0] += v[0x8];
                         v[0x1] += v[0x9];
                         v[0x2] += v[0xA];
@@ -968,12 +970,12 @@ public:
                         v[0x5] += v[0xD];
                         v[0x6] += v[0xE];
                         v[0x7] += v[0xF];
-                        
+
                         v[0x0] += v[0x4];
                         v[0x1] += v[0x5];
                         v[0x2] += v[0x6];
                         v[0x3] += v[0x7];
-                        
+
                         v[0x0] += v[0x2];
                         v[0x1] += v[0x3];
 
@@ -1001,7 +1003,7 @@ public:
                         v[0x1] += v[0x5];
                         v[0x2] += v[0x6];
                         v[0x3] += v[0x7];
-                        
+
                         v[0x0] += v[0x2];
                         v[0x1] += v[0x3];
 
@@ -1017,7 +1019,7 @@ public:
                         v[0x1] = cast(F) r[0x1];
                         v[0x2] = cast(F) r[0x2];
                         v[0x3] = cast(F) r[0x3];
-                        
+
                         v[0x0] += v[0x2];
                         v[0x1] += v[0x3];
 
@@ -1031,7 +1033,7 @@ public:
                     {
                         v[0x0] = cast(F) r[0x0];
                         v[0x1] = cast(F) r[0x1];
-                        
+
                         v[0x0] += v[0x1];
 
                         r.popFrontExactly(2);
@@ -1041,7 +1043,7 @@ public:
                     if (r.length)
                     {
                         v[0x0] = cast(F) r[0x0];
-                        
+
                         put(v[0x0]);
                     }
                 }
@@ -1067,7 +1069,7 @@ public:
                         v[0xD] = cast(F) r[i++];
                         v[0xE] = cast(F) r[i++];
                         v[0xF] = cast(F) r[i++];
-                        
+
                         v[0x0] += v[0x8];
                         v[0x1] += v[0x9];
                         v[0x2] += v[0xA];
@@ -1076,12 +1078,12 @@ public:
                         v[0x5] += v[0xD];
                         v[0x6] += v[0xE];
                         v[0x7] += v[0xF];
-                        
+
                         v[0x0] += v[0x4];
                         v[0x1] += v[0x5];
                         v[0x2] += v[0x6];
                         v[0x3] += v[0x7];
-                        
+
                         v[0x0] += v[0x2];
                         v[0x1] += v[0x3];
 
@@ -1104,7 +1106,7 @@ public:
                         v[0x1] += v[0x5];
                         v[0x2] += v[0x6];
                         v[0x3] += v[0x7];
-                        
+
                         v[0x0] += v[0x2];
                         v[0x1] += v[0x3];
 
@@ -1120,7 +1122,7 @@ public:
                         v[0x1] = cast(F) r[i++];
                         v[0x2] = cast(F) r[i++];
                         v[0x3] = cast(F) r[i++];
-                        
+
                         v[0x0] += v[0x2];
                         v[0x1] += v[0x3];
 
@@ -1134,7 +1136,7 @@ public:
                     {
                         v[0x0] = cast(F) r[i++];
                         v[0x1] = cast(F) r[i++];
-                        
+
                         v[0x0] += v[0x1];
 
                         r.popFrontExactly(2);
@@ -1144,7 +1146,7 @@ public:
                     if (length - i)
                     {
                         v[0x0] = cast(F) r[i];
-                        
+
                         put(v[0x0]);
                     }
                 }
@@ -1371,7 +1373,7 @@ public:
     }
 
     ///Returns $(D Summator) with extended internal partial sums.
-    C opCast(C : Summator!(P, _summation), P, Summation _summation)()
+    C opCast(C : Summator!(P, _summation), P, Summation _summation)() const
         if (
             _summation == summation &&
             isMutable!C &&
@@ -1462,7 +1464,7 @@ public:
     $(D cast(C)) operator overloading. Returns $(D cast(C)sum()).
     See also: $(D cast)
     +/
-    C opCast(C)() if (is(Unqual!C == T))
+    C opCast(C)() const if (is(Unqual!C == T))
     {
         return cast(C)sum();
     }
@@ -1811,7 +1813,7 @@ nothrow unittest
         tuple([-2.^^-1074, -M, -M, 2.^^970], -double.infinity),
         tuple([2.^^930, -2.^^980, M, M, M, -M], 1.7976931348622137e+308),
         tuple([M, M, -1e307], 1.6976931348623159e+308),
-        tuple([1e16, 1., 1e-16], 10000000000000002.0),
+        tuple([1e16, 1., 1e-16], 10_000_000_000_000_002.0),
     ];
     foreach (i, test; tests)
     {
@@ -2205,7 +2207,9 @@ private template SummationType(F)
     version(X86) //workaround for Issue 13474
     {
         static if (!is(Unqual!F == real) && (isComplex!F || !is(Unqual!(typeof(F.init.re)) == real)))
-            pragma(msg, "Note: Summation algorithms on x86 use 80bit representation for single and double floating point numbers.");
+            enum note =  "Note: Summation algorithms on x86 use 80bit representation"
+                       ~ "for single and double floating point numbers.";
+            pragma(msg, note);
         static if (isComplex!F)
         {
             import std.complex : Complex;

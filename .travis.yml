@@ -11,9 +11,13 @@ d:
  - ldc-1.0.0-alpha1
  - ldc-0.17.0
 install:
+ - if [[ $(dmd --help | head -n 1 | cut -d ' ' -f 4) == 'v2.071.0' && $TRAVIS_OS_NAME == 'linux' ]] ; then export IS_LATEST_PHOBOS=1 ; fi
  - wget -O doveralls "https://github.com/ColdenCullen/doveralls/releases/download/v1.2.0/doveralls_linux_travis"
  - chmod +x doveralls
+ - wget -O dscanner "http://releases.dlang.io/dscanner/0.3.0-git/dscanner"
+ - chmod +x dscanner
 script:
+ - if [ "$IS_LATEST_PHOBOS" ] ; then ./dscanner --config .dscanner.ini --styleCheck source 2> /dev/null ; else echo "NOT_LATEST"; fi
  - dub test -b unittest-cov
 after_success:
  - bash <(curl -s https://codecov.io/bash)
@@ -37,7 +41,7 @@ deploy:
     on:
       branch: master
       repo: DlangScience/mir
-      condition: "$(dmd --help | head -n 1 | cut -d ' ' -f 4) == 'v2.070.2' && $TRAVIS_OS_NAME == 'linux'"
+      condition: "$IS_LATEST_PHOBOS"
   - provider: s3
     access_key_id: AKIAIQO2FAQJAHV7ICTQ
     secret_access_key:
@@ -52,4 +56,4 @@ deploy:
     on:
       branch: master
       repo: DlangScience/mir
-      condition: "$(dmd --help | head -n 1 | cut -d ' ' -f 4) == 'v2.070.2' && $TRAVIS_OS_NAME == 'linux'"
+      condition: "$IS_LATEST_PHOBOS"
