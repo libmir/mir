@@ -367,8 +367,17 @@ private mixin template _sparse_range_methods(size_t N, T)
 	}
 }
 
-CompressedTensor!(N - 1, V, I, J)
+CompressedTensor!(N - 1, T, I, J)
 	compress
+	(I = uint, J = uint, S : Slice!(N, R), size_t N, R : SparseMap!T, T)
+	(S slice)
+	if(N > 1)
+{
+	return compressTo!T(slice);
+}
+
+CompressedTensor!(N - 1, V, I, J)
+	compressTo
 	(V, I = uint, J = uint, S : Slice!(N, R), size_t N, R : SparseMap!T, T)
 	(S slice)
 	if(is(T : V) && N > 1)
@@ -397,7 +406,7 @@ CompressedTensor!(N - 1, V, I, J)
 	map.pointers[1] = 0;
 	foreach(t, e; data)
 	{
-		map.values[t] = e.value;
+		map.values[t] = cast(V) e.value;
 		size_t index = e.key;
 		map.indexes[t] = cast(I)(index % slice.length!(N - 1));
 		auto p = index / slice.length!(N - 1);
@@ -417,16 +426,16 @@ unittest
 	import std.algorithm.sorting: sort;
 	alias CV = CoordinateValue!(2, double);
 
-	auto slice = sparse!double(5, 3);
-	slice[] =
+	auto sparse = sparse!double(5, 3);
+	sparse[] =
 		[[0, 2, 1],
 		 [0, 0, 4],
 		 [0, 0, 0],
 		 [6, 0, 9],
 		 [0, 0, 5]];
 
-	auto c = compress!double(slice);
-	assert(c._ptr._range == CompressedMap!(double, uint, uint)(
+	auto crs = sparse.compress;
+	assert(crs._ptr._range == CompressedMap!(double, uint, uint)(
 		 3,
 		[2, 1, 4, 6, 9, 5],
 		[1, 2, 2, 0, 2, 2],
