@@ -1821,6 +1821,7 @@ nothrow unittest
         auto s = summator.sum;
         version(X86)
         {
+            import std.math: nextDown, nextUp;
             assert(summator.isNaN() == r.isNaN());
             assert(summator.isFinite() == r.isFinite() || r == -double.max && s == -double.infinity || r == double.max && s == double.infinity);
             assert(summator.isInfinity() == r.isInfinity() || r == -double.max && s == -double.infinity || r == double.max && s == double.infinity);
