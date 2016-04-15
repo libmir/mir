@@ -1,0 +1,28 @@
+platform:
+  - x86
+  - x64
+environment:
+  matrix:
+    - DMD: 2.071.0
+    - DMD: 2.070.2
+
+skip_tags: true
+
+install:
+  - set COMPILER_URL=http://downloads.dlang.org/releases/2.x/%DMD%/dmd.%DMD%.windows.7z
+  - powershell -Command Invoke-WebRequest %COMPILER_URL% -OutFile dmd.7z
+  - 7z x dmd.7z > nul
+  - powershell -Command Invoke-WebRequest https://code.dlang.org/files/dub-0.9.24-windows-x86.zip -OutFile dub.zip
+  - 7z x dub.zip -odub > nul
+  - set binpath=dmd2/windows/bin
+  - set libpath=dmd2/windows/lib
+  - set PATH=%CD%\%binpath%;%CD%\dub;%PATH%
+  - set LD_LIBRARY_PATH=%CD%\%libpath%;%LD_LIBRARY_PATH%
+  - dmd --version
+  - dub --version
+
+build_script:
+ - echo build
+
+test_script:
+ - dub test -b unittest-cov
