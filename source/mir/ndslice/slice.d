@@ -539,9 +539,9 @@ auto slice(
     Flag!`replaceArrayWithPointer` replaceArrayWithPointer = Yes.replaceArrayWithPointer,
     size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
-    import std.array: array;
-    import mir.ndslice.selection: byElement;
-    return slice.byElement.array.sliced!replaceArrayWithPointer(slice.shape);
+    auto ret = .slice!(Unqual!(slice.DeepElemType), replaceArrayWithPointer)(slice.shape);
+    ret[] = slice;
+    return ret;
 }
 
 ///
