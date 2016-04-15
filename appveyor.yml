@@ -22,7 +22,8 @@ install:
   - dub --version
 
 build_script:
- - echo build
+ - echo dummy build script - dont remove me
 
 test_script:
- - dub test -b unittest-cov
+ - if "%APPVEYOR_JOB_ARCH%"=="x64" ( dub test -b test --arch=x86_64 )
+ - if "%APPVEYOR_JOB_ARCH%"=="x86" ( dub test -b test )
