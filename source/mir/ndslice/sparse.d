@@ -442,6 +442,28 @@ unittest
 		[0, 2, 3, 3, 5, 6]));
 }
 
+unittest
+{
+	import std.array: array;
+	import std.algorithm.sorting: sort;
+	alias CV = CoordinateValue!(2, double);
+
+	auto sparse = sparse!double(5, 8);
+	sparse[] =
+		[[0, 2, 0, 0, 0, 0, 0, 1],
+		 [0, 0, 0, 0, 0, 0, 0, 4],
+		 [0, 0, 0, 0, 0, 0, 0, 0],
+		 [6, 0, 0, 0, 0, 0, 0, 9],
+		 [0, 0, 0, 0, 0, 0, 0, 5]];
+
+	auto crs = sparse.compress;
+	assert(crs._ptr._range == CompressedMap!(double, uint, uint)(
+		 8,
+		[2, 1, 4, 6, 9, 5],
+		[1, 7, 7, 0, 7, 7],
+		[0, 2, 3, 3, 5, 6]));
+}
+
 alias CompressedTensor(size_t N, T, I = uint, J = uint) = Slice!(N, CompressedMap!(T, I, J));
 
 /++
