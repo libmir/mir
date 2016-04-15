@@ -23,6 +23,7 @@ import std.traits;
 import std.meta;
 
 import mir.ndslice.internal;
+import mir.ndslice.slice;
 
 /++
 Sparse tensors represented in Dictionary of Keys (DOK) format.
@@ -76,7 +77,6 @@ Sparse Slice in Dictionary of Keys Format.
 template Sparse(size_t N, T)
 	if(N)
 {
-	import mir.ndslice.slice: Slice;
 	alias Sparse = Slice!(N, SparseMap!T);
 }
 
@@ -160,11 +160,327 @@ struct SparseMap(T)
     }
 }
 
-//.dup	Create a new associative array of the same size and copy the contents of the associative array into it.
-//.keys	Returns dynamic array, the elements of which are the keys in the associative array.
-//.values	Returns dynamic array, the elements of which are the values in the associative array.
-//.rehash	Reorganizes the associative array in place so that lookups are more efficient. rehash is effective when, for example, the program is done loading up a symbol table and now needs fast lookups in it. Returns a reference to the reorganized array.
-//.clear	Removes all remaining keys and values from an associative array. The array is not rehashed after removal, to allow for the existing storage to be reused. This will affect all references to the same instance and is not equivalent to destroy(aa) which only sets the current reference to null
-//.byKey()	Returns a forward range suitable for use as a ForeachAggregate to a ForeachStatement which will iterate over the keys of the associative array.
-//.byValue()	Returns a forward range suitable for use as a ForeachAggregate to a ForeachStatement which will iterate over the values of the associative array.
-//.byKeyValue()	Returns a forward range suitable for use as a ForeachAggregate to a ForeachStatement which will iterate over key-value pairs of the associative array. The returned pairs are represented by an opaque type with .key and .value properties for accessing the key and value of the pair, respectively.
+/++
++/
+struct CoordinateValue(size_t N, T)
+{
+	///
+	size_t[N] index;
+	
+	///
+	T value;
+
+	///
+	sizediff_t opCmp()(auto ref const typeof(this) rht) const
+	{
+		return cmpCoo(this.index, rht.index);
+	}
+}
+
+private sizediff_t cmpCoo(size_t N)(const auto ref size_t[N] a, const auto ref size_t[N] b)
+{
+	foreach(i; Iota!(0, N))
+		if(auto d = a[i] - b[i])
+			return d;
+	return 0;
+}
+
+/++
++/
+auto byCoordinateValue(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
+{
+	static struct CoordinateValues
+	{
+		static if(N > 1)
+			private sizediff_t[N-1] _strides;
+		mixin _sparse_range_methods!(N, T);
+		private typeof(Sparse!(N, T).init._ptr._range.table.byKeyValue()) _range;
+
+		auto front() @property
+		{
+			assert(!_range.empty);
+			auto iv = _range.front;
+			size_t index = iv.key;
+			CoordinateValue!(N, T) ret = void;
+			foreach(i; Iota!(0, N - 1))
+			{
+				ret.index[i] = index / _strides[i];
+				index %= _strides[i];
+			}
+			ret.index[N - 1] = index;
+			ret.value = iv.value;
+			return ret;
+		}
+
+		//int opApply(Dg)(scope Dg dg)
+		//	if (ParameterTypeTuple!Dg.length == N + 1 && allSatisfy!(isIndex, ParameterTypeTuple!Dg[0..N]))
+		//{
+		//	int result = 0;
+		//	foreach(coov; this.save)
+		//	{
+		//		ParameterTypeTuple!Dg[0..N] coo = void;
+		//		foreach(i, ref c; coo)
+		//			c = cast(ParameterTypeTuple!Dg[i]) coov.index[i];
+		//		result = dg(coo, coov.value);
+		//		if (result)
+		//			break;
+		//	}
+		//	return result;
+		//}
+	}
+	static if(N > 1)
+	{
+		CoordinateValues ret = void;
+		ret._strides = slice._strides[0..N-1];
+		ret._length = slice._ptr._range.table.length;
+		ret._range = slice._ptr._range.table.byKeyValue;
+		return ret;
+	}
+	else
+		return CoordinateValues(slice._ptr._range.table.byKeyValue);
+}
+
+///
+pure unittest
+{
+	import std.array: array;
+	import std.algorithm.sorting: sort;
+	alias CV = CoordinateValue!(2, double);
+
+	auto slice = sparse!double(3, 3);
+	slice[] = [[0, 2, 1], [0, 0, 4], [6, 7, 0]];
+	assert(slice.byCoordinateValue.array.sort().release == [
+		CV([0, 1], 2),
+		CV([0, 2], 1),
+		CV([1, 2], 4),
+		CV([2, 0], 6),
+		CV([2, 1], 7)]);
+}
+
+/++
++/
+auto byCoordinate(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
+{
+	static struct Coordinates
+	{
+		static if(N > 1)
+			private sizediff_t[N-1] _strides;
+		mixin _sparse_range_methods!(N, T);
+		private typeof(Sparse!(N, T).init._ptr._range.table.byKey()) _range;
+
+		auto front() @property
+		{
+			assert(!_range.empty);
+			size_t index = _range.front;
+			size_t[N] ret = void;
+			foreach(i; Iota!(0, N - 1))
+			{
+				ret[i] = index / _strides[i];
+				index %= _strides[i];
+			}
+			ret[N - 1] = index;
+			return ret;
+		}
+	}
+	static if(N > 1)
+	{
+		Coordinates ret = void;
+		ret._strides = slice._strides[0..N-1];
+		ret._length = slice._ptr._range.table.length;
+		ret._range = slice._ptr._range.table.byKey;
+		return ret;
+	}
+	else
+		return Coordinates(slice._ptr._range.table.byKey);
+}
+
+///
+pure unittest
+{
+	import std.array: array;
+	import std.algorithm.sorting: sort;
+	alias CV = CoordinateValue!(2, double);
+
+	auto slice = sparse!double(3, 3);
+	slice[] = [[0, 2, 1], [0, 0, 4], [6, 7, 0]];
+	assert(slice.byCoordinate.array.sort().release == [
+		[0, 1],
+		[0, 2],
+		[1, 2],
+		[2, 0],
+		[2, 1]]);
+}
+
+/++
++/
+auto byValueOnly(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
+{
+	static struct Values
+	{
+		mixin _sparse_range_methods!(N, T);
+		private typeof(Sparse!(N, T).init._ptr._range.table.byValue) _range;
+
+		auto front() @property
+		{
+			assert(!_range.empty);
+			return _range.front;
+		}
+	}
+	return Values(slice._ptr._range.table.length, slice._ptr._range.table.byValue);
+}
+
+///
+pure unittest
+{
+	import std.array: array;
+	import std.algorithm.sorting: sort;
+
+	auto slice = sparse!double(3, 3);
+	slice[] = [[0, 2, 1], [0, 0, 4], [6, 7, 0]];
+	assert(slice.byValueOnly.array.sort().release == [1, 2, 4, 6, 7]);
+}
+
+private mixin template _sparse_range_methods(size_t N, T)
+{
+	private size_t _length;
+
+	void popFront()
+	{
+		assert(!_range.empty);
+		_range.popFront;
+		_length--;
+	}
+
+	bool empty() const @property
+	{
+		return _length == 0;
+	}
+
+	auto save() @property
+	{
+		return _range.save;
+	}
+
+	size_t length() const @property
+	{
+		return _length;
+	}
+}
+
+CompressedTensor!(N - 1, V, I, J)
+	compress
+	(V, I = uint, J = uint, S : Slice!(N, R), size_t N, R : SparseMap!T, T)
+	(S slice)
+	if(is(T : V) && N > 1)
+{
+	import std.array: array;
+	import std.algorithm.sorting: sort;
+	import mir.ndslice.selection: iotaSlice;
+	auto data = slice
+		._ptr
+		._range
+		.table
+		.byKeyValue
+		.array
+		.sort!((a, b) => a.key < b.key)
+		.release;
+	auto inv = iotaSlice(slice.shape[0 .. N - 1]);
+	auto count = inv.elementsCount;
+	auto map = CompressedMap!(V, I, J)(
+		slice.length!(N - 1),
+		new V[data.length],
+		new I[data.length],
+		new J[count + 1],
+		);
+	size_t k = 0;
+	map.pointers[0] = 0;
+	map.pointers[1] = 0;
+	foreach(t, e; data)
+	{
+		map.values[t] = e.value;
+		size_t index = e.key;
+		map.indexes[t] = cast(I)(index % slice.length!(N - 1));
+		auto p = index / slice.length!(N - 1);
+		if(k != p)
+		{
+			map.pointers[k + 2 .. p + 2] = map.pointers[k + 1];
+			k = p;
+		}
+		map.pointers[k + 1]++;
+	}
+	return map.sliced(inv.shape);
+}
+
+unittest
+{
+	import std.array: array;
+	import std.algorithm.sorting: sort;
+	alias CV = CoordinateValue!(2, double);
+
+	auto slice = sparse!double(5, 3);
+	slice[] =
+		[[0, 2, 1],
+		 [0, 0, 4],
+		 [0, 0, 0],
+		 [6, 0, 9],
+		 [0, 0, 5]];
+
+	auto c = compress!double(slice);
+	assert(c._ptr._range == CompressedMap!(double, uint, uint)(
+		 3,
+		[2, 1, 4, 6, 9, 5],
+		[1, 2, 2, 0, 2, 2],
+		[0, 2, 3, 3, 5, 6]));
+}
+
+alias CompressedTensor(size_t N, T, I = uint, J = uint) = Slice!(N, CompressedMap!(T, I, J));
+
+/++
++/
+struct CompressedArray(T, I = uint)
+	if (is(I : size_t) && isUnsigned!I)
+{
+	/++
+	+/
+	T[] values;
+
+	/++
+	+/
+	I[] indexes;
+}
+
+/++
++/
+struct CompressedMap(T, I, J)
+	if (is(I : size_t) && isUnsigned!I && is(J : size_t) && isUnsigned!J && I.sizeof <= J.sizeof)
+{
+	/++
+	+/
+	size_t compressedLength;
+
+	/++
+	+/
+	T[] values;
+
+	/++
+	+/
+	I[] indexes;
+
+	/++
+	+/
+	J[] pointers;
+
+	/++
+	+/
+	inout(CompressedArray!(T, I)) opIndex(size_t index) inout
+	in
+	{
+		assert(index < pointers.length - 1);
+	}
+	body
+	{
+		auto a = pointers[index];
+		auto b = pointers[index + 1];
+		return typeof(return)(values[a .. b], indexes[a .. b]);
+	}
+}
