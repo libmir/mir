@@ -15,7 +15,7 @@ dependencies:
     - git submodule update --recursive --init
 test:
   override:
-    - ./dscanner --config .dscanner.ini --styleCheck source 2> /dev/null
+    - ./dscanner --config .dscanner.ini --styleCheck $(find source/mir/* -type d | grep -v ndslice | tr '\n' ' ') 
     - dub test
     - rdmd bootDoc/generate.d --output=docs source --extra index.d
 deployment:
