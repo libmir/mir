@@ -145,7 +145,8 @@ nothrow @nogc unittest
     import std.range: iota;
     import std.algorithm.iteration: map;
     import core.stdc.tgmath: pow;
-    assert(iota(1000).map!(n => 1.7L.pow(real(n)+1) - 1.7L.pow(real(n))).sum!(Summation.precise) == -1 + 1.7L.pow(1000.0L));
+    assert(iota(1000).map!(n => 1.7L.pow(real(n)+1) - 1.7L.pow(real(n)))
+                     .sum!(Summation.precise) == -1 + 1.7L.pow(1000.0L));
 }
 
 /// Precise summation with output range
@@ -1825,8 +1826,10 @@ nothrow unittest
         {
             import std.math: nextDown, nextUp;
             assert(summator.isNaN() == r.isNaN());
-            assert(summator.isFinite() == r.isFinite() || r == -double.max && s == -double.infinity || r == double.max && s == double.infinity);
-            assert(summator.isInfinity() == r.isInfinity() || r == -double.max && s == -double.infinity || r == double.max && s == double.infinity);
+            assert(summator.isFinite() == r.isFinite() || r == -double.max
+                   && s == -double.infinity || r == double.max && s == double.infinity);
+            assert(summator.isInfinity() == r.isInfinity() || r == -double.max
+                   && s == -double.infinity || r == double.max && s == double.infinity);
             assert(nextDown(s) <= r && r <= nextUp(s) || s.isNaN && r.isNaN);
         }
         else

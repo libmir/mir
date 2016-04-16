@@ -359,7 +359,7 @@ struct Permutations
 {
     private uint[] indices, state;
     private bool _empty;
-    size_t _max_states = 1, _pos;
+    private size_t _max_states = 1, _pos;
 
     /**
     state should have the length of `n - 1`,
@@ -498,7 +498,7 @@ pure @safe nothrow unittest
     assert(2.permutations.length == 2);
     assert(3.permutations.length == 6);
     assert(4.permutations.length == 24);
-    assert(10.permutations.length == 3628800);
+    assert(10.permutations.length == 3_628_800);
 }
 
 static if (__VERSION__ > 2069) unittest
@@ -754,8 +754,8 @@ pure nothrow @safe unittest
     assert(3.cartesianPower(2).length == 9);
     assert(3.cartesianPower(3).length == 27);
     assert(3.cartesianPower(4).length == 81);
-    assert(4.cartesianPower(10).length == 1048576);
-    assert(14.cartesianPower(7).length == 105413504);
+    assert(4.cartesianPower(10).length == 1_048_576);
+    assert(14.cartesianPower(7).length == 105_413_504);
 }
 
 /**
@@ -1064,9 +1064,9 @@ pure nothrow @safe unittest
     assert(3.combinations(4).length == 0);
     assert(4.combinations(10).length == 0);
     assert(14.combinations(11).length == 364);
-    assert(20.combinations(7).length == 77520);
-    assert(30.combinations(10).length == 30045015);
-    assert(30.combinations(15).length == 155117520);
+    assert(20.combinations(7).length == 77_520);
+    assert(30.combinations(10).length == 30_045_015);
+    assert(30.combinations(15).length == 155_117_520);
 }
 
 static if (__VERSION__ > 2069) unittest
@@ -1315,10 +1315,10 @@ pure nothrow @safe unittest
     assert(3.combinationsRepeat(3).length == 10);
     assert(3.combinationsRepeat(4).length == 15);
     assert(4.combinationsRepeat(10).length == 286);
-    assert(11.combinationsRepeat(14).length == 1961256);
-    assert(20.combinationsRepeat(7).length == 657800);
-    assert(20.combinationsRepeat(10).length == 20030010);
-    assert(30.combinationsRepeat(10).length == 635745396);
+    assert(11.combinationsRepeat(14).length == 1_961_256);
+    assert(20.combinationsRepeat(7).length == 657_800);
+    assert(20.combinationsRepeat(10).length == 20_030_010);
+    assert(30.combinationsRepeat(10).length == 635_745_396);
 }
 
 pure nothrow @safe unittest
