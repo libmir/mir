@@ -2,7 +2,7 @@
 Numeric library and mirror for upcoming numeric packages for the Dlang standard library.
 
 $(DL
-	$(DT $(DPMODULE2 ndslice, package)
+	$(DT $(LINK2 ndslice package, http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
 		$(DD Multidimensional Random Access Ranges and Arrays)
 	)
 	$(DT $(DPMODULE2 las, sum)
