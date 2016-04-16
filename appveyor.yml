@@ -25,5 +25,6 @@ build_script:
  - echo dummy build script - dont remove me
 
 test_script:
- - if "%APPVEYOR_JOB_ARCH%"=="x64" ( dub test -b test --arch=x86_64 )
- - if "%APPVEYOR_JOB_ARCH%"=="x86" ( dub test -b test )
+ - echo %PLATFORM%
+ - if "%PLATFORM%"=="x64" ( dub test --arch=x86_64 )
+ - if "%PLATFORM%"=="x86" ( dub test )
