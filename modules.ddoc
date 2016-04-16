@@ -1,0 +1,8 @@
+MODULES = 
+	$(MODULE mir.ndslice.package)
+	$(MODULE mir.ndslice.slice)
+	$(MODULE mir.ndslice.iteration)
+	$(MODULE mir.ndslice.selection)
+	$(MODULE mir.las.sum)
+	$(MODULE mir.combinatorics.package)
+
