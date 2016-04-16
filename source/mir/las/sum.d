@@ -1839,61 +1839,6 @@ nothrow unittest
     }
 }
 
-nothrow unittest
-{
-    import std.algorithm: map;
-    import std.array: array;
-    import std.meta: AliasSeq;
-
-    alias S = Summation;
-    alias sums = AliasSeq!(S.kahan, S.pairwise, S.naive, S.fast, S.precise);
-
-    enum double M = (cast(double)2) ^^ (double.max_exp - 1);
-    Tuple!(double[], double)[] tests = [
-        tuple(new double[0], 0.0),
-        tuple([0.0], 0.0),
-        tuple([double.max, double.max*2.^^-54], double.max),
-        tuple([double.max, double.max*2.^^-53], double.infinity),
-        tuple([double.infinity, -double.infinity, double.nan], double.nan),
-        tuple([double.nan, double.infinity, -double.infinity], double.nan),
-        tuple([double.infinity, -double.infinity], double.nan),
-        tuple([M-2.0^^970, 0.0, M], double.infinity),
-        tuple([M-2.0^^970, 1.0, M], double.infinity),
-        tuple([M, M], double.infinity),
-        tuple([-M, 2.^^971, -M], -double.max),
-
-        //tuple([double.infinity, double.infinity], double.nan),
-        //tuple([-double.infinity, 1e308, 1e308, -double.infinity], -double.nan),
-        //tuple([M, M, -1], double.nan),
-        //tuple([M, M, M, M, -M, -M], double.nan),
-        //tuple([M, M, M, M, -M, M], double.nan),
-        //tuple([-M, -M, -M, -M], -double.nan),
-        //tuple([M, M, -2.^^971], double.nan),
-        //tuple([M, M, -2.^^970], double.nan),
-        //tuple([-2.^^970, M, M, -2.^^-1074], double.nan),
-        //tuple([M, M, -2.^^970, 2.^^-1074], double.nan),
-        //tuple([-M, -M, 2.^^970], -double.nan),
-        //tuple([-M, -M, 2.^^970, 2.^^-1074], -double.nan),
-        //tuple([-2.^^-1074, -M, -M, 2.^^970], -double.nan),
-
-    ];
-    foreach (i, test; tests)
-    {
-        foreach(sumType; sums)
-        {
-            Summator!(double, sumType) algo = 0.0;
-            foreach (t; test[0]) algo.put(t);
-            auto r = test[1];
-            auto s = algo.sum;
-            assert(algo.isNaN() == r.isNaN());
-            assert(algo.isFinite() == r.isFinite());
-            assert(algo.isInfinity() == r.isInfinity());
-            assert(s == r || s.isNaN && r.isNaN);
-        }
-    }
-}
-
-
 /**
 Sums elements of $(D r), which must be a finite
 $(XREF_PACK_NAMED range,primitives,isInputRange,input range). Although
@@ -2207,19 +2152,25 @@ private template SummationType(F)
     version(X86) //workaround for Issue 13474
     {
         static if (!is(Unqual!F == real) && (isComplex!F || !is(Unqual!(typeof(F.init.re)) == real)))
+        {
             enum note =  "Note: Summation algorithms on x86 use 80bit representation"
                        ~ "for single and double floating point numbers.";
             pragma(msg, note);
+        }
         static if (isComplex!F)
         {
             import std.complex : Complex;
             alias SummationType = Complex!real;
         }
         else
+        {
             alias SummationType = real;
+        }
     }
     else
+    {
         alias SummationType = F;
+    }
 }
 
 private enum bool isCompesatorAlgorithm(Summation summation) =
