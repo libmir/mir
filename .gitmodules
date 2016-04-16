@@ -1,0 +1,3 @@
+[submodule "bootDoc"]
+	path = bootDoc
+	url = git://github.com/JakobOvrum/bootDoc.git
