@@ -1,5 +1,5 @@
 PROJECTNAME = Mir
-REFERENCETOP = mir.html
+REFERENCETOP = index.html
 REPOSRCTREE = https://github.com/DlangScience/mir/tree/master/source
 TITLEBARTEXT = <a href="https://github.com/DlangScience/mir">GitHub Page</a>
 RESOURCEROOT = ../bootDoc/
