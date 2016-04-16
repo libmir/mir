@@ -144,7 +144,7 @@ nothrow @nogc unittest
 {
     import std.range: iota;
     import std.algorithm.iteration: map;
-    import std.math;
+    import core.stdc.math: pow;
     assert(iota(1000).map!(n => 1.7.pow(n+1) - 1.7.pow(n)).sum!(Summation.precise) == -1 + 1.7.pow(1000));
 }
 
