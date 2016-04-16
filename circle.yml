@@ -10,6 +10,9 @@ dependencies:
     - curl -fsSL --retry 3 http://code.dlang.org/files/dub-${DUB}-linux-x86_64.tar.gz | tar -C ~/dmd2/linux/bin64 -zxf -
     - dmd --version
     - dub --version
+    - wget -O dscanner "http://releases.dlang.io/dscanner/0.3.0-git/dscanner"
+    - chmod +x dscanner
 test:
   override:
+    - ./dscanner --config .dscanner.ini --styleCheck source 2> /dev/null
     - dub test
