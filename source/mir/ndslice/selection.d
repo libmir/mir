@@ -868,7 +868,6 @@ pure unittest
 // Issue 15919
 unittest
 {
-    import std.stdio;
     assert(iotaSlice(3, 4, 5, 6, 7).pack!2.reshape(4, 3, 5)[0, 0, 0].shape == cast(size_t[2])[6, 7]);
 }
 
