@@ -2732,6 +2732,7 @@ private auto ptrShell(Range)(Range range, sizediff_t shift = 0)
     return PtrShell!Range(shift, range);
 }
 
+static if(__VERSION__ >= 2071)
 @safe pure nothrow unittest
 {
     import std.internal.test.dummyrange;
@@ -2751,6 +2752,7 @@ private auto ptrShell(Range)(Range range, sizediff_t shift = 0)
     }
 }
 
+static if(__VERSION__ >= 2071)
 pure nothrow unittest
 {
     import std.internal.test.dummyrange;
