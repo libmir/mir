@@ -5,7 +5,7 @@ TITLEBARTEXT = <a href="https://github.com/DlangScience/mir">GitHub Page</a>
 RESOURCEROOT = ../bootDoc/
 ISSUETRACKER = https://github.com/DlangScience/mir/issues/$1
 DEFAULTPACKAGE = mir
-PACKAGESEP = .
+PACKAGESEP = _
 FAVICON = $(RESOURCEROOT)assets/ico/favicon.ico
 LOGOSRC = $(RESOURCEROOT)assets/img/icon-github.png
 LOGOALT = $(PROJECTNAME)
