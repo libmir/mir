@@ -21,7 +21,8 @@ environment:
     arch: x64
 
 matrix:
-  fast_finish: true
+  allow_failures:
+    - DC: ldc
 
 skip_tags: true
 branches:
@@ -96,7 +97,7 @@ build_script:
 
 test_script:
  - echo %PLATFORM%
- - echo %Darch
+ - echo %Darch%
  - echo %DC%
  - echo %PATH%
  - '%DC% --version'
