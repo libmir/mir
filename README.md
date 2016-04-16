@@ -12,8 +12,6 @@ Mir
 ======
 Numeric library and mirror for upcoming numeric packages for the Dlang standard library.
 
-Documentation can be found at http://docs.mir.dlang.io/.
-
 ## Packages
 
  - `mir.ndslice` [Multidimensional Random Access Ranges and Arrays](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
