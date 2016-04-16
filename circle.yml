@@ -4,6 +4,10 @@ machine:
     DUB: 0.9.24
     PATH: "${HOME}/dmd2/linux/bin64:${PATH}"
     LD_LIBRARY_PATH: "${HOME}/dmd2/linux/lib64:${LD_LIBRARY_PATH}"
+checkout:
+  post:
+    - git submodule sync . && git submodule update --recursive --init || true
+    - git submodule sync . && git submodule update --recursive --init || true # duplication needed due to circleci bug, don't remove
 dependencies:
   override:
     - curl -fsSL --retry 3 "http://downloads.dlang.org/releases/2.x/$DMD/dmd.$DMD.linux.tar.xz" | tar -C ~ -Jxf -
@@ -12,7 +16,6 @@ dependencies:
     - dub --version
     - wget -q -O dscanner "http://releases.dlang.io/dscanner/0.3.0-git/dscanner"
     - chmod +x dscanner
-    - git submodule update --recursive --init
 test:
   override:
     - dscanResult=$(./dscanner --config .dscanner.ini --styleCheck $(find source/mir/* -type d | grep -v ndslice | tr '\n' ' ') 2> /dev/null ) ; if [ -z "${dscanResult}" ] ; then echo "No warnings found" ; else echo $dscanResult && $(exit 1); fi
