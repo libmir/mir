@@ -12,6 +12,7 @@ dependencies:
     - dub --version
     - wget -q -O dscanner "http://releases.dlang.io/dscanner/0.3.0-git/dscanner"
     - chmod +x dscanner
+    - git submodule update --recursive --init
 test:
   override:
     - dscanResult=$(./dscanner --config .dscanner.ini --styleCheck $(find source/mir/* -type d | grep -v ndslice | tr '\n' ' ') 2> /dev/null ) ; if [ -z "${dscanResult}" ] ; then echo "No warnings found" ; else echo $dscanResult && $(exit 1); fi
