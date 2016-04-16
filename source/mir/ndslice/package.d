@@ -44,7 +44,7 @@
 /**
 $(H1 Multidimensional Random Access Ranges)
 
-The package provides a multidimensional array implementation,
+The package provides a multidimensional array implementation.
 It would be well suited to creating machine learning and image
 processing algorithms, but should also be general enough for use anywhere with
 homogeneously-typed multidimensional data.
@@ -66,7 +66,7 @@ assert(matrix(3, 2) == 6); // Math & Fortran index order
 ------
 
 Note:
-In many examples $(LINK2 std_range.html#iota, std.range.iota) is used
+In many examples $(LINK2 mir_ndslice_selection.html#iotaSice, iotaSice) is used
 instead of a regular array, which makes it
 possible to carry out tests without memory allocation.
 
@@ -82,9 +82,16 @@ $(TR $(TDNW Basic Level
      $(TD
         $(SUBREF slice, sliced)
         $(SUBREF slice, Slice)
+        $(SUBREF slice, slice)
+        $(SUBREF slice, makeSlice)
+        $(SUBREF slice, ndarray)
+        $(SUBREF slice, makeNdarray)
+        $(SUBREF slice, shape)
+        $(SUBREF slice, Slice)
         $(SUBREF slice, assumeSameStructure)
         $(SUBREF slice, ReplaceArrayWithPointer)
         $(SUBREF slice, DeepElementType)
+        $(SUBREF slice, SliceException)
     )
 )
 $(TR $(TDNW Middle Level
@@ -113,9 +120,11 @@ $(TR $(TDNW Advanced Level $(BR)
         $(SUBREF selection, byElement)
         $(SUBREF selection, byElementInStandardSimplex)
         $(SUBREF selection, indexSlice)
+        $(SUBREF selection, iotaSlice)
         $(SUBREF selection, pack)
         $(SUBREF selection, evertPack)
         $(SUBREF selection, unpack)
+        $(SUBREF selection, ReshapeException)
     )
 )
 ))
@@ -209,13 +218,13 @@ Returns:
 +/
 T median(Range, T)(Range r, T[] buf)
 {
-    import std.algorithm.sorting: sort;
+    import std.algorithm.sorting: topN;
     size_t n;
     foreach (e; r)
         buf[n++] = e;
-    buf[0 .. n].sort();
-    immutable m = n >> 1;
-    return n & 1 ? buf[m] : cast(T)((buf[m - 1] + buf[m]) / 2);
+    auto m = n >> 1;
+    buf[0 .. n].topN(m);
+    return buf[m];
 }
 -------
 
@@ -346,13 +355,13 @@ unittest
 
     static T median(Range, T)(Range r, T[] buf)
     {
-        import std.algorithm.sorting: sort;
+        import std.algorithm.sorting: topN;
         size_t n;
         foreach (e; r)
             buf[n++] = e;
-        buf[0 .. n].sort();
-        immutable m = n >> 1;
-        return n & 1 ? buf[m] : cast(T)((buf[m - 1] + buf[m]) / 2);
+        auto m = n >> 1;
+        buf[0 .. n].topN(m);
+        return buf[m];
     }
 
     import std.conv: to;

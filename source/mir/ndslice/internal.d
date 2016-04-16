@@ -2,11 +2,10 @@ module mir.ndslice.internal;
 
 import std.traits;
 import std.meta; //: AliasSeq, anySatisfy, Filter, Reverse;
-import std.compiler: version_minor;
 
 package:
 
-static if(version_minor < 71)
+static if(__VERSION__ < 2071)
 {
     template Repeat(size_t n, TList...) if (n > 0)
     {
@@ -35,7 +34,7 @@ static if(version_minor < 71)
 
 enum indexError(size_t pos, size_t N) =
     "index at position " ~ pos.stringof
-    ~ " from the range [0 .. " ~ N.stringof ~ ")"
+    ~ " from the range [0 .." ~ N.stringof ~ ")"
     ~ " must be less than corresponding length.";
 
 enum indexStrideCode = q{
