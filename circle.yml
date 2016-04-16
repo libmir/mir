@@ -17,7 +17,7 @@ test:
   override:
     - ./dscanner --config .dscanner.ini --styleCheck $(find source/mir/* -type d | grep -v ndslice | tr '\n' ' ') 
     - dub test
-    - rdmd bootDoc/generate.d --output=docs source --extra index.d
+    - rdmd bootDoc/generate.d --output=docs source --separator=_ --extra index.d
 deployment:
   aws:
     branch: master
