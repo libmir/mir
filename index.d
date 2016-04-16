@@ -2,7 +2,7 @@
 Numeric library and mirror for upcoming numeric packages for the Dlang standard library.
 
 $(DL
-	$(DT $(DPMODULE ndslice)
+	$(DT $(DPMODULE2 ndslice, package)
 		$(DD Multidimensional Random Access Ranges and Arrays)
 	)
 	$(DT $(DPMODULE2 las, sum)
@@ -11,11 +11,11 @@ $(DL
         $(DD Pairwise algorithm: fast version for Input Ranges)
         $(DD Kahan, KBN, and KB2 algorithms)
 	)
-	$(DT $(DPMODULE combinatorics)
-		$(DD $(DPMODULE2 combinatorics, permutations))
-		$(DD $(DPMODULE2 combinatorics, cartesianPower))
-		$(DD $(DPMODULE2 combinatorics, combinations))
-		$(DD $(DPMODULE2 combinatorics, combinationsRepeat))
+	$(DT $(DPMODULE2 combinatorics, package)
+		$(DD $(DPREF2 combinatorics, package, permutations))
+		$(DD $(DPREF2 combinatorics, package, cartesianPower))
+		$(DD $(DPREF2 combinatorics, package, combinations))
+		$(DD $(DPREF2 combinatorics, package, combinationsRepeat))
 	)
 )
 
