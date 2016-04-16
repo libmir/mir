@@ -252,23 +252,19 @@ pure nothrow unittest
 @safe @nogc pure nothrow unittest
 {
     import mir.ndslice.slice;
-    static assert(is(typeof(new int[20]
-        .sliced(20)
+    static assert(is(typeof(slice!int(20)
         .evertPack)
          == Slice!(1LU, int*)));
-    static assert(is(typeof(new int[20]
-        .sliced(20)
+    static assert(is(typeof(slice!int(20)
         .sliced(3)
         .evertPack)
          == Slice!(2LU, int*)));
-    static assert(is(typeof(new int[20]
-        .sliced(20)
+    static assert(is(typeof(slice!int(20)
         .sliced(1,2,3)
         .sliced(3)
         .evertPack)
          == Slice!(3LU, Slice!(2LU, int*))));
-    static assert(is(typeof(new int[20]
-        .sliced(20)
+    static assert(is(typeof(slice!int(20)
         .sliced(1,2,3)
         .evertPack)
          == Slice!(4LU, int*)));
@@ -330,7 +326,7 @@ pure nothrow unittest
 {
     import mir.ndslice.slice;
 
-    auto slice = new int[9].sliced(3, 3);
+    auto slice = slice!int(3, 3);
     int i;
     foreach (ref e; slice.diagonal)
         e = ++i;
@@ -508,7 +504,7 @@ body
 pure nothrow unittest
 {
     import mir.ndslice.slice;
-    auto slice = new int[40].sliced(5, 8);
+    auto slice = slice!int(5, 8);
     auto blocks = slice.blocks(2, 3);
     int i;
     foreach (block; blocks.byElement)
@@ -534,7 +530,7 @@ pure nothrow unittest
 pure nothrow unittest
 {
     import mir.ndslice.slice;
-    auto slice = new int[40].sliced(5, 8);
+    auto slice = slice!int(5, 8);
     auto blocks = slice.blocks(2, 3);
     auto diagonalBlocks = blocks.diagonal.unpack;
 
@@ -565,7 +561,7 @@ pure nothrow unittest
 pure nothrow unittest
 {
     import mir.ndslice.slice;
-    auto slice = new int[65].sliced(5, 13);
+    auto slice = slice!int(5, 13);
     auto blocks = slice
         .pack!1
         .evertPack
@@ -629,7 +625,7 @@ body
 pure nothrow unittest
 {
     import mir.ndslice.slice;
-    auto slice = new int[40].sliced(5, 8);
+    auto slice = slice!int(5, 8);
     auto windows = slice.windows(2, 3);
     foreach (window; windows.byElement)
         window[] += 1;
@@ -648,7 +644,7 @@ pure nothrow unittest
 pure nothrow unittest
 {
     import mir.ndslice.slice;
-    auto slice = new int[40].sliced(5, 8);
+    auto slice = slice!int(5, 8);
     auto windows = slice.windows(2, 3);
     windows[1, 2][] = 1;
     windows[1, 2][0, 1] += 1;
@@ -668,7 +664,7 @@ pure nothrow unittest
 pure nothrow unittest
 {
     import mir.ndslice.slice;
-    auto slice = new int[64].sliced(8, 8);
+    auto slice = slice!int(8, 8);
     auto windows = slice.windows(3, 3);
 
     auto multidiagonal = windows
@@ -692,7 +688,7 @@ pure nothrow unittest
 pure nothrow unittest
 {
     import mir.ndslice.slice;
-    auto slice = new int[40].sliced(5, 8);
+    auto slice = slice!int(5, 8);
     auto windows = slice
         .pack!1
         .evertPack
@@ -857,7 +853,7 @@ pure unittest
     import mir.ndslice.iteration: allReversed;
     import std.stdio;
     import std.range: iota;
-    auto slice = 12.iota.sliced(1, 1, 3, 2, 1, 2, 1).allReversed;
+    auto slice = iotaSlice(1, 1, 3, 2, 1, 2, 1).allReversed;
     assert(slice.reshape(1, -1, 1, 1, 3, 1) ==
         [[[[[[11], [10], [9]]]],
           [[[[ 8], [ 7], [6]]]],
@@ -1185,8 +1181,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
 {
     import mir.ndslice.slice;
     import mir.ndslice.iteration;
-    import std.range: iota, drop;
-    import std.algorithm.comparison: equal;
+    import std.range: drop;
     assert(iotaSlice(3, 4, 5, 6, 7)
         .pack!2
         .byElement()
@@ -1200,7 +1195,7 @@ pure nothrow unittest
 {
     import mir.ndslice.slice;
     import std.range: iota;
-    auto elems = 12.iota.sliced(3, 4).byElement;
+    auto elems = iotaSlice(3, 4).byElement;
     elems.popFrontExactly(2);
     assert(elems.front == 2);
     assert(elems.index == [0, 2]);
@@ -1234,8 +1229,8 @@ Random access and slicing
 @nogc nothrow unittest
 {
     import mir.ndslice.slice;
-    import std.array: array;
     import std.algorithm.comparison: equal;
+    import std.array: array;
     import std.range: iota, repeat;
     static data = 20.iota.array;
     auto elems = data.sliced(4, 5).byElement;
@@ -1272,10 +1267,10 @@ Use $(SUBREF iteration, allReversed) in pipeline before
 +/
 @safe @nogc pure nothrow unittest
 {
-    import std.range: retro, iota;
+    import std.range: retro;
     import mir.ndslice.iteration: allReversed;
 
-    auto slice = 60.iota.sliced(3, 4, 5);
+    auto slice = iotaSlice(3, 4, 5);
 
     /// Slow backward iteration #1
     foreach (ref e; slice.byElement.retro)
@@ -1299,8 +1294,8 @@ Use $(SUBREF iteration, allReversed) in pipeline before
 @safe @nogc pure nothrow unittest
 {
     import mir.ndslice.slice;
-    import std.range: iota, isRandomAccessRange, hasSlicing;
-    auto elems = 20.iota.sliced(4, 5).byElement;
+    import std.range.primitives: isRandomAccessRange, hasSlicing;
+    auto elems = iotaSlice(4, 5).byElement;
     static assert(isRandomAccessRange!(typeof(elems)));
     static assert(hasSlicing!(typeof(elems)));
 }
@@ -1311,7 +1306,7 @@ Use $(SUBREF iteration, allReversed) in pipeline before
     import mir.ndslice.slice;
     import mir.ndslice.iteration;
     import std.range: iota, isRandomAccessRange;
-    auto elems = 20.iota.sliced(4, 5).everted.byElement;
+    auto elems = iotaSlice(4, 5).everted.byElement;
     static assert(isRandomAccessRange!(typeof(elems)));
 
     elems = elems[11 .. $ - 2];
@@ -1370,11 +1365,11 @@ unittest
 {
     import std.range: iota;
     import std.range.primitives;
-    alias A = typeof(10.iota.sliced(2, 5).sliced(1, 1, 1, 1));
+    alias A = typeof(iotaSlice(2, 5).sliced(1, 1, 1, 1));
     static assert(isRandomAccessRange!A);
     static assert(hasLength!A);
     static assert(hasSlicing!A);
-    alias B = typeof(new double[10].sliced(2, 5).sliced(1, 1, 1, 1));
+    alias B = typeof(slice!double(2, 5).sliced(1, 1, 1, 1));
     static assert(isRandomAccessRange!B);
     static assert(hasLength!B);
     static assert(hasSlicing!B);
@@ -1488,7 +1483,7 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
 pure nothrow unittest
 {
     import mir.ndslice.slice;
-    auto slice = new int[20].sliced(4, 5);
+    auto slice = slice!int(4, 5);
     auto elems = slice
         .byElementInStandardSimplex;
     int i;
@@ -1506,7 +1501,7 @@ pure nothrow unittest
 {
     import mir.ndslice.slice;
     import mir.ndslice.iteration;
-    auto slice = new int[20].sliced(4, 5);
+    auto slice = slice!int(4, 5);
     auto elems = slice
         .transposed
         .allReversed
@@ -1526,7 +1521,7 @@ pure nothrow unittest
 {
     import mir.ndslice.slice;
     import std.range: iota;
-    auto elems = 12.iota.sliced(3, 4).byElementInStandardSimplex;
+    auto elems = iotaSlice(3, 4).byElementInStandardSimplex;
     elems.popFront;
     assert(elems.front == 1);
     assert(elems.index == cast(size_t[2])[0, 1]);
@@ -1566,8 +1561,8 @@ IndexSlice!N indexSlice(size_t N)(auto ref size_t[N] lengths)
 @safe pure nothrow @nogc unittest
 {
     auto slice = indexSlice(2, 3);
-    static immutable array = 
-        [[[0, 0], [0, 1], [0, 2]], 
+    static immutable array =
+        [[[0, 0], [0, 1], [0, 2]],
          [[1, 0], [1, 1], [1, 2]]];
 
     assert(slice == array);
@@ -1600,7 +1595,7 @@ template IndexSlice(size_t N)
     {
         private size_t[N-1] _lengths;
 
-        auto save() @property const
+        IndexMap save() @property const
         {
             pragma(inline, true);
             return this;
@@ -1625,6 +1620,8 @@ template IndexSlice(size_t N)
 unittest
 {
     auto r = indexSlice(1);
+    import std.range.primitives: isRandomAccessRange;
+    static assert(isRandomAccessRange!(typeof(r)));
 }
 
 /++
@@ -1656,8 +1653,8 @@ IotaSlice!N iotaSlice(size_t N)(auto ref size_t[N] lengths, size_t shift = 0)
 @safe pure nothrow @nogc unittest
 {
     auto slice = iotaSlice(2, 3);
-    static immutable array = 
-        [[0, 1, 2], 
+    static immutable array =
+        [[0, 1, 2],
          [3, 4, 5]];
 
     assert(slice == array);
@@ -1697,7 +1694,7 @@ struct IotaMap()
     enum bool empty = false;
     enum IotaMap save = IotaMap.init;
 
-    static size_t opIndex()(size_t index) @safe pure nothrow @nogc @property 
+    static size_t opIndex()(size_t index) @safe pure nothrow @nogc @property
     {
         pragma(inline, true);
         return index;
