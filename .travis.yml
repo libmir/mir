@@ -10,14 +10,22 @@ d:
  - dmd-2.068.2
  - ldc-1.0.0-alpha1
  - ldc-0.17.0
-install:
- - if [[ $(dmd --help | head -n 1 | cut -d ' ' -f 4) == 'v2.071.0' && $TRAVIS_OS_NAME == 'linux' ]] ; then export IS_LATEST_PHOBOS=1 ; fi
- - wget -O doveralls "https://github.com/ColdenCullen/doveralls/releases/download/v1.2.0/doveralls_linux_travis"
- - chmod +x doveralls
- - wget -O dscanner "http://releases.dlang.io/dscanner/0.3.0-git/dscanner"
- - chmod +x dscanner
+env:
+ - ARCH="x86_64"
+matrix:
+  include:
+    - {os: linux, d: dmd-2.071.0, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: dmd-2.070.2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: dmd-2.069.2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: dmd-2.068.2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: ldc-1.0.0-alpha1, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: ldc-0.17.0, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+branches:
+  only:
+    - master
+    - stable
 script:
- - if [ "$IS_LATEST_PHOBOS" ] ; then ./dscanner --config .dscanner.ini --styleCheck source 2> /dev/null ; else echo "NOT_LATEST"; fi
- - dub test -b unittest-cov
+ - echo "$ARCH"
+ - dub test --arch "$ARCH" -b unittest-cov
 after_success:
  - bash <(curl -s https://codecov.io/bash)
