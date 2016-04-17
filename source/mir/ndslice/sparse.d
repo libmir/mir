@@ -417,6 +417,7 @@ CompressedTensor!(N - 1, V, I, J)
 		}
 		map.pointers[k + 1]++;
 	}
+	map.pointers[k + 2 .. $] = map.pointers[k + 1];
 	return map.sliced(inv.shape);
 }
 
