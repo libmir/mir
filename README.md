@@ -39,5 +39,16 @@ Numeric library and mirror for upcoming numeric packages for the Dlang standard 
 ## Notes
 
 - `mir.ndslice` is a development version of the `std.experimental.ndslice` package.
-- Mir can be used with DMD (reference D compiler) front end >= `2.068`. So ndslice can be used with LDC (LLVM D Compiler) `0.17.0`+.
 - Mir is going to be a testing package for the future Dlang BLAS implementation.
+
+## Compatibility
+
+|           | Linux | Mac OS X | Windows |
+|-----------|-------|----------|---------|
+| DMD 64 | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | [![Build status](https://ci.appveyor.com/api/projects/status/ir2k3o3j0isqp7pw/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
+| DMD 32 | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | OS X >= 10.7 is x86-64 only | [![Build status](https://ci.appveyor.com/api/projects/status/ir2k3o3j0isqp7pw/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
+| LDC 64 | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | [#120](https://github.com/DlangScience/mir/issues/120) |
+| LDC 32 | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | OS X >= 10.7 is x86-64 only | [#120](https://github.com/DlangScience/mir/issues/120) |
+
+- DMD (reference D compiler) >= `2.068`
+- LDC (LLVM D Compiler) `0.17.0`+.
