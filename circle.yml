@@ -20,10 +20,14 @@ test:
   override:
     - dscanResult=$(./dscanner --config .dscanner.ini --styleCheck $(find source/mir/* -type d | grep -v ndslice | tr '\n' ' ') 2> /dev/null ) ; if [ -z "${dscanResult}" ] ; then echo "No warnings found" ; else echo $dscanResult && $(exit 1); fi
     - dub test
-    - rdmd bootDoc/generate.d --output=docs source --separator=_ --extra index.d
+    - dmd -c -o- -version=CoreDdoc -version=StdDdoc -Df.release-dummy.html -Xfdocs.json -Isource $(find source -name '*.d' | tr '\n' ' ')
+    - git clone https://github.com/dlang/dlang.org
+    - (cd dlang.org/dpl-docs && dub build)
+    - DLANGORG=./dlang.org ${DLANGORG}/dpl-docs/dpl-docs generate-html --file-name-style=lowerUnderscored --std-macros=${DLANGORG}/html.ddoc --std-macros=${DLANGORG}/dlang.org.ddoc --std-macros=${DLANGORG}/std.ddoc --std-macros=${DLANGORG}/macros.ddoc --std-macros=${DLANGORG}/std-ddox.ddoc --override-macros=${DLANGORG}/std-ddox-override.ddoc --package-order=std --git-target=master docs.json docs
+    - cp -R ./dlang.org/css css
 deployment:
   aws:
     branch: master
     commands:
       - AWS_DEFAULT_REGION=eu-west-1 aws s3 sync --acl public-read --delete docs s3://docs.mir.dlang.io/latest
-      - AWS_DEFAULT_REGION=eu-west-1 aws s3 sync --acl public-read --delete bootDoc s3://docs.mir.dlang.io/bootDoc
+      - AWS_DEFAULT_REGION=eu-west-1 aws s3 sync --acl public-read --delete css s3://docs.mir.dlang.io/css
