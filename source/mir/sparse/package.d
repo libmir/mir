@@ -27,7 +27,7 @@ import mir.ndslice.slice;
 private enum isIndex(I) = is(I : size_t);
 
 //TODO: replace with `static foreach`
-template Iota(size_t i, size_t j)
+private template Iota(size_t i, size_t j)
 {
     static assert(i <= j, "Iota: i should be less than or equal to j");
     static if (i == j)
