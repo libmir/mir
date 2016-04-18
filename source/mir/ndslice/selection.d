@@ -910,7 +910,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             size_t[N] _indexes;
 
             static if (canSave!PureRange)
-            auto save() @property
+            auto save()
             {
                 return typeof(this)(_slice.save, _length, _indexes);
             }
@@ -1145,7 +1145,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 return typeof(return)(i, j);
             }
 
-            size_t[N] index() @property
+            size_t[N] index() const @property
             {
                 pragma(inline, true);
                 return _indexes;
@@ -1403,7 +1403,7 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
             size_t[N] _indexes;
 
             static if (canSave!PureRange)
-            auto save() @property
+            auto save()
             {
                 return typeof(this)(_slice.save, _length, maxCobeLength, sum, _indexes);
             }
@@ -1465,7 +1465,7 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
                 }
             }
 
-            size_t[N] index() @property
+            size_t[N] index() const @property
             {
                 pragma(inline, true);
                 return _indexes;
@@ -1713,7 +1713,7 @@ template IotaSlice(size_t N)
 
 // undocumented
 // zero cost variant of `std.range.iota`
-struct IotaMap()
+private struct IotaMap()
 {
     enum bool empty = false;
     enum IotaMap save = IotaMap.init;

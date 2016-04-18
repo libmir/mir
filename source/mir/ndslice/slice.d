@@ -332,7 +332,7 @@ pure nothrow @nogc unittest
             return index;
         }
         // `save` property to allow a slice to be a forward range
-        auto save() @property
+        auto save()
         {
             return this;
         }
@@ -414,7 +414,8 @@ private template _Range_Values(Names...)
 private template _Range_DeclarationList(Names...)
 {
     static if (Names.length)
-        enum string _Range_DeclarationList = "Range_" ~ Names[0] ~ " range_" ~ Names[0] ~ ", " ~ _Range_DeclarationList!(Names[1..$]);
+        enum string _Range_DeclarationList = "Range_" ~ Names[0] ~ " range_"
+                        ~ Names[0] ~ ", " ~ _Range_DeclarationList!(Names[1..$]);
     else
         enum string _Range_DeclarationList = "";
 }
@@ -422,7 +423,8 @@ private template _Range_DeclarationList(Names...)
 private template _Slice_DeclarationList(Names...)
 {
     static if (Names.length)
-        enum string _Slice_DeclarationList = "Slice!(N, Range_" ~ Names[0] ~ ") slice_" ~ Names[0] ~ ", " ~ _Slice_DeclarationList!(Names[1..$]);
+        enum string _Slice_DeclarationList = "Slice!(N, Range_" ~ Names[0] ~ ") slice_"
+                        ~ Names[0] ~ ", " ~ _Slice_DeclarationList!(Names[1..$]);
     else
         enum string _Slice_DeclarationList = "";
 }
@@ -1106,9 +1108,8 @@ struct Slice(size_t _N, _Range)
 
     enum isFullPureSlice(Slices...) =
            Slices.length == 0
-        || Slices.length == N
-        && PureIndexLength!Slices < N
-        && allSatisfy!(templateOr!(isIndex, is_Slice), Slices);
+        || ((Slices.length == N && PureIndexLength!Slices < N)
+        && allSatisfy!(templateOr!(isIndex, is_Slice), Slices));
 
     size_t[PureN] _lengths;
     sizediff_t[PureN] _strides;
@@ -1245,7 +1246,7 @@ struct Slice(size_t _N, _Range)
     Defined only if `Range` is a forward range or a pointer type.
     +/
     static if (canSave!PureRange)
-    auto save() @property
+    auto save()
     {
         static if (isPointer!PureRange)
             return typeof(this)(_lengths, _strides, _ptr);
@@ -1455,7 +1456,8 @@ struct Slice(size_t _N, _Range)
         if (dimension < N)
     {
         pragma(inline, true);
-        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!" ~ dimension.stringof);
+        assert(n <= _lengths[dimension],
+            __FUNCTION__ ~ ": n should be less than or equal to length!" ~ dimension.stringof);
         _lengths[dimension] -= n;
         _ptr += _strides[dimension] * n;
     }
@@ -1465,7 +1467,8 @@ struct Slice(size_t _N, _Range)
         if (dimension < N)
     {
         pragma(inline, true);
-        assert(n <= _lengths[dimension], __FUNCTION__ ~ ": n should be less than or equal to length!" ~ dimension.stringof);
+        assert(n <= _lengths[dimension],
+            __FUNCTION__ ~ ": n should be less than or equal to length!" ~ dimension.stringof);
         _lengths[dimension] -= n;
     }
 
@@ -1648,14 +1651,15 @@ struct Slice(size_t _N, _Range)
         assert(a != [[9, 2], [3, 4]]);
     }
 
+    /// Unary slicing a[i..j]
     _Slice opSlice(size_t dimension)(size_t i, size_t j)
         if (dimension < N)
     in   {
         assert(i <= j,
             "Slice.opSlice!" ~ dimension.stringof ~ ": the left bound must be less than or equal to the right bound.");
-        assert(j - i <= _lengths[dimension],
-            "Slice.opSlice!" ~ dimension.stringof ~
-            ": difference between the right and the left bounds must be less than or equal to the length of the given dimension.");
+        enum errormsg = ": difference between the right and the left bounds must be less than"
+                      ~ "or equal to the length of the given dimension.";
+        assert(j - i <= _lengths[dimension], "Slice.opSlice!" ~ dimension.stringof ~ errormsg);
     }
     body
     {
@@ -1802,7 +1806,8 @@ struct Slice(size_t _N, _Range)
                 && RN <= ReturnType!(opIndex!Slices).N)
         {
             auto slice = this[slices];
-            assert(slice._lengths[$ - RN .. $] == value._lengths, __FUNCTION__ ~ ": argument must have the corresponding shape.");
+            assert(slice._lengths[$ - RN .. $] == value._lengths,
+                __FUNCTION__ ~ ": argument must have the corresponding shape.");
             version(none) //future optimization
             static if ((isPointer!Range || isDynamicArray!Range) && (isPointer!RRange || isDynamicArray!RRange))
             {
@@ -2724,7 +2729,7 @@ private struct PtrShell(Range)
     }
 
     static if (canSave!Range)
-    auto save() @property
+    auto save()
     {
         static if (isDynamicArray!Range)
             return typeof(this)(_shift, _range);
@@ -2801,7 +2806,7 @@ private template PtrTuple(Names...)
         Ptrs ptrs;
 
         static if (allSatisfy!(canSave, Ptrs))
-        auto save() @property
+        auto save()
         {
             static if (anySatisfy!(hasElaborateAssign, Ptrs))
                 PtrTuple p;
@@ -2907,12 +2912,14 @@ private enum bool isType(T) = true;
 
 private enum isStringValue(alias T) = is(typeof(T) : string);
 
-private void _indexAssign(bool lastStrideEquals1, string op, size_t N, size_t RN, Range, RRange)(Slice!(N, Range) slice, Slice!(RN, RRange) value)
+private void _indexAssign(bool lastStrideEquals1, string op, size_t N, size_t RN, Range, RRange)
+                         (Slice!(N, Range) slice, Slice!(RN, RRange) value)
     if (N >= RN)
 {
     static if (N == 1)
     {
-        static if (lastStrideEquals1 && (isPointer!Range || isDynamicArray!Range) && (isPointer!RRange || isDynamicArray!RRange))
+        static if (lastStrideEquals1 && (isPointer!Range || isDynamicArray!Range)
+                    && (isPointer!RRange || isDynamicArray!RRange))
         {
             static if (isPointer!Range)
                 auto l = slice._ptr;
