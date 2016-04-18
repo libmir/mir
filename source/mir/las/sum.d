@@ -1714,6 +1714,24 @@ public:
         }
     }
 
+    @nogc nothrow unittest
+    {
+        import std.typetuple;
+        import std.math: approxEqual;
+        with(Summation)
+        foreach (summation; TypeTuple!(naive, fast))
+        foreach (T; TypeTuple!(float, double, real))
+        {
+            Summator!(T, summation) sum = 1;
+            sum += 3.5;
+            assert(sum.sum.approxEqual(4.5));
+            sum = 2;
+            assert(sum.sum == 2);
+            sum -= 4;
+            assert(sum.sum.approxEqual(-2));
+        }
+    }
+
     static if (summation == Summation.precise)
     {
         ///Returns $(D true) if current sum is a NaN.
