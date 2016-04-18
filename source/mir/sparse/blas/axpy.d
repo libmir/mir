@@ -2,7 +2,7 @@ module mir.sparse.blas.axpy;
 
 import std.traits;
 import mir.ndslice.slice;
-import mir.sparse.sparse;
+import mir.sparse;
 
 /++
 Params:
