@@ -446,8 +446,8 @@ pure nothrow unittest
     assert(t1[4] == 200);
 
     t1[] *= t1[];
-    assert(t1[3] == 40000);
-    assert(t1[4] == 40000);
+    assert(t1[3] == 40_000);
+    assert(t1[4] == 40_000);
 
 
     assert(&t1[$ - 1] is &(t1.back()));
