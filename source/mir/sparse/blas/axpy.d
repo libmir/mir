@@ -1,8 +1,8 @@
-module mir.sparse_blas.axpy;
+module mir.sparse.blas.axpy;
 
 import std.traits;
 import mir.ndslice.slice;
-import mir.ndslice.sparse;
+import mir.sparse.sparse;
 
 /++
 Params:
@@ -27,7 +27,7 @@ body
 {
 	pragma(inline, false);
 
-	import mir.sparse_blas.internal;
+	import mir.sparse.blas.internal;
 	static if(isSimpleSlice!V2)
 	{
 		if(y.stride == 1)
