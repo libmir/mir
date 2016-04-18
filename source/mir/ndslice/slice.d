@@ -1730,6 +1730,24 @@ struct Slice(size_t _N, _Range)
         assert(slice(indexP) == 4);  // Math & Fortran order
     }
 
+    static if (doUnittest)
+    pure nothrow unittest
+    {
+        // check with different PureN
+        import mir.ndslice.selection: pack, iotaSlice;
+        auto pElements = iotaSlice(2, 3, 4, 5).pack!2;
+        import std.range: iota;
+        import std.algorithm.comparison: equal;
+
+        // D & C order
+        assert(pElements[$-1, $-1][$-1].equal([5].iotaSlice(115)));
+        assert(pElements[[1, 2]][$-1].equal([5].iotaSlice(115)));
+
+        // Math & Fortran
+        assert(pElements(2, 1)[$-1].equal([5].iotaSlice(115)));
+        assert(pElements([2, 1])[$-1].equal([5].iotaSlice(115)));
+    }
+
     /++
     $(BLUE Partially or fully defined slice).
     +/
@@ -2766,6 +2784,12 @@ static if(__VERSION__ >= 2071)
         assert(ptr[0] == save0 + 11);
         (ptr + 5)[2] = 333;
         assert(range[7] == 333);
+
+        auto ptrCopy = ptr.save;
+        ptrCopy._range.popFront;
+        ptr[1] = 2;
+        assert(ptr[0] == save0 + 11);
+        assert(ptrCopy[0] == 2);
     }
 }
 
@@ -2787,6 +2811,17 @@ pure nothrow unittest
         slice[5 .. $][2] = 333;
         assert(range[7] == 333);
     }
+}
+
+unittest
+{
+    int[] arr = [1, 2, 3];
+    auto ptr = arr.ptrShell;
+    assert(ptr[0] == 1);
+    auto ptrCopy = ptr.save;
+    ptrCopy._range.popFront;
+    assert(ptr[0] == 1);
+    assert(ptrCopy[0] == 2);
 }
 
 private enum isSlicePointer(T) = isPointer!T || is(T : PtrShell!R, R);
@@ -2866,7 +2901,6 @@ private template PtrTuple(Names...)
 pure nothrow unittest
 {
     auto a = new int[20], b = new int[20];
-    import std.stdio;
     alias T = PtrTuple!("a", "b");
     alias S = T!(int*, int*);
     auto t = S(a.ptr, b.ptr);
