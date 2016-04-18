@@ -426,8 +426,6 @@ unittest
          [0, 0, 5]];
 
     auto crs = slice.compress;
-    import std.stdio;
-    writeln(crs.ptr.range);
 
     assert(crs.ptr.range == CompressedMap!(double, uint, uint)(
          3,
