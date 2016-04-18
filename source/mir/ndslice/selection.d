@@ -1294,7 +1294,6 @@ Use $(SUBREF iteration, allReversed) in pipeline before
 
 @safe @nogc pure nothrow unittest
 {
-    import mir.ndslice.slice;
     import std.range.primitives: isRandomAccessRange, hasSlicing;
     auto elems = iotaSlice(4, 5).byElement;
     static assert(isRandomAccessRange!(typeof(elems)));
@@ -1304,7 +1303,6 @@ Use $(SUBREF iteration, allReversed) in pipeline before
 // Checks strides
 @safe @nogc pure nothrow unittest
 {
-    import mir.ndslice.slice;
     import mir.ndslice.iteration;
     import std.range: isRandomAccessRange;
     auto elems = iotaSlice(4, 5).everted.byElement;
@@ -1377,8 +1375,6 @@ unittest
 
 unittest
 {
-    import mir.ndslice.slice;
-    import mir.ndslice.iteration;
     auto pElements = iotaSlice(3, 4, 5, 6, 7)
         .pack!2
         .byElement();
