@@ -948,7 +948,6 @@ pure nothrow @safe unittest
 {
     import std.algorithm: equal;
     import std.range: iota;
-    import std.stdio;
     assert(iota(3).combinations(2).equal!equal([[0, 1], [0, 2], [1, 2]]));
     assert("AB"d.combinations(2).equal!equal(["AB"d]));
     assert("ABC"d.combinations(2).equal!equal(["AB"d, "AC"d, "BC"d]));
