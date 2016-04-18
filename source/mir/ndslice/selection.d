@@ -1060,7 +1060,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 else with (_slice)
                 {
                     alias M = DeepElemType.PureN;
-                    return DeepElemType(_lengths[$ - M .. $], _strides[$ - M .. $], _ptr);
+                    return DeepElemType(_lengths[$ - M .. $], _strides[$ - M .. $], _ptr + getShift(index));
                 }
             }
 
@@ -1373,6 +1373,17 @@ unittest
     static assert(isRandomAccessRange!B);
     static assert(hasLength!B);
     static assert(hasSlicing!B);
+}
+
+unittest
+{
+    import mir.ndslice.slice;
+    import mir.ndslice.iteration;
+    auto pElements = iotaSlice(3, 4, 5, 6, 7)
+        .pack!2
+        .byElement();
+    assert(pElements[0][0] == iotaSlice(7));
+    assert(pElements[$-1][$-1] == iotaSlice([7], 2513));
 }
 
 /++
