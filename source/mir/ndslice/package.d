@@ -332,67 +332,6 @@ unittest
     assert(matrix(3, 2) == 6); // Math & Fortran index order
 }
 
-// relaxed example
-unittest
-{
-    static Slice!(3, ubyte*) movingWindowByChannel
-    (Slice!(3, ubyte*) image, size_t nr, size_t nc, ubyte delegate(Slice!(2, ubyte*)) filter)
-    {
-        import std.algorithm.iteration: map;
-        import std.array: array;
-        auto wnds = image
-            .pack!1
-            .windows(nr, nc)
-            .unpack
-            .transposed!(0, 1, 4)
-            .pack!2;
-        return wnds
-            .byElement
-            .map!filter
-            .array
-            .sliced(wnds.shape);
-    }
-
-    static T median(Range, T)(Range r, T[] buf)
-    {
-        import std.algorithm.sorting: topN;
-        size_t n;
-        foreach (e; r)
-            buf[n++] = e;
-        auto m = n >> 1;
-        buf[0 .. n].topN(m);
-        return buf[m];
-    }
-
-    import std.conv: to;
-    import std.getopt: getopt, defaultGetoptPrinter;
-    import std.path: stripExtension;
-
-    auto args = ["std"];
-    uint nr, nc, def = 3;
-    auto helpInformation = args.getopt(
-        "nr", "number of rows in window, default value is " ~ def.to!string, &nr,
-        "nc", "number of columns in window default value equals to nr", &nc);
-    if (helpInformation.helpWanted)
-    {
-        defaultGetoptPrinter(
-            "Usage: median-filter [<options...>] [<file_names...>]\noptions:",
-            helpInformation.options);
-        return;
-    }
-    if (!nr) nr = def;
-    if (!nc) nc = nr;
-
-    auto buf = new ubyte[nr * nc];
-
-    foreach (name; args[1 .. $])
-    {
-        auto ret =
-            movingWindowByChannel
-                 (new ubyte[300].sliced(10, 10, 3), nr, nc, window => median(window.byElement, buf));
-    }
-}
-
 @safe @nogc pure nothrow unittest
 {
     import std.algorithm.comparison: equal;

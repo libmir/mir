@@ -20,6 +20,7 @@ test:
   override:
     - dscanResult=$(./dscanner --config .dscanner.ini --styleCheck $(find source/mir/* -type d | grep -v ndslice | tr '\n' ' ') 2> /dev/null ) ; if [ -z "${dscanResult}" ] ; then echo "No warnings found" ; else echo $dscanResult && $(exit 1); fi
     - dub test
+    - dub build -c median-filter
     - rdmd bootDoc/generate.d --output=docs source --separator=_ --extra index.d
 deployment:
   aws:
