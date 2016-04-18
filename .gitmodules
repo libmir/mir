@@ -1,3 +1,0 @@
-[submodule "bootDoc"]
-	path = bootDoc
-	url = git://github.com/DlangScience/bootDoc.git
