@@ -1,8 +1,8 @@
-module mir.sparse_blas.dot;
+module mir.sparse.blas.dot;
 
 import std.traits;
 import mir.ndslice.slice;
-import mir.ndslice.sparse;
+import mir.sparse.sparse;
 
 
 /++
@@ -138,7 +138,7 @@ body
 {
 	pragma(inline, false);
 
-	import mir.sparse_blas.internal;
+	import mir.sparse.blas.internal;
 	static if(isSimpleSlice!V2)
 	{
 		if(y.stride == 1)

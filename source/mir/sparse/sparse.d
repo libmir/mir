@@ -17,13 +17,24 @@ T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 
 +/
-module mir.ndslice.sparse;
+module mir.sparse.sparse;
 
 import std.traits;
 import std.meta;
 
-import mir.ndslice.internal;
 import mir.ndslice.slice;
+
+private enum isIndex(I) = is(I : size_t);
+
+//TODO: replace with `static foreach`
+template Iota(size_t i, size_t j)
+{
+    static assert(i <= j, "Iota: i should be less than or equal to j");
+    static if (i == j)
+        alias Iota = AliasSeq!();
+    else
+        alias Iota = AliasSeq!(i, Iota!(i + 1, j));
+}
 
 /++
 Sparse tensors represented in Dictionary of Keys (DOK) format.
@@ -198,7 +209,7 @@ auto byCoordinateValue(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
         static if(N > 1)
             private sizediff_t[N-1] _strides;
         mixin _sparse_range_methods!(N, T);
-        private typeof(Sparse!(N, T).init._ptr._range.table.byKeyValue()) _range;
+        private typeof(Sparse!(N, T).init.ptr.range.table.byKeyValue()) _range;
 
         auto front() @property
         {
@@ -219,13 +230,13 @@ auto byCoordinateValue(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
     static if(N > 1)
     {
         CoordinateValues ret = void;
-        ret._strides = slice._strides[0..N-1];
-        ret._length = slice._ptr._range.table.length;
-        ret._range = slice._ptr._range.table.byKeyValue;
+        ret._strides = slice.structure.strides[0..N-1];
+        ret._length = slice.ptr.range.table.length;
+        ret._range = slice.ptr.range.table.byKeyValue;
         return ret;
     }
     else
-        return CoordinateValues(slice._ptr._range.table.byKeyValue);
+        return CoordinateValues(slice.ptr.range.table.byKeyValue);
 }
 
 ///
@@ -254,7 +265,7 @@ auto byCoordinate(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
         static if(N > 1)
             private sizediff_t[N-1] _strides;
         mixin _sparse_range_methods!(N, T);
-        private typeof(Sparse!(N, T).init._ptr._range.table.byKey()) _range;
+        private typeof(Sparse!(N, T).init.ptr.range.table.byKey()) _range;
 
         auto front() @property
         {
@@ -273,13 +284,13 @@ auto byCoordinate(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
     static if(N > 1)
     {
         Coordinates ret = void;
-        ret._strides = slice._strides[0..N-1];
-        ret._length = slice._ptr._range.table.length;
-        ret._range = slice._ptr._range.table.byKey;
+        ret._strides = slice.structure.strides[0..N-1];
+        ret._length = slice.ptr.range.table.length;
+        ret._range = slice.ptr.range.table.byKey;
         return ret;
     }
     else
-        return Coordinates(slice._ptr._range.table.byKey);
+        return Coordinates(slice.ptr.range.table.byKey);
 }
 
 ///
@@ -306,7 +317,7 @@ auto byValueOnly(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
     static struct Values
     {
         mixin _sparse_range_methods!(N, T);
-        private typeof(Sparse!(N, T).init._ptr._range.table.byValue) _range;
+        private typeof(Sparse!(N, T).init.ptr.range.table.byValue) _range;
 
         auto front() @property
         {
@@ -314,7 +325,7 @@ auto byValueOnly(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
             return _range.front;
         }
     }
-    return Values(slice._ptr._range.table.length, slice._ptr._range.table.byValue);
+    return Values(slice.ptr.range.table.length, slice.ptr.range.table.byValue);
 }
 
 ///
@@ -361,7 +372,7 @@ private mixin template _sparse_range_methods(size_t N, T)
 auto compress(I = uint, J = uint, S : Slice!(N, R), size_t N, R)(S slice)
     if(N > 1)
 {
-    return compressWithType!(slice.DeepElemType)(slice);
+    return compressWithType!(DeepElementType!(Slice!(N, R)))(slice);
 }
 
 /// Sparse tensor compression
@@ -468,8 +479,8 @@ CompressedTensor!(N - 1, V, I, J)
     import std.algorithm.sorting: sort;
     import mir.ndslice.selection: iotaSlice;
     auto data = slice
-        ._ptr
-        ._range
+        .ptr
+        .range
         .table
         .byKeyValue
         .array

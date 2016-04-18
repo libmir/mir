@@ -1,4 +1,4 @@
-module mir.sparse_blas.internal;
+module mir.sparse.blas.internal;
 
 import std.traits;
 import mir.ndslice.slice;

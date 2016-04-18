@@ -1,8 +1,8 @@
-module mir.sparse_blas.gemv;
+module mir.sparse.blas.gemv;
 
 import std.traits;
 import mir.ndslice.slice;
-import mir.ndslice.sparse;
+import mir.sparse.sparse;
 
 /++
 Params:
@@ -29,7 +29,7 @@ in
 }
 body
 {
-	import mir.sparse_blas.internal;
+	import mir.sparse.blas.internal;
 	static if(isSimpleSlice!V2)
 	{
 		if(x.stride == 1)
@@ -42,7 +42,7 @@ body
 	{
 		foreach(ref e; y)
 		{
-			import mir.sparse_blas.dot;
+			import mir.sparse.blas.dot;
 			e = alpha * dot(a.front, x) + beta * e;
 			a.popFront;
 		}
@@ -51,7 +51,7 @@ body
 	{
 		foreach(ref e; y)
 		{
-			import mir.sparse_blas.dot;
+			import mir.sparse.blas.dot;
 			e = alpha * dot(a.front, x);
 			a.popFront;
 		}
@@ -122,7 +122,7 @@ in
 }
 body
 {
-	import mir.sparse_blas.internal;
+	import mir.sparse.blas.internal;
 	alias T3 = Unqual!(ForeachType!V3);
 
 	static if(isSimpleSlice!V3)
@@ -147,7 +147,7 @@ body
 	}
 	foreach(ref t; x)
 	{
-		import mir.sparse_blas.axpy;
+		import mir.sparse.blas.axpy;
 		axpy(alpha * t, a.front, y);
 		a.popFront;
 	}

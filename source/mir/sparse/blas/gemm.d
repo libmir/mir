@@ -1,8 +1,8 @@
-module mir.sparse_blas.gemm;
+module mir.sparse.blas.gemm;
 
 import std.traits;
 import mir.ndslice.slice;
-import mir.ndslice.sparse;
+import mir.sparse.sparse;
 
 /++
 Params:
@@ -35,7 +35,7 @@ body
 	c = c.transposed;
 	foreach(x; b)
 	{
-		import mir.sparse_blas.gemv: gemv;
+		import mir.sparse.blas.gemv: gemv;
 		gemv(alpha, a, x, beta, c.front);
 		c.popFront;
 	}
@@ -102,7 +102,7 @@ body
 	c = c.transposed;
 	foreach(x; b)
 	{
-		import mir.sparse_blas.gemv: gemtv;
+		import mir.sparse.blas.gemv: gemtv;
 		gemtv(alpha, a, x, beta, c.front);
 		c.popFront;
 	}

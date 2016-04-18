@@ -1160,7 +1160,6 @@ struct Slice(size_t _N, _Range)
             _ptr = range;
         else
             _ptr._range = range;
-
     }
 
     static if (!hasPtrBehavior!PureRange)
