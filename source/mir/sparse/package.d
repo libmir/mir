@@ -469,7 +469,7 @@ unittest
 }
 
 ///
-CompressedTensor!(N - 1, V, I, J)
+CompressedTensor!(N, V, I, J)
     compressWithType
     (V, I = uint, J = uint, S : Slice!(N, R), size_t N, R : SparseMap!T, T)
     (S slice)
@@ -516,7 +516,7 @@ CompressedTensor!(N - 1, V, I, J)
 
 
 /// ditto
-CompressedTensor!(N - 1, V, I, J)
+CompressedTensor!(N, V, I, J)
     compressWithType
     (V, I = uint, J = uint, S : Slice!(N, R), size_t N, R)
     (S slice)
@@ -561,7 +561,7 @@ CompressedTensor!(N - 1, V, I, J)
 
 /++
 +/
-alias CompressedTensor(size_t N, T, I = uint, J = uint) = Slice!(N, CompressedMap!(T, I, J));
+alias CompressedTensor(size_t N, T, I = uint, J = uint) = Slice!(N - 1, CompressedMap!(T, I, J));
 
 /++
 +/
