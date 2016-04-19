@@ -102,3 +102,4 @@ test_script:
  - echo %PATH%
  - '%DC% --version'
  - dub test --arch=%Darch% --compiler=%DC%
+ - dub build -c median-filter
