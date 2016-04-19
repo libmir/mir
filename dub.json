@@ -18,6 +18,13 @@
             "dependencies": {
                 "imageformats": "~>6.0.0"
             },
+        },
+        {
+            "name": "means-of-columns",
+            "targetName": "means-of-columns",
+            "targetType": "executable",
+            "targetPath": "build",
+            "sourceFiles": ["examples/means_of_columns.d"]
         }
     ]
 }
