@@ -27,5 +27,6 @@ branches:
 script:
  - echo "$ARCH"
  - dub test --arch "$ARCH" -b unittest-cov
+ - dub build -c median-filter
 after_success:
  - bash <(curl -s https://codecov.io/bash)
