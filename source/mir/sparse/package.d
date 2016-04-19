@@ -55,7 +55,6 @@ Sparse!(Lengths.length, T) sparse(T, Lengths...)(Lengths lengths)
 /// ditto
 Sparse!(N, T) sparse(T, size_t N)(auto ref size_t[N] lengths)
 {
-    import mir.ndslice.slice: sliced;
     T[size_t] table;
     table[0] = 0;
     table.remove(0);
@@ -298,7 +297,6 @@ pure unittest
 {
     import std.array: array;
     import std.algorithm.sorting: sort;
-    alias CV = CoordinateValue!(2, double);
 
     auto slice = sparse!double(3, 3);
     slice[] = [[0, 2, 1], [0, 0, 4], [6, 7, 0]];
@@ -378,10 +376,6 @@ auto compress(I = uint, J = uint, S : Slice!(N, R), size_t N, R)(S slice)
 /// Sparse tensor compression
 unittest
 {
-    import std.array: array;
-    import std.algorithm.sorting: sort;
-    alias CV = CoordinateValue!(2, double);
-
     auto sparse = sparse!double(5, 3);
     sparse[] =
         [[0, 2, 1],
@@ -401,10 +395,6 @@ unittest
 /// Sparse tensor compression
 unittest
 {
-    import std.array: array;
-    import std.algorithm.sorting: sort;
-    alias CV = CoordinateValue!(2, double);
-
     auto sparse = sparse!double(5, 8);
     sparse[] =
         [[0, 2, 0, 0, 0, 0, 0, 1],
@@ -424,10 +414,6 @@ unittest
 /// Dense tensor compression
 unittest
 {
-    import std.array: array;
-    import std.algorithm.sorting: sort;
-    alias CV = CoordinateValue!(2, double);
-
     auto slice = slice!double(5, 3);
     slice[] =
         [[0, 2, 1],
@@ -448,10 +434,6 @@ unittest
 /// Dense tensor compression
 unittest
 {
-    import std.array: array;
-    import std.algorithm.sorting: sort;
-    alias CV = CoordinateValue!(2, double);
-
     auto slice = slice!double(5, 8);
     slice[] =
         [[0, 2, 0, 0, 0, 0, 0, 1],
