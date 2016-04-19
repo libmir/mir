@@ -63,7 +63,7 @@ Numeric library and mirror for upcoming numeric packages for the Dlang standard 
 You can create a new project with:
 
 ```
-dub init --format=json
+dub init --format=json <project-name>
 ```
 
 Now you need to edit the `dub.json` add `mir` as dependency:
@@ -95,6 +95,6 @@ dub
 Mir is a pure source code library, that means it can be easily distributed to
 any system. So you can just copy Mir's source to your system's dlang import path.
 For example on  Linux this is `/usr/include/dlang/dmd/mir`
-(or ``/usr/include/dlang/dmd/mir` for ldc).
+(or `/usr/include/dlang/dmd/mir` for ldc).
 
 Alternatively you can pass mir's directory directly to dmd and ldc using `-I <path-to-mir>`.
