@@ -52,3 +52,49 @@ Numeric library and mirror for upcoming numeric packages for the Dlang standard 
 
 - DMD (reference D compiler) >= `2.068`
 - LDC (LLVM D Compiler) `0.17.0`+.
+
+## Packages
+
+### On any platform with dub
+
+[![Dub version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
+
+[Dub](https://code.dlang.org/getting_started) is the D's package manager.
+You can create a new project with:
+
+```
+dub init --format=json
+```
+
+Now you need to edit the `dub.json` add `mir` as dependency:
+
+```
+{
+	...
+	"dependencies": {
+		"mir": "~><current-version>"
+	}
+}
+```
+
+Now you can create a main file in the `source` and run your code with:
+
+```
+dub
+```
+
+### Arch Linux
+
+| Type   | Name         | Version  |
+|--------|--------------|----------|
+| Stable | `libmir`     | [![libmir](https://img.shields.io/aur/version/libmir.svg)](https://aur.archlinux.org/packages/libmir/) |
+| Latest | `libmir-git` | [![libmir-git](https://img.shields.io/aur/version/libmir-git.svg)](https://aur.archlinux.org/packages/libmir-git/) |
+
+### On any platform with import paths
+
+Mir is a pure source code library, that means it can be easily distributed to
+any system. So you can just copy Mir's source to your system's dlang import path.
+For example on  Linux this is `/usr/include/dlang/dmd/mir`
+(or ``/usr/include/dlang/dmd/mir` for ldc).
+
+Alternatively you can pass mir's directory directly to dmd and ldc using `-I <path-to-mir>`.
