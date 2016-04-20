@@ -25,7 +25,7 @@ Generic Numeric Library for Science and Machine Learning.
  - `mir.sparse` Sparse Tensors (see sparse branch and `v0.15.1-beta2`+)
   -  `mir.sparse.blas` Spars BLAS
 
-## Documnetation
+## Documentation
 
 Alpha version of API is available [here](http://docs.mir.dlang.io/latest/index.html).
 
