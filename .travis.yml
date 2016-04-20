@@ -31,3 +31,15 @@ script:
  - dub build -c means-of-columns
 after_success:
  - bash <(curl -s https://codecov.io/bash)
+
+notifications:
+  email:
+    - devteam@mir.rocks
+
+notifications:
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/d2d7cb29fc776c5eaeef
+    on_success: change
+    on_failure: always
+    on_start: never
