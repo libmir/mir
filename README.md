@@ -1,8 +1,8 @@
-[![codecov.io](https://codecov.io/github/DlangScience/mir/coverage.svg?branch=master)](https://codecov.io/github/DlangScience/mir?branch=master)
-[![Latest version](https://img.shields.io/github/tag/DlangScience/mir.svg?maxAge=3600)](http://code.dlang.org/packages/mir)
+[![codecov.io](https://codecov.io/github/libmir/mir/coverage.svg?branch=master)](https://codecov.io/github/libmir/mir?branch=master)
+[![Latest version](https://img.shields.io/github/tag/libmir/mir.svg?maxAge=3600)](http://code.dlang.org/packages/mir)
 [![License](https://img.shields.io/dub/l/mir.svg)](http://code.dlang.org/packages/mir)
-[![Gitter](https://img.shields.io/gitter/room/DlangScience/public.svg)](https://gitter.im/DlangScience/public)
-[![Circle CI](https://circleci.com/gh/DlangScience/mir.svg?style=svg)](https://circleci.com/gh/DlangScience/mir)
+[![Gitter](https://img.shields.io/gitter/room/libmir/public.svg)](https://gitter.im/libmir/public)
+[![Circle CI](https://circleci.com/gh/libmir/mir.svg?style=svg)](https://circleci.com/gh/libmir/mir)
 
 Mir
 ======
@@ -34,10 +34,10 @@ Alpha version of API is available [here](http://docs.mir.dlang.io/latest/index.h
 
 |           | Linux | Mac OS X | Windows |
 |-----------|-------|----------|---------|
-| DMD 64 | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | [![Build status](https://ci.appveyor.com/api/projects/status/ir2k3o3j0isqp7pw/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
-| DMD 32 | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | OS X >= 10.7 is x86-64 only | [![Build status](https://ci.appveyor.com/api/projects/status/ir2k3o3j0isqp7pw/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
-| LDC 64 | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | [#120](https://github.com/DlangScience/mir/issues/120) |
-| LDC 32 | [![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir) | OS X >= 10.7 is x86-64 only | [#120](https://github.com/DlangScience/mir/issues/120) |
+| DMD 64 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build status](https://ci.appveyor.com/api/projects/status/ir2k3o3j0isqp7pw/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
+| DMD 32 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | OS X >= 10.7 is x86-64 only | [![Build status](https://ci.appveyor.com/api/projects/status/ir2k3o3j0isqp7pw/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
+| LDC 64 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [#120](https://github.com/libmir/mir/issues/120) |
+| LDC 32 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | OS X >= 10.7 is x86-64 only | [#120](https://github.com/libmir/mir/issues/120) |
 
 - DMD (reference D compiler) >= `2.068`
 - LDC (LLVM D Compiler) `0.17.0`+.
@@ -91,7 +91,7 @@ Alternatively you can pass mir's directory directly to dmd and ldc using `-I <pa
 
 ## Contributing
 
-See our [TODO List](https://github.com/DlangScience/mir/issues?q=is%3Aissue+is%3Aopen+label%3A%22New+Package%22).
+See our [TODO List](https://github.com/libmir/mir/issues?q=is%3Aissue+is%3Aopen+label%3A%22New+Package%22).
 Mir is very young and we are open for contributing to source code, documentation, examples and benchmarks.
 
 ## Notes
