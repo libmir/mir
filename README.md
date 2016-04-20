@@ -1,18 +1,13 @@
 [![codecov.io](https://codecov.io/github/DlangScience/mir/coverage.svg?branch=master)](https://codecov.io/github/DlangScience/mir?branch=master)
-[![Build Status](https://travis-ci.org/DlangScience/mir.svg?branch=master)](https://travis-ci.org/DlangScience/mir)
-[![Build status](https://ci.appveyor.com/api/projects/status/ir2k3o3j0isqp7pw/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master)
-[![Circle CI](https://circleci.com/gh/DlangScience/mir.svg?style=svg)](https://circleci.com/gh/DlangScience/mir)
-
-[![Dub version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
 [![License](https://img.shields.io/dub/l/mir.svg)](http://code.dlang.org/packages/mir)
-[![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
 [![Gitter](https://img.shields.io/gitter/room/DlangScience/public.svg)](https://gitter.im/DlangScience/public)
+[![Circle CI](https://circleci.com/gh/DlangScience/mir.svg?style=svg)](https://circleci.com/gh/DlangScience/mir)
 
 Mir
 ======
-Numeric library and mirror for upcoming numeric packages for the Dlang standard library.
+Generic Numeric Library for Science and Machine Learning.
 
-## Packages
+## Contents
 
  - `mir.ndslice` [Multidimensional Random Access Ranges and Arrays](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
  - `mir.las.sum` Functions and Output Ranges for Summation Algorithms. Works with user-defined types.
@@ -25,21 +20,14 @@ Numeric library and mirror for upcoming numeric packages for the Dlang standard 
   - `cartesianPower`
   - `combinationsRepeat`
 
-## TODO
+### In progress
 
- - `mir.sparse` [multidimensional sparse arrays](https://github.com/DlangScience/mir/issues/43)
- - `mir.fft` [multidimensional FFT](https://github.com/DlangScience/mir/issues/45)
- - `mir.random` [non-uniform random generators](https://github.com/DlangScience/mir/issues/46)
- - `mir.data` [sci data formats](https://github.com/DlangScience/mir/issues/47)
- - `mir.las` [linear algebra subroutines](https://github.com/DlangScience/mir/issues/48)
- - `mir.stat` [statistical functions](https://github.com/DlangScience/mir/issues/49)
-  - `mir.stat.probcounting` hyperloglog algorithm implementation
+ - `mir.sparse` Sparse Tensors (see sparse branch and `v0.15.1-beta2`+)
+  -  `mir.sparse.blas` Spars BLAS
 
+## Documnetation
 
-## Notes
-
-- `mir.ndslice` is a development version of the `std.experimental.ndslice` package.
-- Mir is going to be a testing package for the future Dlang BLAS implementation.
+Alpha version of API is available [here](http://docs.mir.dlang.io/latest/index.html).
 
 ## Compatibility
 
@@ -58,6 +46,7 @@ Numeric library and mirror for upcoming numeric packages for the Dlang standard 
 ### On any platform with dub
 
 [![Dub version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
+[![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
 
 [Dub](https://code.dlang.org/getting_started) is the D's package manager.
 You can create a new project with:
@@ -87,7 +76,7 @@ dub
 
 | Type   | Name         | Version  |
 |--------|--------------|----------|
-| Stable | `libmir`     | [![libmir](https://img.shields.io/aur/version/libmir.svg)](https://aur.archlinux.org/packages/libmir/) |
+| Stable | `libmir`     | [![libmir](https://img.shields.io/aur/version/libmir.svg)](https://aur.archlinux.org/packages/libmir/) [![libmir](https://img.shields.io/aur/votes/libmir.svg)](https://aur.archlinux.org/packages/libmir/) |
 | Latest | `libmir-git` | [![libmir-git](https://img.shields.io/aur/version/libmir-git.svg)](https://aur.archlinux.org/packages/libmir-git/) |
 
 ### On any platform with import paths
@@ -98,3 +87,13 @@ For example on  Linux this is `/usr/include/dlang/dmd/mir`
 (or `/usr/include/dlang/dmd/mir` for ldc).
 
 Alternatively you can pass mir's directory directly to dmd and ldc using `-I <path-to-mir>`.
+
+
+## Contributing
+
+See our [TODO List](https://github.com/DlangScience/mir/issues?q=is%3Aissue+is%3Aopen+label%3A%22New+Package%22).
+Mir is very young and we are open for contributing to source code, documentation, examples and benchmarks.
+
+## Notes
+
+- `mir.ndslice` is a development version of the `std.experimental.ndslice` package.
