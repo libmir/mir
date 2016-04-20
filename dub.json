@@ -1,6 +1,6 @@
 {
     "name": "mir",
-    "description": "Numeric library for Dlang",
+    "description": "Numerical library for Dlang",
     "copyright": "2015-2016, Ilya Yaroshenko, Mir Team",
     "authors": ["Ilya Yaroshenko"],
     "license": "BSL-1.0",

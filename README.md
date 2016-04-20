@@ -6,7 +6,7 @@
 
 Mir
 ======
-Generic Numeric Library for Science and Machine Learning.
+Generic Numerical Library for Science and Machine Learning.
 
 ## Contents
 
