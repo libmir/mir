@@ -1,5 +1,5 @@
 /**
-Numeric library and mirror for upcoming numeric packages for the Dlang standard library.
+Numerical library and mirror for upcoming numeric packages for the Dlang standard library.
 
 $(DL
 	$(DT $(LINK2 http://dlang.org/phobos-prerelease/std_experimental_ndslice.html, ndslice package)
