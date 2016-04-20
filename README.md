@@ -54,7 +54,7 @@ dub init --format=json <project-name>
 
 Now you need to edit the `dub.json` add `mir` as dependency:
 
-```
+```json
 {
 	...
 	"dependencies": {
