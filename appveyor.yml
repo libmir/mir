@@ -104,3 +104,13 @@ test_script:
  - dub test --arch=%Darch% --compiler=%DC%
  - dub build -c median-filter
  - dub build -c means-of-columns
+
+notifications:
+ - provider: Webhook
+   url: https://webhooks.gitter.im/e/56aae174f8cc81f4eda4
+ - provider: Email
+   to:
+    - devteam@mir.rocks
+   on_build_success: false
+   on_build_failure: true
+   on_build_status_changed: true

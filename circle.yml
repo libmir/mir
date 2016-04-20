@@ -29,3 +29,7 @@ deployment:
     commands:
       - AWS_DEFAULT_REGION=eu-west-1 aws s3 sync --acl public-read --delete docs s3://docs.mir.dlang.io/latest
       - AWS_DEFAULT_REGION=eu-west-1 aws s3 sync --acl public-read --delete bootDoc s3://docs.mir.dlang.io/bootDoc
+
+notify:
+  webhooks:
+    - url: https://webhooks.gitter.im/e/817798ef82bd95b77d3a
