@@ -15,11 +15,7 @@ Generic Numeric Library for Science and Machine Learning.
   - Precise algorithm: improved analog of Python's `fsum`
   - Pairwise algorithm: fast version for Input Ranges
   - Kahan, KBN, and KB2 algorithms
- - `mir.combinatorics`
-  - `combinations`
-  - `permutations`
-  - `cartesianPower`
-  - `combinationsRepeat`
+ - `mir.combinatorics` Combinations, combinations with repeats, cartesian power, permutations.
 
 ### In progress
 
