@@ -44,18 +44,7 @@ Compatibility
 Installation
 ------------
 
-### Rapid edit-run cycle without dub
-
-The easiest way to execute your code is with `rdmd`.
-
-```
-rdmd -Isource examples/means_of_columns.d
-```
-
-`rdmd` is a companion to the `dmd` compiler that simplifies the typical edit-compile-link-run or edit-make-run cycle to a rapid edit-run cycle. Like make and other tools, `rdmd` uses the relative dates of the files involved to minimize the amount of work necessary. Unlike make, `rdmd` tracks dependencies and freshness without requiring additional information from the user.
-You can find more information [here](https://dlang.org/rdmd.html).
-
-### Fast setup with the package manager dub
+### Fast setup with the dub package manager
 
 [![Dub version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
 [![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
@@ -88,6 +77,17 @@ dub
 You can use a different compile with `dub --compiler ldc`.
 For a performance boost, add `-b release` to let the compiler perform additional
 optimizations, inlining, removal of bound checking and `assert` statements.
+
+### Rapid edit-run cycle without dub
+
+The easiest way to execute your code is with `rdmd`.
+
+```
+rdmd -Isource examples/means_of_columns.d
+```
+
+`rdmd` is a companion to the `dmd` compiler that simplifies the typical edit-compile-link-run or edit-make-run cycle to a rapid edit-run cycle. Like make and other tools, `rdmd` uses the relative dates of the files involved to minimize the amount of work necessary. Unlike make, `rdmd` tracks dependencies and freshness without requiring additional information from the user.
+You can find more information [here](https://dlang.org/rdmd.html).
 
 ### Compile with ldc
 
