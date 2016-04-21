@@ -41,8 +41,10 @@ Compatibility
 - DMD (reference D compiler) >= `2.068`
 - LDC (LLVM D Compiler) `0.17.0`+.
 
-Rapid edit-run cycle without dub
---------------------------------
+Installation
+------------
+
+### Rapid edit-run cycle without dub
 
 The easiest way to execute your code is with `rdmd`.
 
@@ -53,8 +55,7 @@ rdmd -Isource examples/means_of_columns.d
 `rdmd` is a companion to the `dmd` compiler that simplifies the typical edit-compile-link-run or edit-make-run cycle to a rapid edit-run cycle. Like make and other tools, `rdmd` uses the relative dates of the files involved to minimize the amount of work necessary. Unlike make, `rdmd` tracks dependencies and freshness without requiring additional information from the user.
 You can find more information [here](https://dlang.org/rdmd.html).
 
-Fast setup with the package manager dub
----------------------------------------
+### Fast setup with the package manager dub
 
 [![Dub version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
 [![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
@@ -88,8 +89,7 @@ You can use a different compile with `dub --compiler ldc`.
 For a performance boost, add `-b release` to let the compiler perform additional
 optimizations, inlining, removal of bound checking and `assert` statements.
 
-Compile with ldc
-----------------
+### Compile with ldc
 
 The easiest way is to specify mir's sources during compilation:
 
@@ -102,13 +102,12 @@ You might want to have a look at dynamic linking with dmd below - it works with 
 
 For an additional performance boost, you can pass `-release -inline` to `ldc`.
 
-Compile with dmd
-----------------
+### Compile with dmd
 
 __Warning__: Manually using `dmd` is a bit more complicated and if you are new
 to DLang, we advise you to use either `rdmd`, `dub` or `ldc`.
 
-### Step 1: Compile your file(s)
+#### Step 1: Compile your file(s)
 
 ```
 dmd -c -Isource examples/means_of_columns.d
@@ -118,12 +117,12 @@ If you do this more often, you probably want to install a Mir package or put the
 
 Now you can either use static linking (will copy everything into the binary) or dynamic linking (will load binary on run) to create an executable.
 
-### Step 2a: Static linking
+#### Step 2a: Static linking
 
 Static linking will result in copying all library routines in your binary. While this might require more disk space, it is faster and more portable.
 The only downside is that it requires recompilation if `mir` is updated.
 
-#### 2.a.1: Create static mir library
+##### 2.a.1: Create static mir library
 
 You need to create a static library of `mir` once:
 
@@ -131,17 +130,17 @@ You need to create a static library of `mir` once:
 dmd -lib -oflibmir.a $(find source -name '*.d')
 ```
 
-#### 2.a.2: Link statically
+##### 2.a.2: Link statically
 
 ```
 dmd means_of_columns.o libmir.a
 ```
 
-### Step 2b: Dynamic linking
+#### Step 2b: Dynamic linking
 
 With dynamic linking the OS will bind the binary and it's required external shared libraries at runtime.
 
-#### 2.b.1: Create shared mir library
+##### 2.b.1: Create shared mir library
 
 You need to create a shared, dynamic library of `mir` once:
 
@@ -154,7 +153,7 @@ We need to specify:
 - `-defaultlib=libphobos2.so` as Phobos is statically linked by default.
 - `fPIC` to create Position Independent Code (it creates a global offset table)
 
-#### 2.b.2: Link dynamically
+##### 2.b.2: Link dynamically
 
 ```
 dmd means_of_columns.o -Llibmir.so -L-rpath=.
@@ -162,13 +161,12 @@ dmd means_of_columns.o -Llibmir.so -L-rpath=.
 
 You can inspect the dynamic linking with `ldd means_of_columns`.
 
-Packages
---------
+### Packages
 
 Putting `mir` in `/usr/include/dlang/dmd`, avoids the need for `-Isource`.
 So you can execute your code with `rdmd <your-file.d>`
 
-### Arch Linux
+#### Arch Linux
 
 | Type   | Name         | Version  |
 |--------|--------------|----------|
