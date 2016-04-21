@@ -130,6 +130,8 @@ You need to create a static library of `mir` once:
 dmd -lib -oflibmir.a $(find source -name '*.d')
 ```
 
+If you have `dub` available, you can also use `dub -c static-lib`.
+
 ##### 2.a.2: Link statically
 
 ```
@@ -152,6 +154,8 @@ We need to specify:
 
 - `-defaultlib=libphobos2.so` as Phobos is statically linked by default.
 - `fPIC` to create Position Independent Code (it creates a global offset table)
+
+If you have `dub` available, you can also use `dub -c dynamic-lib`.
 
 ##### 2.b.2: Link dynamically
 
