@@ -31,17 +31,32 @@ in
 body
 {
 	import mir.ndslice.iteration: transposed;
+	import mir.blas.gemv: gemv;
 
-	b = b.transposed;
-	c = c.transposed;
-
-	while(!b.empty)
+	if(b.stride == 1)
 	{
-		import mir.blas.gemv: gemv;
-		gemv(alpha, a, b.front, beta, c.front);
+		b = b.transposed;
+		c = c.transposed;
 
-		b.popFront;
-		c.popFront;
+		while(!c.empty)
+		{
+			gemv(alpha, a, b.front, beta, c.front);
+
+			b.popFront;
+			c.popFront;
+		}
+	}
+	else
+	{
+		b = b.transposed;
+
+		while(!c.empty)
+		{
+			gemv(alpha, b, a.front, beta, c.front);
+
+			a.popFront;
+			c.popFront;
+		}
 	}
 }
 
