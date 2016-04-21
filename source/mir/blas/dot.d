@@ -41,7 +41,7 @@ body
 				dotImpl(y.toDense, x) :
 				dotImpl(x, y);
 	}
-	else 
+	else
 	static if(!isDynamicArray!V1 && isDynamicArray!V2)
 	{
 		import mir.internal.utility;
