@@ -10,6 +10,14 @@
             "targetType": "sourceLibrary",
         },
         {
+            "name": "static-lib",
+            "targetType": "staticLibrary",
+        },
+        {
+            "name": "dynamic-lib",
+            "targetType": "dynamicLibrary",
+        },
+        {
             "name": "median-filter",
             "targetName": "median-filter",
             "targetType": "executable",
