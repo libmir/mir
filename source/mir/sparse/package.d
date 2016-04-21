@@ -8,14 +8,11 @@ License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
-Source:    $(PHOBOSSRC std/_experimental/_ndslice/_sparse.d)
-
 Macros:
 SUBMODULE = $(LINK2 mir_ndslice_$1.html, mir.ndslice.$1)
 SUBREF = $(LINK2 mir_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
-
 +/
 module mir.sparse;
 
