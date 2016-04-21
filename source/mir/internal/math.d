@@ -1,5 +1,7 @@
 module mir.internal.math;
 
+package(mir):
+
 version(LDC)
 {
 	import ldc.intrinsics;
