@@ -1,3 +1,8 @@
+/**
+License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors: Ilya Yaroshenko
+*/
 module mir.sparse.blas.gemv;
 
 import std.traits;
@@ -6,11 +11,11 @@ import mir.sparse;
 
 /++
 Params:
+	alpha = scalar
 	a = sparse matrix (CSR format)
 	x = dense vector
-	y = dense vector
-	alpha = scalar
 	beta = scalar
+	y = dense vector
 Returns:
 	`y = alpha * a × x + beta * y` if beta does not equal null and `y = alpha * a × x` otherwise.
 +/
@@ -29,7 +34,7 @@ in
 }
 body
 {
-	import mir.sparse.blas.internal;
+	import mir.internal.utility;
 	static if(isSimpleSlice!V2)
 	{
 		if(x.stride == 1)
@@ -99,11 +104,11 @@ unittest
 
 /++
 Params:
+	alpha = scalar
 	a = sparse matrix (CSR format)
 	x = dense vector
-	y = dense vector
-	alpha = scalar
 	beta = scalar
+	y = dense vector
 Returns:
 	`y = alpha * aᵀ × x + beta * y` if beta does not equal null and `y = alpha * aᵀ × x` otherwise.
 +/
@@ -122,7 +127,7 @@ in
 }
 body
 {
-	import mir.sparse.blas.internal;
+	import mir.internal.utility;
 	alias T3 = Unqual!(ForeachType!V3);
 
 	static if(isSimpleSlice!V3)

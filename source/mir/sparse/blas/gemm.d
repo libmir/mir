@@ -1,3 +1,8 @@
+/**
+License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors: Ilya Yaroshenko
+*/
 module mir.sparse.blas.gemm;
 
 import std.traits;
@@ -6,13 +11,13 @@ import mir.sparse;
 
 /++
 Params:
+	alpha = scalar
 	a = sparse matrix (CSR format)
 	b = dense matrix
-	c = dense matrix
-	alpha = scalar
 	beta = scalar
+	c = dense matrix
 Returns:
-	`y = alpha * a × b + beta * y` if beta does not equal null and `y = alpha * a × b` otherwise.
+	`c = alpha * a × b + beta * c` if beta does not equal null and `c = alpha * a × b` otherwise.
 +/
 void gemm(
 	CR,
@@ -73,13 +78,13 @@ unittest
 
 /++
 Params:
+	alpha = scalar
 	a = sparse matrix (CSR format)
 	b = dense matrix
-	c = dense matrix
-	alpha = scalar
 	beta = scalar
+	c = dense matrix
 Returns:
-	`y = alpha * aᵀ × b + beta * y` if beta does not equal null and `y = alpha * aᵀ × b` otherwise.
+	`c = alpha * aᵀ × b + beta * c` if beta does not equal null and `c = alpha * aᵀ × b` otherwise.
 +/
 void gemtm(
 	CR,
@@ -138,4 +143,81 @@ unittest
 		[[-42.0, 35, -7, 77],
 		 [-69.0, -21, -42, 21],
 		 [23.0, 69, 3, 29]]);
+}
+
+/++
+Params:
+	alpha = scalar
+	a = dense matrix (CSR format)
+	b = dense matrix
+	beta = scalar
+	c = sparse matrix
+Returns:
+	`c[available indexes] *= (alpha * a × b)[available indexes]`.
++/
+void selectiveGemm(T,
+	M3 : Slice!(1, V3),
+		V3 : CompressedMap!(T3, I3, J3),
+			T3, I3, J3,
+	)
+(T alpha, Slice!(2, T*) a, Slice!(2, T*) b, M3 c)
+in
+{
+	assert(a.length!1 == b.length!0);
+	assert(c.length!0 == a.length!0);
+	foreach(r; c)
+		if(r.indexes.length)
+			assert(r.indexes[$-1] < b.length!1);
+}
+body
+{
+	import mir.ndslice.iteration: transposed;
+	import mir.blas.dot;
+
+	b = b.transposed;
+	foreach(r; c)
+	{
+		foreach(i, j; r.indexes)
+			r.values[i] *= alpha * dot(a.front, b[j]);
+		a.popFront;
+	}
+}
+
+///
+unittest
+{
+	auto a = slice!double(3, 5);
+	a[] =
+		[[-5, 1, 7, 7, -4],
+		 [-1, -5, 6, 3, -3],
+		 [-5, -2, -3, 6, 0]];
+
+	auto b = slice!double(5, 4);
+	b[] =
+		[[-5.0, -3, 3, 1],
+		 [4.0, 3, 6, 4],
+		 [-4.0, -2, -2, 2],
+		 [-1.0, 9, 4, 8],
+		 [9.0, 8, 3, -2]];
+
+	// a * b ==
+	//	[[-42.0, 35, -7, 77],
+	//	 [-69.0, -21, -42, 21],
+	//	 [23.0, 69, 3, 29]]);
+
+	auto cs = sparse!double(3, 4);
+	cs[0, 2] = 1;
+	cs[0, 1] = 3;
+	cs[2, 3] = 2;
+
+	auto c = cs.compress;
+
+	selectiveGemm(1.0, a, b, c);
+	assert(c.length == 3);
+	assert(c[0].indexes == [1, 2]);
+	assert(c[0].values == [105, -7]);
+	assert(c[1].indexes == []);
+	assert(c[1].values == []);
+	assert(c[2].indexes == [3]);
+	assert(c[2].values == [58]);
 }

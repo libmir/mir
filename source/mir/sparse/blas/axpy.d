@@ -1,3 +1,8 @@
+/**
+License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors: Ilya Yaroshenko
+*/
 module mir.sparse.blas.axpy;
 
 import std.traits;
@@ -27,7 +32,7 @@ body
 {
 	pragma(inline, false);
 
-	import mir.sparse.blas.internal;
+	import mir.internal.utility;
 	static if(isSimpleSlice!V2)
 	{
 		if(y.stride == 1)

@@ -1,3 +1,8 @@
+/**
+License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
+
+Authors: Ilya Yaroshenko
+*/
 module mir.sparse.blas.dot;
 
 import std.traits;
@@ -10,7 +15,7 @@ Params:
 	x = sparse vector
 	y = sparse vector
 Returns:
-	scalar `x × y`
+	scalar `xᵀ × y`
 +/
 Unqual!(CommonType!(T1, T2)) dot(
 	V1 : CompressedArray!(T1, I1),
@@ -138,7 +143,7 @@ body
 {
 	pragma(inline, false);
 
-	import mir.sparse.blas.internal;
+	import mir.internal.utility;
 	static if(isSimpleSlice!V2)
 	{
 		if(y.stride == 1)
