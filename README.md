@@ -53,6 +53,41 @@ rdmd -Isource examples/means_of_columns.d
 `rdmd` is a companion to the `dmd` compiler that simplifies the typical edit-compile-link-run or edit-make-run cycle to a rapid edit-run cycle. Like make and other tools, `rdmd` uses the relative dates of the files involved to minimize the amount of work necessary. Unlike make, `rdmd` tracks dependencies and freshness without requiring additional information from the user.
 You can find more information [here](https://dlang.org/rdmd.html).
 
+Fast setup with the package manager dub
+---------------------------------------
+
+[![Dub version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
+[![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
+
+[Dub](https://code.dlang.org/getting_started) is the D's package manager.
+You can create a new project with:
+
+```
+dub init --format=json <project-name>
+```
+
+Now you need to edit the `dub.json` add `mir` as dependency and set its targetType to `executable`.
+
+```json
+{
+	...
+	"dependencies": {
+		"mir": "~><current-version>"
+	},
+	"targetType": "executable"
+}
+```
+
+Now you can create a main file in the `source` and run your code with:
+
+```
+dub
+```
+
+You can use a different compile with `dub --compiler ldc`.
+For a performance boost, add `-b release` to let the compiler perform additional
+optimizations, inlining, removal of bound checking and `assert` statements.
+
 Compile with ldc
 ----------------
 
@@ -63,12 +98,15 @@ ldc -Isource examples/means_of_columns.d
 ```
 
 If you copy `mir`'s sources to `/usr/include/dlang/ldc/mir` you don't even need the `-Isource` include.
-You might want to have a look at dynamic linking with dmd below - it works too with `ldc`.
+You might want to have a look at dynamic linking with dmd below - it works with `ldc` too.
 
 For an additional performance boost, you can pass `-release -inline` to `ldc`.
 
 Compile with dmd
 ----------------
+
+__Warning__: Manually using `dmd` is a bit more complicated and if you are new
+to DLang, we advise you to use either `rdmd`, `dub` or `ldc`.
 
 ### Step 1: Compile your file(s)
 
@@ -124,36 +162,6 @@ dmd means_of_columns.o -Llibmir.so -L-rpath=.
 
 You can inspect the dynamic linking with `ldd means_of_columns`.
 
-### On any platform with dub
-
-[![Dub version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
-[![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
-
-[Dub](https://code.dlang.org/getting_started) is the D's package manager.
-You can create a new project with:
-
-```
-dub init --format=json <project-name>
-```
-
-Now you need to edit the `dub.json` add `mir` as dependency and set its targetType to `executable`.
-
-```json
-{
-	...
-	"dependencies": {
-		"mir": "~><current-version>"
-	},
-	"targetType": "executable"
-}
-```
-
-Now you can create a main file in the `source` and run your code with:
-
-```
-dub
-```
-
 Packages
 --------
 
@@ -166,12 +174,6 @@ So you can execute your code with `rdmd <your-file.d>`
 |--------|--------------|----------|
 | Stable | `libmir`     | [![libmir](https://img.shields.io/aur/version/libmir.svg)](https://aur.archlinux.org/packages/libmir/) [![libmir](https://img.shields.io/aur/votes/libmir.svg)](https://aur.archlinux.org/packages/libmir/) |
 | Latest | `libmir-git` | [![libmir-git](https://img.shields.io/aur/version/libmir-git.svg)](https://aur.archlinux.org/packages/libmir-git/) |
-
-Other tips
-----------
-
-- use [ld gold linking](https://code.dawg.eu/reducing-vibed-turnaround-time-part-1-faster-linking.html
-) (speeds up linking a lot)
 
 Contributing
 ------------
