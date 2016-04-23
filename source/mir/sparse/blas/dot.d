@@ -34,7 +34,6 @@ D dot(
 	T1, T2, I1, I2)
 (V1 x, V2 y)
 {
-	pragma(inline, false);
 
 	typeof(return) s = 0;
 
@@ -84,7 +83,8 @@ D dot(
 		}
 		continue;
 		L:
-		s += D(x.values[0]) * D(y.values[0]);
+		import mir.internal.math: fmuladd;
+		s = fmuladd!D(x.values[0], y.values[0], s);
 		x.indexes = x.indexes[1 .. $];
 		if(x.indexes.length == 0)
 		{
@@ -141,7 +141,6 @@ in
 }
 body
 {
-	pragma(inline, false);
 
 	import mir.internal.utility;
 	static if(isSimpleSlice!V2)
@@ -154,11 +153,12 @@ body
 
 	alias T2 = ForeachType!V2;
 
-	Unqual!(CommonType!(T1, T2)) s = 0;
-
+	alias F = Unqual!(CommonType!(T1, T2));
+	F s = 0;
 	foreach(size_t i; 0 .. x.indexes.length)
 	{
-		s += y[x.indexes[i]] * x.values[i];
+		import mir.internal.math: fmuladd;
+		s = fmuladd(y[x.indexes[i]], x.values[i], s);
 	}
 
 	return s;

@@ -95,20 +95,22 @@ pragma(inline, false) package(mir.blas)
 {
 	T dotImpl(T)(scope const(T)[] x, scope const(T)[] y)
 	{
+		import mir.internal.math: fmuladd;
 		T s = 0;
 		foreach(size_t i; 0 .. x.length)
 		{
-			s += x[i] * y[i];
+			s = fmuladd(x[i], y[i], s);
 		}
 		return s;
 	}
 
 	T dotImpl(T)(scope const(T)[] x, scope Slice!(1, T*) y)
 	{
+		import mir.internal.math: fmuladd;
 		T s = 0;
 		foreach(ref xe; x)
 		{
-			s += xe * y.front;
+			s = fmuladd(xe, y.front, s);
 			y.popFront;
 		}
 		return s;
@@ -116,10 +118,11 @@ pragma(inline, false) package(mir.blas)
 
 	T dotImpl(T)(scope Slice!(1, T*) x, scope Slice!(1, T*) y)
 	{
+		import mir.internal.math: fmuladd;
 		T s = 0;
 		foreach(ref xe; x)
 		{
-			s += xe * y.front;
+			s = fmuladd(xe, y.front, s);
 			y.popFront;
 		}
 		return s;

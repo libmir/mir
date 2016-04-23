@@ -1,4 +1,7 @@
 /++
+$(H3 Online variational Bayes for latent Dirichlet allocation)
+
+
 References:
 	Hoffman, Matthew D., Blei, David M. and Bach, Francis R..
 	"Online Learning for Latent Dirichlet Allocation.."
@@ -6,92 +9,223 @@ References:
 +/
 module mir.model.lda.hoffman;
 
-import mir.ndslice.slice;
-import mir.sparse;
+import std.traits;
 
-//private computeExpectationTheta(Slice!(2, R) gamma, )
-//{
-
-//}
-
-//private void normalizeRows(T)(Slice!(2, T*) matrix, Slice!(1, R) b, in E def)
-//{
-//	assert(a.shape == b.shape);
-
-//	import mir.math: expDigamma;
-//	import mir.sum: sum;
-
-//	auto d = digamma(def);
-//	foreach(x; a)
-//	{
-//		auto ds = expDigamma(sum(x));
-//		auto y = b.front;
-//		foreach(e; x)
-//		{
-//			y.front = (def == e ? d : digamma(e)) - ds;
-//			y.popFront;
-//		}
-//		b.popFront;
-//	}
-//}
-
-void mm ()
+/++
+Batch variational Bayes for LDA with mini-batches.
++/
+struct LdaHoffman(F)
+	if (isFloatingPoint!F)
 {
-	alias R = double;
-	alias C = uint;
-	C s, d;
-	R alpha;
-	R eta;
-	CompressedTensor!(2, C) n; // [t, w]
+	import std.parallelism;
+	import std.range: iota;
 
-	Slice!(2, R*) gamma;  // [t, k]
-	Slice!(2, R*) theta;  // [t, k]
+	import mir.ndslice.slice;
 
-	Slice!(2, R*) lambda; // [k, w]
-	Slice!(2, R*) beta;   // [k, w]
+	import mir.internal.math;
+	import mir.sparse;
 
-	import mir.math: expDigamma, expMEuler;
-	import mir.sum: sum;
-	import mir.blas.gemm;
-	import mir.sparse.blas.gemm;
-	import mir.ndslice.iteration: transposed;
+	private alias Vector = Slice!(1, F*);
+	private alias Matrix = Slice!(2, F*);
 
+	private size_t D;
+	private F alpha;
+	private F eta;
+	private F kappa;
+	private F _tau;
+	private F eps;
 
-	auto gt = assumeSameStructure!("gamma", "theta")(gamma, theta);
-	auto lb = assumeSameStructure!("lambda", "beta")(lambda, beta);
-	gamma[] = 1; // not nan!
-	//theta[] = expMEuler;
-	
-	// update beta
-	/// Нормировка
-	do
+	private Matrix _lambda; // [k, w]
+	private Matrix _beta;   // [k, w]
+
+	private TaskPool tp;
+
+	private F[][] _lambdaTemp;
+
+	@disable this();
+	@disable this(this);
+
+	/++
+	Params:
+		K = theme count
+		W = dictionary size
+		D = approximate total number of documents in a collection.
+		alpha = Dirichlet document-topic prior (0.1)
+		eta = Dirichlet word-topic prior (0.1)
+		tau0 = 𝞽0 ≧ 0 slows down the early iterations of the algorithm.
+		kappa = `𝞳 ∈ (0.5, 1]`, controls the rate at which old values of 𝝺 are forgotten. 
+			`𝝺 = (1 - 𝞀(𝞽)) 𝝺 + 𝞀 𝝺',  𝞀(𝞽) = (𝞽0 + 𝞽)^(-𝞳)`. Use `𝞳 = 0` for Batch variational Bayes LDA.
+		eps = Stop iterations if `||𝝺 - 𝝺'||_l1 < s * eps`, where `s` is a documents count in a batch.
+		tp = task pool
+	+/
+	this(size_t K, size_t W, size_t D, F alpha, F eta, F tau0, F kappa, F eps = 1e-5, TaskPool tp = taskPool())
 	{
-		// update theta
-		gemm!R(1, n, beta.transposed, 0, gamma);
-		foreach(r; gt)
+		import std.random: uniform;
+
+		this.D = D;
+		this.alpha = alpha;
+		this.eta = eta;
+		this._tau = tau0;
+		this.kappa = kappa;
+		this.eps = eps;
+		this.tp = tp;
+
+		_lambda = slice!F(K, W);
+		_beta = slice!F(K, W);
+		_lambdaTemp = new F[][](tp.size + 1, W);
+
+		foreach(r; tp.parallel(_lambda))
+			foreach(ref e; r)
+				e = uniform(F(0.9), F(1));
+
+		updateBeta();
+	}
+
+	///
+	void updateBeta()
+	{
+		foreach (i; tp.parallel(lambda.length.iota))
+			unparameterize(lambda[i], beta[i]);
+	}
+
+	/++
+	Posterior over the topics
+	+/
+	Slice!(2, F*) beta() @property
+	{
+		return _beta;
+	}
+
+	/++
+	Parameterized posterior over the topics.
+	+/
+	Slice!(2, F*) lambda() @property
+	{
+		return _lambda;
+	}
+
+	/++
+	Count of already seen documents.
+	Slows down the iterations of the algorithm.
+	+/
+	F tau() const @property
+	{
+		return _tau;
+	}
+	
+	/// ditto
+	void tau(F v) @property
+	{
+		_tau = v;
+	}
+
+	/++	
+	Accepts mini-batch and performs multiple E-step iterations for each document and single M-step.
+
+	This implementation is optimized for sparse documents,
+	which contain much less unique words than a dictionary.
+
+	Params:
+		n = mini-batch, a collection of compressed documents.
+		maxIterations = maximal number of iterations for single document in a batch for E-step.
+	+/
+	size_t putBatch(S : Slice!(1, R), R : CompressedMap!(C, I, J), C, I, J)(S n, size_t maxIterations)
+	{
+		return putBatchImpl(n.recompress!F, maxIterations);
+	}
+
+	private size_t putBatchImpl(CompressedTensor!(2, F) n, size_t maxIterations)
+	{
+		import std.math: isFinite;
+	 	import mir.sparse.blas.dot;
+	 	import mir.sparse.blas.gemv;
+		import mir.ndslice.iteration: transposed;
+		import mir.internal.utility;
+
+		immutable S = n.length;
+		immutable K = _lambda.length!0;
+		immutable W = _lambda.length!1;
+		_tau += S;
+		auto theta = slice!F(S, K);
+		auto nsave = saveN(n);
+		
+		immutable rho = pow!F(F(tau), -kappa);
+		auto thetat = theta.transposed;
+		auto _gamma = slice!F(tp.size + 1, K);
+		shared size_t ret;
+		// E step
+		foreach(d; tp.parallel(S.iota))
 		{
-			foreach(e; r)
+			auto gamma = _gamma[tp.workerIndex];
+			gamma.toDense[] = 1;
+			auto nd = n[d];
+			auto thetad = theta[d];
+			for(size_t c; ;c++)
 			{
-				e.theta = expDigamma(e.gamma = e.gamma * e.theta + alpha);
+				unparameterize(gamma, thetad);
+
+				selectiveGemv!"/"(_beta.transposed, thetad, nd);
+				F sum = 0;
+				{
+					auto beta = _beta;
+					auto th = thetad;
+					foreach(ref g; gamma)
+					{
+						if(!th.front.isFinite)
+							th.front = F.max;
+						auto value = dot(nd, beta.front) * th.front + alpha;
+						sum += fabs(value - g);
+						g = value;
+						beta.popFront;
+						th.popFront;
+					}
+				}
+				if(c < maxIterations && sum > eps * K)
+				{
+					nd.values[] = nsave[d].values;
+					continue;
+				}
+				import core.atomic;
+				ret.atomicOp!"+="(c);
+				break;
 			}
 		}
-	}
-	while(false);
-	gemtm!R(1, n, theta, 0, lambda);
-	auto c = R(d) / R(s);
-	foreach(r; lb)
-	{
-		foreach(e; r)
+		// M step
+		foreach(k; tp.parallel(K.iota))
 		{
-			e.beta = expDigamma(e.lambda = e.lambda * e.beta * c + eta);
+			auto lambdaTemp = _lambdaTemp[tp.workerIndex];
+			gemtv!F(F(1), n, thetat[k], F(0), lambdaTemp);
+			auto l = _lambda[k].toDense;
+			l[] = (1 - rho) * l[] + 
+				rho * (eta + (F(D) / F(S)) * _beta[k].toDense[] * lambdaTemp[]);
+			unparameterize(_lambda[k], _beta[k]);
 		}
+		return ret;
 	}
-	lambda[] *= beta;
-	lambda[] *= R(d) / R(s);
-	lambda[] += eta;
+
+	private auto saveN(CompressedTensor!(2, F) n)
+	{
+		return
+			CompressedMap!(F)(
+				n.ptr.range.compressedLength,
+				n.ptr.range.values.dup,
+				n.ptr.range.indexes,
+				n.ptr.range.pointers)
+			.sliced(n.length);
+	}
+
+	private static void unparameterize(Vector param, Vector posterior)
+	{
+		assert(param.structure == posterior.structure);
+		import mir.math: expDigamma;
+		import mir.sum: sum;
+		immutable c = 1 / expDigamma(sum(param));
+		foreach(e; assumeSameStructure!("param", "posterior")(param, posterior))
+			e.posterior = c * expDigamma(e.param);
+	}
 }
 
-
-
-
-
+unittest
+{
+	alias ff = LdaHoffman!double;
+}

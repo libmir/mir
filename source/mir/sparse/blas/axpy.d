@@ -30,8 +30,6 @@ in
 }
 body
 {
-	pragma(inline, false);
-
 	import mir.internal.utility;
 	static if(isSimpleSlice!V2)
 	{
@@ -44,7 +42,9 @@ body
 
 	foreach(size_t i; 0 .. x.indexes.length)
 	{
-		y[x.indexes[i]] += alpha * x.values[i];
+		auto j = x.indexes[i];
+		import mir.internal.math: fmuladd;
+		y[j] = fmuladd(alpha, x.values[i], y[j]);
 	}
 }
 

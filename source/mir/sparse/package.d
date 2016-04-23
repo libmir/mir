@@ -538,9 +538,73 @@ CompressedTensor!(N, V, I, J)
 	return map.sliced(psl.shape);
 }
 
+
+///
+CompressedTensor!(N + 1, V, I, J)
+	recompress
+	(V, I = uint, J = size_t, S : Slice!(N, R), size_t N, R : CompressedMap!(RV, RI, RJ), RV, RI, RJ)
+	(S slice)
+{
+	import std.conv: to;
+	import std.algorithm.iteration: map;
+	import std.array: appender;
+	import mir.ndslice. selection: pack, byElement;
+	auto vapp = appender!(V[]);
+	auto iapp = appender!(I[]);
+	auto count = slice.elementsCount;
+	auto pointers = new J[count + 1];
+
+	pointers[0] = 0;
+	auto elems = slice.byElement;
+	J j = 0;
+	foreach(ref pointer; pointers[1 .. $])
+	{
+		auto row = elems.front;
+		elems.popFront;
+		vapp.put(row.values.map!(to!V));
+		iapp.put(row.indexes.map!(to!I));
+		j += cast(J) row.indexes.length;
+		pointer = j;
+	}
+	auto m = CompressedMap!(V, I, J)(
+		slice.ptr.range.compressedLength,
+		vapp.data,
+		iapp.data,
+		pointers,
+		);
+	return m.sliced(slice.shape);
+}
+
+/// Compresstion of compressed tensor
+unittest
+{
+	auto slice = slice!double(5, 8);
+	slice[] =
+		[[0, 2, 0, 0, 0, 0, 0, 1],
+		 [0, 0, 0, 0, 0, 0, 0, 4],
+		 [0, 0, 0, 0, 0, 0, 0, 0],
+		 [6, 0, 0, 0, 0, 0, 0, 9],
+		 [0, 0, 0, 0, 0, 0, 0, 5]];
+
+	auto crs = slice.compress;
+	assert(crs.ptr.range == CompressedMap!(double, uint, uint)(
+		 8,
+		[2, 1, 4, 6, 9, 5],
+		[1, 7, 7, 0, 7, 7],
+		[0, 2, 3, 3, 5, 6]));
+
+	import mir.ndslice.iteration: reversed;
+	auto rec = crs.reversed.recompress!real;
+	auto rev = slice.reversed.compressWithType!real;
+	assert(rev.structure == rec.structure);
+	assert(rev.ptr.range.values   == rec.ptr.range.values);
+	assert(rev.ptr.range.indexes  == rec.ptr.range.indexes);
+	assert(rev.ptr.range.pointers == rec.ptr.range.pointers);
+}
+
 /++
 +/
-alias CompressedTensor(size_t N, T, I = uint, J = uint) = Slice!(N - 1, CompressedMap!(T, I, J));
+alias CompressedTensor(size_t N, T, I = uint, J = size_t) = Slice!(N - 1, CompressedMap!(T, I, J));
 
 /++
 +/
@@ -558,7 +622,7 @@ struct CompressedArray(T, I = uint)
 
 /++
 +/
-struct CompressedMap(T, I, J)
+struct CompressedMap(T, I = uint, J = size_t)
 	if (is(I : size_t) && isUnsigned!I && is(J : size_t) && isUnsigned!J && I.sizeof <= J.sizeof)
 {
 	/++

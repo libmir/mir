@@ -147,20 +147,18 @@ unittest
 
 /++
 Params:
-	alpha = scalar
-	a = dense matrix (CSR format)
+	a = dense matrix
 	b = dense matrix
-	beta = scalar
-	c = sparse matrix
+	c = sparse matrix (CSR format)
 Returns:
-	`c[available indexes] *= (alpha * a × b)[available indexes]`.
+	`c[available indexes] <op>= (a × b)[available indexes]`.
 +/
-void selectiveGemm(T,
+void selectiveGemm(string op = "", T,
 	M3 : Slice!(1, V3),
 		V3 : CompressedMap!(T3, I3, J3),
 			T3, I3, J3,
 	)
-(T alpha, Slice!(2, T*) a, Slice!(2, T*) b, M3 c)
+(Slice!(2, T*) a, Slice!(2, T*) b, M3 c)
 in
 {
 	assert(a.length!1 == b.length!0);
@@ -172,13 +170,12 @@ in
 body
 {
 	import mir.ndslice.iteration: transposed;
-	import mir.blas.dot;
+	import mir.sparse.blas.gemv: selectiveGemv;
 
 	b = b.transposed;
 	foreach(r; c)
 	{
-		foreach(i, j; r.indexes)
-			r.values[i] *= alpha * dot(a.front, b[j]);
+		selectiveGemv!op(b, a.front, r);
 		a.popFront;
 	}
 }
@@ -212,7 +209,7 @@ unittest
 
 	auto c = cs.compress;
 
-	selectiveGemm(1.0, a, b, c);
+	selectiveGemm!"*"(a, b, c);
 	assert(c.length == 3);
 	assert(c[0].indexes == [1, 2]);
 	assert(c[0].values == [105, -7]);

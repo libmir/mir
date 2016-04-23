@@ -12,8 +12,9 @@ version(LDC)
 
 	alias cos = llvm_cos;
 
-	//alias powi = llvm_powi;
-	alias pow = llvm_powi;
+	alias powi = llvm_powi;
+	
+	alias pow = llvm_pow;
 
 	alias pow = llvm_pow;
 
@@ -42,6 +43,13 @@ version(LDC)
 	alias copysign = llvm_copysign;
 
 	alias round = llvm_round;
+
+    alias fmuladd = llvm_fmuladd;
+
+    alias fmin = llvm_minnum;
+
+    alias fmax = llvm_maxnum;
+
 }
 else
 {
@@ -49,7 +57,6 @@ else
 		sqrt,
 		sin,
 		cos,
-		//powi,
 		pow,
 		exp,
 		log,
@@ -63,5 +70,14 @@ else
 		rint,
 		nearbyint,
 		copysign,
-		round;
+		round,
+		fmin,
+		fmax;
+
+	alias powi = pow;
+
+	auto fmuladd(T)(in T a, in T b, in T c)
+	{
+		return a * b + c;
+	}
 }
