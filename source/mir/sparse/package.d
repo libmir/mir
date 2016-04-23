@@ -1,9 +1,6 @@
 /++
 $(H2 Sparse Tensors)
 
-This is a submodule of $(LINK2 mir_ndslice.html, mir.ndslice).
-
-
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
@@ -84,7 +81,7 @@ Sparse Slice in Dictionary of Keys (DOK) format.
 alias Sparse(size_t N, T) = Slice!(N, SparseMap!T);
 
 /++
-SparseMap is a range, which is used internally by $(LREF Sparse).
+`SparseMap` is used internally by `Slice` type to represent $(LREF Sparse).
 +/
 struct SparseMap(T)
 {
@@ -197,7 +194,7 @@ private sizediff_t cmpCoo(size_t N)(const auto ref size_t[N] a, const auto ref s
 }
 
 /++
-Returns unsorted range of (coordinate, values) pairs.
+Returns unsorted forward range of (coordinate, value) pairs.
 Params:
 	slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
@@ -256,7 +253,7 @@ pure unittest
 }
 
 /++
-Returns unsorted range of coordinates.
+Returns unsorted forward range of coordinates.
 Params:
 	slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
@@ -312,7 +309,7 @@ pure unittest
 }
 
 /++
-Returns unsorted range of values.
+Returns unsorted forward range of values.
 Params:
 	slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
@@ -459,7 +456,7 @@ unittest
 }
 
 /++
-Returns compressed tensor with changed element type.
+Returns compressed tensor with different element type.
 +/
 CompressedTensor!(N, V, I, J)
 	compressWithType
@@ -553,7 +550,7 @@ CompressedTensor!(N, V, I, J)
 
 
 /++
-Re-compress already compressed tensor. Makes it consequent in memory.
+Re-compresses a compressed tensor. Makes all values, indexes and pointers consequent in memory.
 +/
 CompressedTensor!(N + 1, V, I, J)
 	recompress
@@ -590,7 +587,7 @@ CompressedTensor!(N + 1, V, I, J)
 	return m.sliced(slice.shape);
 }
 
-/// Compresstion of compressed tensor
+///
 unittest
 {
 	auto slice = slice!double(5, 8);
@@ -618,10 +615,16 @@ unittest
 }
 
 /++
+`CompressedTensor!(N, T, I, J)` is  `Slice!(N - 1, CompressedMap!(T, I, J))`.
+
+See_also: $(LREF CompressedMap)
 +/
 alias CompressedTensor(size_t N, T, I = uint, J = size_t) = Slice!(N - 1, CompressedMap!(T, I, J));
 
 /++
+Compressed array is just a structure of values array and indexes array.
+
+See_also: $(LREF CompressedTensor), $(LREF CompressedMap)
 +/
 struct CompressedArray(T, I = uint)
 	if (is(I : size_t) && isUnsigned!I)
@@ -636,6 +639,7 @@ struct CompressedArray(T, I = uint)
 }
 
 /++
+`CompressedMap` is used internally by `Slice` type to represent $(LREF CompressedTensor).
 +/
 struct CompressedMap(T, I = uint, J = size_t)
 	if (is(I : size_t) && isUnsigned!I && is(J : size_t) && isUnsigned!J && I.sizeof <= J.sizeof)

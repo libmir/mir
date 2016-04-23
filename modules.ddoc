@@ -6,3 +6,4 @@ MODULES =
 	$(MODULE mir.sparse.blas.gemv)
 	$(MODULE mir.sparse.blas.gemm)
 	$(MODULE mir.combinatorics.package)
+	$(MODULE mir.model.lda.hoffman)

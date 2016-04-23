@@ -11,17 +11,25 @@ Generic Numerical Library for Science and Machine Learning.
 Contents
 --------
 
- - `mir.ndslice` [Multidimensional Random Access Ranges and Arrays](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
- - `mir.las.sum` Functions and Output Ranges for Summation Algorithms. Works with user-defined types.
-  - Precise algorithm: improved analog of Python's `fsum`
-  - Pairwise algorithm: fast version for Input Ranges
-  - Kahan, KBN, and KB2 algorithms
- - `mir.combinatorics` Combinations, combinations with repeats, cartesian power, permutations.
+- `mir.ndslice` [Multidimensional Random Access Ranges and Arrays](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
+- `mir.sparse` Sparse Tensors
+ - `Sparse` - DOK format
+ - Different ranges for COO format
+ - `CompressedTensor` - CSR/CSC formats
+- `mir.sparse.blas` - Sparse BLAS for `CompressedTensor`
+- `mir.model.lda.hoffman` - Online variational Bayes for latent Dirichlet allocation (Online VB LDA) for sparse documents. LDA is used for topic modeling.
+- `mir.combinatorics` Combinations, combinations with repeats, cartesian power, permutations.
+- `mir.las.sum` Functions and Output Ranges for Summation Algorithms. Works with user-defined types.
+ - Precise algorithm: improved analog of Python's `fsum`
+ - Pairwise algorithm: fast version for Input Ranges
+ - Kahan, KBN, and KB2 algorithms
+- `mir.blas` - this is slow snail, it is for experiments with BLAS API. Don't use for now.
+
 
 ### In progress
 
- - `mir.sparse` Sparse Tensors (see sparse branch and `v0.15.1-beta2`+)
-  -  `mir.sparse.blas` Spars BLAS
+ - `mir.random` - non-uniform RNGs.
+ - `mir.blas` - BLAS in D.
 
 Documentation
 -------------
