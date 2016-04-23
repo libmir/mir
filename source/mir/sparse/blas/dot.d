@@ -157,8 +157,9 @@ body
 	F s = 0;
 	foreach(size_t i; 0 .. x.indexes.length)
 	{
-		import mir.internal.math: fmuladd;
-		s = fmuladd(y[x.indexes[i]], x.values[i], s);
+		//import mir.internal.math: fmuladd;
+		//s = fmuladd(y[x.indexes[i]], x.values[i], s);
+		s = y[x.indexes[i]] * x.values[i] + s;
 	}
 
 	return s;

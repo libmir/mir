@@ -95,11 +95,11 @@ pragma(inline, false) package(mir.blas)
 {
 	T dotImpl(T)(scope const(T)[] x, scope const(T)[] y)
 	{
-		import mir.internal.math: fmuladd;
+		//import mir.internal.math: fmuladd;
 		T s = 0;
 		foreach(size_t i; 0 .. x.length)
 		{
-			s = fmuladd(x[i], y[i], s);
+			s = x[i] * y[i] + s;
 		}
 		return s;
 	}
@@ -110,7 +110,7 @@ pragma(inline, false) package(mir.blas)
 		T s = 0;
 		foreach(ref xe; x)
 		{
-			s = fmuladd(xe, y.front, s);
+			s = xe * y.front + s;
 			y.popFront;
 		}
 		return s;
@@ -122,7 +122,7 @@ pragma(inline, false) package(mir.blas)
 		T s = 0;
 		foreach(ref xe; x)
 		{
-			s = fmuladd(xe, y.front, s);
+			s = xe * y.front + s;
 			y.popFront;
 		}
 		return s;
