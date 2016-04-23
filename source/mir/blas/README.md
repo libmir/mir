@@ -1,0 +1,1 @@
+BLAS is still in development and will undergo more work & testing. Use at your own risk. Cache oriented BLAS would be announced at https://forum.dlang.org and [Twitter](https://twitter.com/libmir).

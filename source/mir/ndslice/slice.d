@@ -1150,19 +1150,6 @@ struct Slice(size_t _N, _Range)
         mixin(mathIndexStrideCode);
     }
 
-    this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PureRange range)
-    {
-        foreach (i; Iota!(0, PureN))
-            _lengths[i] = lengths[i];
-        foreach (i; Iota!(0, PureN))
-            _strides[i] = strides[i];
-        static if (hasPtrBehavior!PureRange)
-            _ptr = range;
-        else
-            _ptr._range = range;
-
-    }
-
     static if (!hasPtrBehavior!PureRange)
     this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PtrShell!PureRange shell)
     {
@@ -1174,6 +1161,49 @@ struct Slice(size_t _N, _Range)
     }
 
     public:
+
+    /++
+    This constructor should be used only for integration with other languages or libraries such as Julia and numpy.
+    Params:
+        lengths = lengths
+        strides = strides
+        range = range or pointer to iterate on
+    +/
+    this(ref in size_t[PureN] lengths, ref in sizediff_t[PureN] strides, PureRange range)
+    {
+        foreach (i; Iota!(0, PureN))
+            _lengths[i] = lengths[i];
+        foreach (i; Iota!(0, PureN))
+            _strides[i] = strides[i];
+        static if (hasPtrBehavior!PureRange)
+            _ptr = range;
+        else
+            _ptr._range = range;
+    }
+
+    /++
+    Returns:
+        pointer to the first element of a slice if slice is defined as `Slice!(N, T*)` or
+        plain structure with two fields `shift` and `range` otherwise. In second case the expression `range[shift]`
+        refers to the first element.
+    Note:
+        `ptr` is defined only for not packed slices.
+    Attention:
+        `ptr` refers to the first element in the memory representation if and only if all strides are positive.
+    +/
+    static if (is(PureRange == Range))
+    auto ptr()
+    {
+        static if (hasPtrBehavior!PureRange)
+        {
+            return _ptr;
+        }
+        else
+        {
+            static struct Ptr { size_t shift; Range range; }
+            return Ptr(_ptr._shift, _ptr._range);
+        }
+    }
 
     /++
     Returns: static array of lengths
@@ -2680,7 +2710,7 @@ body
     return true;
 }
 
-private struct PtrShell(Range)
+package struct PtrShell(Range)
 {
     sizediff_t _shift;
     Range _range;

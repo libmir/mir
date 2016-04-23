@@ -4,10 +4,8 @@ This module contains summation algorithms.
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: Ilya Yaroshenko
-
-Source: $(PHOBOSSRC std/experimental/las/_sum.d)
 */
-module mir.las.sum;
+module mir.sum;
 
 ///
 unittest
@@ -2130,7 +2128,7 @@ private template sumType(Range)
     alias sumType = typeof(T.init + T.init);
 }
 
-package(mir.las):
+package:
 
 template isSummable(F)
 {
