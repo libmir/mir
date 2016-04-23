@@ -83,8 +83,9 @@ D dot(
 		}
 		continue;
 		L:
-		import mir.internal.math: fmuladd;
-		s = fmuladd!D(x.values[0], y.values[0], s);
+		//import mir.internal.math: fmuladd;
+		//s = fmuladd!D(x.values[0], y.values[0], s);
+		s = x.values[0] * y.values[0] + s;
 		x.indexes = x.indexes[1 .. $];
 		if(x.indexes.length == 0)
 		{

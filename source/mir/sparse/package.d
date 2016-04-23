@@ -197,6 +197,9 @@ private sizediff_t cmpCoo(size_t N)(const auto ref size_t[N] a, const auto ref s
 }
 
 /++
+Returns unsorted range of (coordinate, values) pairs.
+Params:
+	slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
 auto byCoordinateValue(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
 {
@@ -253,6 +256,9 @@ pure unittest
 }
 
 /++
+Returns unsorted range of coordinates.
+Params:
+	slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
 auto byCoordinate(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
 {
@@ -306,6 +312,9 @@ pure unittest
 }
 
 /++
+Returns unsorted range of values.
+Params:
+	slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
 auto byValueOnly(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
 {
@@ -363,7 +372,9 @@ private mixin template _sparse_range_methods(size_t N, T)
 	}
 }
 
-///
+/++
+Returns compressed tensor
++/
 auto compress(I = uint, J = uint, S : Slice!(N, R), size_t N, R)(S slice)
 	if(N > 1)
 {
@@ -447,7 +458,9 @@ unittest
 		[0, 2, 3, 3, 5, 6]));
 }
 
-///
+/++
+Returns compressed tensor with changed element type.
++/
 CompressedTensor!(N, V, I, J)
 	compressWithType
 	(V, I = uint, J = uint, S : Slice!(N, R), size_t N, R : SparseMap!T, T)
@@ -539,7 +552,9 @@ CompressedTensor!(N, V, I, J)
 }
 
 
-///
+/++
+Re-compress already compressed tensor. Makes it consequent in memory.
++/
 CompressedTensor!(N + 1, V, I, J)
 	recompress
 	(V, I = uint, J = size_t, S : Slice!(N, R), size_t N, R : CompressedMap!(RV, RI, RJ), RV, RI, RJ)
