@@ -29,7 +29,7 @@ in
 }
 body
 {
-    while(!y.empty)
+    while (!y.empty)
     {
         import mir.blas.dot: dot;
         y.front = alpha * dot(a.front, x) + beta * y.front;
@@ -55,7 +55,7 @@ unittest
     // result
     auto t = [131.0, 1056.0, 1056.0];
     t[] *= alpha;
-    foreach(i, ref e; t)
+    foreach (i, ref e; t)
         e += y[i] * beta;
 
     gemv(alpha, a, x, beta, y);

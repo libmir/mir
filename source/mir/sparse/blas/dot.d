@@ -41,7 +41,7 @@ D dot(
     Unqual!I1 ai0 = void;
     Unqual!I2 bi0 = void;
 
-    if(x.indexes.length && y.indexes.length) for (;;)
+    if (x.indexes.length && y.indexes.length) for (;;)
     {
         bi0 = y.indexes[0];
         if (x.indexes[0] < bi0)
@@ -55,7 +55,7 @@ D dot(
                     break;
                 }
             }
-            while(x.indexes[0] < bi0);
+            while (x.indexes[0] < bi0);
             done = 2;
         }
         if (--done == 0)
@@ -74,7 +74,7 @@ D dot(
                     break;
                 }
             }
-            while(y.indexes[0] < ai0);
+            while (y.indexes[0] < ai0);
             done = 2;
         }
         if (--done == 0)
@@ -87,12 +87,12 @@ D dot(
         //s = fmuladd!D(x.values[0], y.values[0], s);
         s = x.values[0] * y.values[0] + s;
         x.indexes = x.indexes[1 .. $];
-        if(x.indexes.length == 0)
+        if (x.indexes.length == 0)
         {
             break;
         }
         y.indexes = y.indexes[1 .. $];
-        if(y.indexes.length == 0)
+        if (y.indexes.length == 0)
         {
             break;
         }
@@ -137,16 +137,16 @@ D dot(
     if (isDynamicArray!V2 || is(V2 : Slice!(1, V2R), V2R))
 in
 {
-    if(x.indexes.length)
+    if (x.indexes.length)
         assert(x.indexes[$-1] < y.length);
 }
 body
 {
 
     import mir.internal.utility;
-    static if(isSimpleSlice!V2)
+    static if (isSimpleSlice!V2)
     {
-        if(y.stride == 1)
+        if (y.stride == 1)
         {
             return dot(x, y.toDense);
         }
@@ -156,7 +156,7 @@ body
 
     alias F = Unqual!(CommonType!(T1, T2));
     F s = 0;
-    foreach(size_t i; 0 .. x.indexes.length)
+    foreach (size_t i; 0 .. x.indexes.length)
     {
         //import mir.internal.math: fmuladd;
         //s = fmuladd(y[x.indexes[i]], x.values[i], s);

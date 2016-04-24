@@ -187,8 +187,8 @@ struct CoordinateValue(size_t N, T)
 
 private sizediff_t cmpCoo(size_t N)(const auto ref size_t[N] a, const auto ref size_t[N] b)
 {
-    foreach(i; Iota!(0, N))
-        if(auto d = a[i] - b[i])
+    foreach (i; Iota!(0, N))
+        if (auto d = a[i] - b[i])
             return d;
     return 0;
 }
@@ -202,7 +202,7 @@ auto byCoordinateValue(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
 {
     static struct CoordinateValues
     {
-        static if(N > 1)
+        static if (N > 1)
             private sizediff_t[N-1] _strides;
         mixin _sparse_range_methods!(N, T);
         private typeof(Sparse!(N, T).init.ptr.range.table.byKeyValue()) _range;
@@ -213,7 +213,7 @@ auto byCoordinateValue(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
             auto iv = _range.front;
             size_t index = iv.key;
             CoordinateValue!(N, T) ret = void;
-            foreach(i; Iota!(0, N - 1))
+            foreach (i; Iota!(0, N - 1))
             {
                 ret.index[i] = index / _strides[i];
                 index %= _strides[i];
@@ -223,7 +223,7 @@ auto byCoordinateValue(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
             return ret;
         }
     }
-    static if(N > 1)
+    static if (N > 1)
     {
         CoordinateValues ret = void;
         ret._strides = slice.structure.strides[0..N-1];
@@ -261,7 +261,7 @@ auto byCoordinate(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
 {
     static struct Coordinates
     {
-        static if(N > 1)
+        static if (N > 1)
             private sizediff_t[N-1] _strides;
         mixin _sparse_range_methods!(N, T);
         private typeof(Sparse!(N, T).init.ptr.range.table.byKey()) _range;
@@ -271,7 +271,7 @@ auto byCoordinate(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
             assert(!_range.empty);
             size_t index = _range.front;
             size_t[N] ret = void;
-            foreach(i; Iota!(0, N - 1))
+            foreach (i; Iota!(0, N - 1))
             {
                 ret[i] = index / _strides[i];
                 index %= _strides[i];
@@ -280,7 +280,7 @@ auto byCoordinate(S : Slice!(N, R), size_t N, R : SparseMap!T, T)(S slice)
             return ret;
         }
     }
-    static if(N > 1)
+    static if (N > 1)
     {
         Coordinates ret = void;
         ret._strides = slice.structure.strides[0..N-1];
@@ -373,7 +373,7 @@ private mixin template _sparse_range_methods(size_t N, T)
 Returns compressed tensor
 +/
 auto compress(I = uint, J = uint, S : Slice!(N, R), size_t N, R)(S slice)
-    if(N > 1)
+    if (N > 1)
 {
     return compressWithType!(DeepElementType!(Slice!(N, R)))(slice);
 }
@@ -462,7 +462,7 @@ CompressedTensor!(N, V, I, J)
     compressWithType
     (V, I = uint, J = uint, S : Slice!(N, R), size_t N, R : SparseMap!T, T)
     (S slice)
-    if(is(T : V) && N > 1)
+    if (is(T : V) && N > 1)
 {
     import std.array: array;
     import std.algorithm.sorting: sort;
@@ -486,13 +486,13 @@ CompressedTensor!(N, V, I, J)
     size_t k = 0;
     map.pointers[0] = 0;
     map.pointers[1] = 0;
-    foreach(t, e; data)
+    foreach (t, e; data)
     {
         map.values[t] = cast(V) e.value;
         size_t index = e.key;
         map.indexes[t] = cast(I)(index % slice.length!(N - 1));
         auto p = index / slice.length!(N - 1);
-        if(k != p)
+        if (k != p)
         {
             map.pointers[k + 2 .. p + 2] = map.pointers[k + 1];
             k = p;
@@ -509,7 +509,7 @@ CompressedTensor!(N, V, I, J)
     compressWithType
     (V, I = uint, J = uint, S : Slice!(N, R), size_t N, R)
     (S slice)
-    if(!is(R : SparseMap!ST, ST) && is(Slice!(N, R).DeepElemType : V) && N > 1)
+    if (!is(R : SparseMap!ST, ST) && is(Slice!(N, R).DeepElemType : V) && N > 1)
 {
     import std.array: appender;
     import mir.ndslice.selection: pack, byElement;
@@ -522,14 +522,14 @@ CompressedTensor!(N, V, I, J)
     pointers[0] = 0;
     auto elems = psl.byElement;
     J j = 0;
-    foreach(ref pointer; pointers[1 .. $])
+    foreach (ref pointer; pointers[1 .. $])
     {
         auto row = elems.front;
         elems.popFront;
         I i;
-        foreach(e; row)
+        foreach (e; row)
         {
-            if(e)
+            if (e)
             {
                 vapp.put(e);
                 iapp.put(i);
@@ -569,7 +569,7 @@ CompressedTensor!(N + 1, V, I, J)
     pointers[0] = 0;
     auto elems = slice.byElement;
     J j = 0;
-    foreach(ref pointer; pointers[1 .. $])
+    foreach (ref pointer; pointers[1 .. $])
     {
         auto row = elems.front;
         elems.popFront;

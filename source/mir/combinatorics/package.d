@@ -31,7 +31,7 @@ private template isArithmetic(R)
     {
         R r = 1;
         R test = (r * r / r + r - r) % r;
-        if(r < r && r > r) {}
+        if (r < r && r > r) {}
     }));
 }
 
@@ -45,15 +45,15 @@ private template isArithmetic(R, S)
     enum bool isArithmetic = is(typeof(
     (inout int = 0)
     {
-        if(isArithmetic!R && isArithmetic!S) {}
+        if (isArithmetic!R && isArithmetic!S) {}
         S s = 1;
         R r = 1;
         R test = r * s + r * s;
         R test2 = r / s + r / s;
         R test3 = r - s + r - s;
         R test4 = r % s + r % s;
-        if(r < s && s > r) {}
-        if(s < r && r > s) {}
+        if (r < s && s > r) {}
+        if (s < r && r > s) {}
     }));
 }
 
@@ -232,7 +232,7 @@ if (isRandomAccessRange!Range)
         return c.empty;
     }
 
-    static if(hasLength!Collection)
+    static if (hasLength!Collection)
     {
         ///
         @property size_t length() const
@@ -241,7 +241,7 @@ if (isRandomAccessRange!Range)
         }
     }
 
-    static if(isForwardRange!Collection)
+    static if (isForwardRange!Collection)
     {
         ///
         typeof(this) save() @property
@@ -373,7 +373,7 @@ struct Permutations
     body
     {
         // iota
-        foreach(uint i, ref index; indices)
+        foreach (uint i, ref index; indices)
             index = i;
         state[] = 0;
 
@@ -867,7 +867,7 @@ public:
             if (n > 1 && repeatLen > 1)
             {
                 auto iotaResult = iota(repeatLen);
-                foreach(i, ref el; state)
+                foreach (i, ref el; state)
                 {
                     el = iotaResult[i];
                 }
@@ -891,7 +891,7 @@ public:
 
         immutable repeat = cast(uint) state.length;
 
-        // Behaves like: do _getNextState();  while(!_state.isStrictlySorted);
+        // Behaves like: do _getNextState();  while (!_state.isStrictlySorted);
         uint i = repeat - 1;
         /* Go from the back to next settable block
         * - A must block must be lower than it's previous
@@ -1203,7 +1203,7 @@ public:
 
         immutable repeat = state.length;
 
-        // behaves like: do _getNextState();  while(!_state.isSorted);
+        // behaves like: do _getNextState();  while (!_state.isSorted);
         size_t i = repeat - 1;
         // go to next settable block
         // a block is settable if its not in the end state (=nrElements - 1)

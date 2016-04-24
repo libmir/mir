@@ -74,8 +74,8 @@ struct LdaHoffman(F)
         _beta = slice!F(K, W);
         _lambdaTemp = new F[][](tp.size + 1, W);
 
-        foreach(r; tp.parallel(_lambda))
-            foreach(ref e; r)
+        foreach (r; tp.parallel(_lambda))
+            foreach (ref e; r)
                 e = uniform(F(0.9), F(1));
 
         updateBeta();
@@ -154,13 +154,13 @@ struct LdaHoffman(F)
         auto _gamma = slice!F(tp.size + 1, K);
         shared size_t ret;
         // E step
-        foreach(d; tp.parallel(S.iota))
+        foreach (d; tp.parallel(S.iota))
         {
             auto gamma = _gamma[tp.workerIndex];
             gamma.toDense[] = 1;
             auto nd = n[d];
             auto thetad = theta[d];
-            for(size_t c; ;c++)
+            for (size_t c; ;c++)
             {
                 unparameterize(gamma, thetad);
 
@@ -169,9 +169,9 @@ struct LdaHoffman(F)
                 {
                     auto beta = _beta;
                     auto th = thetad;
-                    foreach(ref g; gamma)
+                    foreach (ref g; gamma)
                     {
-                        if(!th.front.isFinite)
+                        if (!th.front.isFinite)
                             th.front = F.max;
                         auto value = dot(nd, beta.front) * th.front + alpha;
                         sum += fabs(value - g);
@@ -180,7 +180,7 @@ struct LdaHoffman(F)
                         th.popFront;
                     }
                 }
-                if(c < maxIterations && sum > eps * K)
+                if (c < maxIterations && sum > eps * K)
                 {
                     nd.values[] = nsave[d].values;
                     continue;
@@ -191,7 +191,7 @@ struct LdaHoffman(F)
             }
         }
         // M step
-        foreach(k; tp.parallel(K.iota))
+        foreach (k; tp.parallel(K.iota))
         {
             auto lambdaTemp = _lambdaTemp[tp.workerIndex];
             gemtv!F(F(1), n, thetat[k], F(0), lambdaTemp);
@@ -220,7 +220,7 @@ struct LdaHoffman(F)
         import mir.math: expDigamma;
         import mir.sum: sum;
         immutable c = 1 / expDigamma(sum(param));
-        foreach(e; assumeSameStructure!("param", "posterior")(param, posterior))
+        foreach (e; assumeSameStructure!("param", "posterior")(param, posterior))
             e.posterior = c * expDigamma(e.param);
     }
 }

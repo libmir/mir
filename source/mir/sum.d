@@ -233,7 +233,7 @@ unittest
     double2 a = 1, b = 2, c = 3, d = 6;
     with(Summation)
     {
-        foreach(algo; AliasSeq!(pairwise))
+        foreach (algo; AliasSeq!(pairwise))
         {
             //assert([a, b, c].sum!algo.array == d.array);
             assert([a, b].sum!algo(c).array == d.array);
@@ -372,7 +372,7 @@ struct Summator(T, Summation summation)
     static if (summation != Summation.pairwise)
         @disable this();
 
-    static if(summation == Summation.pairwise)
+    static if (summation == Summation.pairwise)
         private enum bool fastPairwise =
             isFloatingPoint!F ||
             isComplex!F ||
@@ -430,7 +430,7 @@ struct Summator(T, Summation summation)
         body
         {
             bool _break = void;
-            foreach_reverse(i, y; partials)
+            foreach_reverse (i, y; partials)
             {
                 s = partialsReducePred(s, y, i ? partials[i-1] : 0, _break);
                 if (_break)
@@ -534,7 +534,7 @@ struct Summator(T, Summation summation)
     {
         package size_t counter;
         size_t index;
-        static if(fastPairwise)
+        static if (fastPairwise)
         {
             size_t bufferLength;
             enum size_t _pow2 = 4;
@@ -549,14 +549,14 @@ struct Summator(T, Summation summation)
     static if (summation == Summation.naive)
     {
         F s = void;
-        static if(is(F : __vector(W[N]), W, size_t N))
+        static if (is(F : __vector(W[N]), W, size_t N))
             F _unused = void; //DMD bug workaround
     }
     else
     static if (summation == Summation.fast)
     {
         F s = void;
-        static if(is(F : __vector(W[N]), W, size_t N))
+        static if (is(F : __vector(W[N]), W, size_t N))
             F _unused = void; //DMD bug workaround
     }
     else
@@ -852,14 +852,14 @@ public:
     {
         static if (summation == Summation.pairwise)
         {
-            static if(fastPairwise && isRandomAccessRange!Range && hasLength!Range)
+            static if (fastPairwise && isRandomAccessRange!Range && hasLength!Range)
             {
                 import core.bitop: bsf;
                 version(DMD)
                     enum SIMDOptimization = false;
                 else
                     enum SIMDOptimization = is(Unqual!Range : F[]) && (is(F == double) || is(F == float));
-                static if(SIMDOptimization)
+                static if (SIMDOptimization)
                     F[0x20] v = void;
                 else
                     F[0x10] v = void;
@@ -984,7 +984,7 @@ public:
 
                         put(v[0x0]);
 
-                        static if(!SIMDOptimization)
+                        static if (!SIMDOptimization)
                             goto L;
                     }
                     if (r.length >= 8)
@@ -1437,7 +1437,7 @@ public:
             typeof(return) ret = void;
             ret.counter = counter;
             ret.index = index;
-            foreach(i; 0 .. index)
+            foreach (i; 0 .. index)
                 ret.partials[i] = partials[i];
             return ret;
         }
@@ -1557,7 +1557,7 @@ public:
         else
         static if (summation == Summation.pairwise)
         {
-            foreach_reverse(e; rhs.partials[0 .. rhs.index])
+            foreach_reverse (e; rhs.partials[0 .. rhs.index])
                 put(e);
             counter -= rhs.index;
             counter += rhs.counter;
@@ -1654,7 +1654,7 @@ public:
         else
         static if (summation == Summation.pairwise)
         {
-            foreach_reverse(e; rhs.partials[0 .. rhs.index])
+            foreach_reverse (e; rhs.partials[0 .. rhs.index])
                 put(-e);
             counter -= rhs.index;
             counter += rhs.counter;
@@ -2006,7 +2006,7 @@ unittest
         double2[] ar = [double2([1.0, 2]), double2([2, 3]), double2([3, 4]), double2([4, 6])];
         double2 c = double2([10, 15]);
 
-        foreach(sumType; sums)
+        foreach (sumType; sums)
         {
             double2 s = ar.sum!(sumType);
             assert(s.array == c.array);
@@ -2029,7 +2029,7 @@ unittest
 
     foreach (n; ns)
     {
-        foreach(sumType; sums)
+        foreach (sumType; sums)
         {
             double[] ar = iota(n).array;
             double c = n * (n - 1) / 2; // gauss for n=100
@@ -2104,13 +2104,13 @@ private template SummationAlgo(Summation summation, Range, F)
 
 private T summationInitValue(T)()
 {
-    static if(__traits(compiles, {T a = 0.0;}))
+    static if (__traits(compiles, {T a = 0.0;}))
     {
         T a = 0.0;
         return a;
     }
     else
-    static if(__traits(compiles, {T a = 0;}))
+    static if (__traits(compiles, {T a = 0;}))
     {
         T a = 0;
         return a;

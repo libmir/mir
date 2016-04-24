@@ -38,7 +38,7 @@ body
     import mir.ndslice.iteration: transposed;
     b = b.transposed;
     c = c.transposed;
-    foreach(x; b)
+    foreach (x; b)
     {
         import mir.sparse.blas.gemv: gemv;
         gemv(alpha, a, x, beta, c.front);
@@ -105,7 +105,7 @@ body
     import mir.ndslice.iteration: transposed;
     b = b.transposed;
     c = c.transposed;
-    foreach(x; b)
+    foreach (x; b)
     {
         import mir.sparse.blas.gemv: gemtv;
         gemtv(alpha, a, x, beta, c.front);
@@ -163,8 +163,8 @@ in
 {
     assert(a.length!1 == b.length!0);
     assert(c.length!0 == a.length!0);
-    foreach(r; c)
-        if(r.indexes.length)
+    foreach (r; c)
+        if (r.indexes.length)
             assert(r.indexes[$-1] < b.length!1);
 }
 body
@@ -173,7 +173,7 @@ body
     import mir.sparse.blas.gemv: selectiveGemv;
 
     b = b.transposed;
-    foreach(r; c)
+    foreach (r; c)
     {
         selectiveGemv!op(b, a.front, r);
         a.popFront;

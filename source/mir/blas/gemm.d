@@ -33,12 +33,12 @@ body
     import mir.ndslice.iteration: transposed;
     import mir.blas.gemv: gemv;
 
-    if(b.stride == 1)
+    if (b.stride == 1)
     {
         b = b.transposed;
         c = c.transposed;
 
-        while(!c.empty)
+        while (!c.empty)
         {
             gemv(alpha, a, b.front, beta, c.front);
 
@@ -50,7 +50,7 @@ body
     {
         b = b.transposed;
 
-        while(!c.empty)
+        while (!c.empty)
         {
             gemv(alpha, b, a.front, beta, c.front);
 

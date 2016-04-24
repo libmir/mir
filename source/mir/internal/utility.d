@@ -23,7 +23,7 @@ auto toDense(R)(Slice!(1, R) x)
 {
     assert(x.stride == 1);
     auto ptr = x.ptr;
-    static if(isPointer!R)
+    static if (isPointer!R)
     {
         return ptr[0 .. x.length];
     }

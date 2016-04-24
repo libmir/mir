@@ -28,12 +28,12 @@ in
 body
 {
     alias T = Unqual!(ForeachType!V1);
-    static if(isDynamicArray!V1 && isDynamicArray!V2)
+    static if (isDynamicArray!V1 && isDynamicArray!V2)
     {
         return dotImpl(x, y);
     }
     else
-    static if(isDynamicArray!V1 && !isDynamicArray!V2)
+    static if (isDynamicArray!V1 && !isDynamicArray!V2)
     {
         import mir.internal.utility;
         return
@@ -42,7 +42,7 @@ body
                 dotImpl(x, y);
     }
     else
-    static if(!isDynamicArray!V1 && isDynamicArray!V2)
+    static if (!isDynamicArray!V1 && isDynamicArray!V2)
     {
         import mir.internal.utility;
         return
@@ -97,7 +97,7 @@ pragma(inline, false) package(mir.blas)
     {
         //import mir.internal.math: fmuladd;
         T s = 0;
-        foreach(size_t i; 0 .. x.length)
+        foreach (size_t i; 0 .. x.length)
         {
             s = x[i] * y[i] + s;
         }
@@ -108,7 +108,7 @@ pragma(inline, false) package(mir.blas)
     {
         import mir.internal.math: fmuladd;
         T s = 0;
-        foreach(ref xe; x)
+        foreach (ref xe; x)
         {
             s = xe * y.front + s;
             y.popFront;
@@ -120,7 +120,7 @@ pragma(inline, false) package(mir.blas)
     {
         import mir.internal.math: fmuladd;
         T s = 0;
-        foreach(ref xe; x)
+        foreach (ref xe; x)
         {
             s = xe * y.front + s;
             y.popFront;
