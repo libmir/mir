@@ -4,12 +4,6 @@ $(H2 Sparse Tensors)
 License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
-
-Macros:
-SUBMODULE = $(LINK2 mir_ndslice_$1.html, mir.ndslice.$1)
-SUBREF = $(LINK2 mir_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
-T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
-T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 +/
 module mir.sparse;
 
@@ -169,6 +163,7 @@ struct SparseMap(T)
 }
 
 /++
+Combination of coordinate(s) and value.
 +/
 struct CoordinateValue(size_t N, T)
 {
@@ -195,6 +190,7 @@ private sizediff_t cmpCoo(size_t N)(const auto ref size_t[N] a, const auto ref s
 
 /++
 Returns unsorted forward range of (coordinate, value) pairs.
+
 Params:
     slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/

@@ -9,6 +9,8 @@ import std.traits;
 import mir.ndslice.slice;
 
 /++
+General matrix-vector multiplication.
+
 Params:
     alpha = scalar
     a = matrix

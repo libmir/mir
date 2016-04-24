@@ -10,6 +10,8 @@ import mir.ndslice.slice;
 import mir.sparse;
 
 /++
+General matrix-vector multiplication.
+
 Params:
     alpha = scalar
     a = sparse matrix (CSR format)
@@ -103,6 +105,8 @@ unittest
 }
 
 /++
+General matrix-vector multiplication with transformation.
+
 Params:
     alpha = scalar
     a = sparse matrix (CSR format)
@@ -203,6 +207,8 @@ unittest
 }
 
 /++
+General matrix-vector multiplication for sparse vectors.
+
 Params:
     alpha = scalar
     a = dense matrix
@@ -276,6 +282,8 @@ unittest
 }
 
 /++
+Selective general matrix-vector multiplication with a selector sparse vector.
+
 Params:
     a = dense matrix
     x = dense vector
