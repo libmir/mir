@@ -95,7 +95,6 @@ pragma(inline, false) package(mir.blas)
 {
     T dotImpl(T)(scope const(T)[] x, scope const(T)[] y)
     {
-        //import mir.internal.math: fmuladd;
         T s = 0;
         foreach (size_t i; 0 .. x.length)
         {
