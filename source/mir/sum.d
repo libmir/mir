@@ -1862,7 +1862,7 @@ unittest
         catch(AssertError e)
         {
             import std.stdio;
-            stderr.writefln("i = %s, result = %s (%X), target = %s (%X)", i, s, s, r, r);
+            stderr.writefln("i = %s, result = %s (%A), target = %s (%A)", i, s, s, r, r);
         }
     }
 }
