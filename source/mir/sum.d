@@ -1778,7 +1778,7 @@ public:
     }
 }
 
-nothrow unittest
+unittest
 {
     import std.algorithm.iteration: map;
     import std.range: iota, retro;
@@ -1838,22 +1838,31 @@ nothrow unittest
         foreach (t; test[0]) summator.put(t);
         auto r = test[1];
         auto s = summator.sum;
-        version(X86)
+        import core.exception: AssertError;
+        try
         {
-            import std.math: nextDown, nextUp;
-            assert(summator.isNaN() == r.isNaN());
-            assert(summator.isFinite() == r.isFinite() || r == -double.max
-                   && s == -double.infinity || r == double.max && s == double.infinity);
-            assert(summator.isInfinity() == r.isInfinity() || r == -double.max
-                   && s == -double.infinity || r == double.max && s == double.infinity);
-            assert(nextDown(s) <= r && r <= nextUp(s) || s.isNaN && r.isNaN);
+            version(X86)
+            {
+                import std.math: nextDown, nextUp;
+                assert(summator.isNaN() == r.isNaN());
+                assert(summator.isFinite() == r.isFinite() || r == -double.max
+                       && s == -double.infinity || r == double.max && s == double.infinity);
+                assert(summator.isInfinity() == r.isInfinity() || r == -double.max
+                       && s == -double.infinity || r == double.max && s == double.infinity);
+                assert(nextDown(s) <= r && r <= nextUp(s) || s.isNaN && r.isNaN);
+            }
+            else
+            {
+                assert(summator.isNaN() == r.isNaN());
+                assert(summator.isFinite() == r.isFinite());
+                assert(summator.isInfinity() == r.isInfinity());
+                assert(s == r || s.isNaN && r.isNaN);
+            }
         }
-        else
+        catch(AssertError e)
         {
-            assert(summator.isNaN() == r.isNaN());
-            assert(summator.isFinite() == r.isFinite());
-            assert(summator.isInfinity() == r.isInfinity());
-            assert(s == r || s.isNaN && r.isNaN);
+            import std.stdio;
+            stderr.writefln("i = %s, result = %s (%X), target = %s (%X)", i, s, s, r, r);
         }
     }
 }
