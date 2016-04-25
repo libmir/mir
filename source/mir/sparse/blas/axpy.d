@@ -10,6 +10,8 @@ import mir.ndslice.slice;
 import mir.sparse;
 
 /++
+Constant times a vector plus a vector.
+
 Params:
     x = sparse vector
     y = dense vector

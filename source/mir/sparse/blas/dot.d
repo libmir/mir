@@ -9,8 +9,9 @@ import std.traits;
 import mir.ndslice.slice;
 import mir.sparse;
 
-
 /++
+Dot product of two vectors
+
 Params:
     x = sparse vector
     y = sparse vector
@@ -108,11 +109,14 @@ unittest
 {
     auto x = CompressedArray!(int, uint)([1, 3, 4, 9, 10], [0, 3, 5, 9, 100]);
     auto y = CompressedArray!(int, uint)([1, 10, 100, 1000], [1, 3, 4, 9]);
+    // x = [1, 0, 0,  3, 0, 4, 0, 0, 0, 9, ... ,10]
+    // y = [0, 1, 0, 10, 0, 0, 0, 0, 0, 1000]
     assert(dot(x, y) == 9030);
     assert(dot!double(x, y) == 9030);
 }
 
 /++
+Dot product of two vectors.
 Params:
     x = sparse vector
     y = dense vector
@@ -172,9 +176,10 @@ unittest
     import std.typecons: No;
     auto x = CompressedArray!(double, uint)([1.0, 3, 4, 9, 13], [0, 3, 5, 9, 10]);
     auto y = [0.0, 1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-    auto r = 0 + 3 * 3 + 5 * 4 + 9 * 9 + 10 * 13;
+    // x: [1, 0, 0, 3, 0, 4, 0, 0, 0, 9, 13,  0,  0,  0]
+    // y: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    auto r = 0 + 3 * 3 + 4 * 5 + 9 * 9 + 13 * 10;
     assert(dot(x, y) == r);
     assert(dot(x, y.sliced) == r);
     assert(dot(x, y.sliced!(No.replaceArrayWithPointer)) == r);
 }
-
