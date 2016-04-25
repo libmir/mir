@@ -5,7 +5,7 @@ import std.meta; //: AliasSeq, anySatisfy, Filter, Reverse;
 
 package:
 
-static if(__VERSION__ < 2071)
+static if (__VERSION__ < 2071)
 {
     template Repeat(size_t n, TList...) if (n > 0)
     {
@@ -38,7 +38,7 @@ enum indexError(size_t pos, size_t N) =
     ~ " must be less than corresponding length.";
 
 enum indexStrideCode = q{
-    static if(_indexes.length)
+    static if (_indexes.length)
     {
         size_t stride = _strides[0] * _indexes[0];
         assert(_indexes[0] < _lengths[0], indexError!(0, N));
@@ -56,7 +56,7 @@ enum indexStrideCode = q{
 };
 
 enum mathIndexStrideCode = q{
-    static if(_indexes.length)
+    static if (_indexes.length)
     {
         size_t stride = _strides[0] * _indexes[N - 1];
         assert(_indexes[N - 1] < _lengths[0], indexError!(N - 1, N));

@@ -768,7 +768,7 @@ Slice!(Lengths.length, Range)
             }
 
         ret._strides[nj - 1] = slice._strides[oj - 1];
-        foreach_reverse(i; ni .. nj - 1)
+        foreach_reverse (i; ni .. nj - 1)
             ret._strides[i] = ret._lengths[i + 1] * ret._strides[i + 1];
     assert((oi == slice.N) == (ni == ret.N));
     }
@@ -957,7 +957,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
 
             private void popFrontImpl()
             {
-                foreach_reverse(i; Iota!(0, N)) with (_slice)
+                foreach_reverse (i; Iota!(0, N)) with (_slice)
                 {
                     _ptr += _strides[i];
                     _indexes[i]++;
@@ -1000,7 +1000,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 //calculates shift and new indexes
                 sizediff_t _shift;
                 n += _indexes[N-1];
-                foreach_reverse(i; Iota!(1, N)) with (_slice)
+                foreach_reverse (i; Iota!(1, N)) with (_slice)
                 {
                     immutable v = n / _lengths[i];
                     n %= _lengths[i];
@@ -1038,7 +1038,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             {
                 sizediff_t _shift;
                 n += _indexes[N-1];
-                foreach_reverse(i; Iota!(1, N)) with (_slice)
+                foreach_reverse (i; Iota!(1, N)) with (_slice)
                 {
                     immutable v = n / _lengths[i];
                     n %= _lengths[i];
@@ -1197,7 +1197,7 @@ pure nothrow unittest
     import mir.ndslice.slice;
     auto slice = new long[20].sliced(5, 4);
 
-    for(auto elems = slice.byElement; !elems.empty; elems.popFront)
+    for (auto elems = slice.byElement; !elems.empty; elems.popFront)
     {
         size_t[2] index = elems.index;
         elems.front = index[0] * 10 + index[1] * 3;
@@ -1455,7 +1455,7 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
 
             private void popFrontImpl()
             {
-                foreach_reverse(i; Iota!(0, N)) with (_slice)
+                foreach_reverse (i; Iota!(0, N)) with (_slice)
                 {
                     _ptr += _strides[i];
                     _indexes[i]++;
@@ -1634,7 +1634,7 @@ template IndexSlice(size_t N)
         {
             pragma(inline, true);
             size_t[N] indexes = void;
-            foreach_reverse(i; Iota!(0, N - 1))
+            foreach_reverse (i; Iota!(0, N - 1))
             {
                 indexes[i + 1] = index % _lengths[i];
                 index /= _lengths[i];

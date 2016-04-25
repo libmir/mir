@@ -124,7 +124,7 @@ body
         ret._strides[N - 1] = 1;
     else
         ret._strides[N - 1] = range._strides[0];
-    foreach_reverse(i; Iota!(0, N - 1))
+    foreach_reverse (i; Iota!(0, N - 1))
     {
         ret._lengths[i] = lengths[i];
         ret._strides[i] = ret._strides[i + 1] * ret._lengths[i + 1];
@@ -739,7 +739,7 @@ auto makeNdarray(T, Allocator, size_t N, Range)(auto ref Allocator alloc,  Slice
     {
         alias E = typeof(makeNdarray!T(alloc, slice[0]));
         auto ret = makeArray!E(alloc, slice.length);
-        foreach(i, ref e; ret)
+        foreach (i, ref e; ret)
             e = .makeNdarray!T(alloc, slice[i]);
         return ret;
     }
@@ -761,7 +761,7 @@ static if (__VERSION__ >= 2070)
     static immutable ar = [[0L, 1, 2, 3], [4L, 5, 6, 7], [8L, 9, 10, 11]];
     assert(m == ar);
 
-    foreach(ref row; m)
+    foreach (ref row; m)
         Mallocator.instance.dispose(row);
     Mallocator.instance.dispose(m);
 }
@@ -1664,7 +1664,7 @@ struct Slice(size_t _N, _Range)
     {
         if (this.length != rarrary.length)
             return false;
-        foreach(i, ref e; rarrary)
+        foreach (i, ref e; rarrary)
             if (e != this[i])
                 return false;
         return true;
@@ -2797,7 +2797,7 @@ private auto ptrShell(Range)(Range range, sizediff_t shift = 0)
     return PtrShell!Range(shift, range);
 }
 
-static if(__VERSION__ >= 2071)
+static if (__VERSION__ >= 2071)
 @safe pure nothrow unittest
 {
     import std.internal.test.dummyrange;
@@ -2823,7 +2823,7 @@ static if(__VERSION__ >= 2071)
     }
 }
 
-static if(__VERSION__ >= 2071)
+static if (__VERSION__ >= 2071)
 pure nothrow unittest
 {
     import std.internal.test.dummyrange;
