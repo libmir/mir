@@ -43,8 +43,6 @@ body
     foreach(size_t i; 0 .. x.indexes.length)
     {
         auto j = x.indexes[i];
-        //import mir.internal.math: fmuladd;
-        //y[j] = fmuladd(alpha, x.values[i], y[j]);
         y[j] = alpha * x.values[i] + y[j];
     }
 }
