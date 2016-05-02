@@ -13,7 +13,7 @@ $(BOOKTABLE ,
     )
     $(LEADINGROW Models)
     $(TR
-        $(TDNW $(LINK2 mir_blas.html, mir.model.lda.hoffman))
+        $(TDNW $(LINK2 mir_model_lda_hoffman.html, mir.model.lda.hoffman))
         $(TD Online variational Bayes for latent Dirichlet allocation (Online VB LDA) for sparse documents. LDA is used for topic modeling)
     )
     $(LEADINGROW Sparse)
