@@ -9,6 +9,9 @@ docs.json
 docs
 build
 
+.generated
+web
+
 
 __test__d_source_library__
 

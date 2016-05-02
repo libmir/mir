@@ -25,10 +25,9 @@ test:
     - dub test
     - dub build -c median-filter
     - dub build -c means-of-columns
-    - rdmd bootDoc/generate.d --output=docs source --separator=_ --extra index.d
+    - make -f doc/Makefile html
 deployment:
   aws:
     branch: master
     commands:
-      - AWS_DEFAULT_REGION=eu-west-1 aws s3 sync --acl public-read --delete docs s3://docs.mir.dlang.io/latest
-      - AWS_DEFAULT_REGION=eu-west-1 aws s3 sync --acl public-read --delete bootDoc s3://docs.mir.dlang.io/bootDoc
+      - AWS_DEFAULT_REGION=eu-west-1 aws s3 sync --acl public-read --delete web s3://docs.mir.dlang.io/latest
