@@ -38,7 +38,7 @@ PACKAGE_mir_ndslice = package iteration selection slice
 PACKAGE_mir_sparse = package
 PACKAGE_mir_sparse_blas = package axpy dot gemm gemv
 
-MOD_EXCLUDES=$(addprefix --ex=, mir.ndslice.internal. mir.internal.)
+MOD_EXCLUDES=$(addprefix --ex=, mir.ndslice.internal mir.internal. mir.blas)
 
 ###########################################################
 # Setup macros + generate dynamic info needed
