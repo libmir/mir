@@ -1,0 +1,28 @@
+span#search-query {
+    width: 12em;
+}
+
+/*
+custom color for mir
+*/
+
+#top {
+    background: rgba(23, 0, 185, 0.83);
+    border-bottom: 1px #000000 solid;
+}
+
+#top a:hover, #top #cssmenu li.open > a, #top #cssmenu li.active > a {
+    background: #00127b;
+}
+
+a, .question, .expand-toggle {
+    color: #13055d;
+}
+
+a:hover, .question:hover, .expand-toggle:hover {
+    color: #060a4a;
+}
+
+.d_decl {
+    border-left: 5px solid #0003bd;
+}
