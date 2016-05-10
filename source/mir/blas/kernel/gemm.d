@@ -67,9 +67,9 @@ body
     do
     {
         V[P][N][M] reg = void;
-        foreach (m; Iota!(0, M))
-        foreach (n; Iota!(0, N))
-        foreach (p; Iota!(0, P))
+        foreach (m; Iota!M)
+        foreach (n; Iota!N)
+        foreach (p; Iota!P)
             static if (add)
                 reg[m][n][p] = c[0][m][n][p];
             else
@@ -79,16 +79,16 @@ body
         {
             V[P][N] ai = void;
             V[P][M] bi = void;
-            foreach (n; Iota!(0, N))
-            foreach (p; Iota!(0, P))
+            foreach (n; Iota!N)
+            foreach (p; Iota!P)
                 ai[n][p] = a[0][n][p];
-            foreach (m; Iota!(0, M))
-            foreach (p; Iota!(0, P))
+            foreach (m; Iota!M)
+            foreach (p; Iota!P)
                 bi[m][p] = b[0][m][p];
             a++;
             b++;
-            foreach (m; Iota!(0, M))
-            foreach (n; Iota!(0, N))
+            foreach (m; Iota!M)
+            foreach (n; Iota!N)
             {
                 reg[m][n][0] += ai[n][0] * bi[m][0];
                 static if (conj == Conj.complexNone)
@@ -120,9 +120,9 @@ body
         }
         while (--i);
         b -= columns;
-        foreach (m; Iota!(0, M))
-        foreach (n; Iota!(0, N))
-        foreach (p; Iota!(0, P))
+        foreach (m; Iota!M)
+        foreach (n; Iota!N)
+        foreach (p; Iota!P)
             c[0][m][n][p] = reg[m][n][p];
         c++;
     }

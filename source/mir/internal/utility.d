@@ -7,6 +7,8 @@ import mir.ndslice.slice;
 
 package(mir):
 
+alias Iota(size_t j) = Iota!(0, j);
+
 template Iota(size_t i, size_t j)
 {
     static assert(i <= j, "Iota: i should be less than or equal to j");
