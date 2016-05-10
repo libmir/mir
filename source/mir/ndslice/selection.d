@@ -1380,11 +1380,11 @@ unittest
     assert(pElements[$-1][$-1] == iotaSlice([7], 2513));
 }
 
-// Issue 16010 
+// Issue 16010
 unittest
 {
     auto s = iotaSlice(3, 4).byElement;
-    foreach(_; 0 .. s.length)
+    foreach (_; 0 .. s.length)
         s = s[1 .. $];
 }
 
