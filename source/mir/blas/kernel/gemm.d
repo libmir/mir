@@ -39,7 +39,7 @@ Params:
     b = input vector composed of register vectors
     c = output vector composed of register matrices
 +/
-void gemmMicroKernel(
+void gemmMicroKernel (
     Conj conj,
     Flag!"add" add,
     size_t P,
@@ -47,13 +47,15 @@ void gemmMicroKernel(
     size_t M,
     V,
     F
-)(
+)
+(
     in size_t columns,
     size_t rows,
     scope const(V[P][N])* a,
     scope const(F[P][M])* b,
     scope V[P][N][M]* c,
-    )
+)
+    if (is(V == F) || is(V == __vector(F[L]), size_t L))
 in
 {
     assert(columns);
@@ -134,8 +136,8 @@ unittest
     import std.meta: AliasSeq;
     import std.typecons: Yes, No;
     with(Conj)
-    foreach(conj; AliasSeq!(none, complexNone, complexA, complexB))
-    foreach(add; AliasSeq!(No.add, Yes.add))
+    foreach (conj; AliasSeq!(none, complexNone, complexA, complexB))
+    foreach (add; AliasSeq!(No.add, Yes.add))
     {
         enum P = conj == none ? 1 : 2;
         {alias temp = gemmMicroKernel!(conj, add, P, 2 / P, 4 / P, float, float);}
