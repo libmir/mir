@@ -89,7 +89,3 @@ void gemmMicroKernel(
 	}
 	while(--blocks);
 }
-
-import std.typecons: Yes, No;
-alias _temp = gemmMicroKernel!(Conj.none, No.add, 1, 3, 3, __vector(double[4]), double);
-alias _temp = gemmMicroKernel!(Conj.complexNone, No.add, 2, 1, 4, __vector(float[8]), float);
