@@ -59,7 +59,7 @@ in
     assert(columns);
     assert(rows);
 }
-body 
+body
 {
     pragma(inline, false);
     enum msg = "Wrong kernel compile time arguments.";
