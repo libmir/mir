@@ -18,7 +18,7 @@ Params:
     beta = scalar
     c = matrix
 Returns:
-    `c = alpha * a × x + beta * c`
+    `c = alpha * a × b + beta * c`
 Note:
     `gemm` implementation is naive for now.
 +/
