@@ -1,5 +1,6 @@
 __dummy.html
 __test__library__
+__test__unittest__
 *.o
 *.obj
 *.a
@@ -11,7 +12,8 @@ build
 
 .generated
 web
-
+plots
+flex-plot
 
 __test__d_source_library__
 

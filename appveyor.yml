@@ -1,12 +1,20 @@
+# On Windows PyD only supports Python3.4
+# @See https://github.com/ariovistus/pyd/issues/50
 platform: x64
 environment:
  matrix:
   - DC: dmd
     DVersion: 2.071.1
     arch: x64
+    PYTHON: "C:\\Python34-x64"
+    PYTHON_VERSION: 3.4
+    MINICONDA: C:\Miniconda3
   - DC: dmd
     DVersion: 2.071.1
     arch: x86
+    PYTHON: "C:\\Python34"
+    PYTHON_VERSION: "3.4"
+    MINICONDA: C:\Miniconda3
   - DC: ldc
     DVersion: 1.1.0-beta2
     arch: x64
@@ -20,7 +28,9 @@ branches:
   only:
     - master
     - stable
-
+    - tinflex
+cache:
+  - 'C:\Miniconda3 -> appveyor.yml'
 install:
   - ps: function SetUpDCompiler
         {
@@ -63,6 +73,15 @@ install:
   - set PATH=%CD%\%binpath%;%CD%\dub;%PATH%
   - dub --version
 
+  # ---- PYTHON setup -----
+  - "ECHO %PYTHON_VERSION% %MINICONDA%"
+  - "set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%"
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - "conda create -q -n condaenv python=%PYTHON_VERSION% matplotlib"
+  - activate condaenv
+
 before_build:
   - ps: if($env:arch -eq "x86"){
             $env:compilersetupargs = "x86";
@@ -85,6 +104,10 @@ before_build:
 
 build_script:
  - echo dummy build script - dont remove me
+ #- sed 's/"to_be_filled"/"Flex_logging", "Flex_logging_hex"/' -i dub.json
+ # For now only python 3.4 is supported with pyd
+ - sed 's/python35/python34/' -i examples/flex_plot.d
+ - sed 's/python35/python34/' -i examples/flex_plot/common/dub.json
 
 test_script:
  - echo %PLATFORM%
@@ -98,13 +121,25 @@ test_script:
  - dub fetch imageformats --version 6.0.0 && dub build --arch %Darch% imageformats
  - dub build --single --arch %Darch% examples/median_filter.d
  - dub build --single --arch %Darch% examples/means_of_columns.d
+ # ---- PYTHON setup -----
+ # workaround against dub bugs
+ - dub build --root=examples/flex_plot
+ - dub build --root=examples/flex_plot/common
+ # weird hack
+ - "set PYTHONPATH=%MINICONDA%\\lib;%MINICONDA%\\lib\\lib-dynload;%MINICONDA%\\envs\\condaenv\\lib;%MINICONDA%\\envs\\condaenv\\lib\\site-packages"
+ - echo %PYTHONPATH%
+ - dub run --single examples/flex_plot.d -v -- normal
+ # check file size
+ - FOR %%A IN (plots/dist_normal_hs.pdf) DO set size=%%~zA
+ - echo %size%
+ - IF %size% LEQ 20000 exit /b 2
 
 notifications:
  - provider: Webhook
    url: https://webhooks.gitter.im/e/56aae174f8cc81f4eda4
- - provider: Email
-   to:
-    - devteam@mir.rocks
-   on_build_success: false
-   on_build_failure: true
-   on_build_status_changed: true
+ #- provider: Email
+   #to:
+    #- devteam@mir.rocks
+   #on_build_success: false
+   #on_build_failure: true
+   #on_build_status_changed: true
