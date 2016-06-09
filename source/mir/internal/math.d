@@ -14,7 +14,7 @@ version(LDC)
 
     alias powi = llvm_powi;
 
-    alias pow = llvm_pow;
+    alias pow = llvm_powi;
 
     alias pow = llvm_pow;
 
