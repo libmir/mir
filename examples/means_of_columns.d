@@ -1,3 +1,9 @@
+#!/usr/bin/env dub
+/+ dub.sdl:
+name "means_of_columns"
+dependency "mir" version=">0.15.1"
++/
+
 /**
 * This code uses std.experimental.ndslice to take the mean of the columns in
 * a 2d 100x1000 array and creates a benchmark of that code. Running on a 2015

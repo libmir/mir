@@ -1,3 +1,9 @@
+#!/usr/bin/env dub
+/+ dub.sdl:
+name "lda_hoffman_sparse"
+dependency "mir" version=">0.15.1"
++/
+
 /++
 Butch LDA using online LDA
 +/
