@@ -33,6 +33,14 @@
             "targetType": "executable",
             "targetPath": "build",
             "sourceFiles": ["examples/means_of_columns.d"]
+        },
+        {
+            "name": "lda-hoffman-sparse",
+            "targetName": "lda-hoffman-sparse",
+            "targetType": "executable",
+            "targetPath": "build",
+            "sourceFiles": ["examples/lda_hoffman_sparse.d"]
         }
+
     ]
 }
