@@ -1863,6 +1863,7 @@ unittest
         {
             import std.stdio;
             stderr.writefln("i = %s, result = %s (%A), target = %s (%A)", i, s, s, r, r);
+            throw e;
         }
     }
 }
