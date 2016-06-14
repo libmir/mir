@@ -1,3 +1,10 @@
+#!/usr/bin/env dub
+/+ dub.sdl:
+name "median_filter"
+dependency "mir" version=">0.15.1"
+dependency "imageformats" version="~>6.0.0"
++/
+
 import mir.ndslice;
 
 /++
