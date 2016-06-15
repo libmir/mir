@@ -9,7 +9,7 @@ All operators return slice of the same type as the type of the argument.
 
 $(BOOKTABLE $(H2 Transpose operators),
 
-$(TR $(TH Function Name) $(TH Descriprottion))
+$(TR $(TH Function Name) $(TH Description))
 $(T2 transposed, `iotaSlice(3, 4, 5, 6, 7).transposed!(4, 0, 1).shape` returns `[7, 3, 4, 5, 6]`.)
 $(T2 swapped, `iotaSlice(3, 4, 5).swapped!(1, 2).shape` returns `[3, 5, 4]`.)
 $(T2 everted, `iotaSlice(3, 4, 5).everted.shape` returns `[5, 4, 3]`.)
