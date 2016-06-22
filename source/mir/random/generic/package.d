@@ -85,7 +85,7 @@ struct Tinflex(F0, S)
     // density function
     private F0 _f0;
 
-    ///
+    /// density function of the distribution
     S f0(S x)
     {
         return _f0(x);
@@ -93,6 +93,7 @@ struct Tinflex(F0, S)
 
     // generated partition points
     private IntervalPoint!S[] ips;
+
     // global T_c family
     private S c;
 
@@ -202,9 +203,26 @@ typeof(R.init())[] sample(R)(R r, int n)
     return arr;
 }
 
-/**
-Generates a series of y-values wit
+///
+unittest
+{
+    auto f0 = (double x) => -x^^4 + 5 * x^^2 - 4;
+    auto f1 = (double x) => 10 * x - 4 * x ^^ 3;
+    auto f2 = (double x) => 10 - 12 * x ^^ 2;
+    auto tf = tinflex(f0, f1, f2, 1.5, [-3.0, -1.5, 0.0, 1.5, 3], 1.1);
+    auto values = tf.sample(100);
 
+    // see more examples at mir/examples
+}
+
+/**
+(For testing only - will be moved)
+Generates a series of y-values that can be used for plotting.
+
+Params:
+    t = Tinflex generator
+    xs = x points to be plotted
+    hat = whether hat (true) or squeeze (false) should be plotted
 */
 auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool hat = true)
 {
@@ -238,19 +256,6 @@ auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool hat = true)
             if (k >= ys.length)
                 break outer;
         }
-        import std.stdio;
     }
     return ys;
-}
-
-///
-unittest
-{
-    auto f0 = (double x) => -x^^4 + 5 * x^^2 - 4;
-    auto f1 = (double x) => 10 * x - 4 * x ^^ 3;
-    auto f2 = (double x) => 10 - 12 * x ^^ 2;
-    auto tf = tinflex(f0, f1, f2, 1.5, [-3.0, -1.5, 0.0, 1.5, 3], 1.1);
-    auto values = tf.sample(100);
-
-    // see more examples at mir/examples
 }
