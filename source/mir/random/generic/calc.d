@@ -151,5 +151,7 @@ unittest
 
     import mir.random.generic.calc: calcPoints;
     auto ips = calcPoints(f0, f1, f2, c, [-3.0, -1.5, 0.0, 1.5, 3], 1.1);
+
+    // TODO: should be 45?
     assert(ips.length == 51);
 }

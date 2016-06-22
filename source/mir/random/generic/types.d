@@ -39,23 +39,24 @@ struct IntervalPoint(S)
 
 /// ditto
 IntervalPoint!S intervalPoint(F0, F1, F2, S)
-                             (in F0 f0, in F1 f1, in F2 f2, in S x)
+                             (in F0 f0, in F1 f1, in F2 f2, in S x, in S c = S.init)
     if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S))
 {
-    return intervalPoint(x, f0(x), f1(x), f2(x));
+    return intervalPoint(x, f0(x), f1(x), f2(x), c);
 }
 
 /**
 Create an intervalPoint given a point x and the value of a function and it's
 first two derivatives
 */
-IntervalPoint!S intervalPoint(S)(in S x, in S f0x, in S f1x, in S f2x)
+IntervalPoint!S intervalPoint(S)(in S x, in S f0x, in S f1x, in S f2x, in S c = S.init)
 {
     IntervalPoint!S s;
     s.x = x;
     s.tx = f0x;
     s.t1x = f1x;
     s.t2x = f2x;
+    s.c = c;
     return s;
 }
 

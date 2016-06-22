@@ -17,7 +17,7 @@ auto transformToInterval(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S c)
     {
         IntervalPoint!S opCall(S x)
         {
-            return intervalPoint(x, t0(x), t1(x), t2(x));
+            return intervalPoint(x, t0(x), t1(x), t2(x), c);
         }
         auto t0 (S)(S x)
         {

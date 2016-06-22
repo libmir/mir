@@ -12,6 +12,7 @@ import ggplotd.geom;
 void main()
 {
     import std.math : exp, PI, pow, sqrt;
+    import mir.stat.distributions : normalPDF;
 
     alias π = PI;
     auto μ = 0; // mean
@@ -21,8 +22,7 @@ void main()
     auto ss2 = 2 * pow(σ, 2);
 
     // PDF(NormalDistribution)
-    auto f0_below = sqrt(2 * π) * σ;
-    auto f0 = (real x) => exp(-xu2(x) / ss2) / f0_below;
+    alias f0 = mir.stat.normalPDF;
 
     // first derivative
     auto f1_below = sqrt(2 * π) * pow(σ, 3);

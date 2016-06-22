@@ -70,7 +70,7 @@ Tinflex!(F0, S) tinflex(F0, F1, F2, S)
 {
     import mir.random.generic.calc : calcPoints;
     // pre-calculate all the points
-    auto ips = calcPoints(f0, f1, f2, c, [-3.0, -1.5, 0.0, 1.5, 3], 1.1);
+    auto ips = calcPoints(f0, f1, f2, c, points, 1.1);
     return Tinflex!(F0, S)(f0, ips, c);
 }
 
@@ -83,7 +83,14 @@ struct Tinflex(F0, S)
     // saved internal state of Tinflex:
 
     // density function
-    private F0 f0;
+    private F0 _f0;
+
+    ///
+    S f0(S x)
+    {
+        return _f0(x);
+    }
+
     // generated partition points
     private IntervalPoint!S[] ips;
     // global T_c family
@@ -91,7 +98,7 @@ struct Tinflex(F0, S)
 
     private this(F0 f0, IntervalPoint!S[] ips, S c)
     {
-        this.f0 = f0;
+        this._f0 = f0;
         this.ips = ips;
         this.c = c;
     }
@@ -107,14 +114,14 @@ struct Tinflex(F0, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tfSample(f0, ips, c, rndGen);
+        return tfSample(_f0, ips, c, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tfSample(f0, ips, c, rng);
+        return tfSample(_f0, ips, c, rng);
     }
 }
 
@@ -193,6 +200,47 @@ typeof(R.init())[] sample(R)(R r, int n)
     foreach (ref s; arr)
         s = r();
     return arr;
+}
+
+/**
+Generates a series of y-values wit
+
+*/
+auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool hat = true)
+{
+    import std.algorithm.comparison : clamp;
+    S[] ys = new S[xs.length];
+    int k = 0;
+    S rMin = xs[0];
+    S rMax = xs[$ - 1];
+    outer: foreach (i, v; t.ips)
+    {
+        S l = clamp(v.x, rMin, rMax);
+        S r;
+        if (i < t.ips.length - 1)
+        {
+            r = clamp(t.ips[i + 1].x, rMin, rMax);
+        }
+        else
+        {
+            r = rMax;
+        }
+        while (xs[k] < r)
+        {
+            if (hat)
+                ys[k] = v.hat(xs[k]);
+            else
+                ys[k] = v.squeeze(xs[k]);
+
+            import mir.random.generic.transformations : inverse;
+            ys[k] = inverse(ys[k], v.c);
+            k++;
+            if (k >= ys.length)
+                break outer;
+        }
+        import std.stdio;
+    }
+    return ys;
 }
 
 ///
