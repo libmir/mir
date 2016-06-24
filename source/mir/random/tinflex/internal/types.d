@@ -1,6 +1,6 @@
-module mir.random.generic.types;
+module mir.random.tinflex.internal.types;
 
-import std.traits: ReturnType;
+import std.traits: ReturnType, isFloatingPoint;
 
 protected:
 
@@ -13,51 +13,69 @@ It is used to store
 be exactly one interval with right = 0)
 */
 struct IntervalPoint(S)
+    if (isFloatingPoint!S)
 {
-    import mir.random.generic.internal: LinearFun;
+    import mir.random.tinflex.internal.linearfun : LinearFun;
 
-    // left position of the interval
-    S x;
+    /// left position of the interval
+    immutable S x;
 
-    // T_c family of the interval
-    S c;
+    /// T_c family of the interval
+    immutable S c;
 
-    // transformed values
-    S tx, t1x, t2x;
+    /// transformed values
+    immutable S tx, t1x, t2x;
+
+    this (in S tx, in S t1x, in S t2x, in S x, in S c)
+    {
+        this.tx = tx;
+        this.t1x = t1x;
+        this.t2x = t2x;
+        this.x = x;
+        this.c = c;
+        import std.stdio;
+        writeln("CC", c);
+    }
 
     FunType type;
 
     LinearFun!S hat;
     LinearFun!S squeeze;
 
-    S hatA;
-    S squeezeA;
+    // make NaN
+    S hatA = 0;
+    S squeezeA = 0;
 
-    // save "reference" to right-side interval
-    size_t right = 0;
+    // disallow NaN points
+    invariant {
+        import std.math : isNaN;
+        import std.meta : AliasSeq;
+        import std.traits : isFloatingPoint;
+        static if (isFloatingPoint!S)
+        {
+            alias seq =  AliasSeq!(x, c, tx, t1x, t2x);
+            foreach (i, v; seq)
+            {
+                assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
+            }
+        }
+    }
 }
 
 /// ditto
 IntervalPoint!S intervalPoint(F0, F1, F2, S)
-                             (in F0 f0, in F1 f1, in F2 f2, in S x, in S c = S.init)
-    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S))
+                             (in F0 f0, in F1 f1, in F2 f2, in S x, in S c = 1.5)
+    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
+        (isFloatingPoint!S))
 {
-    return intervalPoint(x, f0(x), f1(x), f2(x), c);
+    return intervalPoint(f0(x), f1(x), f2(x), x, c);
 }
 
-/**
-Create an intervalPoint given a point x and the value of a function and it's
-first two derivatives
-*/
-IntervalPoint!S intervalPoint(S)(in S x, in S f0x, in S f1x, in S f2x, in S c = S.init)
+IntervalPoint!S intervalPoint(S)
+                             (in S f0, in S f1, in S f2, in S x, in S c = 1.5)
+    if (isFloatingPoint!S)
 {
-    IntervalPoint!S s;
-    s.x = x;
-    s.tx = f0x;
-    s.t1x = f1x;
-    s.t2x = f2x;
-    s.c = c;
-    return s;
+    return IntervalPoint!S(f0, f1, f2, x, c);
 }
 
 /**
@@ -96,21 +114,69 @@ Params:
 */
 FunType determineType(F0, F1, F2, S)
                      (in F0 f0, in F1 f1, in F2 f2, in S bl, in S br)
-    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S))
+    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
+        (isFloatingPoint!S))
 {
     return determineType(intervalPoint(f0, f1, f2, bl), intervalPoint(f0, f1, f2, br));
 }
 
 /// ditto
 FunType determineType(S)(in IntervalPoint!S l, in IntervalPoint!S r)
+    if (isFloatingPoint!S)
 {
+    import std.traits : isFloatingPoint;
+
+    static if (isFloatingPoint!S)
+    {
+        import std.math : isInfinity, isNaN;
+    }
+    else
+    {
+        alias isInfinity = (x) => false;
+        alias isNaN = (x) => false;
+    }
+
+
     assert(l.x < r.x, "invalid interval");
+    assert(!isNaN(l.tx) && !isNaN(r.tx), "Invalid interval points");
 
     // slope
     auto R = (r.tx - l.tx) / (r.x- l.x);
 
     with(FunType)
     {
+        import std.stdio;
+        //TODO: This needs more tests
+        if (isInfinity(l.tx))
+        {
+            writeln("infA");
+            if (r.t2x < 0 && r.t1x > 0)
+                return T4a;
+            else
+                assert(0, "Invalid case");
+        }
+
+        if (isInfinity(r.tx))
+        {
+            writeln("infB");
+            if (l.t2x < 0 && l.tx > 0)
+                return T4a;
+            else
+                assert(0, "Invalid case");
+        }
+
+        if ((l.c > 0 && r.tx == 0.0) ||
+            (l.c <= 0 && isInfinity(r.tx) && r.tx < 0 ))
+        {
+            writeln("infC");
+            writeln("L", l);
+            writeln("R", r);
+            if (r.t2x < 0 && r.t1x > 0)
+                return T4a;
+            if (r.t2x > 0 && r.t1x > 0)
+                return T4b;
+            assert(0, "Invalid case");
+        }
 
         if (l.t1x >= R && r.t1x >= R)
             return T1a;
@@ -141,16 +207,16 @@ FunType determineType(S)(in IntervalPoint!S l, in IntervalPoint!S r)
 
 unittest
 {
-    auto f0 = (int x) => x ^^ 4;
-    auto f1 = (int x) => 4 * x ^^ 3;
-    auto f2 = (int x) => 12 * x * x;
+    auto f0 = (double x) => x ^^ 4;
+    auto f1 = (double x) => 4 * x ^^ 3;
+    auto f2 = (double x) => 12 * x * x;
 
     with(FunType)
     {
         // entirely convex
-        assert(determineType(f0, f1, f2, -3, -1) == T4b);
-        assert(determineType(f0, f1, f2, -1, 1) == T4b);
-        assert(determineType(f0, f1, f2, 1, 3) == T4b);
+        assert(determineType(f0, f1, f2, -3.0, -1) == T4b);
+        assert(determineType(f0, f1, f2, -1.0, 1) == T4b);
+        assert(determineType(f0, f1, f2, 1.0, 3) == T4b);
     }
 }
 
@@ -221,7 +287,8 @@ unittest
         assert(dt(4.0, 6) == T4b);
 
         // TODO: zero seems to be a special case here
-        assert(dt(-PI, 0) == T4a); // should be convex!
+        //assert(dt(-PI, 0) == T4a); // should be convex!
+
         // but:
         assert(dt(PI, 2 * PI) == T3b);
 
@@ -230,3 +297,22 @@ unittest
         assert(dt(2 * PI, 3 * PI) == T2a);
     }
 }
+
+unittest
+{
+    auto f0 = (double x) => x ^^ 3;
+    auto f1 = (double x) => 3 * x ^^ 2;
+    auto f2 = (double x) => 6 * x;
+
+    with(FunType)
+    {
+        // concave
+        assert(determineType(f0, f1, f2, -double.infinity, -1.0) == T4a);
+        // inflection point at x = 0, concave before
+        assert(determineType(f0, f1, f2, -1.0, 1) == T1a);
+        // convex
+        assert(determineType(f0, f1, f2, 1.0, 3) == T4b);
+    }
+}
+
+

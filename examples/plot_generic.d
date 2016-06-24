@@ -1,7 +1,9 @@
 /**
 Simple plot
 */
-import mir.random.generic: tinflex, Tinflex, sample, plot;
+import mir.random.tinflex: tinflex, Tinflex;
+import mir.random.tinflex.internal.plot : plot;
+import mir.random.tinflex.internal.random : sample;
 import std.array : array;
 import std.stdio : writeln, File;
 import std.algorithm : map, joiner, sum;
@@ -36,7 +38,7 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName)
 
     // plot PDF
     auto xs = iota(-3, 3, 0.01).array;
-    auto ysfit = xs.map!((x) => exp(tf.f0(x)) / 100).array;
+    auto ysfit = xs.map!((x) => exp(tf.pdf(x)) / 100).array;
     gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ysfit),
         "y")( xs, ysfit ) ) );
 
@@ -54,10 +56,10 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName)
 
     // chi-square test
     import std.range.primitives : ElementType;
-    import mir.stat.analysis : FreqTable;
+    import mir.random.tinflex.internal.stat.analysis : FreqTable;
     auto ft = FreqTable!(ElementType!(typeof(values)))(100, values);
-    auto bps = ft.binPoints((double x) => tf.f0(x));
-    import mir.stat : chisq;
+    auto bps = ft.binPoints((double x) => tf.pdf(x));
+    import mir.random.tinflex.internal.stat : chisq;
     writeln(ft.bins.chisq);
     writeln(ft.bins);
     writeln(bps);

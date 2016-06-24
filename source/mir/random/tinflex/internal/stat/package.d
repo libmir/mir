@@ -4,7 +4,7 @@ Statistical tests.
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 */
 
-module mir.stat;
+module mir.random.tinflex.internal.stat;
 
 import std.stdio;
 
@@ -35,7 +35,7 @@ body
     }
     //x *= obs.length;
     import std.typecons : tuple;
-    import mir.stat.distributions : chiSqCDF;
+    import mir.random.tinflex.internal.stat.distributions : chiSqCDF;
     real p = 1 - chiSqCDF(x, obs.length - 1 - degreesOfFreedom);
     return tuple!("x", "p")(x, p);
 }

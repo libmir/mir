@@ -39,9 +39,9 @@ References:
 Macros:
     F_TILDE=g(x)
 */
-module mir.random.generic;
+module mir.random.tinflex;
 
-import mir.random.generic.types : IntervalPoint;
+import mir.random.tinflex.internal.types : IntervalPoint;
 
 import std.traits : ReturnType;
 import std.random : isUniformRNG;
@@ -56,7 +56,7 @@ point.
 Params:
     f0 = probability density function of the distribution
     f1 = first derivative of f0
-    f1 = second derivative of f0
+    f2 = second derivative of f0
     c = T_c family
     points = non-overlapping partitioning with at most one inflection point per interval
     rho = efficiency of the Tinflex algorithm
@@ -68,7 +68,7 @@ Tinflex!(F0, S) tinflex(F0, F1, F2, S)
                (in F0 f0, in F1 f1, in F2 f2,
                 S c, S[] points, S rho = 1.1)
 {
-    import mir.random.generic.calc : calcPoints;
+    import mir.random.tinflex.internal.calc : calcPoints;
     // pre-calculate all the points
     auto ips = calcPoints(f0, f1, f2, c, points, 1.1);
     return Tinflex!(F0, S)(f0, ips, c);
@@ -80,28 +80,38 @@ Can be used to sample from the distribution.
 */
 struct Tinflex(F0, S)
 {
-    // saved internal state of Tinflex:
-
     // density function
-    private F0 _f0;
+    private const F0 _f0;
+
+    // generated partition points
+    private const IntervalPoint!S[] _ips;
+
+    // global T_c family
+    private const S c;
+
+    private this(const F0 f0, const IntervalPoint!S[] ips, const S c)
+    {
+        _f0 = f0;
+        _ips = ips;
+        this.c = c;
+    }
 
     /// density function of the distribution
-    S f0(S x)
+    F0 pdf() const @property
+    {
+        return _f0;
+    }
+
+    /// density function of the distribution
+    S pdf(S x) const @property
     {
         return _f0(x);
     }
 
-    // generated partition points
-    private IntervalPoint!S[] ips;
-
-    // global T_c family
-    private S c;
-
-    private this(F0 f0, IntervalPoint!S[] ips, S c)
+    /// Generated partition points
+    const(IntervalPoint!S[]) ips() @property const
     {
-        this._f0 = f0;
-        this.ips = ips;
-        this.c = c;
+        return _ips;
     }
 
     /**
@@ -115,14 +125,14 @@ struct Tinflex(F0, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tfSample(_f0, ips, c, rndGen);
+        return tfSample(_f0, _ips, c, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tfSample(_f0, ips, c, rng);
+        return tfSample(_f0, _ips, c, rng);
     }
 }
 
@@ -139,21 +149,24 @@ protected S tfSample(F0, S, RNG)
 {
     import std.algorithm: filter, joiner, map, sum;
 
-    auto s = ips.filter!`a.right != 0`.map!`a.hatA`.sum;
-    auto areas = ips.filter!`a.right != 0`.map!((x) => x.hatA / s);
+    // TODO: filtering not needed anymore
+    auto s = ips[0..$-2].map!`a.hatA`.sum;
+    auto areas = ips[0..$-2].map!((x) => x.hatA / s);
 
-    import std.random: dice, uniform;
+    import std.random: dice, uniform01;
     import std.math: abs;
     import mir.internal.math: exp;
 
-    import mir.random.generic.transformations : inverse, antiderivative, inverseAntiderivative;
+    import mir.random.tinflex.internal.transformations : inverse, antiderivative, inverseAntiderivative;
 
     double X;
     // acceptance-rejection sampling
-    while (true)
+    for (;;)
     {
+        import std.stdio;
+        writeln(areas);
         auto j = dice(rng, areas);
-        auto u = uniform(0, 1, rng);
+        auto u = uniform01(rng);
 
         if (abs(ips[j].hat.slope) > 1e-10)
         {
@@ -166,41 +179,19 @@ protected S tfSample(F0, S, RNG)
         }
 
         auto hatX = inverse(ips[j].hat(X), c);
-        double squeezeX;
-        if (ips[j].squeezeA > 0)
-            squeezeX = inverse(ips[j].squeeze(X), c);
-        else
-            squeezeX = 0;
+        double squeezeX = ips[j].squeezeA > 0 ? inverse(ips[j].squeeze(X), c) : 0;
 
-        if (u * hatX <= squeezeX)
+        immutable t = u * hatX;
+        if (t <= squeezeX)
         {
             break;
         }
-        else if (u * hatX <= exp(f0(X)))
+        else if (t <= exp(f0(X)))
         {
             break;
         }
-
     }
     return X;
-}
-
-/**
-Convenience method to sample Arrays with sample r
-This will be replaced with a more sophisticated version in later versions.
-
-Params:
-    r = random sampler
-    n = number of times to sample
-Returns: Randomly sampled Array of length n
-*/
-typeof(R.init())[] sample(R)(R r, int n)
-{
-    alias S = typeof(r());
-    S[] arr = new S[n];
-    foreach (ref s; arr)
-        s = r();
-    return arr;
 }
 
 ///
@@ -210,52 +201,7 @@ unittest
     auto f1 = (double x) => 10 * x - 4 * x ^^ 3;
     auto f2 = (double x) => 10 - 12 * x ^^ 2;
     auto tf = tinflex(f0, f1, f2, 1.5, [-3.0, -1.5, 0.0, 1.5, 3], 1.1);
-    auto values = tf.sample(100);
+    auto value = tf();
 
     // see more examples at mir/examples
-}
-
-/**
-(For testing only - will be moved)
-Generates a series of y-values that can be used for plotting.
-
-Params:
-    t = Tinflex generator
-    xs = x points to be plotted
-    hat = whether hat (true) or squeeze (false) should be plotted
-*/
-auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool hat = true)
-{
-    import std.algorithm.comparison : clamp;
-    S[] ys = new S[xs.length];
-    int k = 0;
-    S rMin = xs[0];
-    S rMax = xs[$ - 1];
-    outer: foreach (i, v; t.ips)
-    {
-        S l = clamp(v.x, rMin, rMax);
-        S r;
-        if (i < t.ips.length - 1)
-        {
-            r = clamp(t.ips[i + 1].x, rMin, rMax);
-        }
-        else
-        {
-            r = rMax;
-        }
-        while (xs[k] < r)
-        {
-            if (hat)
-                ys[k] = v.hat(xs[k]);
-            else
-                ys[k] = v.squeeze(xs[k]);
-
-            import mir.random.generic.transformations : inverse;
-            ys[k] = inverse(ys[k], v.c);
-            k++;
-            if (k >= ys.length)
-                break outer;
-        }
-    }
-    return ys;
 }

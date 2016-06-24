@@ -1,4 +1,4 @@
-module mir.random.generic.internal;
+module mir.random.tinflex.internal.linearfun;
 
 import std.traits : isCallable;
 
@@ -15,7 +15,7 @@ struct LinearFun(S)
     /// x-intercept
     S intercept; // aka alpha
 
-    this(S slope, S intercept, S _y)
+    this(in S slope, in S intercept, S _y)
     {
         this.slope = slope;
         this.intercept = intercept;
@@ -26,13 +26,16 @@ struct LinearFun(S)
     string toString() const
     {
         import std.format: format;
-        import std.math: abs;
+        import std.math: abs, isNaN;
         char sgn = intercept > 0 ? '+' : '-';
-        return format("%.2fx %c %.2f", slope, sgn, abs(intercept));
+        if (slope.isNaN)
+            return "empty#";
+        else
+            return format("%.2fx %c %.2f", slope, sgn, abs(intercept));
     }
 
     /// call the linear function with x
-    S opCall(S x) const
+    S opCall(in S x) const
     {
         return slope * x + intercept;
     }

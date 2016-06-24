@@ -48,7 +48,8 @@
             "dependencies": {
                 "ggplotd": "~>0.9.2"
             },
-            "sourceFiles": ["examples/plot_generic.d"]
+            "sourceFiles": ["examples/plot_generic.d"],
+            "versions": ["tinflex_plot"]
         },
         {
             "name": "plot-normal",

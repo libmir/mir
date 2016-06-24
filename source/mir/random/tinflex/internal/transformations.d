@@ -1,4 +1,4 @@
-module mir.random.generic.transformations;
+module mir.random.tinflex.internal.transformations;
 
 import std.traits: ReturnType;
 
@@ -10,30 +10,30 @@ auto transformToInterval(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S c)
 {
     import std.math: sgn;
     import mir.internal.math: pow, exp;
-    import mir.random.generic.types : intervalPoint, IntervalPoint;
+    import mir.random.tinflex.internal.types : intervalPoint, IntervalPoint;
 
     // TODO: use caching
     struct IP
     {
         IntervalPoint!S opCall(S x)
         {
-            return intervalPoint(x, t0(x), t1(x), t2(x), c);
+            return intervalPoint(t0(x), t1(x), t2(x), x, c);
         }
-        auto t0 (S)(S x)
+        auto t0 (S)(S x) const
         {
             if (c == 0)
                 return f0(x);
             else
                 return sgn(c) * exp(c * f0(x));
         }
-        auto t1 (S)(S x)
+        auto t1 (S)(S x) const
         {
             if (c == 0)
                 return f1(x);
             else
                 return c * t0(x) * f1(x);
         }
-        auto t2 (S)(S x)
+        auto t2 (S)(S x) const
         {
             if (c == 0)
                 return f2(x);

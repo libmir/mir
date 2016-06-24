@@ -3,8 +3,7 @@ Statistical analysis functions
 
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 */
-
-module mir.stat.analysis;
+module mir.random.tinflex.internal.stat.analysis;
 
 import std.range: isInputRange, isInfinite;
 import std.range;

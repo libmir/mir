@@ -1,8 +1,8 @@
-module mir.random.generic.area;
+module mir.random.tinflex.internal.area;
 
-import mir.random.generic.types : IntervalPoint;
-import mir.random.generic.internal : LinearFun;
-import std.traits : ReturnType;
+import mir.random.tinflex.internal.types : IntervalPoint;
+import mir.random.tinflex.internal.linearfun : LinearFun;
+import std.traits : ReturnType, isFloatingPoint;
 
 protected:
 
@@ -10,6 +10,7 @@ protected:
 Tuple of hat and squeeze function.
 */
 struct HatAndSqueeze(S)
+    if (isFloatingPoint!S)
 {
     LinearFun!S hat, squeeze;
 }
@@ -19,9 +20,10 @@ Determines the hat and squeeze function of an interval.
 Based on Theorem 1
 */
 HatAndSqueeze!S determineHatAndSqueeze(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S bl, in S br)
-    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S))
+    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
+        isFloatingPoint!S)
 {
-    import mir.random.generic.types: intervalPoint, determineType;
+    import mir.random.tinflex.internal.types: intervalPoint, determineType;
 
     auto s1 = intervalPoint(f0, f1, f2, bl);
     auto s2 = intervalPoint(f0, f1, f2, br);
@@ -31,14 +33,15 @@ HatAndSqueeze!S determineHatAndSqueeze(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 
 
 /// ditto
 HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint!S r)
+    if (isFloatingPoint!S)
 {
-    import mir.random.generic.internal : secant, tangent;
-    import mir.random.generic.types : FunType;
+    import mir.random.tinflex.internal.linearfun : secant, tangent;
+    import mir.random.tinflex.internal.types : FunType;
 
     // TODO: calculate only when needed
-    auto sec = secant(l.x, r.x, l.tx, r.tx);
-    auto t_l = tangent(l.x, l.tx, l.t1x);
-    auto t_r = tangent(r.x, r.tx, r.t1x);
+    immutable sec = secant(l.x, r.x, l.tx, r.tx);
+    immutable t_l = tangent(l.x, l.tx, l.t1x);
+    immutable t_r = tangent(r.x, r.tx, r.t1x);
 
     LinearFun!S t_m;
 
@@ -102,16 +105,20 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
             squeeze = t_m;
             break;
     }
+    import std.stdio;
+    writeln("determining hat for ", l);
+    writeln("type", l.type);
+
     return HatAndSqueeze!S(hat, squeeze);
 }
 
 // TODO: add more tests
 unittest
 {
-    import mir.random.generic.internal : linearFun;
-    auto f0 = (double x) => x * x;
-    auto f1 = (double x) => 2 * x;
-    auto f2 = (double x) => 2.0;
+    import mir.random.tinflex.internal.linearfun : linearFun;
+    const f0 = (double x) => x * x;
+    const f1 = (double x) => 2 * x;
+    const f2 = (double x) => 2.0;
 
     auto hs = determineHatAndSqueeze(f0, f1, f2, 1.0, 3);
     assert(hs.hat == linearFun(4.0, -3));
@@ -120,33 +127,48 @@ unittest
     hs = determineHatAndSqueeze(f0, f1, f2, -1.0, 1);
     assert(hs.hat == linearFun(0.0, 1));
     assert(hs.squeeze == linearFun(2.0, -1));
+
+    //hs = determineHatAndSqueeze(f0, f1, f2, -double.infinity, -1);
+    //import std.stdio;
+    //writeln(hs);
+    //assert(hs.hat == linearFun(0.0, 1));
+    //assert(hs.squeeze == linearFun(2.0, -1));
 }
 
 /**
-Computes the area below a function sh inbetween l and r.
+Computes the area below a function sh in-between l and r.
 Based on table 1 and general equation (3) from the Tinflex paper
 
     (F_T(sh(r))- F_T(sh(l))) / sh.slope
 
 Params:
-    sh: linear function
-    l: start of interval
-    r: end of interval
-    ly: start of interval (y-value)
-    ry: end of interval (y-value)
-    c:  interval type (see paper)
+    sh = linear function
+    l  = start of interval
+    r  = end of interval
+    ly = start of interval (y-value)
+    ry = end of interval (y-value)
+    c  =  interval type (see paper)
 
 Returns: Computed area below sh.
 */
 S area(S)(in LinearFun!S sh, in S l, in S r, in S ly, in S ry, in S c)
+    if (isFloatingPoint!S)
+out (result)
+{
+    import std.math : isNaN;
+    import std.traits : isFloatingPoint;
+    static if (isFloatingPoint!S)
+        assert(!isNaN(result), "Computed area can't be NaN");
+}
+body
 {
     import mir.internal.math: exp, log;
     import std.math: abs, sgn;
-    import mir.random.generic.transformations : antiderivative, inverse;
+    import mir.random.tinflex.internal.transformations : antiderivative, inverse;
 
     S area;
     // check difference to left and right starting point
-    byte s = (l - sh._y) > (sh._y - r) ? 1 : -1;
+    const byte s = (l - sh._y) > (sh._y - r) ? 1 : -1;
 
     // sh.y is the boundary point where f obtains its maximum
 
@@ -155,7 +177,7 @@ S area(S)(in LinearFun!S sh, in S l, in S r, in S ly, in S ry, in S c)
     {
         // T_c = log(x)
         // Error in table, see equation (4)
-        auto z = s * sh.slope * (r - l);
+        immutable z = s * sh.slope * (r - l);
         // check whether approximation is possible, page 5
         if (abs(z) < 1e-6)
         {
@@ -172,10 +194,11 @@ S area(S)(in LinearFun!S sh, in S l, in S r, in S ly, in S ry, in S c)
         // prevent numeric errors
         if (sgn(c) * sh(r) < 0 || sgn(c) * sh(l) < 0)
         {
-            return S.infinity;
+            assert("shouldn't happen");
+            //return S.infinity;
         }
 
-        auto z = s / sh.a * sh.slope * (r - l);
+        immutable z = s / sh.a * sh.slope * (r - l);
 
         if (c == 1)
         {
@@ -213,31 +236,39 @@ S area(S)(in LinearFun!S sh, in S l, in S r, in S ly, in S ry, in S c)
         {
             // T_c = -1 / x
             //area = (r - l) * c / (c + 1) * 1 / z * ((1 + z)^^((c + 1) / c) - 1);
+            import std.stdio;
             if (abs(sh.slope) > 1e-10)
             {
                 alias ad = antiderivative;
+                writeln("if", sh);
                 area = (ad(sh(r), c) - ad(sh(l), c)) / sh.slope;
+                writeln("area", area);
             }
             else
             {
+                writeln("else", sh);
                 area = inverse(sh.a, c) * (r - l);
             }
         }
     }
-    return area;
+    import std.math : isInfinity, isNaN;
+    if (isInfinity(area) || isNaN(area))
+        return 0.0;
+    else
+        return area;
 }
 
 unittest
 {
     // example from Tinflex
-    auto f0 = (double x) => -x^^4 + 5 * x^^2 - 4;
-    auto f1 = (double x) => 10 * x - 4 * x ^^ 3;
-    auto f2 = (double x) => 10 - 12 * x ^^ 2;
+    const f0 = (double x) => -x^^4 + 5 * x^^2 - 4;
+    const f1 = (double x) => 10 * x - 4 * x ^^ 3;
+    const f2 = (double x) => 10 - 12 * x ^^ 2;
     auto c = 1.5;
     auto rho = 1.1;
 
-    import mir.random.generic.types : determineType;
-    import mir.random.generic.transformations : transformToInterval;
+    import mir.random.tinflex.internal.types : determineType;
+    import mir.random.tinflex.internal.transformations : transformToInterval;
     auto intervalTransform = transformToInterval(f0, f1, f2, c);
 
     auto hats = [25.438585, 8.022358, 8.022358, 25.438585];
@@ -254,6 +285,8 @@ unittest
         auto s2 = intervalTransform(p2);
         s1.type = determineType(s1, s2);
         auto sh = determineHatAndSqueeze(s1, s2);
+
+        import std.stdio;
 
         auto aHat = area(sh.hat, s1.x, s2.x, s1.tx, s2.tx, c);
         assert(aHat.approxEqual(hats[i]));

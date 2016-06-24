@@ -4,7 +4,7 @@ Random distributions.
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 */
 
-module mir.stat.distributions;
+module mir.random.tinflex.internal.stat.distributions;
 
 /**
 Probability density function of the chi distribution with k degrees of freedom.
