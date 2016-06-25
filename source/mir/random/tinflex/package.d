@@ -127,14 +127,14 @@ struct Tinflex(F0, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tfSample(_f0, _ips, c, rndGen);
+        return tinflexImpl(_f0, _ips, c, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tfSample(_f0, _ips, c, rng);
+        return tinflexImpl(_f0, _ips, c, rng);
     }
 }
 
@@ -144,7 +144,7 @@ Params:
     ips = calculated inflection points
     rng = random number generator to use
 */
-protected S tfSample(F0, S, RNG)
+protected S tinflexImpl(F0, S, RNG)
           (in F0 f0, in IntervalPoint!S[] ips, in S c, ref RNG rng)
     if (is(ReturnType!F0 == S) &&
         isUniformRNG!RNG && isFloatingPoint!S)
