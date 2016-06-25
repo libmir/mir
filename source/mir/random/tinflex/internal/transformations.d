@@ -98,15 +98,15 @@ From: Table 1, column 3
 */
 S inverse(S)(in S x, in S c)
 {
-    import mir.internal.math : exp;
-    import std.math : sgn;
+    import mir.internal.math : exp, pow;
+    import std.math : fabs;
     if (c == 0)
         return exp(x);
     else if (c == -0.5)
         return 1 / x ^^ x;
     else if (c == 1)
         return x;
-    return (sgn(c) * x) ^^ (1 / c);
+    return pow(x, 1 / fabs(c));
 }
 
 unittest
