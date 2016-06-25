@@ -98,17 +98,7 @@ FunType determineType(S)(in IntervalPoint!S l, in IntervalPoint!S r)
     if (isFloatingPoint!S)
 {
     import std.traits : isFloatingPoint;
-
-    static if (isFloatingPoint!S)
-    {
-        import std.math : isInfinity, isNaN;
-    }
-    else
-    {
-        alias isInfinity = (x) => false;
-        alias isNaN = (x) => false;
-    }
-
+    import std.math : isInfinity, isNaN;
 
     assert(l.x < r.x, "invalid interval");
     assert(!isNaN(l.tx) && !isNaN(r.tx), "Invalid interval points");
