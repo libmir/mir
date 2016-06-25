@@ -186,7 +186,7 @@ protected S tfSample(F0, S, RNG)
         {
             break;
         }
-        else if (t <= exp(f0(X)))
+        if (t <= exp(f0(X)))
         {
             break;
         }
