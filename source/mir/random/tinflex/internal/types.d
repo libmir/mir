@@ -33,18 +33,16 @@ struct IntervalPoint(S)
         this.t2x = t2x;
         this.x = x;
         this.c = c;
-        import std.stdio;
-        writeln("CC", c);
     }
-
-    FunType type;
 
     LinearFun!S hat;
     LinearFun!S squeeze;
 
-    // make NaN
-    S hatA = 0;
-    S squeezeA = 0;
+    S hatA;
+    S squeezeA;
+
+    FunType type;
+
 
     // disallow NaN points
     invariant {
