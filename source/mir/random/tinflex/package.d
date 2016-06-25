@@ -150,8 +150,8 @@ protected S tfSample(F0, S, RNG)
     import std.algorithm: filter, joiner, map, sum;
 
     // TODO: filtering not needed anymore
-    auto s = ips[0..$-2].map!`a.hatA`.sum;
-    auto areas = ips[0..$-2].map!((x) => x.hatA / s);
+    auto totalAreaSum = ips[0..$-2].map!`a.hatA`.sum;
+    auto areas = ips[0..$-2].map!((x) => x.hatA / totalAreaSum);
 
     import std.random: dice, uniform01;
     import std.math: abs;
