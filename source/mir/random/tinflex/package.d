@@ -179,7 +179,7 @@ protected S tfSample(F0, S, RNG)
         }
 
         auto hatX = inverse(ips[j].hat(X), c);
-        double squeezeX = ips[j].squeezeA > 0 ? inverse(ips[j].squeeze(X), c) : 0;
+        auto squeezeX = ips[j].squeezeA > 0 ? inverse(ips[j].squeeze(X), c) : 0;
 
         immutable t = u * hatX;
         if (t <= squeezeX)
