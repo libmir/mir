@@ -13,11 +13,18 @@ Params:
     n = number of times to sample
 Returns: Randomly sampled Array of length n
 */
-typeof(R.init())[] sample(R)(R r, int n)
+typeof(R.init())[] sample(R, RNG)(R r, int n, RNG rnd)
 {
     alias S = typeof(r());
     S[] arr = new S[n];
     foreach (ref s; arr)
-        s = r();
+        s = r(rnd);
     return arr;
+}
+
+/// ditto
+typeof(R.init())[] sample(R, RNG)(R r, int n)
+{
+    import std.random : rndGen;
+    return sample(r, n, rndGen);
 }

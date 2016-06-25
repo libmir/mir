@@ -203,7 +203,9 @@ unittest
     auto f1 = (double x) => 10 * x - 4 * x ^^ 3;
     auto f2 = (double x) => 10 - 12 * x ^^ 2;
     auto tf = tinflex(f0, f1, f2, 1.5, [-3.0, -1.5, 0.0, 1.5, 3], 1.1);
-    auto value = tf();
+    import std.random : rndGen;
+    rndGen.seed(42);
+    auto value = tf(rndGen);
 
     // see more examples at mir/examples
 }

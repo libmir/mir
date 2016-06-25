@@ -21,7 +21,9 @@ Simple plotting
 */
 void test(F0, S)(Tinflex!(F0, S) tf, string fileName)
 {
-    auto values = tf.sample(2_000);
+    import std.random : rndGen;
+    rndGen.seed(42);
+    auto values = tf.sample(2_000, rndGen);
 
     // plot histogram
     auto aes = Aes!(typeof(values), "x")(values);
