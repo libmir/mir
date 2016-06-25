@@ -101,6 +101,7 @@ unittest
     // 1, 2, 1
     auto cdPoints = [1, 3, 4];
     auto ds = discrete(cdPoints);
+    assert(ds.cdPoints == cdPoints);
 
     auto obs = new uint[cdPoints.length];
     foreach (i; 0..1000)
