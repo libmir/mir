@@ -21,7 +21,7 @@ Based on Theorem 1
 HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint!S r)
 {
     import mir.random.tinflex.internal.linearfun : secant, tangent;
-    import mir.random.tinflex.internal.types : FunType;
+    import mir.random.tinflex.internal.types : determineType, FunType;
 
     // TODO: calculate only when needed
     immutable sec = secant(l.x, r.x, l.tx, r.tx);
@@ -39,8 +39,11 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
     LinearFun!S hat;
     LinearFun!S squeeze;
 
+    // could potentially be saved for subsequent calls
+    FunType type = determineType(l, r);
+
     with(FunType)
-    final switch(l.type)
+    final switch(type)
     {
         // concave near b_l and t_r(x) <= f(x) <= t_l(x)
         case T1a:
@@ -90,10 +93,6 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
             squeeze = t_m;
             break;
     }
-    import std.stdio;
-    writeln("determining hat for ", l);
-    writeln("type", l.type);
-
     return HatAndSqueeze!S(hat, squeeze);
 }
 
@@ -105,7 +104,6 @@ version(unittest) HatAndSqueeze!S determineHatAndSqueeze(F0, F1, F2, S)(in F0 f0
     auto c = 42;
     auto s1 = IntervalPoint!S(f0(bl), f1(bl), f2(bl), bl, 42);
     auto s2 = IntervalPoint!S(f0(bl), f1(br), f2(br), br, 42);
-    s1.type = determineType(s1, s2);
     return determineHatAndSqueeze(s1, s2);
 }
 
@@ -279,10 +277,7 @@ unittest
     {
         auto s1 = intervalTransform(p1);
         auto s2 = intervalTransform(p2);
-        s1.type = determineType(s1, s2);
         auto sh = determineHatAndSqueeze(s1, s2);
-
-        import std.stdio;
 
         auto aHat = area(sh.hat, s1.x, s2.x, s1.tx, s2.tx, c);
         assert(aHat.approxEqual(hats[i]));

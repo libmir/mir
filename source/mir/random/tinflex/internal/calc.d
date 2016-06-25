@@ -37,7 +37,6 @@ private void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr, i
     import mir.random.tinflex.internal.types : determineType;
     import mir.random.tinflex.internal.area: area, determineHatAndSqueeze;
 
-    ipl.type = determineType(ipl, ipr);
     auto sh = determineHatAndSqueeze(ipl, ipr);
     ipl.hat = sh.hat;
     ipl.squeeze = sh.squeeze;

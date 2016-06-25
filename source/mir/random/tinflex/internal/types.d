@@ -41,9 +41,6 @@ struct IntervalPoint(S)
     S hatA;
     S squeezeA;
 
-    FunType type;
-
-
     // disallow NaN points
     invariant {
         import std.math : isNaN;
