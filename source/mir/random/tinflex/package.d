@@ -91,7 +91,7 @@ struct Tinflex(F0, S)
     // global T_c family
     private const S c;
 
-    protected this(const F0 f0, const IntervalPoint!S[] ips, const S c)
+    package this(const F0 f0, const IntervalPoint!S[] ips, const S c)
     {
         _f0 = f0;
         _ips = ips;
