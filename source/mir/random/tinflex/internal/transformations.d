@@ -77,8 +77,7 @@ S antiderivative(S)(in S x, in S c)
         return -1 / x;
     else if (c == -1)
         return -log(-x);
-    else
-        return sgn(c) * c / (c + 1) * (sgn(c) * x)^^ ((c + 1) / c);
+    return sgn(c) * c / (c + 1) * (sgn(c) * x)^^ ((c + 1) / c);
 }
 
 unittest
@@ -107,8 +106,7 @@ S inverse(S)(in S x, in S c)
         return 1 / x ^^ x;
     else if (c == 1)
         return x;
-    else
-        return (sgn(c) * x) ^^ (1 / c);
+    return (sgn(c) * x) ^^ (1 / c);
 }
 
 unittest
@@ -142,6 +140,5 @@ S inverseAntiderivative(S)(in S x, in S c)
         return -1 / x;
     else if (c == -1)
         return exp(x);
-    else
-        return sgn(c) * (sgn(c) * (c + 1) / c * x) ^^ (c / (c + 1));
+    return sgn(c) * (sgn(c) * (c + 1) / c * x) ^^ (c / (c + 1));
 }
