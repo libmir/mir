@@ -103,7 +103,7 @@ S inverse(S)(in S x, in S c)
     if (c == 0)
         return exp(x);
     else if (c == -0.5)
-        return 1 / x ^^ x;
+        return pow(1 / x, x);
     else if (c == 1)
         return x;
     return pow(x, 1 / fabs(c));
