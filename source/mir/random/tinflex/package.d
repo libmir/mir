@@ -43,7 +43,7 @@ module mir.random.tinflex;
 
 import mir.random.tinflex.internal.types : IntervalPoint;
 
-import std.traits : ReturnType;
+import std.traits : ReturnType, isFloatingPoint;
 import std.random : isUniformRNG;
 
 
@@ -67,6 +67,7 @@ Returns:
 Tinflex!(F0, S) tinflex(F0, F1, F2, S)
                (in F0 f0, in F1 f1, in F2 f2,
                 S c, S[] points, S rho = 1.1)
+    if (isFloatingPoint!S)
 {
     import mir.random.tinflex.internal.calc : calcPoints;
     // pre-calculate all the points
@@ -79,6 +80,7 @@ Data body of the Tinflex algorithm.
 Can be used to sample from the distribution.
 */
 struct Tinflex(F0, S)
+    if (isFloatingPoint!S)
 {
     // density function
     private const F0 _f0;
@@ -145,7 +147,7 @@ Params:
 protected S tfSample(F0, S, RNG)
           (in F0 f0, in IntervalPoint!S[] ips, in S c, ref RNG rng)
     if (is(ReturnType!F0 == S) &&
-        isUniformRNG!RNG)
+        isUniformRNG!RNG && isFloatingPoint!S)
 {
     import std.algorithm: filter, joiner, map, sum;
 
@@ -159,7 +161,7 @@ protected S tfSample(F0, S, RNG)
 
     import mir.random.tinflex.internal.transformations : inverse, antiderivative, inverseAntiderivative;
 
-    double X;
+    double X = void;
     // acceptance-rejection sampling
     for (;;)
     {
