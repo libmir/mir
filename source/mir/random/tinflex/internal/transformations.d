@@ -69,15 +69,19 @@ Table 1, column 5
 */
 S antiderivative(S)(in S x, in S c)
 {
-    import std.math : sgn;
-    import mir.internal.math : exp, log;
+    import std.math : copysign;
+    import mir.internal.math : exp, log, pow;
     if (c == 0)
         return exp(x);
     else if (c == -0.5)
         return -1 / x;
     else if (c == -1)
         return -log(-x);
-    return sgn(c) * c / (c + 1) * (sgn(c) * x)^^ ((c + 1) / c);
+    auto d = c + 1;
+    if (c > 0)
+        return c / d * pow(x, d / c);
+    else
+        return - c / d * pow(-x, d / c);
 }
 
 unittest
@@ -132,13 +136,14 @@ Table 1, column 5
 */
 S inverseAntiderivative(S)(in S x, in S c)
 {
-    import mir.internal.math : exp, log;
-    import std.math : sgn;
+    import mir.internal.math : exp, log, pow;
+    import std.math : copysign, fabs;
     if (c == 0)
         return log(x);
     else if (c == -0.5)
         return -1 / x;
     else if (c == -1)
         return exp(x);
-    return sgn(c) * (sgn(c) * (c + 1) / c * x) ^^ (c / (c + 1));
+    immutable d = c + 1;
+    return copysign(pow(d / fabs(c) * x, c / d), c);
 }
