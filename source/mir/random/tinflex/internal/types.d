@@ -48,14 +48,10 @@ struct IntervalPoint(S)
     invariant {
         import std.math : isNaN;
         import std.meta : AliasSeq;
-        import std.traits : isFloatingPoint;
-        static if (isFloatingPoint!S)
+        alias seq =  AliasSeq!(x, c, tx, t1x, t2x);
+        foreach (i, v; seq)
         {
-            alias seq =  AliasSeq!(x, c, tx, t1x, t2x);
-            foreach (i, v; seq)
-            {
-                assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
-            }
+            assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
         }
     }
 }
@@ -95,9 +91,7 @@ Params:
     br = right side of the interval
 */
 FunType determineType(S)(in IntervalPoint!S l, in IntervalPoint!S r)
-    if (isFloatingPoint!S)
 {
-    import std.traits : isFloatingPoint;
     import std.math : isInfinity, isNaN;
 
     assert(l.x < r.x, "invalid interval");
@@ -171,8 +165,6 @@ FunType determineType(S)(in IntervalPoint!S l, in IntervalPoint!S r)
 /// convenience wrapper for unittests
 version(unittest) FunType determineType(F0, F1, F2, S)
                      (in F0 f0, in F1 f1, in F2 f2, in S bl, in S br)
-    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
-        (isFloatingPoint!S))
 {
     // c is not needed for the type determination, but it can't be NaN
     enum S c = 42;

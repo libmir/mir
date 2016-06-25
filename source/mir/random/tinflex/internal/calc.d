@@ -1,6 +1,6 @@
 module mir.random.tinflex.internal.calc;
 
-import std.traits: ReturnType, isFloatingPoint;
+import std.traits: ReturnType;
 import mir.random.tinflex.internal.types : IntervalPoint;
 
 /**
@@ -13,7 +13,6 @@ Returns:
     Splitting point within the interval
 */
 private auto arcmean(S)(S l, S r)
-    if (isFloatingPoint!S)
 {
     import std.math: atan, tan;
     import std.algorithm: swap;
@@ -34,7 +33,6 @@ Params:
     c   = Custom T_c family
 */
 private void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr, in S c)
-    if (isFloatingPoint!S)
 {
     import mir.random.tinflex.internal.types : determineType;
     import mir.random.tinflex.internal.area: area, determineHatAndSqueeze;
@@ -73,8 +71,6 @@ Returns: Array of IntervalPoints
 protected IntervalPoint!S[] calcPoints(F0, F1, F2, S)
                             (in F0 f0, in F1 f1, in F2 f2,
                              in S c, in S[] points, in S rho = 1.1, int maxIterations = 10_000)
-    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
-        (isFloatingPoint!S))
 {
     import mir.random.tinflex.internal.transformations : transformToInterval;
     import std.container.dlist : DList;

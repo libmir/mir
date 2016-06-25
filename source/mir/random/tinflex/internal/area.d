@@ -2,7 +2,7 @@ module mir.random.tinflex.internal.area;
 
 import mir.random.tinflex.internal.types : IntervalPoint;
 import mir.random.tinflex.internal.linearfun : LinearFun;
-import std.traits : ReturnType, isFloatingPoint;
+import std.traits : ReturnType;
 
 protected:
 
@@ -10,7 +10,6 @@ protected:
 Tuple of hat and squeeze function.
 */
 struct HatAndSqueeze(S)
-    if (isFloatingPoint!S)
 {
     LinearFun!S hat, squeeze;
 }
@@ -20,7 +19,6 @@ Determines the hat and squeeze function of an interval.
 Based on Theorem 1
 */
 HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint!S r)
-    if (isFloatingPoint!S)
 {
     import mir.random.tinflex.internal.linearfun : secant, tangent;
     import mir.random.tinflex.internal.types : FunType;
@@ -101,8 +99,6 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
 
 /// convenience wrapper for unittests
 version(unittest) HatAndSqueeze!S determineHatAndSqueeze(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S bl, in S br)
-    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
-        isFloatingPoint!S)
 {
     import mir.random.tinflex.internal.types: determineType;
     // c is not required for this test
@@ -155,13 +151,10 @@ Params:
 Returns: Computed area below sh.
 */
 S area(S)(in LinearFun!S sh, in S l, in S r, in S ly, in S ry, in S c)
-    if (isFloatingPoint!S)
 out (result)
 {
     import std.math : isNaN;
-    import std.traits : isFloatingPoint;
-    static if (isFloatingPoint!S)
-        assert(!isNaN(result), "Computed area can't be NaN");
+    assert(!isNaN(result), "Computed area can't be NaN");
 }
 body
 {

@@ -146,8 +146,7 @@ Params:
 */
 protected S tinflexImpl(F0, S, RNG)
           (in F0 f0, in IntervalPoint!S[] ips, in S c, ref RNG rng)
-    if (is(ReturnType!F0 == S) &&
-        isUniformRNG!RNG && isFloatingPoint!S)
+    if (isUniformRNG!RNG)
 {
     import std.algorithm: filter, joiner, map, sum;
 
