@@ -26,8 +26,8 @@ ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 # xy/zz is in variable PACKAGE_xy_zz. This allows automation in iterating
 # packages and their modules.
 MIR_PACKAGES = mir $(addprefix mir/,\
-			   blas combinatorics ndslice \
-			   model/lda \
+			   blas combinatorics model/lda ndslice \
+			   random \
 			   sparse sparse/blas)
 
 PACKAGE_mir = math sum
@@ -35,6 +35,7 @@ PACKAGE_mir_blas = package dot gemm gemv
 PACKAGE_mir_combinatorics = package
 PACKAGE_mir_model_lda = hoffman
 PACKAGE_mir_ndslice = package iteration selection slice
+PACKAGE_mir_random = mixture
 PACKAGE_mir_sparse = package
 PACKAGE_mir_sparse_blas = package axpy dot gemm gemv
 
