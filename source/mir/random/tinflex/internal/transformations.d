@@ -4,20 +4,28 @@ import std.traits: ReturnType;
 
 /**
 Create a c-transformation, based on a function and it's first two derivatives
+
+Params:
+    f0 = PDF function
+    f1 = first derivative
+    f2 = second derivative
+
+Returns:
+    Struct with the transformed functions that can be used
+    to generate IntervalPoints given a specific point x
 */
 auto transformToInterval(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S c)
     if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S))
 {
     import std.math: sgn;
     import mir.internal.math: pow, exp;
-    import mir.random.tinflex.internal.types : intervalPoint, IntervalPoint;
+    import mir.random.tinflex.internal.types : IntervalPoint;
 
-    // TODO: use caching
     struct IP
     {
         IntervalPoint!S opCall(S x)
         {
-            return intervalPoint(t0(x), t1(x), t2(x), x, c);
+            return IntervalPoint!S(t0(x), t1(x), t2(x), x, c);
         }
         auto t0 (S)(S x) const
         {

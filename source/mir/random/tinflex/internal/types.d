@@ -60,22 +60,6 @@ struct IntervalPoint(S)
     }
 }
 
-/// ditto
-IntervalPoint!S intervalPoint(F0, F1, F2, S)
-                             (in F0 f0, in F1 f1, in F2 f2, in S x, in S c = 1.5)
-    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
-        (isFloatingPoint!S))
-{
-    return intervalPoint(f0(x), f1(x), f2(x), x, c);
-}
-
-IntervalPoint!S intervalPoint(S)
-                             (in S f0, in S f1, in S f2, in S x, in S c = 1.5)
-    if (isFloatingPoint!S)
-{
-    return IntervalPoint!S(f0, f1, f2, x, c);
-}
-
 /**
 Notations of different function types according to the Tinflex paper.
 It is based on this naming scheme:
@@ -110,15 +94,6 @@ Params:
     bl = left side of the interval
     br = right side of the interval
 */
-FunType determineType(F0, F1, F2, S)
-                     (in F0 f0, in F1 f1, in F2 f2, in S bl, in S br)
-    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
-        (isFloatingPoint!S))
-{
-    return determineType(intervalPoint(f0, f1, f2, bl), intervalPoint(f0, f1, f2, br));
-}
-
-/// ditto
 FunType determineType(S)(in IntervalPoint!S l, in IntervalPoint!S r)
     if (isFloatingPoint!S)
 {
@@ -201,6 +176,18 @@ FunType determineType(S)(in IntervalPoint!S l, in IntervalPoint!S r)
             return T4b;
     }
     assert(0, "Unknown type");
+}
+
+/// convenience wrapper for unittests
+version(unittest) FunType determineType(F0, F1, F2, S)
+                     (in F0 f0, in F1 f1, in F2 f2, in S bl, in S br)
+    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
+        (isFloatingPoint!S))
+{
+    // c is not needed for the type determination, but it can't be NaN
+    enum S c = 42;
+    return determineType(IntervalPoint!S(f0(bl), f1(bl), f2(bl), bl, c),
+                         IntervalPoint!S(f0(br), f1(br), f2(br), br, c));
 }
 
 unittest
@@ -312,5 +299,3 @@ unittest
         assert(determineType(f0, f1, f2, 1.0, 3) == T4b);
     }
 }
-
-

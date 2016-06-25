@@ -19,19 +19,6 @@ struct HatAndSqueeze(S)
 Determines the hat and squeeze function of an interval.
 Based on Theorem 1
 */
-HatAndSqueeze!S determineHatAndSqueeze(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S bl, in S br)
-    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
-        isFloatingPoint!S)
-{
-    import mir.random.tinflex.internal.types: intervalPoint, determineType;
-
-    auto s1 = intervalPoint(f0, f1, f2, bl);
-    auto s2 = intervalPoint(f0, f1, f2, br);
-    s1.type = determineType(s1, s2);
-    return determineHatAndSqueeze(s1, s2);
-}
-
-/// ditto
 HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint!S r)
     if (isFloatingPoint!S)
 {
@@ -111,6 +98,22 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
 
     return HatAndSqueeze!S(hat, squeeze);
 }
+
+/// convenience wrapper for unittests
+version(unittest) HatAndSqueeze!S determineHatAndSqueeze(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S bl, in S br)
+    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S) &&
+        isFloatingPoint!S)
+{
+    import mir.random.tinflex.internal.types: determineType;
+    // c is not required for this test
+    auto c = 42;
+    auto s1 = IntervalPoint!S(f0(bl), f1(bl), f2(bl), bl, 42);
+    auto s2 = IntervalPoint!S(f0(bl), f1(br), f2(br), br, 42);
+    s1.type = determineType(s1, s2);
+    return determineHatAndSqueeze(s1, s2);
+}
+
+/// ditto
 
 // TODO: add more tests
 unittest
