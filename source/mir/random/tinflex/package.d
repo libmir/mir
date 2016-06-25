@@ -166,7 +166,7 @@ protected S tfSample(F0, S, RNG)
         import std.stdio;
         writeln(areas);
         auto j = dice(rng, areas);
-        auto u = uniform01(rng);
+        S u = uniform01!S(rng);
 
         if (abs(ips[j].hat.slope) > 1e-10)
         {
