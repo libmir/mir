@@ -70,43 +70,39 @@ Discrete!T discrete(T)(const(T)[] cdPoints)
 unittest
 {
     // 10%, 20%, 20%, 40%, 10%
-    auto probs = [0.1, 0.3, 0.5, 0.9, 1];
-    auto ds = discrete(probs);
+    auto cdPoints = [0.1, 0.3, 0.5, 0.9, 1];
+    auto ds = discrete(cdPoints);
 
     // sample from the discrete distribution
-    uint[size_t] obs;
-    foreach (i; 0..10_000)
+    auto obs = new uint[cdPoints.length];
+    foreach (i; 0..1000)
         obs[ds()]++;
 }
 
 unittest
 {
-    import std.random : rndGen;
-    rndGen.seed(42);
+    import std.random : Random;
+    auto rndGen = Random(42);
 
     // 10%, 20%, 20%, 40%, 10%
-    auto probs = [0.1, 0.3, 0.5, 0.9, 1];
-    auto ds = discrete(probs);
+    auto cdPoints = [0.1, 0.3, 0.5, 0.9, 1];
+    auto ds = discrete(cdPoints);
 
-    uint[size_t] obs;
-    foreach (i; 0..10_000)
+    auto obs = new uint[cdPoints.length];
+    foreach (i; 0..1000)
         obs[ds(rndGen)]++;
-
-    assert(obs.keys.length == probs.length, "Invalid element sampled");
 }
 
 unittest
 {
-    import std.random : rndGen;
-    rndGen.seed(42);
+    import std.random : Random;
+    auto rndGen = Random(42);
 
     // 1, 2, 1
     auto cdPoints = [1, 3, 4];
     auto ds = discrete(cdPoints);
 
-    uint[size_t] obs;
-    foreach (i; 0..10_000)
+    auto obs = new uint[cdPoints.length];
+    foreach (i; 0..1000)
         obs[ds(rndGen)]++;
-
-    assert(obs.keys.length == cdPoints.length, "Invalid element sampled");
 }
