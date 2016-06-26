@@ -44,6 +44,19 @@ but increases the speed of sampling. For example an efficiency of 1.1 means
 that 10% of all drawn uniform numbers don't match the target distribution
 and need be resampled.
 
+$(H3 Transformation function (T_c))
+<a name="t_c_family></a>
+
+The Tinflex algorithm uses a family of T_c transformations.
+
+$(UL
+    $(LI For unbounded domains, `c > -1` is required)
+    $(LI For unbounded densities, `c` must be sufficiently small, but should
+         be great than -1. A common choice is `-0.5`)
+    $(LI `c=0` is the pure `log` transformation and thus decreases the
+         vulnerability for under- and overflows)
+)
+
 References:
     Botts, Carsten, Wolfgang Hörmann, and Josef Leydold.
     "$(LINK2 http://epub.wu-wien.ac.at/3158/1/techreport-110.pdf,
@@ -72,7 +85,7 @@ Params:
     f0 = probability density function of the distribution
     f1 = first derivative of f0
     f2 = second derivative of f0
-    c = T_c family
+    c = $(LINK2 #t_c_family, T_c family)
     points = non-overlapping partitioning with at most one inflection point per interval
     rho = efficiency of the Tinflex algorithm
 
@@ -145,9 +158,8 @@ struct Tinflex(F0, S)
     }
 
     /**
-    Sample n times from the distribution.
+    Sample a value from the distribution.
     Params:
-        n = number of times to samples
         rng = random number generator to use
     Returns:
         Array of length n with the samples
@@ -171,7 +183,10 @@ Sample from the distribution with generated, non-overlapping hat and squeeze fun
 Uses acceptance-rejection algorithm.
 
 Params:
-    ips = calculated inflection points
+    f0 = probability density function of the distribution
+    gps = calculated inflection points
+    ds = discrete distribution sampler for hat areas
+    c = $(LINK2 #t_c_family, T_c family)
     rng = random number generator to use
 See_Also:
    $(LINK2 https://en.wikipedia.org/wiki/Rejection_sampling,
