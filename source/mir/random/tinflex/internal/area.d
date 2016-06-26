@@ -23,18 +23,12 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
     import mir.random.tinflex.internal.linearfun : secant, tangent;
     import mir.random.tinflex.internal.types : determineType, FunType;
 
-    // TODO: calculate only when needed
-    immutable sec = secant(l.x, r.x, l.tx, r.tx);
-    immutable t_l = tangent(l.x, l.tx, l.t1x);
-    immutable t_r = tangent(r.x, r.tx, r.t1x);
-
-    LinearFun!S t_m;
+    enum sec = "secant(l.x, r.x, l.tx, r.tx)";
+    enum t_l = "tangent(l.x, l.tx, l.t1x)";
+    enum t_r = "tangent(r.x, r.tx, r.t1x)";
 
     // t_m is t_l or t_r wherever f(x) larger
-    if (l.tx > r.tx)
-        t_m = t_l;
-    else
-        t_m = t_r;
+    enum t_m = "(l.tx > r.tx) ? " ~ t_l ~ " : " ~ t_r;
 
     LinearFun!S hat;
     LinearFun!S squeeze;
@@ -47,50 +41,50 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
     {
         // concave near b_l and t_r(x) <= f(x) <= t_l(x)
         case T1a:
-            hat = t_l;
-            squeeze = t_r;
+            hat = mixin(t_l);
+            squeeze = mixin(t_r);
             break;
 
         // convex near b_l and t_l(x) <= f(x) <= t_r(x)
         case T1b:
-            hat = t_r;
-            squeeze = t_l;
+            hat = mixin(t_r);
+            squeeze = mixin(t_l);
             break;
 
         // concave near b_l and r(x) <= f(x) <= t_l(x)
         case T2a:
-            hat = t_l;
-            squeeze = sec;
+            hat = mixin(t_l);
+            squeeze = mixin(sec);
             break;
 
-        // convex near b_l and r(x) <= f(x) <= t_r(x)
+        // convex near b_l and r(x) <= f(x) <= mixin(t_r)(x)
         case T2b:
-            hat = t_r;
-            squeeze = sec;
+            hat = mixin(t_r);
+            squeeze = mixin(sec);
             break;
 
-        // concave near b_l and t_r(x) <= f(x) <= r(x)
+        // concave near b_l and mixin(t_r)(x) <= f(x) <= r(x)
         case T3a:
-            hat = sec;
-            squeeze = t_r;
+            hat = mixin(sec);
+            squeeze = mixin(t_r);
             break;
 
-        // convex near b_l and t_l(x) <= f(x) <= r(x)
+        // convex near b_l and mixin(t_l)(x) <= f(x) <= r(x)
         case T3b:
-            hat = sec;
-            squeeze = t_l;
+            hat = mixin(sec);
+            squeeze = mixin(t_l);
             break;
 
-        // concave on [b_l, b_r] and r(x) <= f(x) <= t_m(x)
+        // concave on [b_l, b_r] and r(x) <= f(x) <= mixin(t_m)(x)
         case T4a:
-            hat = t_m;
-            squeeze = sec;
+            hat = mixin(t_m);
+            squeeze = mixin(sec);
             break;
 
         // convex on [b_l, b_r] and t_m(x) <= f(x) <= r(x)
         case T4b:
-            hat = sec;
-            squeeze = t_m;
+            hat = mixin(sec);
+            squeeze = mixin(t_m);
             break;
     }
     return HatAndSqueeze!S(hat, squeeze);
@@ -151,9 +145,9 @@ body
     import std.math: abs, sgn;
     import mir.random.tinflex.internal.transformations : antiderivative, inverse;
 
-    S area;
+    S area = void;
     // check difference to left and right starting point
-    const byte s = (l - sh._y) > (sh._y - r) ? 1 : -1;
+    const byte leftOrRight = (l - sh._y) > (sh._y - r) ? 1 : -1;
 
     // sh.y is the boundary point where f obtains its maximum
 
@@ -162,7 +156,7 @@ body
     {
         // T_c = log(x)
         // Error in table, see equation (4)
-        immutable z = s * sh.slope * (r - l);
+        immutable z = leftOrRight * sh.slope * (r - l);
         // check whether approximation is possible, page 5
         if (abs(z) < 1e-6)
         {
@@ -183,7 +177,7 @@ body
             //return S.infinity;
         }
 
-        immutable z = s / sh.a * sh.slope * (r - l);
+        immutable z = leftOrRight / sh.a * sh.slope * (r - l);
 
         if (c == 1)
         {
