@@ -11,7 +11,7 @@ module mir.random.discrete;
 import std.traits : isNumeric;
 
 /**
-_Discrete distribution sampler.
+Setup a _discrete distribution sampler.
 Given an array of cumulative density points `cdPoints`,
 a _discrete distribution is defined.
 The cumulative density points can be calculated from probabilities or counts
@@ -28,7 +28,14 @@ Discrete!T discrete(T)(const(T)[] cdPoints)
     return Discrete!T(cdPoints);
 }
 
-/// ditto
+/**
+_Discrete distribution sampler that draws random values from a _discrete
+distribution given an array of the respective cumulative density points.
+`cdPoints` is an array of the cummulative sum over the probabilities
+or counts of a _discrete distribution without a starting zero.
+
+Complexity: O(log n) where n is the number of `cdPoints`.
+*/
 struct Discrete(T)
     if (isNumeric!T)
 {
@@ -37,7 +44,14 @@ struct Discrete(T)
     private const(T)[] _cdPoints;
     private SortedRange!(const(T)[], "a <= b") r;
 
-    ///
+    /**
+    The cumulative density points `cdPoints` are assumed to be sorted and given
+    without a starting zero. They can be calculated with
+    `std.algorithm.cumulativeFold` from probabilities or counts.
+
+    Params:
+        cdPoints = cumulative density points
+    */
     this(const(T)[] cdPoints)
     {
         _cdPoints = cdPoints;
