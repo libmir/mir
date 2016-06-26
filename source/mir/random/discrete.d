@@ -88,8 +88,8 @@ struct Discrete(T)
 // test with cumulative probs
 unittest
 {
-    import std.random : Random;
-    auto gen = Random(42);
+    import std.random : Mt19937;
+    auto gen = Mt19937(42);
 
     // 10%, 20%, 20%, 40%, 10%
     auto cdPoints = [0.1, 0.3, 0.5, 0.9, 1];
@@ -105,8 +105,8 @@ unittest
 // test with cumulative count
 unittest
 {
-    import std.random : Random;
-    auto gen = Random(42);
+    import std.random : Mt19937;
+    auto gen = Mt19937(42);
 
     // 1, 2, 1
     auto cdPoints = [1, 3, 4];
@@ -122,8 +122,8 @@ unittest
 // test with zero probabilities
 unittest
 {
-    import std.random : Random;
-    auto gen = Random(42);
+    import std.random : Mt19937;
+    auto gen = Mt19937(42);
 
     // 0, 1, 2, 0, 1
     auto cdPoints = [0, 1, 3, 3, 4];
