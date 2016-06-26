@@ -30,7 +30,7 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
 
     LinearFun!S t_m;
 
-    // t_m is t_l or t_r wherever larger f(x) larger
+    // t_m is t_l or t_r wherever f(x) larger
     if (l.tx > r.tx)
         t_m = t_l;
     else
@@ -96,41 +96,31 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
     return HatAndSqueeze!S(hat, squeeze);
 }
 
-/// convenience wrapper for unittests
-version(unittest) HatAndSqueeze!S determineHatAndSqueeze(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S bl, in S br)
-{
-    import mir.random.tinflex.internal.types: determineType;
-    // c is not required for this test
-    auto c = 42;
-    auto s1 = IntervalPoint!S(f0(bl), f1(bl), f2(bl), bl, 42);
-    auto s2 = IntervalPoint!S(f0(bl), f1(br), f2(br), br, 42);
-    return determineHatAndSqueeze(s1, s2);
-}
-
-/// ditto
-
 // TODO: add more tests
 unittest
 {
+    import std.meta : AliasSeq;
+    import mir.random.tinflex.internal.types: determineType;
     import mir.random.tinflex.internal.linearfun : linearFun;
-    const f0 = (double x) => x * x;
-    const f1 = (double x) => 2 * x;
-    const f2 = (double x) => 2.0;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        const f0 = (S x) => x * x;
+        const f1 = (S x) => 2 * x;
+        const f2 = (S x) => 2.0;
+        auto c = 42; // not required for this test
+        auto dhs = (S l, S r) => determineHatAndSqueeze(IntervalPoint!S(f0(l), f1(l), f2(l), l, c),
+                                                        IntervalPoint!S(f0(r), f1(r), f2(r), r, c));
 
-    auto hs = determineHatAndSqueeze(f0, f1, f2, 1.0, 3);
-    import std.stdio;
-    //assert(hs.hat == linearFun(4.0, -3));
-    //assert(hs.squeeze == linearFun(6.0, -9));
+        // test left side
+        auto hs1 = dhs(-1, 1);
+        assert(hs1.hat == linearFun!S(0.0, 1));
+        assert(hs1.squeeze == linearFun!S(2.0, -1));
 
-    hs = determineHatAndSqueeze(f0, f1, f2, -1.0, 1);
-    assert(hs.hat == linearFun(0.0, 1));
-    assert(hs.squeeze == linearFun(2.0, -1));
-
-    //hs = determineHatAndSqueeze(f0, f1, f2, -double.infinity, -1);
-    //import std.stdio;
-    //writeln(hs);
-    //assert(hs.hat == linearFun(0.0, 1));
-    //assert(hs.squeeze == linearFun(2.0, -1));
+        // test right side
+        auto hs2 = dhs(1, 3);
+        assert(hs2.hat == linearFun!S(4.0, -3));
+        assert(hs2.squeeze == linearFun!S(6.0, -9));
+    }
 }
 
 /**
@@ -249,37 +239,43 @@ body
         return area;
 }
 
+// example from Tinflex
 unittest
 {
-    // example from Tinflex
-    const f0 = (double x) => -x^^4 + 5 * x^^2 - 4;
-    const f1 = (double x) => 10 * x - 4 * x ^^ 3;
-    const f2 = (double x) => 10 - 12 * x ^^ 2;
-    auto c = 1.5;
-    auto rho = 1.1;
-
-    import mir.random.tinflex.internal.types : determineType;
     import mir.random.tinflex.internal.transformations : transformToInterval;
-    auto intervalTransform = transformToInterval(f0, f1, f2, c);
+    import mir.random.tinflex.internal.types : determineType;
+    import std.math: approxEqual;
+    import std.meta : AliasSeq;
+    import std.range: dropOne, lockstep, save;
 
-    auto hats = [25.438585, 8.022358, 8.022358, 25.438585];
-    auto sqs = [0, 0.027473, 0.027473, 0];
+    enum rho = 1.1;
 
     // inflection points: -1.7620, -1.4012, 1.4012, 1.7620
-    auto points = [-3.0, -1.5, 0.0, 1.5, 3];
-    import std.range: dropOne, save, zip;
-    import std.math: approxEqual;
-    auto i = 0;
-    foreach (p1, p2; points.zip(points.save.dropOne))
-    {
-        auto s1 = intervalTransform(p1);
-        auto s2 = intervalTransform(p2);
-        auto sh = determineHatAndSqueeze(s1, s2);
+    enum points = [-3.0, -1.5, 0.0, 1.5, 3];
+    enum hats = [25.438585, 8.022358, 8.022358, 25.438585];
+    enum sqs = [0, 0.027473, 0.027473, 0];
 
-        auto aHat = area(sh.hat, s1.x, s2.x, s1.tx, s2.tx, c);
-        assert(aHat.approxEqual(hats[i]));
-        auto aSqueeze = area(sh.squeeze, s1.x, s2.x, s1.tx, s2.tx, c);
-        assert(aSqueeze.approxEqual(sqs[i]));
-        i++;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+        const f1 = (S x) => 10 * x - 4 * x ^^ 3;
+        const f2 = (S x) => 10 - 12 * x ^^ 2;
+        S c = 1.5;
+
+        auto intervalTransform = transformToInterval(f0, f1, f2, c);
+
+        // calculate the area of all intervals
+        foreach (i, p1, p2; points.lockstep(points.save.dropOne))
+        {
+            auto s1 = intervalTransform(p1);
+            auto s2 = intervalTransform(p2);
+            auto sh = determineHatAndSqueeze(s1, s2);
+
+            auto aHat = area(sh.hat, s1.x, s2.x, s1.tx, s2.tx, c);
+            assert(aHat.approxEqual(hats[i]));
+
+            auto aSqueeze = area(sh.squeeze, s1.x, s2.x, s1.tx, s2.tx, c);
+            assert(aSqueeze.approxEqual(sqs[i]));
+        }
     }
 }

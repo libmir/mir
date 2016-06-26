@@ -182,7 +182,8 @@ protected S tinflexImpl(F0, S, RNG)
         }
         else
         {
-            X = (1-u) * gps[j].x + u * gps[j + 1].x;
+            // j: [0, |gps| - 2] (last gp is excluded)
+            X = (1 - u) * gps[j].x + u * gps[j + 1].x;
         }
 
         auto hatX = inverse(gps[j].hat(X), c);

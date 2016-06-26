@@ -89,14 +89,18 @@ LinearFun!S secant(S)(in S xl, in S xr, in S yl, in S yr)
 
 unittest
 {
-    assert(secant((double x) => x ^^ 2, 1., 3) == linearFun(4., -3));
-    assert(secant((double x) => x ^^ 2, 3., 5) == linearFun(8., -15));
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        assert(secant((S x) => x ^^ 2, S(1), S(3)) == linearFun(S(4), S(-3)));
+        assert(secant((S x) => x ^^ 2, S(3), S(5)) == linearFun(S(8), S(-15)));
+    }
 }
 
 /**
 Calculate tangent of any point (x, y) given it's derivate f1
 */
-LinearFun!(typeof(F1.init(S.init))) tangent(F1, S)(in F1 f1, in S x, in S y)
+LinearFun!S tangent(F1, S)(in F1 f1, in S x, in S y)
     if (isCallable!F1)
 {
     return tangent(x, y, f1(x));
@@ -105,21 +109,32 @@ LinearFun!(typeof(F1.init(S.init))) tangent(F1, S)(in F1 f1, in S x, in S y)
 /**
 Calculate tangent of any point (x, y) given it's calculated slope
 */
-LinearFun!(S) tangent(S)(in S x, in S y, in S slope)
+LinearFun!S tangent(S)(in S x, in S y, in S slope)
 {
     return LinearFun!S(slope, slope * (-x) + y, x);
 }
 
 unittest
 {
-    assert(tangent((double x) => 2 * x, 1.0, 1) == linearFun(2.0, -1));
-    assert(tangent((double x) => 2 * x, 0.0, 0) == linearFun(0.0, 0));
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        assert(tangent((S x) => 2 * x, S(1), S(1)) == linearFun(S(2), S(-1)));
+        assert(tangent((S x) => 2 * x, S(0), S(0)) == linearFun(S(0), S(0)));
+    }
+}
 
-    import std.math : PI, approxEqual;
+unittest
+{
     import mir.internal.math : cos;
-    assert(tangent((real x) => cos(x), 0.0, 0) == linearFun!real(1.0, 0));
+    import std.math : PI, approxEqual;
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        assert(tangent((S x) => cos(x), S(0.0), S(0)) == linearFun!S(S(1.0), S(0)));
 
-    auto t = tangent((real x) => cos(x),PI / 2, 1);
-    assert(t.slope.approxEqual(0));
-    assert(t.intercept.approxEqual(1));
+        auto t = tangent((S x) => cos(x), S(PI / 2), S(1));
+        assert(t.slope.approxEqual(0));
+        assert(t.intercept.approxEqual(1));
+    }
 }
