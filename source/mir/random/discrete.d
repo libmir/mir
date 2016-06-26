@@ -61,7 +61,7 @@ struct Discrete(T)
     size_t opCall(RNG)(ref RNG gen) const
     {
         import std.random : uniform;
-        T v = uniform(0, _cdPoints[$-1], gen);
+        T v = uniform!("[)", T, T)(0, _cdPoints[$-1], gen);
         return (cast(SortedRange!(const(T)[], "a <= b")) r).lowerBound(v).length;
     }
 }
