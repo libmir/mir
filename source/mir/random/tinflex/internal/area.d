@@ -141,7 +141,7 @@ out (result)
 }
 body
 {
-    import mir.internal.math: exp, log;
+    import mir.internal.math: copysign, exp, log;
     import std.math: abs, sgn;
     import mir.random.tinflex.internal.transformations : antiderivative, inverse;
 
@@ -170,11 +170,11 @@ body
     }
     else
     {
-        // prevent numeric errors
-        if (sgn(c) * sh(r) < 0 || sgn(c) * sh(l) < 0)
+        // for c < 0, the tangent result must result in a valid (bounded) hat function
+        if (copysign(sh(r), c) < 0 || copysign(sh(l), c) < 0)
         {
-            assert("shouldn't happen");
-            //return S.infinity;
+            // returning infinity will yield a split on this interval.
+            return S.infinity;
         }
 
         immutable z = leftOrRight / sh.a * sh.slope * (r - l);

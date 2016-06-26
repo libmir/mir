@@ -100,7 +100,7 @@ Tinflex!(F0, S) tinflex(F0, F1, F2, S)
     // pre-calculate all the points
     import mir.random.tinflex.internal.calc : calcPoints;
     const gps = calcPoints(f0, f1, f2, c, points, 1.1);
-    return Tinflex!(F0, S)(f0, gps, c);
+    return Tinflex!(F0, S)(f0, gps);
 }
 
 /**
@@ -119,14 +119,10 @@ struct Tinflex(F0, S)
     // discrete density sampler
     private const Discrete!S ds;
 
-    // global T_c family
-    private const S c;
-
-    package this(const F0 f0, const GenerationPoint!S[] gps, const S c)
+    package this(const F0 f0, const GenerationPoint!S[] gps)
     {
         _f0 = f0;
         _gps = gps;
-        this.c = c;
 
         // pre-calculate cumulative density points
         auto cdPoints = new S[gps.length - 1];
@@ -167,14 +163,14 @@ struct Tinflex(F0, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tinflexImpl(_f0, _gps, ds, c, rndGen);
+        return tinflexImpl(_f0, _gps, ds, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tinflexImpl(_f0, _gps, ds, c, rng);
+        return tinflexImpl(_f0, _gps, ds, rng);
     }
 }
 
@@ -186,34 +182,36 @@ Params:
     f0 = probability density function of the distribution
     gps = calculated inflection points
     ds = discrete distribution sampler for hat areas
-    c = $(LINK2 #t_c_family, T_c family)
     rng = random number generator to use
 See_Also:
    $(LINK2 https://en.wikipedia.org/wiki/Rejection_sampling,
      Acceptance-rejection sampling)
 */
 protected S tinflexImpl(F0, S, RNG)
-          (in F0 f0, in GenerationPoint!S[] gps, in Discrete!S ds, in S c, ref RNG rng)
+          (in F0 f0, in GenerationPoint!S[] gps, in Discrete!S ds, ref RNG rng)
     if (isUniformRNG!RNG)
 {
-    import std.random: dice, uniform;
-    import std.math: abs;
     import mir.internal.math: exp;
-
     import mir.random.tinflex.internal.transformations : inverse, antiderivative, inverseAntiderivative;
+    import std.math: abs;
+    import std.random: dice, uniform;
 
     S X = void;
     // acceptance-rejection sampling
     for (;;)
     {
         // sample from interval with density proportional to their hatArea
-        auto rndInt = ds(rng);
+        auto rndInt = ds(rng); // J in Tinflex paper
         S u = uniform!("()", S, S)(0, 1, rng);
+        immutable c = gps[rndInt].c;
 
         if (abs(gps[rndInt].hat.slope) > 1e-10)
         {
-            X = gps[rndInt].hat._y + (inverseAntiderivative(antiderivative(gps[rndInt].hat(gps[rndInt].x), c)
-                          + gps[rndInt].hat.slope * u, c) - gps[rndInt].hat.a) / gps[rndInt].hat.slope;
+            // F_T(x)
+            immutable ad = antiderivative(gps[rndInt].hat(gps[rndInt].x), c);
+            // F_T(x)^-1
+            immutable inverseAd = inverseAntiderivative(ad + gps[rndInt].hat.slope * u, c);
+            X = gps[rndInt].hat._y + (inverseAd - gps[rndInt].hat.a) / gps[rndInt].hat.slope;
         }
         else
         {
@@ -226,16 +224,13 @@ protected S tinflexImpl(F0, S, RNG)
 
         immutable t = u * hatX;
 
-        // U * h(c) < s(X)
+        // U * h(c) < s(X)  "squeeze evaluation"
         if (t <= squeezeX)
-        {
             return X;
-        }
-        // U * h(c) < f(X)
+
+        // U * h(c) < f(X)  "density evaluation"
         if (t <= exp(f0(X)))
-        {
             return X;
-        }
     }
 }
 
