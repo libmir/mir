@@ -21,7 +21,7 @@ Params:
     cdPoints = cumulative density points
 
 Returns:
-    A sampler that can be called to sample from the distribution.
+    A $(LREF Discrete) sampler that can be called to sample from the distribution.
 */
 Discrete!T discrete(T)(const(T)[] cdPoints)
 {
