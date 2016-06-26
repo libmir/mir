@@ -205,13 +205,21 @@ protected S tinflexImpl(F0, S, RNG)
 ///
 unittest
 {
-    auto f0 = (double x) => -x^^4 + 5 * x^^2 - 4;
-    auto f1 = (double x) => 10 * x - 4 * x ^^ 3;
-    auto f2 = (double x) => 10 - 12 * x ^^ 2;
-    auto tf = tinflex(f0, f1, f2, 1.5, [-3.0, -1.5, 0.0, 1.5, 3], 1.1);
-    import std.random : rndGen;
-    rndGen.seed(42);
-    auto value = tf(rndGen);
+    import std.math : approxEqual;
+    import std.meta : AliasSeq;
+    import std.random : Mt19937;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        auto gen = Mt19937(42);
+        auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
+        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        S[] points = [-3, -1.5, 0, 1.5, 3];
 
+        auto tf = tinflex(f0, f1, f2, 1.5, points, 1.1);
+
+        auto value = tf(gen);
+        assert(value.approxEqual(-1.2631));
+    }
     // see more examples at mir/examples
 }
