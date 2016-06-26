@@ -89,7 +89,7 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
     }
 
     // Tinflex is not guaranteed to converge
-    for (auto i = 0; i < maxIterations; i++)
+    foreach (i; 0..maxIterations)
     {
         // Tinflex aims for a user defined efficiency
         if (totalHatArea / totalSqueezeArea <= rho)
