@@ -15,7 +15,7 @@ Setup a _discrete distribution sampler.
 Given an array of cumulative density points `cdPoints`,
 a _discrete distribution is defined.
 The cumulative density points can be calculated from probabilities or counts
-using `std.algorithm.cumulativeFold`. Hence `cdPoints` is assumed to be sorted.
+using `std.algorithm.iteration.cumulativeFold`. Hence `cdPoints` is assumed to be sorted.
 
 Params:
     cdPoints = cumulative density points
@@ -26,6 +26,19 @@ Returns:
 Discrete!T discrete(T)(const(T)[] cdPoints)
 {
     return Discrete!T(cdPoints);
+}
+
+///
+unittest
+{
+    // 10%, 20%, 20%, 40%, 10%
+    auto cdPoints = [0.1, 0.3, 0.5, 0.9, 1];
+    auto ds = discrete(cdPoints);
+
+    // sample from the discrete distribution
+    auto obs = new uint[cdPoints.length];
+    foreach (i; 0..1000)
+        obs[ds()]++;
 }
 
 /**
@@ -47,7 +60,7 @@ struct Discrete(T)
     /**
     The cumulative density points `cdPoints` are assumed to be sorted and given
     without a starting zero. They can be calculated with
-    `std.algorithm.cumulativeFold` from probabilities or counts.
+    `std.algorithm.iteration.cumulativeFold` from probabilities or counts.
 
     Params:
         cdPoints = cumulative density points
@@ -78,19 +91,6 @@ struct Discrete(T)
         T v = uniform!("[)", T, T)(0, _cdPoints[$-1], gen);
         return (cast(SortedRange!(const(T)[], "a <= b")) r).lowerBound(v).length;
     }
-}
-
-///
-unittest
-{
-    // 10%, 20%, 20%, 40%, 10%
-    auto cdPoints = [0.1, 0.3, 0.5, 0.9, 1];
-    auto ds = discrete(cdPoints);
-
-    // sample from the discrete distribution
-    auto obs = new uint[cdPoints.length];
-    foreach (i; 0..1000)
-        obs[ds()]++;
 }
 
 unittest
