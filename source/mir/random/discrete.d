@@ -23,6 +23,12 @@ Params:
 Returns:
     A sampler that can be called to sample from the distribution.
 */
+Discrete!T discrete(T)(const(T)[] cdPoints)
+{
+    return Discrete!T(cdPoints);
+}
+
+/// ditto
 struct Discrete(T)
     if (isNumeric!T)
 {
@@ -58,12 +64,6 @@ struct Discrete(T)
         T v = uniform(0, _cdPoints[$-1], gen);
         return (cast(SortedRange!(const(T)[], "a <= b")) r).lowerBound(v).length;
     }
-}
-
-/// ditto
-Discrete!T discrete(T)(const(T)[] cdPoints)
-{
-    return Discrete!T(cdPoints);
 }
 
 ///
