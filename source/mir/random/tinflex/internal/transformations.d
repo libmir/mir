@@ -162,6 +162,8 @@ S inverseAntiderivative(S)(in S x, in S c)
         return exp(x);
     immutable d = c + 1;
     return copysign(pow(d / fabs(c) * x, c / d), c);
+    // this changes the distribution :S
+    //return copysign(pow(fabs(d / c * x) , c / d), c);
 }
 
 unittest
@@ -190,7 +192,7 @@ unittest
         assert(inverseAntiderivative!S(1, 1).approxEqual(1.41421));
         assert(inverseAntiderivative!S(3, 2).approxEqual(2.72568));
         assert(inverseAntiderivative!S(-6.3, -7).approxEqual(-7.15253));
-        assert(inverseAntiderivative!S(-2, 3.5).isNaN);
-        assert(inverseAntiderivative!S(5.5, -4.5).isNaN);
+        //assert(inverseAntiderivative!S(-2, 3.5).approxEqual(2.08461));
+        //assert(inverseAntiderivative!S(5.5, -4.5).approxEqual(-6.47987));
     }
 }
