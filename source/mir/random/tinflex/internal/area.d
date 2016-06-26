@@ -41,50 +41,50 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
     {
         // concave near b_l and t_r(x) <= f(x) <= t_l(x)
         case T1a:
-            hat = mixin(t_l);
             squeeze = mixin(t_r);
+            hat = mixin(t_l);
             break;
 
         // convex near b_l and t_l(x) <= f(x) <= t_r(x)
         case T1b:
-            hat = mixin(t_r);
             squeeze = mixin(t_l);
+            hat = mixin(t_r);
             break;
 
         // concave near b_l and r(x) <= f(x) <= t_l(x)
         case T2a:
-            hat = mixin(t_l);
             squeeze = mixin(sec);
+            hat = mixin(t_l);
             break;
 
         // convex near b_l and r(x) <= f(x) <= mixin(t_r)(x)
         case T2b:
-            hat = mixin(t_r);
             squeeze = mixin(sec);
+            hat = mixin(t_r);
             break;
 
         // concave near b_l and mixin(t_r)(x) <= f(x) <= r(x)
         case T3a:
-            hat = mixin(sec);
             squeeze = mixin(t_r);
+            hat = mixin(sec);
             break;
 
         // convex near b_l and mixin(t_l)(x) <= f(x) <= r(x)
         case T3b:
-            hat = mixin(sec);
             squeeze = mixin(t_l);
+            hat = mixin(sec);
             break;
 
         // concave on [b_l, b_r] and r(x) <= f(x) <= mixin(t_m)(x)
         case T4a:
-            hat = mixin(t_m);
             squeeze = mixin(sec);
+            hat = mixin(t_m);
             break;
 
         // convex on [b_l, b_r] and t_m(x) <= f(x) <= r(x)
         case T4b:
-            hat = mixin(sec);
             squeeze = mixin(t_m);
+            hat = mixin(sec);
             break;
     }
     return HatAndSqueeze!S(hat, squeeze);
