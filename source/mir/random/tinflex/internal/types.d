@@ -38,8 +38,8 @@ struct IntervalPoint(S)
     LinearFun!S hat;
     LinearFun!S squeeze;
 
-    S hatA;
-    S squeezeA;
+    S hatArea;
+    S squeezeArea;
 
     // disallow NaN points
     invariant {
@@ -69,14 +69,14 @@ struct GenerationPoint(S)
     LinearFun!S hat;
     LinearFun!S squeeze;
 
-    S hatA;
-    S squeezeA;
+    S hatArea;
+    S squeezeArea;
 
     // disallow NaN points
     invariant {
         import std.math : isNaN;
         import std.meta : AliasSeq;
-        alias seq =  AliasSeq!(x, c, hatA, squeezeA);
+        alias seq =  AliasSeq!(x, c, hatArea, squeezeArea);
         foreach (i, v; seq)
             assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
     }

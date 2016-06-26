@@ -103,11 +103,11 @@ struct Tinflex(F0, S)
 
         // pre-calculate cumulative density points
         auto cdPoints = new S[gps.length - 1];
-        cdPoints[0] = gps[0].hatA;
+        cdPoints[0] = gps[0].hatArea;
         foreach (i, ref cp; cdPoints[1..$])
         {
             // i starts at 0
-            cp = cdPoints[i] + gps[i + 1].hatA;
+            cp = cdPoints[i] + gps[i + 1].hatArea;
         }
         this.ds = Discrete!S(cdPoints);
     }
@@ -187,7 +187,7 @@ protected S tinflexImpl(F0, S, RNG)
         }
 
         auto hatX = inverse(gps[j].hat(X), c);
-        auto squeezeX = gps[j].squeezeA > 0 ? inverse(gps[j].squeeze(X), c) : 0;
+        auto squeezeX = gps[j].squeezeArea > 0 ? inverse(gps[j].squeeze(X), c) : 0;
 
         immutable t = u * hatX;
         if (t <= squeezeX)

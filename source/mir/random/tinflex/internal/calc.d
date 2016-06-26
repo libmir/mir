@@ -38,12 +38,12 @@ private void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr, i
     ipl.squeeze = sh.squeeze;
 
     // save area with the left interval
-    ipl.hatA = area(sh.hat, ipl.x, ipr.x, ipl.tx, ipr.tx, c);
-    ipl.squeezeA = area(sh.squeeze, ipl.x, ipr.x, ipl.tx, ipr.tx, c);
+    ipl.hatArea = area(sh.hat, ipl.x, ipr.x, ipl.tx, ipr.tx, c);
+    ipl.squeezeArea = area(sh.squeeze, ipl.x, ipr.x, ipl.tx, ipr.tx, c);
 
     import std.math: isInfinity;
-    if (isInfinity(ipl.squeezeA))
-        ipl.squeezeA = 0;
+    if (isInfinity(ipl.squeezeArea))
+        ipl.squeezeArea = 0;
 }
 
 /**
@@ -83,8 +83,8 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
     {
         auto iv = intervalTransform(p);
         calcInterval(ips.back, iv, c);
-        totalHatArea += ips.back.hatA;
-        totalSqueezeArea += ips.back.squeezeA;
+        totalHatArea += ips.back.hatArea;
+        totalSqueezeArea += ips.back.squeezeArea;
         ips.insertBack(iv);
     }
 
@@ -100,11 +100,11 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
         auto it = ips[];
         foreach (j; 0..nrIntervals - 1)
         {
-            if (it.front.hatA - it.front.squeezeA > a_avg)
+            if (it.front.hatArea - it.front.squeezeArea > a_avg)
             {
                 // prepare total areas for update
-                totalHatArea -= it.front.hatA;
-                totalSqueezeArea -= it.front.squeezeA;
+                totalHatArea -= it.front.hatArea;
+                totalSqueezeArea -= it.front.squeezeArea;
 
                 auto nextView = it.save.dropOne;
 
@@ -122,8 +122,8 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
                 ips.insertBefore(itNext, midIP);
 
                 // update total areas
-                totalHatArea += it.front.hatA + midIP.hatA;
-                totalSqueezeArea += it.front.squeezeA + midIP.squeezeA;
+                totalHatArea += it.front.hatArea + midIP.hatArea;
+                totalSqueezeArea += it.front.squeezeArea + midIP.squeezeArea;
 
                 nrIntervals++;
             }
@@ -135,7 +135,7 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
     auto gps = new GenerationPoint!S[nrIntervals];
     size_t i = 0;
     foreach (ref ip; ips)
-        gps[i++] = GenerationPoint!S(ip.x, ip.c, ip.hat, ip.squeeze, ip.hatA, ip.squeezeA);
+        gps[i++] = GenerationPoint!S(ip.x, ip.c, ip.hat, ip.squeeze, ip.hatArea, ip.squeezeArea);
 
     return gps;
 }
