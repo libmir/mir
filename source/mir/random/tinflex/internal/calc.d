@@ -15,11 +15,7 @@ Returns:
 private auto arcmean(S)(S l, S r)
 {
     import std.math: atan, tan;
-    import std.algorithm: swap;
-    if (l > r)
-        return tan(0.5 * (atan(l) + atan(r)));
-    else
-        return tan(0.5 * (atan(r) + atan(l)));
+    return tan(0.5 * (atan(l) + atan(r)));
 }
 
 /**
