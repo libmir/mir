@@ -52,7 +52,7 @@ Complexity: O(log n) where n is the number of `cdPoints`.
 struct Discrete(T)
     if (isNumeric!T)
 {
-    private const(T)[] _cdPoints;
+    private const(T)[] cdPoints;
 
     /**
     The cumulative density points `cdPoints` are assumed to be sorted and given
@@ -64,13 +64,7 @@ struct Discrete(T)
     */
     this(const(T)[] cdPoints)
     {
-        _cdPoints = cdPoints;
-    }
-
-    /// cumulative density points
-    const(T)[] cdPoints() const @property
-    {
-        return _cdPoints;
+        this.cdPoints = cdPoints;
     }
 
     /// samples a value from the discrete distribution
@@ -86,8 +80,8 @@ struct Discrete(T)
         import std.random : uniform;
         import std.range : assumeSorted;
 
-        T v = uniform!("[)", T, T)(0, _cdPoints[$-1], gen);
-        return _cdPoints.assumeSorted!"a <= b".lowerBound(v).length;
+        T v = uniform!("[)", T, T)(0, cdPoints[$-1], gen);
+        return cdPoints.assumeSorted!"a <= b".lowerBound(v).length;
     }
 }
 
@@ -113,7 +107,6 @@ unittest
     // 1, 2, 1
     auto cdPoints = [1, 3, 4];
     auto ds = discrete(cdPoints);
-    assert(ds.cdPoints == cdPoints);
 
     auto obs = new uint[cdPoints.length];
     foreach (i; 0..1000)
