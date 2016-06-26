@@ -54,21 +54,24 @@ auto transformToInterval(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S c)
 }
 
 // TODO: test for c=0
+// example from Tinflex
 unittest
 {
-    // example from Tinflex
-    auto f0 = (double x) => -x^^4 + 5 * x^^2 - 4;
-    auto f1 = (double x) => 10 * x - 4 * x ^^ 3;
-    auto f2 = (double x) => 10 - 12 * x ^^ 2;
-    auto c = 1.5;
-
-    auto t = transformToInterval(f0, f1, f2, c);
-
     import std.math: approxEqual;
-    // magic numbers manually verified
-    assert(t.t0(-3).approxEqual(-8.75651e-27));
-    assert(t.t1(-3).approxEqual(-1.02451e-24));
-    assert(t.t2(-3).approxEqual(-1.18581e-22));
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
+        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        S c = 1.5;
+        auto t = transformToInterval(f0, f1, f2, c);
+
+        // magic numbers manually verified
+        assert(t.t0(-3).approxEqual(-8.75651e-27));
+        assert(t.t1(-3).approxEqual(-1.02451e-24));
+        assert(t.t2(-3).approxEqual(-1.18581e-22));
+    }
 }
 
 /**
@@ -95,13 +98,15 @@ S antiderivative(S)(in S x, in S c)
 unittest
 {
     import std.math: E, approxEqual;
-
-    assert(antiderivative(1, 0.0).approxEqual(E));
-    assert(antiderivative(1, -0.5) == -1);
-    assert(antiderivative(1, -0.5) == -1);
-    assert(antiderivative(-1, -1.0) == 0);
-
-    assert(antiderivative(1, 2.0) == 2.0 / 3);
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        assert(antiderivative!S(1, 0.0).approxEqual(E));
+        assert(antiderivative!S(1, -0.5) == -1);
+        assert(antiderivative!S(1, -0.5) == -1);
+        assert(antiderivative!S(-1, -1.0) == 0);
+        assert(antiderivative!S(1, 2.0) == S(2) / 3);
+    }
 }
 
 /**
@@ -124,17 +129,20 @@ S inverse(S)(in S x, in S c)
 unittest
 {
     import std.math: E, approxEqual;
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        assert(inverse!S(1.0, 0).approxEqual(E));
 
-    assert(inverse(1.0, 0).approxEqual(E));
+        assert(inverse!S(2, -0.5) == S(0.25));
+        assert(inverse!S(8, -0.5).approxEqual(5.960464477539e-8));
 
-    assert(inverse(2, -0.5) == 0.25);
-    assert(inverse(8, -0.5).approxEqual(5.960464477539e-8));
+        assert(inverse!S(2.0, 1) == 2);
+        assert(inverse!S(8.0, 1) == 8);
 
-    assert(inverse(2.0, 1) == 2);
-    assert(inverse(8.0, 1) == 8);
-
-    assert(inverse(1, 1.5) == 1);
-    assert(inverse(2, 1.5).approxEqual(1.58740));
+        assert(inverse!S(1, 1.5) == 1);
+        assert(inverse!S(2, 1.5).approxEqual(1.58740));
+    }
 }
 
 
@@ -154,4 +162,35 @@ S inverseAntiderivative(S)(in S x, in S c)
         return exp(x);
     immutable d = c + 1;
     return copysign(pow(d / fabs(c) * x, c / d), c);
+}
+
+unittest
+{
+    import std.math: approxEqual, E, isNaN;
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        assert(inverseAntiderivative!S(1, 0).approxEqual(0));
+        assert(inverseAntiderivative!S(3, 0).approxEqual(1.09861));
+        assert(inverseAntiderivative!S(5.5, 0).approxEqual(1.70475));
+        assert(inverseAntiderivative!S(-2, 0).isNaN);
+
+        assert(inverseAntiderivative!S(1, -0.5) == -1);
+        assert(inverseAntiderivative!S(3, -0.5) == - S(1) / 3);
+        assert(inverseAntiderivative!S(-2, -0.5) == 0.5);
+        assert(inverseAntiderivative!S(5.5, -0.5).approxEqual(-0.181818));
+        assert(inverseAntiderivative!S(-6.3, -0.5).approxEqual(0.15873));
+
+        assert(inverseAntiderivative!S(1, -1).approxEqual(2.71828));
+        assert(inverseAntiderivative!S(3, -1).approxEqual(20.0855));
+        assert(inverseAntiderivative!S(-2, -1).approxEqual(0.135335));
+        assert(inverseAntiderivative!S(5.5, -1).approxEqual(244.692));
+        assert(inverseAntiderivative!S(-6.3, -1).approxEqual(0.0018363));
+
+        assert(inverseAntiderivative!S(1, 1).approxEqual(1.41421));
+        assert(inverseAntiderivative!S(3, 2).approxEqual(2.72568));
+        assert(inverseAntiderivative!S(-6.3, -7).approxEqual(-7.15253));
+        assert(inverseAntiderivative!S(-2, 3.5).isNaN);
+        assert(inverseAntiderivative!S(5.5, -4.5).isNaN);
+    }
 }
