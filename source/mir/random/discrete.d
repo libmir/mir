@@ -52,10 +52,7 @@ Complexity: O(log n) where n is the number of `cdPoints`.
 struct Discrete(T)
     if (isNumeric!T)
 {
-    import std.range : SortedRange;
-
-    private const(T)[] _cdPoints;
-    private SortedRange!(const(T)[], "a <= b") r;
+    private const(T)[] cdPoints;
 
     /**
     The cumulative density points `cdPoints` are assumed to be sorted and given
@@ -67,14 +64,7 @@ struct Discrete(T)
     */
     this(const(T)[] cdPoints)
     {
-        _cdPoints = cdPoints;
-        r = typeof(r)(_cdPoints);
-    }
-
-    /// cumulative density points
-    const(T)[] cdPoints() const @property
-    {
-        return _cdPoints;
+        this.cdPoints = cdPoints;
     }
 
     /// samples a value from the discrete distribution
@@ -88,15 +78,17 @@ struct Discrete(T)
     size_t opCall(RNG)(ref RNG gen) const
     {
         import std.random : uniform;
-        T v = uniform!("[)", T, T)(0, _cdPoints[$-1], gen);
-        return (cast(SortedRange!(const(T)[], "a <= b")) r).lowerBound(v).length;
+        import std.range : assumeSorted;
+
+        T v = uniform!("[)", T, T)(0, cdPoints[$-1], gen);
+        return cdPoints.assumeSorted!"a <= b".lowerBound(v).length;
     }
 }
 
 unittest
 {
     import std.random : Random;
-    auto rndGen = Random(42);
+    auto gen = Random(42);
 
     // 10%, 20%, 20%, 40%, 10%
     auto cdPoints = [0.1, 0.3, 0.5, 0.9, 1];
@@ -104,20 +96,19 @@ unittest
 
     auto obs = new uint[cdPoints.length];
     foreach (i; 0..1000)
-        obs[ds(rndGen)]++;
+        obs[ds(gen)]++;
 }
 
 unittest
 {
     import std.random : Random;
-    auto rndGen = Random(42);
+    auto gen = Random(42);
 
     // 1, 2, 1
     auto cdPoints = [1, 3, 4];
     auto ds = discrete(cdPoints);
-    assert(ds.cdPoints == cdPoints);
 
     auto obs = new uint[cdPoints.length];
     foreach (i; 0..1000)
-        obs[ds(rndGen)]++;
+        obs[ds(gen)]++;
 }
