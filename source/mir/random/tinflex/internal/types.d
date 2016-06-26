@@ -93,23 +93,6 @@ It is based on this naming scheme:
 enum FunType {T1a, T1b, T2a, T2b, T3a, T3b, T4a, T4b}
 
 /**
-Checks whether the function type is concave
-*/
-bool isConcave(in FunType t) pure @safe @nogc nothrow
-{
-    with(FunType)
-    return t == T1a || t == T2a || t == T3a || t == T4a;
-}
-
-/**
-Checks whether the function type is convex
-*/
-bool isConvex(FunType t) pure @safe @nogc nothrow
-{
-    return !isConcave(t);
-}
-
-/**
 Determine the function type of an interval.
 Based on Theorem 1 of the Tinflex paper.
 Params:
