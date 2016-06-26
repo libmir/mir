@@ -67,76 +67,68 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
                             (in F0 f0, in F1 f1, in F2 f2,
                              in S c, in S[] points, in S rho = 1.1, int maxIterations = 10_000)
 {
-    import mir.random.tinflex.internal.transformations : transformToInterval;
     import std.container.dlist : DList;
-    import std.range : dropBackOne;
+    import mir.random.tinflex.internal.transformations : transformToInterval;
+    import std.range : dropOne;
 
-    auto intervalTransform = transformToInterval(f0, f1, f2, c);
-
-    auto ips = DList!(IntervalPoint!S)();
-    foreach (i, p; points)
-    {
-        import std.algorithm.mutation : move;
-        auto iv = intervalTransform(p);
-        if (i > 0)
-            calcInterval(ips.back, iv, c);
-        ips.insertBack(iv);
-    }
-
+    S totalHatArea = 0;
+    S totalSqueezeArea = 0;
     auto nrIntervals = points.length;
 
-    S a_h;
-    S a_s;
-    void updateA()
-    {
-        a_h = 0;
-        a_s = 0;
-        auto i = 0;
-        foreach (ref ip; ips)
-        {
-            a_h += ip.hatA;
-            a_s += ip.squeezeA;
+    auto intervalTransform = transformToInterval(f0, f1, f2, c);
+    auto ips = DList!(IntervalPoint!S)(intervalTransform(points[0]));
 
-            // last interval is only left-bounded
-            if (i == nrIntervals - 2)
-                break;
-            i++;
-        }
+    // initialize with user given splitting points
+    foreach (i, p; points[1..$])
+    {
+        auto iv = intervalTransform(p);
+        calcInterval(ips.back, iv, c);
+        totalHatArea += ips.back.hatA;
+        totalSqueezeArea += ips.back.squeezeA;
+        ips.insertBack(iv);
     }
-    updateA();
 
     // Tinflex is not guaranteed to converge
     for (auto i = 0; i < maxIterations; i++)
     {
-        if (a_h / a_s <= rho)
+        // Tinflex aims for a user defined efficiency
+        if (totalHatArea / totalSqueezeArea <= rho)
             break;
 
-        S a_avg = (a_h - a_s) / (nrIntervals - 1);
+        S a_avg = (totalHatArea - totalSqueezeArea) / (nrIntervals - 1);
         // first iteration: search only (we update the list online later)
         auto it = ips[];
         foreach (j; 0..nrIntervals - 1)
         {
             if (it.front.hatA - it.front.squeezeA > a_avg)
             {
-                import std.range : dropOne, takeOne;
+                // prepare total areas for update
+                totalHatArea -= it.front.hatA;
+                totalSqueezeArea -= it.front.squeezeA;
+
                 auto nextView = it.save.dropOne;
 
                 // split the interval at the arcmean into two parts
-                auto p = arcmean(it.front.x, nextView.front.x);
-                IntervalPoint!S ip = intervalTransform(p);
-                calcInterval(ip, nextView.front, c);
+                auto mid = arcmean(it.front.x, nextView.front.x);
+                IntervalPoint!S midIP = intervalTransform(mid);
 
-                calcInterval(it.front, ip, c);
+                // recalculate intervals
+                calcInterval(midIP, nextView.front, c);
+                calcInterval(it.front, midIP, c);
 
                 // insert new middle part into linked list
-                auto k = it.save;
-                k.popFront();
-                ips.insertBefore(k, ip);
+                auto itNext = it.save;
+                itNext.popFront();
+                ips.insertBefore(itNext, midIP);
+
+                // update total areas
+                totalHatArea += it.front.hatA + midIP.hatA;
+                totalSqueezeArea += it.front.squeezeA + midIP.squeezeA;
+
                 nrIntervals++;
             }
             it.popFront();
         }
-        updateA();
     }
 
     // for sampling only a subset of the attributes is needed
@@ -150,14 +142,18 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
 
 unittest
 {
-    auto f0 = (double x) => -x^^4 + 5 * x^^2 - 4;
-    auto f1 = (double x) => 10 * x - 4 * x ^^ 3;
-    auto f2 = (double x) => 10 - 12 * x ^^ 2;
-    auto c = 1.5;
-
     import mir.random.tinflex.internal.calc: calcPoints;
-    auto ips = calcPoints(f0, f1, f2, c, [-3.0, -1.5, 0.0, 1.5, 3], 1.1);
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
+        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        S c = 1.5;
+        S[] points = [-3, -1.5, 0, 1.5, 3];
+        auto ips = calcPoints(f0, f1, f2, c, points, S(1.1));
 
-    // TODO: should be 45?
-    assert(ips.length == 50);
+        // TODO: should be 45?
+        assert(ips.length == 50);
+    }
 }
