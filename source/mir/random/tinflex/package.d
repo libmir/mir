@@ -42,6 +42,7 @@ Macros:
 module mir.random.tinflex;
 
 import mir.random.tinflex.internal.types : GenerationPoint;
+import mir.random.discrete : Discrete;
 
 import std.traits : ReturnType, isFloatingPoint;
 import std.random : isUniformRNG;
@@ -69,10 +70,10 @@ Tinflex!(F0, S) tinflex(F0, F1, F2, S)
                 S c, S[] points, S rho = 1.1)
     if (isFloatingPoint!S)
 {
-    import mir.random.tinflex.internal.calc : calcPoints;
     // pre-calculate all the points
-    const ips = calcPoints(f0, f1, f2, c, points, 1.1);
-    return Tinflex!(F0, S)(f0, ips, c);
+    import mir.random.tinflex.internal.calc : calcPoints;
+    const gps = calcPoints(f0, f1, f2, c, points, 1.1);
+    return Tinflex!(F0, S)(f0, gps, c);
 }
 
 /**
@@ -88,6 +89,9 @@ struct Tinflex(F0, S)
     // generated partition points
     private const GenerationPoint!S[] _gps;
 
+    // discrete density sampler
+    private const Discrete!S ds;
+
     // global T_c family
     private const S c;
 
@@ -96,6 +100,16 @@ struct Tinflex(F0, S)
         _f0 = f0;
         _gps = gps;
         this.c = c;
+
+        // pre-calculate cumulative density points
+        auto cdPoints = new S[gps.length - 1];
+        cdPoints[0] = gps[0].hatA;
+        foreach (i, ref cp; cdPoints[1..$])
+        {
+            // i starts at 0
+            cp = cdPoints[i] + gps[i + 1].hatA;
+        }
+        this.ds = Discrete!S(cdPoints);
     }
 
     /// density function of the distribution
@@ -127,14 +141,14 @@ struct Tinflex(F0, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tinflexImpl(_f0, _gps, c, rndGen);
+        return tinflexImpl(_f0, _gps, ds, c, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tinflexImpl(_f0, _gps, c, rng);
+        return tinflexImpl(_f0, _gps, ds, c, rng);
     }
 }
 
@@ -145,28 +159,20 @@ Params:
     rng = random number generator to use
 */
 protected S tinflexImpl(F0, S, RNG)
-          (in F0 f0, in GenerationPoint!S[] gps, in S c, ref RNG rng)
+          (in F0 f0, in GenerationPoint!S[] gps, in Discrete!S ds, in S c, ref RNG rng)
     if (isUniformRNG!RNG)
 {
-    import std.algorithm: filter, joiner, map, sum;
-
-    // TODO: filtering not needed anymore
-    auto totalAreaSum = gps[0..$-2].map!`a.hatA`.sum;
-    auto areas = gps[0..$-2].map!((x) => x.hatA / totalAreaSum);
-
     import std.random: dice, uniform01;
     import std.math: abs;
     import mir.internal.math: exp;
 
     import mir.random.tinflex.internal.transformations : inverse, antiderivative, inverseAntiderivative;
 
-    double X = void;
+    S X = void;
     // acceptance-rejection sampling
     for (;;)
     {
-        import std.stdio;
-        writeln(areas);
-        auto j = dice(rng, areas);
+        auto j = ds(rng);
         S u = uniform01!S(rng);
 
         if (abs(gps[j].hat.slope) > 1e-10)
