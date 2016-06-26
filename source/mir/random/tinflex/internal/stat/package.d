@@ -6,8 +6,6 @@ License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 module mir.random.tinflex.internal.stat;
 
-import std.stdio;
-
 /**
 Chi-squared statical test.
 Given a binned frequency table of a distribution, analyzes the goodness of the fit

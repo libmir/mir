@@ -85,8 +85,6 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
 
     auto nrIntervals = points.length;
 
-    import std.stdio;
-
     S a_h;
     S a_s;
     void updateA()
@@ -99,27 +97,13 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
             a_h += ip.hatA;
             a_s += ip.squeezeA;
 
-            writeln("i ", i);
-            writeln("a_h", a_h);
-            writeln("a_s", a_s);
-
             // last interval is only left-bounded
             if (i == nrIntervals - 2)
                 break;
             i++;
         }
     }
-    void printList()
-    {
-        auto i = 0;
-        foreach (ref s; ips)
-            writeln(i++, " ", s);
-    }
-
-    printList();
-
     updateA();
-    writeln(ips.front);
 
     // Tinflex is not guaranteed to converge
     for (auto i = 0; i < maxIterations; i++)
@@ -132,37 +116,22 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
         auto it = ips[];
         foreach (j; 0..nrIntervals - 1)
         {
-            writeln(it.front);
-            writeln("nrIntervals", nrIntervals);
             if (it.front.hatA - it.front.squeezeA > a_avg)
             {
-                writefln("splitting %d-%d", j , j+1);
                 import std.range : dropOne, takeOne;
                 auto nextView = it.save.dropOne;
-
-                writeln("nextView", nextView.front);
 
                 // split the interval at the arcmean into two parts
                 auto p = arcmean(it.front.x, nextView.front.x);
                 IntervalPoint!S ip = intervalTransform(p);
                 calcInterval(ip, nextView.front, c);
-                writeln("----");
-                writeln("nextView", nextView.front);
-                writeln("ip", ip);
 
-                writeln("front", it.front);
                 calcInterval(it.front, ip, c);
-                writeln("----");
-                writeln("cur", it.front);
-                writeln("ip", ip);
-
-                writeln("new point", ip);
 
                 // insert new middle part into linked list
                 auto k = it.save;
                 k.popFront();
                 ips.insertBefore(k, ip);
-                printList();
                 nrIntervals++;
             }
             it.popFront();
@@ -190,5 +159,5 @@ unittest
     auto ips = calcPoints(f0, f1, f2, c, [-3.0, -1.5, 0.0, 1.5, 3], 1.1);
 
     // TODO: should be 45?
-    assert(ips.length == 51);
+    assert(ips.length == 50);
 }

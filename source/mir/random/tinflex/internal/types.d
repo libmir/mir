@@ -106,44 +106,11 @@ FunType determineType(S)(in IntervalPoint!S l, in IntervalPoint!S r)
     assert(l.x < r.x, "invalid interval");
     assert(!isNaN(l.tx) && !isNaN(r.tx), "Invalid interval points");
 
-    // slope
+    // slope of the interval
     auto R = (r.tx - l.tx) / (r.x- l.x);
 
     with(FunType)
     {
-        import std.stdio;
-        //TODO: This needs more tests
-        if (isInfinity(l.tx))
-        {
-            writeln("infA");
-            if (r.t2x < 0 && r.t1x > 0)
-                return T4a;
-            else
-                assert(0, "Invalid case");
-        }
-
-        if (isInfinity(r.tx))
-        {
-            writeln("infB");
-            if (l.t2x < 0 && l.tx > 0)
-                return T4a;
-            else
-                assert(0, "Invalid case");
-        }
-
-        if ((l.c > 0 && r.tx == 0.0) ||
-            (l.c <= 0 && isInfinity(r.tx) && r.tx < 0 ))
-        {
-            writeln("infC");
-            writeln("L", l);
-            writeln("R", r);
-            if (r.t2x < 0 && r.t1x > 0)
-                return T4a;
-            if (r.t2x > 0 && r.t1x > 0)
-                return T4b;
-            assert(0, "Invalid case");
-        }
-
         if (l.t1x >= R && r.t1x >= R)
             return T1a;
         if (l.t1x <= R && r.t1x <= R)
