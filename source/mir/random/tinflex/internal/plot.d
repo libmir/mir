@@ -23,13 +23,13 @@ auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool hat = true)
     int k = 0;
     S rMin = xs[0];
     S rMax = xs[$ - 1];
-    outer: foreach (i, v; t.ips)
+    outer: foreach (i, v; t.gps)
     {
         S l = clamp(v.x, rMin, rMax);
         S r;
-        if (i < t.ips.length - 1)
+        if (i < t.gps.length - 1)
         {
-            r = clamp(t.ips[i + 1].x, rMin, rMax);
+            r = clamp(t.gps[i + 1].x, rMin, rMax);
         }
         else
         {

@@ -47,9 +47,38 @@ struct IntervalPoint(S)
         import std.meta : AliasSeq;
         alias seq =  AliasSeq!(x, c, tx, t1x, t2x);
         foreach (i, v; seq)
-        {
             assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
-        }
+    }
+}
+
+/**
+Reduced version of $(LREF IntervalPoint). Contains only the necessary information
+needed in the generation phase.
+*/
+struct GenerationPoint(S)
+    if (isFloatingPoint!S)
+{
+    import mir.random.tinflex.internal.linearfun : LinearFun;
+
+    /// left position of the interval
+    S x;
+
+    /// T_c family of the interval
+    S c;
+
+    LinearFun!S hat;
+    LinearFun!S squeeze;
+
+    S hatA;
+    S squeezeA;
+
+    // disallow NaN points
+    invariant {
+        import std.math : isNaN;
+        import std.meta : AliasSeq;
+        alias seq =  AliasSeq!(x, c, hatA, squeezeA);
+        foreach (i, v; seq)
+            assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
     }
 }
 

@@ -41,7 +41,7 @@ Macros:
 */
 module mir.random.tinflex;
 
-import mir.random.tinflex.internal.types : IntervalPoint;
+import mir.random.tinflex.internal.types : GenerationPoint;
 
 import std.traits : ReturnType, isFloatingPoint;
 import std.random : isUniformRNG;
@@ -71,7 +71,7 @@ Tinflex!(F0, S) tinflex(F0, F1, F2, S)
 {
     import mir.random.tinflex.internal.calc : calcPoints;
     // pre-calculate all the points
-    auto ips = calcPoints(f0, f1, f2, c, points, 1.1);
+    const ips = calcPoints(f0, f1, f2, c, points, 1.1);
     return Tinflex!(F0, S)(f0, ips, c);
 }
 
@@ -86,15 +86,15 @@ struct Tinflex(F0, S)
     private const F0 _f0;
 
     // generated partition points
-    private const IntervalPoint!S[] _ips;
+    private const GenerationPoint!S[] _gps;
 
     // global T_c family
     private const S c;
 
-    package this(const F0 f0, const IntervalPoint!S[] ips, const S c)
+    package this(const F0 f0, const GenerationPoint!S[] gps, const S c)
     {
         _f0 = f0;
-        _ips = ips;
+        _gps = gps;
         this.c = c;
     }
 
@@ -111,9 +111,9 @@ struct Tinflex(F0, S)
     }
 
     /// Generated partition points
-    const(IntervalPoint!S[]) ips() @property const
+    package const(GenerationPoint!S[]) gps() @property const
     {
-        return _ips;
+        return _gps;
     }
 
     /**
@@ -127,14 +127,14 @@ struct Tinflex(F0, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tinflexImpl(_f0, _ips, c, rndGen);
+        return tinflexImpl(_f0, _gps, c, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tinflexImpl(_f0, _ips, c, rng);
+        return tinflexImpl(_f0, _gps, c, rng);
     }
 }
 
@@ -145,14 +145,14 @@ Params:
     rng = random number generator to use
 */
 protected S tinflexImpl(F0, S, RNG)
-          (in F0 f0, in IntervalPoint!S[] ips, in S c, ref RNG rng)
+          (in F0 f0, in GenerationPoint!S[] gps, in S c, ref RNG rng)
     if (isUniformRNG!RNG)
 {
     import std.algorithm: filter, joiner, map, sum;
 
     // TODO: filtering not needed anymore
-    auto totalAreaSum = ips[0..$-2].map!`a.hatA`.sum;
-    auto areas = ips[0..$-2].map!((x) => x.hatA / totalAreaSum);
+    auto totalAreaSum = gps[0..$-2].map!`a.hatA`.sum;
+    auto areas = gps[0..$-2].map!((x) => x.hatA / totalAreaSum);
 
     import std.random: dice, uniform01;
     import std.math: abs;
@@ -169,18 +169,18 @@ protected S tinflexImpl(F0, S, RNG)
         auto j = dice(rng, areas);
         S u = uniform01!S(rng);
 
-        if (abs(ips[j].hat.slope) > 1e-10)
+        if (abs(gps[j].hat.slope) > 1e-10)
         {
-            X = ips[j].hat._y + (inverseAntiderivative(antiderivative(ips[j].hat(ips[j].x), c)
-                          + ips[j].hat.slope * u, c) - ips[j].hat.a) / ips[j].hat.slope;
+            X = gps[j].hat._y + (inverseAntiderivative(antiderivative(gps[j].hat(gps[j].x), c)
+                          + gps[j].hat.slope * u, c) - gps[j].hat.a) / gps[j].hat.slope;
         }
         else
         {
-            X = (1-u) * ips[j].x + u * ips[j + 1].x;
+            X = (1-u) * gps[j].x + u * gps[j + 1].x;
         }
 
-        auto hatX = inverse(ips[j].hat(X), c);
-        auto squeezeX = ips[j].squeezeA > 0 ? inverse(ips[j].squeeze(X), c) : 0;
+        auto hatX = inverse(gps[j].hat(X), c);
+        auto squeezeX = gps[j].squeezeA > 0 ? inverse(gps[j].squeeze(X), c) : 0;
 
         immutable t = u * hatX;
         if (t <= squeezeX)

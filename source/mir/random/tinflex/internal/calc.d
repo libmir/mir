@@ -1,7 +1,7 @@
 module mir.random.tinflex.internal.calc;
 
 import std.traits: ReturnType;
-import mir.random.tinflex.internal.types : IntervalPoint;
+import mir.random.tinflex.internal.types : GenerationPoint,  IntervalPoint;
 
 /**
 Splits an interval into two points.
@@ -67,7 +67,7 @@ Params:
 
 Returns: Array of IntervalPoints
 */
-protected IntervalPoint!S[] calcPoints(F0, F1, F2, S)
+protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
                             (in F0 f0, in F1 f1, in F2 f2,
                              in S c, in S[] points, in S rho = 1.1, int maxIterations = 10_000)
 {
@@ -173,11 +173,14 @@ protected IntervalPoint!S[] calcPoints(F0, F1, F2, S)
         }
         updateA();
     }
-    import std.array: array;
-    // TODO: very important
-    //ips.sort!`a.x < b.x`();
-    auto arr = ips.array;
-    return arr;
+
+    // for sampling only a subset of the attributes is needed
+    auto gps = new GenerationPoint!S[nrIntervals];
+    size_t i = 0;
+    foreach (ref ip; ips)
+        gps[i++] = GenerationPoint!S(ip.x, ip.c, ip.hat, ip.squeeze, ip.hatA, ip.squeezeA);
+
+    return gps;
 }
 
 unittest
