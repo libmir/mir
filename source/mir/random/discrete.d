@@ -1,12 +1,12 @@
 /**
-Mixture methods that can be used to combine random variables.
+Discrete distributions.
 
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: Ilya Yaroshenko, Sebastian Wilzbach
 */
 
-module mir.random.mixture;
+module mir.random.discrete;
 
 import std.traits : isNumeric;
 
