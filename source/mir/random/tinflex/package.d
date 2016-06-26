@@ -9,35 +9,49 @@ first two derivatives and a partitioning into intervals with at most one inflect
 point.
 
 These can be easily found by plotting `f''`.
-$(B Inflection point) can be identified by observing at which points `f''` is 0.
+$(B Inflection point) can be identified by observing at which points `f''` is 0
+and an inflection interval which is defined by two inflection points can either
+be:
 
 $(UL
     $(LI $(F_TILDE) is entirely concave (`f''` is entirely negative))
     $(LI $(F_TILDE) is entirely convex (`f''` is entirely positive))
-    $(LI $(F_TILDE) contains one inflection point (`f''` intersects the x-axis once)
+    $(LI $(F_TILDE) contains one inflection point (`f''` intersects the x-axis once))
 )
 
-In exact terms the algorithm requires:
+It is not important to identity the exact inflection points, but the user input
+requires:
 
 $(UL
     $(LI Continuous density function $(F_TILDE).)
     $(LI Continuous differentiability of $(F_TILDE) except in a finite number of
       points which need to have a one-sided derivative.)
-    $(LI $(B Doubled) Continuous differentiability of $(F_TILDE) except in a finite number of
+    $(LI $(B Doubled) continuous differentiability of $(F_TILDE) except in a finite number of
       points which need to be inflection points.)
     $(LI At most one inflection point per interval)
 )
 
-References:
-    Transformed Density Rejection with Inflection Points
+Internally the Tinflex algorithm transforms the distribution with a special
+transformation function and constructs for every interval a linear `hat` function
+that majorizes the `pdf` and a linear `squeeze` function that is majorized by
+the `pdf` from the user-defined, mutually-exclusive partitioning.
 
+In further steps the algorithm splits those intervals until a chosen efficiency
+`rho` between the ratio of the sum of all hat areas to the sum of
+all squeeze areas is reached.
+A higher efficiency may require more iterations and thus a longer setup phase,
+but increases the speed of sampling. For example an efficiency of 1.1 means
+that 10% of all drawn uniform numbers don't match the target distribution
+and need be resampled.
+
+References:
     Botts, Carsten, Wolfgang Hörmann, and Josef Leydold.
     "$(LINK2 http://epub.wu-wien.ac.at/3158/1/techreport-110.pdf,
     Transformed density rejection with inflection points.)"
     Statistics and Computing 23.2 (2013): 251-260.
 
 Macros:
-    F_TILDE=g(x)
+    F_TILDE=$(D g(x))
 */
 module mir.random.tinflex;
 
@@ -52,7 +66,7 @@ import std.random : isUniformRNG;
 The Transformed Density Rejection with Inflection Points (Tinflex) algorithm
 can sample from arbitrary distributions given its density function f, its
 first two derivatives and a partitioning into intervals with at most one inflection
-point.
+point. The partitioning needs to be mutually exclusive and sorted.
 
 Params:
     f0 = probability density function of the distribution
@@ -153,16 +167,21 @@ struct Tinflex(F0, S)
 }
 
 /**
-Sample from the distribution.
+Sample from the distribution with generated, non-overlapping hat and squeeze functions.
+Uses acceptance-rejection algorithm.
+
 Params:
     ips = calculated inflection points
     rng = random number generator to use
+See_Also:
+   $(LINK2 https://en.wikipedia.org/wiki/Rejection_sampling,
+     Acceptance-rejection sampling)
 */
 protected S tinflexImpl(F0, S, RNG)
           (in F0 f0, in GenerationPoint!S[] gps, in Discrete!S ds, in S c, ref RNG rng)
     if (isUniformRNG!RNG)
 {
-    import std.random: dice, uniform01;
+    import std.random: dice, uniform;
     import std.math: abs;
     import mir.internal.math: exp;
 
@@ -172,34 +191,37 @@ protected S tinflexImpl(F0, S, RNG)
     // acceptance-rejection sampling
     for (;;)
     {
-        auto j = ds(rng);
-        S u = uniform01!S(rng);
+        // sample from interval with density proportional to their hatArea
+        auto rndInt = ds(rng);
+        S u = uniform!("()", S, S)(0, 1, rng);
 
-        if (abs(gps[j].hat.slope) > 1e-10)
+        if (abs(gps[rndInt].hat.slope) > 1e-10)
         {
-            X = gps[j].hat._y + (inverseAntiderivative(antiderivative(gps[j].hat(gps[j].x), c)
-                          + gps[j].hat.slope * u, c) - gps[j].hat.a) / gps[j].hat.slope;
+            X = gps[rndInt].hat._y + (inverseAntiderivative(antiderivative(gps[rndInt].hat(gps[rndInt].x), c)
+                          + gps[rndInt].hat.slope * u, c) - gps[rndInt].hat.a) / gps[rndInt].hat.slope;
         }
         else
         {
-            // j: [0, |gps| - 2] (last gp is excluded)
-            X = (1 - u) * gps[j].x + u * gps[j + 1].x;
+            // rndInt: [0, |gps| - 2] (last gp is excluded)
+            X = (1 - u) * gps[rndInt].x + u * gps[rndInt + 1].x;
         }
 
-        auto hatX = inverse(gps[j].hat(X), c);
-        auto squeezeX = gps[j].squeezeArea > 0 ? inverse(gps[j].squeeze(X), c) : 0;
+        auto hatX = inverse(gps[rndInt].hat(X), c);
+        auto squeezeX = gps[rndInt].squeezeArea > 0 ? inverse(gps[rndInt].squeeze(X), c) : 0;
 
         immutable t = u * hatX;
+
+        // U * h(c) < s(X)
         if (t <= squeezeX)
         {
-            break;
+            return X;
         }
+        // U * h(c) < f(X)
         if (t <= exp(f0(X)))
         {
-            break;
+            return X;
         }
     }
-    return X;
 }
 
 ///
