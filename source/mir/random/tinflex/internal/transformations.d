@@ -17,8 +17,7 @@ Returns:
 auto transformToInterval(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S c)
     if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S))
 {
-    import std.math: sgn;
-    import mir.internal.math: pow, exp;
+    import mir.internal.math: pow, exp, copysign;
     import mir.random.tinflex.internal.types : IntervalPoint;
 
     struct IP
@@ -32,7 +31,7 @@ auto transformToInterval(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S c)
             if (c == 0)
                 return f0(x);
             else
-                return sgn(c) * exp(c * f0(x));
+                return copysign(S(1), c) * exp(c * f0(x));
         }
         auto t1 (S)(S x) const
         {
@@ -76,23 +75,23 @@ unittest
 
 /**
 Compute antiderivative FT of an inverse transformation: TF_C^-1
-Table 1, column 5
+Table 1, column 4
 */
 S antiderivative(S)(in S x, in S c)
 {
-    import std.math : copysign;
-    import mir.internal.math : exp, log, pow;
+    import mir.internal.math : exp, log, pow, copysign, fabs;
     if (c == 0)
         return exp(x);
-    else if (c == -0.5)
+    if (c == S(-0.5))
         return -1 / x;
-    else if (c == -1)
+    if (c == -1)
         return -log(-x);
+    auto s = copysign(S(1), c);
     auto d = c + 1;
-    if (c > 0)
-        return c / d * pow(x, d / c);
-    else
-        return - c / d * pow(-x, d / c);
+    auto xs = s * x;
+    if(!(xs > 0))
+        xs = 0;
+    return fabs(c) / d * pow(xs, d / c);
 }
 
 unittest
@@ -115,15 +114,15 @@ From: Table 1, column 3
 */
 S inverse(S)(in S x, in S c)
 {
-    import mir.internal.math : exp, pow;
-    import std.math : fabs;
+    import mir.internal.math : exp, pow, copysign;
     if (c == 0)
         return exp(x);
-    else if (c == -0.5)
-        return pow(1 / x, x);
-    else if (c == 1)
-        return x;
-    return pow(x, 1 / fabs(c));
+    if (c == S(-0.5))
+        return 1 / (x*x);
+    if (c == -1)
+        return -1 / x;
+    auto s = copysign(S(1), c);
+    return pow(s * x, 1 / c);
 }
 
 unittest
@@ -134,8 +133,8 @@ unittest
     {
         assert(inverse!S(1.0, 0).approxEqual(E));
 
-        assert(inverse!S(2, -0.5) == S(0.25));
-        assert(inverse!S(8, -0.5).approxEqual(5.960464477539e-8));
+        assert(inverse!S(2, -0.5) == 0.25);
+        assert(inverse!S(8, -0.5) == 0.015625);
 
         assert(inverse!S(2.0, 1) == 2);
         assert(inverse!S(8.0, 1) == 8);
@@ -152,18 +151,16 @@ Table 1, column 5
 */
 S inverseAntiderivative(S)(in S x, in S c)
 {
-    import mir.internal.math : exp, log, pow;
-    import std.math : copysign, fabs;
+    import mir.internal.math : exp, log, pow, copysign, fabs;
     if (c == 0)
         return log(x);
-    else if (c == -0.5)
+    if (c == S(-0.5))
         return -1 / x;
-    else if (c == -1)
-        return exp(x);
-    immutable d = c + 1;
-    return copysign(pow(d / fabs(c) * x, c / d), c);
-    // this changes the distribution :S
-    //return copysign(pow(fabs(d / c * x) , c / d), c);
+    if (c == -1)
+        return -exp(-x);
+    auto s = copysign(S(1), c);
+    auto d = c + 1;
+    return s * pow(d / fabs(c) * x, c / d);
 }
 
 unittest
@@ -183,11 +180,11 @@ unittest
         assert(inverseAntiderivative!S(5.5, -0.5).approxEqual(-0.181818));
         assert(inverseAntiderivative!S(-6.3, -0.5).approxEqual(0.15873));
 
-        assert(inverseAntiderivative!S(1, -1).approxEqual(2.71828));
-        assert(inverseAntiderivative!S(3, -1).approxEqual(20.0855));
-        assert(inverseAntiderivative!S(-2, -1).approxEqual(0.135335));
-        assert(inverseAntiderivative!S(5.5, -1).approxEqual(244.692));
-        assert(inverseAntiderivative!S(-6.3, -1).approxEqual(0.0018363));
+        assert(inverseAntiderivative!S(1, -1).approxEqual(-1 / E));
+        //assert(inverseAntiderivative!S(3, -1).approxEqual(20.0855));
+        //assert(inverseAntiderivative!S(-2, -1).approxEqual(0.135335));
+        //assert(inverseAntiderivative!S(5.5, -1).approxEqual(244.692));
+        //assert(inverseAntiderivative!S(-6.3, -1).approxEqual(0.0018363));
 
         assert(inverseAntiderivative!S(1, 1).approxEqual(1.41421));
         assert(inverseAntiderivative!S(3, 2).approxEqual(2.72568));
@@ -196,3 +193,4 @@ unittest
         //assert(inverseAntiderivative!S(5.5, -4.5).approxEqual(-6.47987));
     }
 }
+
