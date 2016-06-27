@@ -12,11 +12,34 @@ Params:
 Returns:
     Splitting point within the interval
 */
-auto arcmean(S)(S l, S r)
+auto arcmean(S, bool sorted = false)(const S x, const S y)
 {
     import std.math: atan, tan;
-    return tan(S(0.5) * (atan(l) + atan(r)));
+
+    S l = x;
+    S r = y;
+    static if(!sorted)
+    {
+        if(r < l)
+        {
+            S t = r;
+            r = l;
+            l = t;
+        }
+    }
+
+    if (r < -S(1e3) || l > S(1e3))
+        return  S(0.5) * (1 / l + 1 / r);
+
+    immutable d = atan(l);
+    immutable b = atan(r);
+
+    if (b - d < S(1e-6))
+        return S(0.5) * l + S(0.5) * r;
+
+    return tan(S(0.5) * (d + b));
 }
+
 
 /**
 Calculate the parameters for an interval.
@@ -141,7 +164,7 @@ body
                 auto right = it;
 
                 // split the interval at the arcmean into two parts
-                auto mid = arcmean(left.front.x, right.front.x);
+                auto mid = arcmean!(S, true)(left.front.x, right.front.x);
                 IntervalPoint!S midIP = intervalTransform(mid, left.front.c);
 
                 // prepare total areas for update
