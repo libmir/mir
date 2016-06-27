@@ -204,9 +204,11 @@ unittest
                                               IntervalPoint!S(f0(r), f1(r), f2(r), r, c));
 
         // entirely convex
+        assert(dt(-S.infinity, -3) == T4b);
         assert(dt(-3.0, -1) == T4b);
         assert(dt(-1.0, 1) == T4b);
         assert(dt(1.0, 3) == T4b);
+        assert(dt(3, S.infinity) == T4b);
     }
 }
 
@@ -224,8 +226,8 @@ unittest
                                               IntervalPoint!S(f0(r), f1(r), f2(r), r, c));
 
         // concave
-        assert(dt(S(-3.0), S(-1)) == T4a);
         assert(dt(-S.infinity, S(-1.0)) == T4a);
+        assert(dt(S(-3.0), S(-1)) == T4a);
 
         // inflection point at x = 0, concave before
         assert(dt(S(-1.0), S(1)) == T1a);
@@ -310,7 +312,9 @@ unittest
         auto dt = (S l, S r) => determineType(IntervalPoint!S(f0(l), f1(l), f2(l), l, c),
                                               IntervalPoint!S(f0(r), f1(r), f2(r), r, c));
         // entirely convex
+        assert(dt(-S.infinity, 1) == T4b);
         assert(dt(-1, 1) == T4b);
         assert(dt(1, 3) == T4b);
+        assert(dt(1, S.infinity) == T4b);
     }
 }
