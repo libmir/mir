@@ -135,15 +135,10 @@ Params:
 
 Returns: Computed area below sh.
 */
-S area(bool isHat, S)(in ref Interval!S iv)
+void area(bool isHat, S)(ref Interval!S iv)
 in
 {
     assert(iv.lx < iv.rx, "invalid interval");
-}
-out (result)
-{
-    import std.math : isNaN;
-    assert(!isNaN(result), "Computed area can't be NaN");
 }
 body
 {
@@ -186,7 +181,7 @@ body
         if (iv.c * sh(iv.rx) < 0 || iv.c * sh(iv.lx) < 0)
         {
             // returning infinity will yield a split on this interval.
-            return S.infinity;
+            area = S.infinity;
         }
 
         immutable intLength = iv.rx - iv.lx;
@@ -245,7 +240,11 @@ body
         area = S.infinity;
     else if (area < 0)
         area = S.infinity;
-    return area;
+
+    static if (isHat)
+        iv.hatArea = area;
+    else
+        iv.squeezeArea = area;
 }
 
 // example from Tinflex
@@ -280,11 +279,11 @@ unittest
             auto iv = it(p1, p2, c);
             determineSqueezeAndHat(iv);
 
-            auto aHat = hatArea!S(iv);
-            assert(aHat.approxEqual(hats[i]));
+            hatArea!S(iv);
+            assert(iv.hatArea.approxEqual(hats[i]));
 
-            auto aSqueeze = squeezeArea!S(iv);
-            assert(aSqueeze.approxEqual(sqs[i]));
+            squeezeArea!S(iv);
+            assert(iv.squeezeArea.approxEqual(sqs[i]));
         }
     }
 }
