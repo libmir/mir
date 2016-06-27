@@ -23,7 +23,7 @@ typeof(R.init())[] sample(R, RNG)(R r, int n, RNG rnd)
 }
 
 /// ditto
-typeof(R.init())[] sample(R, RNG)(R r, int n)
+typeof(R.init())[] sample(R)(R r, int n)
 {
     import std.random : rndGen;
     return sample(r, n, rndGen);
