@@ -221,6 +221,7 @@ body
                 version(Tinflex_logging)
                 {
                     log("--split ", nrIntervals, " between ", it.front.lx, " - ", it.front.rx);
+                    log("interval to be splitted: ", it.front);
                     log("new middle interval created: ", midIP);
                 }
 
@@ -233,6 +234,12 @@ body
                 // recalculate intervals
                 calcInterval(it.front);
                 calcInterval(midIP);
+
+                version(Tinflex_logging)
+                {
+                    log("update left: ", it.front);
+                    log("update mid: ", midIP);
+                }
 
                 // update total areas
                 totalHatAreaSummator += it.front.hatArea;
