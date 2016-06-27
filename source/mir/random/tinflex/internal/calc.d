@@ -237,6 +237,7 @@ body
     return gvs;
 }
 
+// default tinflex with c=1.5
 unittest
 {
     import mir.random.tinflex.internal.calc: calcPoints;
@@ -257,6 +258,28 @@ unittest
     }
 }
 
+// default tinflex with c=1
+unittest
+{
+    import mir.random.tinflex.internal.calc: calcPoints;
+    import std.meta : AliasSeq;
+    import std.range : repeat;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
+        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        S[] cs = [1.0, 1.0, 1.0, 1.0];
+        S[] points = [-3, -1.5, 0, 1.5, 3];
+        auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
+
+        import std.stdio;
+        writeln("IP points generated", ips.length);
+        //assert(ips.length == 45);
+    }
+}
+
+// default tinflex with custom c's
 unittest
 {
     import mir.random.tinflex.internal.calc: calcPoints;

@@ -89,9 +89,9 @@ void test1(string folderName)
     auto tinflex = (double c,  double[] ips) => tinflex(f0, f1, f2, c, ips);
     import std.conv : to;
 
-    //foreach (c; [0.1, 0.5, 1])
-    foreach (c; [0.1, 0.5])
+    foreach (c; [0.1, 0.5, 1])
     {
+        writeln("c", c);
         tinflex(c, [-3.0, -1.5, 0.0, 1.5, 3]).test(folderName.buildPath("dist1_a" ~ c.to!string));
     }
 
@@ -210,7 +210,7 @@ void main()
 
     import std.meta : AliasSeq;
     //alias funs = AliasSeq!(test0, test1, test6);
-    alias funs = AliasSeq!(test0, test6, test_normal);
+    alias funs = AliasSeq!(test0, test1, test6, test_normal);
     foreach (f; funs)
         f(folderName);
 }
