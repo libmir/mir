@@ -1,7 +1,7 @@
 module mir.random.tinflex.internal.calc;
 
-import std.traits: ReturnType;
 import mir.random.tinflex.internal.types : GenerationPoint,  IntervalPoint;
+import std.container.dlist : DList;
 
 /**
 Splits an interval into two points.
@@ -28,7 +28,7 @@ Params:
     ipr = Right interval point
     c   = Custom T_c family
 */
-private void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr, in S c)
+private void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr)
 {
     import mir.random.tinflex.internal.types : determineType;
     import mir.random.tinflex.internal.area: area, determineHatAndSqueeze;
@@ -38,8 +38,8 @@ private void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr, i
     ipl.squeeze = sh.squeeze;
 
     // save area with the left interval
-    ipl.hatArea = area(sh.hat, ipl.x, ipr.x, ipl.tx, ipr.tx, c);
-    ipl.squeezeArea = area(sh.squeeze, ipl.x, ipr.x, ipl.tx, ipr.tx, c);
+    ipl.hatArea = area(sh.hat, ipl.x, ipr.x, ipl.tx, ipr.tx, ipl.c);
+    ipl.squeezeArea = area(sh.squeeze, ipl.x, ipr.x, ipl.tx, ipr.tx, ipl.c);
 
     import std.math: isInfinity;
     if (isInfinity(ipl.squeezeArea))
@@ -56,36 +56,44 @@ Params:
     f0 = probability density function of the distribution
     f1 = first derivative of f0
     f1 = second derivative of f0
-    c = T_c family
+    cs = T_c family (single value or array)
     points = non-overlapping partitioning with at most one inflection point per interval
     rho = efficiency of the Tinflex algorithm
     maxIterations = maximal number of iterations before Tinflex is aborted
 
 Returns: Array of IntervalPoints
 */
-protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
+protected GenerationPoint!S[] calcPoints(F0, F1, F2, S, CRange)
                             (in F0 f0, in F1 f1, in F2 f2,
-                             in S c, in S[] points, in S rho = 1.1, int maxIterations = 10_000)
+                             CRange cs, in S[] points, in S rho = 1.1, in int maxIterations = 10_000)
+in
 {
-    import std.container.dlist : DList;
+    import std.range : empty;
+    assert(!cs.empty, "c point range can't be empty");
+}
+body
+{
     import mir.random.tinflex.internal.transformations : transformToInterval;
-    import std.range : dropOne;
+    import std.range : dropOne, front, empty, popFront;
 
     S totalHatArea = 0;
     S totalSqueezeArea = 0;
     auto nrIntervals = points.length;
 
-    auto intervalTransform = transformToInterval(f0, f1, f2, c);
-    auto ips = DList!(IntervalPoint!S)(intervalTransform(points[0]));
+    auto intervalTransform = transformToInterval!S(f0, f1, f2);
+    auto ips = DList!(IntervalPoint!S)(intervalTransform(points[0], cs.front));
+    cs.popFront();
 
     // initialize with user given splitting points
     foreach (i, p; points[1..$])
     {
-        auto iv = intervalTransform(p);
-        calcInterval(ips.back, iv, c);
+        assert(!cs.empty, "number of c values doesn't match points");
+        auto iv = intervalTransform(p, cs.front);
+        calcInterval(ips.back, iv);
         totalHatArea += ips.back.hatArea;
         totalSqueezeArea += ips.back.squeezeArea;
         ips.insertBack(iv);
+        cs.popFront();
     }
 
     // Tinflex is not guaranteed to converge
@@ -110,11 +118,11 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S)
 
                 // split the interval at the arcmean into two parts
                 auto mid = arcmean(it.front.x, nextView.front.x);
-                IntervalPoint!S midIP = intervalTransform(mid);
+                IntervalPoint!S midIP = intervalTransform(mid, it.front.c);
 
                 // recalculate intervals
-                calcInterval(midIP, nextView.front, c);
-                calcInterval(it.front, midIP, c);
+                calcInterval(midIP, nextView.front);
+                calcInterval(it.front, midIP);
 
                 // insert new middle part into linked list
                 auto itNext = it.save;
@@ -144,6 +152,7 @@ unittest
 {
     import mir.random.tinflex.internal.calc: calcPoints;
     import std.meta : AliasSeq;
+    import std.range : repeat;
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -151,9 +160,31 @@ unittest
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
         S c = 1.5;
         S[] points = [-3, -1.5, 0, 1.5, 3];
-        auto ips = calcPoints(f0, f1, f2, c, points, S(1.1));
+        auto ips = calcPoints(f0, f1, f2, c.repeat, points, S(1.1));
 
         // TODO: should be 45?
-        assert(ips.length == 50);
+        import std.stdio;
+        writeln(ips.length);
+        //assert(ips.length == 50);
+    }
+}
+
+unittest
+{
+    import mir.random.tinflex.internal.calc: calcPoints;
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
+        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        S[] cs = [1.3, 1.4, 1.5, 1.6, 1.7];
+        S[] points = [-3, -1.5, 0, 1.5, 3];
+        auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
+
+        // TODO: should be 45?
+        import std.stdio;
+        writeln(ips.length);
+        //assert(ips.length == 50);
     }
 }

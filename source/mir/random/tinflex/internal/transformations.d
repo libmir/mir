@@ -1,7 +1,5 @@
 module mir.random.tinflex.internal.transformations;
 
-import std.traits: ReturnType;
-
 /**
 Create a c-transformation, based on a function and it's first two derivatives
 
@@ -14,42 +12,45 @@ Returns:
     Struct with the transformed functions that can be used
     to generate IntervalPoints given a specific point x
 */
-auto transformToInterval(F0, F1, F2, S)(in F0 f0, in F1 f1, in F2 f2, in S c)
-    if (is(ReturnType!F0 == S) && is(ReturnType!F1 == S) && is(ReturnType!F2 == S))
+template transformToInterval(S)
 {
-    import mir.internal.math: pow, exp, copysign;
-    import mir.random.tinflex.internal.types : IntervalPoint;
-
-    struct IP
+    auto transformToInterval(F0, F1, F2)(in F0 f0, in F1 f1, in F2 f2)
     {
-        IntervalPoint!S opCall(S x)
+        import mir.internal.math: pow, exp, copysign;
+        import mir.random.tinflex.internal.types : IntervalPoint;
+
+        // for c=0 no transformations are applied
+        struct IP
         {
-            return IntervalPoint!S(t0(x), t1(x), t2(x), x, c);
+            IntervalPoint!S opCall(S x, S c) const
+            {
+                return IntervalPoint!S(t0(x, c), t1(x, c), t2(x, c), x, c);
+            }
+            S t0 (S x, S c) const
+            {
+                if (c == 0)
+                    return f0(x);
+                else
+                    return copysign(S(1), c) * exp(c * f0(x));
+            }
+            S t1 (S x, S c) const
+            {
+                if (c == 0)
+                    return f1(x);
+                else
+                    return c * t0(x, c) * f1(x);
+            }
+            S t2 (S x, S c) const
+            {
+                if (c == 0)
+                    return f2(x);
+                else
+                    return c * t0(x, c) * (c * pow(f1(x), 2) + f2(x));
+            }
         }
-        auto t0 (S)(S x) const
-        {
-            if (c == 0)
-                return f0(x);
-            else
-                return copysign(S(1), c) * exp(c * f0(x));
-        }
-        auto t1 (S)(S x) const
-        {
-            if (c == 0)
-                return f1(x);
-            else
-                return c * t0(x) * f1(x);
-        }
-        auto t2 (S)(S x) const
-        {
-            if (c == 0)
-                return f2(x);
-            else
-                return c * t0(x) * (c * pow(f1(x), 2) + f2(x));
-        }
+        IP ip;
+        return ip;
     }
-    IP ip;
-    return ip;
 }
 
 // TODO: test for c=0
@@ -64,12 +65,12 @@ unittest
         auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
         S c = 1.5;
-        auto t = transformToInterval(f0, f1, f2, c);
+        auto t = transformToInterval!S(f0, f1, f2);
 
         // magic numbers manually verified
-        assert(t.t0(-3).approxEqual(-8.75651e-27));
-        assert(t.t1(-3).approxEqual(-1.02451e-24));
-        assert(t.t2(-3).approxEqual(-1.18581e-22));
+        assert(t.t0(-3, c).approxEqual(-8.75651e-27));
+        assert(t.t1(-3, c).approxEqual(-1.02451e-24));
+        assert(t.t2(-3, c).approxEqual(-1.18581e-22));
     }
 }
 

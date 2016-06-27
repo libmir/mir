@@ -71,7 +71,7 @@ module mir.random.tinflex;
 import mir.random.tinflex.internal.types : GenerationPoint;
 import mir.random.discrete : Discrete;
 
-import std.traits : ReturnType, isFloatingPoint;
+import std.traits : isFloatingPoint, ReturnType;
 import std.random : isUniformRNG;
 
 
@@ -85,7 +85,8 @@ Params:
     f0 = probability density function of the distribution
     f1 = first derivative of f0
     f2 = second derivative of f0
-    c = $(LINK2 #t_c_family, T_c family)
+    c = $(LINK2 #t_c_family, T_c family) value
+    cs = $(LINK2 #t_c_family, T_c family) array
     points = non-overlapping partitioning with at most one inflection point per interval
     rho = efficiency of the Tinflex algorithm
 
@@ -95,11 +96,28 @@ Returns:
 Tinflex!(F0, S) tinflex(F0, F1, F2, S)
                (in F0 f0, in F1 f1, in F2 f2,
                 S c, S[] points, S rho = 1.1)
-    if (isFloatingPoint!S)
+    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!F0) &&
+        isFloatingPoint!(ReturnType!F1) && isFloatingPoint!(ReturnType!F2))
 {
-    // pre-calculate all the points
     import mir.random.tinflex.internal.calc : calcPoints;
-    const gps = calcPoints(f0, f1, f2, c, points, 1.1);
+    import std.range : repeat;
+
+    // pre-calculate all the points
+    const gps = calcPoints(f0, f1, f2, c.repeat, points, 1.1);
+    return Tinflex!(F0, S)(f0, gps);
+}
+
+/// ditto
+Tinflex!(F0, S) tinflex(F0, F1, F2, S)
+               (in F0 f0, in F1 f1, in F2 f2,
+                S[] cs, S[] points, S rho = 1.1)
+    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!F0) &&
+        isFloatingPoint!(ReturnType!F1) && isFloatingPoint!(ReturnType!F2))
+{
+    import mir.random.tinflex.internal.calc : calcPoints;
+
+    // pre-calculate all the points
+    const gps = calcPoints(f0, f1, f2, cs, points, 1.1);
     return Tinflex!(F0, S)(f0, gps);
 }
 
