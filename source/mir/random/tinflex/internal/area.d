@@ -226,9 +226,11 @@ body
             }
         }
     }
-    import std.math : isInfinity, isNaN;
-    if (isInfinity(area) || isNaN(area))
+    import std.math : isNaN;
+    if (isNaN(area))
+    {
         return 0.0;
+    }
     else
         return area;
 }
