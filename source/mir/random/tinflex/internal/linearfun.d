@@ -117,9 +117,11 @@ unittest
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
-        assert(tangent((S x) => cos(x), S(0.0), S(0)) == linearFun!S(S(1.0), S(0)));
+        auto f = (S x) => cos(x);
+        auto buildTan = (S x, S y) => tangent(x, y, f(x));
+        assert(buildTan(0, 0) == linearFun!S(S(1.0), S(0)));
 
-        auto t = tangent((S x) => cos(x), S(PI / 2), S(1));
+        auto t = buildTan(PI / 2, 1);
         assert(t.slope.approxEqual(0));
         assert(t.intercept.approxEqual(1));
     }
