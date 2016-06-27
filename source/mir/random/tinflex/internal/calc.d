@@ -217,7 +217,10 @@ body
 
                 // insert new middle part into linked list
                 it.popFront;
-                ips.insertBefore(it, midIP);
+                if (it.empty)
+                    ips.insertBack(midIP);
+                else
+                    ips.insertBefore(it, midIP);
                 nrIntervals++;
 
                 import std.array;
