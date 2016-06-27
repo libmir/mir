@@ -39,7 +39,7 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName)
     auto gg = GGPlotD().put(geomRectangle(k));
 
     // plot PDF
-    auto xs = iota(-3, 3, 0.01).array;
+    auto xs = iota!S(-3, 3, 0.01).array;
     auto ysfit = xs.map!((x) => exp(tf.pdf(x)) / 100).array;
     gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ysfit),
         "y")( xs, ysfit ) ) );
@@ -186,6 +186,20 @@ void test6(string folderName)
     .test(folderName.buildPath("dist6"));
 }
 
+
+void test_normal(string folderName)
+{
+    import std.math : exp, PI, sqrt;
+    alias S = real;
+    S[] points = [-3, -1.5, 0, 1.5, 3];
+    S sqrt2PI = sqrt(2 * PI);
+    auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
+    auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
+    auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
+    tinflex(f0, f1, f2, 1.5, points)
+    .test(folderName.buildPath("dist_normal"));
+}
+
 void main()
 {
     import std.file : exists, mkdir;
@@ -196,7 +210,8 @@ void main()
 
     import std.meta : AliasSeq;
     //alias funs = AliasSeq!(test0, test1, test6);
-    alias funs = AliasSeq!(test0);
+    //alias funs = AliasSeq!(test0);
+    alias funs = AliasSeq!(test0, test_normal);
     foreach (f; funs)
         f(folderName);
 }
