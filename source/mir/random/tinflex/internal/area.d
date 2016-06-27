@@ -173,6 +173,7 @@ body
         {
             // returning infinity will yield a split on this interval.
             area = S.infinity;
+            goto L;
         }
 
         immutable intLength = iv.rx - iv.lx;
@@ -232,6 +233,7 @@ body
     else if (area < 0)
         area = S.infinity;
 
+L:
     static if (isHat)
         iv.hatArea = area;
     else
