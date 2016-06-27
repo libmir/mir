@@ -90,7 +90,7 @@ It is based on this naming scheme:
 - b: convex
 - Type 4 is the pure case without any inflection point
 */
-enum FunType {T1a, T1b, T2a, T2b, T3a, T3b, T4a, T4b}
+enum FunType {undefined, T1a, T1b, T2a, T2b, T3a, T3b, T4a, T4b}
 
 /**
 Determine the function type of an interval.
@@ -118,6 +118,11 @@ body
         if (l.t1x <= R && r.t1x <= R)
             return T1b;
 
+        if (l.t2x <= 0 && r.t2x <= 0)
+            return T4a;
+        if (l.t2x >= 0 && r.t2x >= 0)
+            return T4b;
+
         if (l.t1x >= R && R >= r.t1x)
         {
             if (l.t2x < 0 && r.t2x > 0)
@@ -132,12 +137,9 @@ body
             if (l.t2x > 0 && r.t2x < 0)
                 return T3b;
         }
-        if (l.t2x <= 0 && r.t2x <= 0)
-            return T4a;
-        if (l.t2x >= 0 && r.t2x >= 0)
-            return T4b;
+
+        return undefined;
     }
-    assert(0, "Unknown type");
 }
 
 unittest
