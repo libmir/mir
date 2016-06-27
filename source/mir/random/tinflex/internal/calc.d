@@ -143,8 +143,8 @@ body
 
     version(Tinflex_logging)
     {
-        import std.stdio;
-        writeln("starting tinflex with p=", points);
+        import std.experimental.logger;
+        log("starting tinflex with p=", points);
     }
 
     // initialize with user given splitting points
@@ -171,11 +171,11 @@ body
     {
         import std.algorithm;
         import std.array;
-        writeln("----");
-        writeln("Interval: ", ips.array.map!`a.lx`);
-        writeln("hatArea", ips.array.map!`a.hatArea`);
-        writeln("squeezeArea", ips.array.map!`a.squeezeArea`);
-        writeln("----");
+        log("----");
+        log("Interval: ", ips.array.map!`a.lx`);
+        log("hatArea", ips.array.map!`a.hatArea`);
+        log("squeezeArea", ips.array.map!`a.squeezeArea`);
+        log("----");
     }
 
     // Tinflex is not guaranteed to converge
@@ -213,8 +213,8 @@ body
 
                 version(Tinflex_logging)
                 {
-                    writeln("--split ", nrIntervals, " between ", it.front.lx, " - ", it.front.rx);
-                    writeln("new middle interval created: ", midIP);
+                    log("--split ", nrIntervals, " between ", it.front.lx, " - ", it.front.rx);
+                    log("new middle interval created: ", midIP);
                 }
 
                 // left interval: update right values
@@ -247,6 +247,10 @@ body
             {
                 it.popFront;
             }
+            version(Tinflex_logging)
+            {
+                log("a");
+            }
         }
     }
 
@@ -259,8 +263,8 @@ body
 
     version(Tinflex_logging)
     {
-        writeln("Intervals generated: ", gvs.length);
-        writeln(gvs.array.map!`a.lx`);
+        log("Intervals generated: ", gvs.length);
+        log(gvs.array.map!`a.lx`);
     }
     return gvs;
 }
