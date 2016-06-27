@@ -74,7 +74,7 @@ in
 body
 {
     import mir.random.tinflex.internal.transformations : transformToInterval;
-    import std.range : dropOne, front, empty, popFront;
+    import std.range : front, empty, popFront;
 
     S totalHatArea = 0;
     S totalSqueezeArea = 0;
@@ -93,7 +93,7 @@ body
         totalHatArea += ips.back.hatArea;
         totalSqueezeArea += ips.back.squeezeArea;
         ips.insertBack(iv);
-        cs.popFront();
+        cs.popFront;
     }
 
     // Tinflex is not guaranteed to converge
@@ -103,39 +103,42 @@ body
         if (totalHatArea / totalSqueezeArea <= rho)
             break;
 
-        S a_avg = (totalHatArea - totalSqueezeArea) / (nrIntervals - 1);
-        // first iteration: search only (we update the list online later)
+        S avgArea = (totalHatArea - totalSqueezeArea) / (nrIntervals - 1);
         auto it = ips[];
         foreach (j; 0..nrIntervals - 1)
         {
-            if (it.front.hatArea - it.front.squeezeArea > a_avg)
+            auto curArea = it.front.hatArea - it.front.squeezeArea;
+            if (curArea > avgArea)
             {
-                // prepare total areas for update
-                totalHatArea -= it.front.hatArea;
-                totalSqueezeArea -= it.front.squeezeArea;
+                auto left = it.save;
+                it.popFront;
+                auto right = it;
 
-                auto nextView = it.save.dropOne;
+                // prepare total areas for update
+                totalHatArea -= left.front.hatArea;
+                totalSqueezeArea -= left.front.squeezeArea;
 
                 // split the interval at the arcmean into two parts
-                auto mid = arcmean(it.front.x, nextView.front.x);
-                IntervalPoint!S midIP = intervalTransform(mid, it.front.c);
+                auto mid = arcmean(left.front.x, right.front.x);
+                IntervalPoint!S midIP = intervalTransform(mid, left.front.c);
 
                 // recalculate intervals
-                calcInterval(midIP, nextView.front);
-                calcInterval(it.front, midIP);
+                calcInterval(left.front, midIP);
+                calcInterval(midIP, right.front);
 
                 // insert new middle part into linked list
-                auto itNext = it.save;
-                itNext.popFront();
-                ips.insertBefore(itNext, midIP);
+                ips.insertBefore(it, midIP);
 
                 // update total areas
-                totalHatArea += it.front.hatArea + midIP.hatArea;
-                totalSqueezeArea += it.front.squeezeArea + midIP.squeezeArea;
+                totalHatArea += left.front.hatArea + midIP.hatArea;
+                totalSqueezeArea += left.front.squeezeArea + midIP.squeezeArea;
 
                 nrIntervals++;
             }
-            it.popFront();
+            else
+            {
+                it.popFront;
+            }
         }
     }
 
@@ -162,10 +165,7 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = calcPoints(f0, f1, f2, c.repeat, points, S(1.1));
 
-        // TODO: should be 45?
-        import std.stdio;
-        writeln(ips.length);
-        //assert(ips.length == 50);
+        assert(ips.length == 45);
     }
 }
 
@@ -182,9 +182,6 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
 
-        // TODO: should be 45?
-        import std.stdio;
-        writeln(ips.length);
-        //assert(ips.length == 50);
+        assert(ips.length == 45);
     }
 }
