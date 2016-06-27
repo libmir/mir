@@ -32,7 +32,7 @@ SqueezeAndHat!S determineSqueezeAndHat(S)(in IntervalPoint!S l, in IntervalPoint
     // could potentially be saved for subsequent calls
     FunType type = determineType(l, r);
     with(FunType) with(ret)
-    final switch(type)
+    switch(type)
     {
         case T1a:
             squeeze = mixin(t_r);
@@ -66,6 +66,8 @@ SqueezeAndHat!S determineSqueezeAndHat(S)(in IntervalPoint!S l, in IntervalPoint
             squeeze = l.tx < r.tx ? mixin(t_l) : mixin(t_r);
             hat = mixin(sec);
             break;
+        default:
+            ret = ret.init;
     }
     return ret;
 }
