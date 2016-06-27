@@ -195,7 +195,8 @@ body
                     i, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
         }
 
-        immutable avgArea = (totalHatArea - totalSqueezeArea) / nrIntervals;
+        import std.math: nextDown;
+        immutable avgArea = nextDown(totalHatArea - totalSqueezeArea) / nrIntervals;
         for(auto it = ips[]; !it.empty;)
         {
             immutable curArea = it.front.hatArea - it.front.squeezeArea;
