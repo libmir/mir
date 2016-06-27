@@ -127,15 +127,15 @@ body
 
     auto nrIntervals = points.length;
 
-    auto intervalTransform = transformToInterval!S(f0, f1, f2);
-    auto ips = DList!(IntervalPoint!S)(intervalTransform(points[0], cs.front));
+    auto ips = DList!(IntervalPoint!S)(transformToInterval(points[0], cs.front,
+                                      f0(points[0]), f1(points[1]), f2(points[2])));
     cs.popFront();
 
     // initialize with user given splitting points
     foreach (i, p; points[1..$])
     {
         assert(!cs.empty, "number of c values doesn't match points");
-        auto iv = intervalTransform(p, cs.front);
+        auto iv = transformToInterval(p, cs.front, f0(p), f1(p), f2(p));
 
         calcInterval(ips.back, iv);
         totalHatAreaSummator += ips.back.hatArea;
@@ -166,7 +166,8 @@ body
 
                 // split the interval at the arcmean into two parts
                 auto mid = arcmean!(S, true)(left.front.x, right.front.x);
-                IntervalPoint!S midIP = intervalTransform(mid, left.front.c);
+                IntervalPoint!S midIP = transformToInterval(mid, left.front.c,
+                                                    f0(mid), f1(mid), f2(mid));
 
                 // prepare total areas for update
                 totalHatAreaSummator -= left.front.hatArea;

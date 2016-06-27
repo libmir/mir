@@ -251,13 +251,13 @@ unittest
         const f2 = (S x) => 10 - 12 * x ^^ 2;
         S c = 1.5;
 
-        auto intervalTransform = transformToInterval!S(f0, f1, f2);
+        auto it = (S x, S c) => transformToInterval(x, c, f0(x), f1(x), f2(x));
 
         // calculate the area of all intervals
         foreach (i, p1, p2; points.lockstep(points.save.dropOne))
         {
-            auto s1 = intervalTransform(p1, c);
-            auto s2 = intervalTransform(p2, c);
+            auto s1 = it(p1, c);
+            auto s2 = it(p2, c);
             auto sh = determineSqueezeAndHat(s1, s2);
 
             auto aHat = area(sh.hat, s1.x, s2.x, s1.tx, s2.tx, c);
