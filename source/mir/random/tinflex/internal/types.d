@@ -41,11 +41,19 @@ struct IntervalPoint(S)
 
     // disallow NaN points
     invariant {
-        import std.math : isNaN;
+        import std.math : isFinite, isNaN;
         import std.meta : AliasSeq;
-        alias seq =  AliasSeq!(x, c, tx, t1x, t2x);
+        //alias seq =  AliasSeq!(x, c, tx, t1x, t2x);
+        alias seq =  AliasSeq!(x, c, tx);
         foreach (i, v; seq)
             assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
+
+        if (x.isFinite)
+        {
+            alias tseq =  AliasSeq!(t1x, t2x);
+            foreach (i, v; tseq)
+                assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN");
+        }
     }
 }
 

@@ -70,14 +70,31 @@ GenerationPoint!S[] calcPoints(F0, F1, F2, S, CRange)
                              CRange cs, in S[] points, in S rho = 1.1, in int maxIterations = 10_000)
 in
 {
-    import std.range.primitives : empty;
+    import std.algorithm.searching : all;
+    import std.math : isFinite, isInfinity;
+    import std.range: drop, empty, front, save;
+
     assert(!cs.empty, "c point range can't be empty");
+
+    // check p
+    assert(points[1..$-2].all!isFinite, "intermediate interval can't be indefinite");
+
+    // check first c
+    if (points[0].isInfinity)
+        assert(cs.front > - 1,"c must be > -1 for unbounded domains");
+
+    // check last c
+    if (points[0].isInfinity)
+    {
+        auto lastC = cs.save.drop(points.length - 1).front;
+        assert(lastC > - 1,"c must be > -1 for unbounded domains");
+    }
 }
 body
 {
     import mir.random.tinflex.internal.transformations : transformToInterval;
-    import std.range.primitives : front, empty, popFront;
     import mir.sum: Summator, Summation;
+    import std.range.primitives : front, empty, popFront;
 
     alias Sum = Summator!(S, Summation.precise);
 
@@ -95,6 +112,7 @@ body
     {
         assert(!cs.empty, "number of c values doesn't match points");
         auto iv = intervalTransform(p, cs.front);
+
         calcInterval(ips.back, iv);
         totalHatAreaSummator += ips.back.hatArea;
         totalSqueezeAreaSummator += ips.back.squeezeArea;
@@ -214,6 +232,29 @@ unittest
         auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
         S c = 1.5;
         S[] points = [-3, -1.5, 0, 1.5, 3];
+        auto ips = calcPoints(f0, f1, f2, c.repeat, points, S(1.1));
+
+        import std.stdio;
+        writeln("IP points generated", ips.length);
+    }
+}
+
+// test standard normal distribution
+unittest
+{
+    import mir.random.tinflex.internal.calc: calcPoints;
+    import mir.internal.math : exp, sqrt;
+    import std.meta : AliasSeq;
+    import std.range : repeat;
+    import std.math : PI;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        S sqrt2PI = sqrt(2 * PI);
+        auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
+        auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
+        auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
+        S c = 1.5;
+        S[] points = [-S.infinity, -1.5, 0, 1.5, S.infinity];
         auto ips = calcPoints(f0, f1, f2, c.repeat, points, S(1.1));
 
         import std.stdio;

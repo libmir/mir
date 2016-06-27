@@ -191,7 +191,7 @@ void test_normal(string folderName)
 {
     import std.math : exp, PI, sqrt;
     alias S = real;
-    S[] points = [-3, -1.5, 0, 1.5, 3];
+    S[] points = [-S.infinity, -1.5, 0, 1.5, S.infinity];
     S sqrt2PI = sqrt(2 * PI);
     auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
     auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
