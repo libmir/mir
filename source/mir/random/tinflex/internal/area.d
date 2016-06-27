@@ -261,7 +261,7 @@ unittest
         const f2 = (S x) => 10 - 12 * x ^^ 2;
         S c = 1.5;
 
-        auto it = (S l, S r, S c) => transformToInterval(r, l, c, f0(l), f1(l), f2(l),
+        auto it = (S l, S r, S c) => transformToInterval(l, r, c, f0(l), f1(l), f2(l),
                                                                   f0(r), f1(r), f2(r));
 
         // calculate the area of all intervals
