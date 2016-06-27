@@ -68,16 +68,20 @@ protected GenerationPoint!S[] calcPoints(F0, F1, F2, S, CRange)
                              CRange cs, in S[] points, in S rho = 1.1, in int maxIterations = 10_000)
 in
 {
-    import std.range : empty;
+    import std.range.primitives : empty;
     assert(!cs.empty, "c point range can't be empty");
 }
 body
 {
     import mir.random.tinflex.internal.transformations : transformToInterval;
-    import std.range : front, empty, popFront;
+    import std.range.primitives : front, empty, popFront;
+    import mir.sum: Summator, Summation;
 
-    S totalHatArea = 0;
-    S totalSqueezeArea = 0;
+    alias Sum = Summator!(S, Summation.precise);
+
+    Sum totalHatAreaSummator = 0;
+    Sum totalSqueezeAreaSummator = 0;
+
     auto nrIntervals = points.length;
 
     auto intervalTransform = transformToInterval!S(f0, f1, f2);
@@ -90,8 +94,8 @@ body
         assert(!cs.empty, "number of c values doesn't match points");
         auto iv = intervalTransform(p, cs.front);
         calcInterval(ips.back, iv);
-        totalHatArea += ips.back.hatArea;
-        totalSqueezeArea += ips.back.squeezeArea;
+        totalHatAreaSummator += ips.back.hatArea;
+        totalSqueezeAreaSummator += ips.back.squeezeArea;
         ips.insertBack(iv);
         cs.popFront;
     }
@@ -99,39 +103,43 @@ body
     // Tinflex is not guaranteed to converge
     foreach (i; 0..maxIterations)
     {
+        immutable totalHatArea = totalHatAreaSummator.sum;
+        immutable totalSqueezeArea = totalSqueezeAreaSummator.sum;
+
         // Tinflex aims for a user defined efficiency
         if (totalHatArea / totalSqueezeArea <= rho)
             break;
 
-        S avgArea = (totalHatArea - totalSqueezeArea) / (nrIntervals - 1);
-        auto it = ips[];
-        foreach (j; 0..nrIntervals - 1)
+        immutable avgArea = (totalHatArea - totalSqueezeArea) / (nrIntervals - 1);
+        for(auto it = ips[]; !it.empty;)
         {
-            auto curArea = it.front.hatArea - it.front.squeezeArea;
+            immutable curArea = it.front.hatArea - it.front.squeezeArea;
             if (curArea > avgArea)
             {
                 auto left = it.save;
                 it.popFront;
                 auto right = it;
 
-                // prepare total areas for update
-                totalHatArea -= left.front.hatArea;
-                totalSqueezeArea -= left.front.squeezeArea;
-
                 // split the interval at the arcmean into two parts
                 auto mid = arcmean(left.front.x, right.front.x);
                 IntervalPoint!S midIP = intervalTransform(mid, left.front.c);
+
+                // prepare total areas for update
+                totalHatAreaSummator -= left.front.hatArea;
+                totalSqueezeAreaSummator -= left.front.squeezeArea;
 
                 // recalculate intervals
                 calcInterval(left.front, midIP);
                 calcInterval(midIP, right.front);
 
+                // update total areas
+                totalHatAreaSummator += left.front.hatArea;
+                totalHatAreaSummator += midIP.hatArea;
+                totalSqueezeAreaSummator += left.front.squeezeArea;
+                totalSqueezeAreaSummator += midIP.squeezeArea;
+
                 // insert new middle part into linked list
                 ips.insertBefore(it, midIP);
-
-                // update total areas
-                totalHatArea += left.front.hatArea + midIP.hatArea;
-                totalSqueezeArea += left.front.squeezeArea + midIP.squeezeArea;
 
                 nrIntervals++;
             }
