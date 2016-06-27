@@ -161,8 +161,6 @@ body
         ips.insertBack(iv);
     }
 
-    import std.stdio;
-
     // Tinflex is not guaranteed to converge
     while(apprMaxPoints > nrIntervals)
     {
@@ -187,23 +185,20 @@ body
                 auto mid = arcmean!(S, true)(it.front.lx, it.front.rx);
 
                 // create new interval (right side)
-                S m0 = f0(mid);
-                S m1 = f1(mid);
-                S m2 = f2(mid);
-                writeln("mid", mid, " ", m0, " ", m1, " ", m2);
-                writeln("r", it.front.rx);
-                Interval!S midIP = transformToInterval(mid, it.front.rx, it.front.c,
-                                                       m0, m1, m2,
-                                                       it.front.rtx, it.front.rt1x, it.front.rt2x);
+                S m0, m1, m2;
 
-                writeln("midIP", midIP);
+                // apply transformation to new values
+                transform(it.front.c, f0(mid), f1(mid), f2(mid), m0, m1, m2);
+
+                Interval!S midIP = Interval!S(mid, it.front.rx, it.front.c,
+                                              m0, m1, m2,
+                                              it.front.rtx, it.front.rt1x, it.front.rt2x);
 
                 // left interval: update right values
                 it.front.rx = mid;
-                transform(it.front.c, m0, m1, m2,
-                          it.front.rtx, it.front.rt1x, it.front.rt2x);
-
-                writeln("left", it.front);
+                it.front.rtx = m0;
+                it.front.rt1x = m1;
+                it.front.rt2x = m2;
 
                 // recalculate intervals
                 calcInterval(it.front);
@@ -222,10 +217,6 @@ body
                     ips.insertBefore(it, midIP);
                 it.popFront;
                 nrIntervals++;
-
-                import std.array;
-                import std.algorithm : map;
-                writeln(ips.array.map!`a.lx`);
             }
             else
             {

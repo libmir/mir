@@ -161,6 +161,11 @@ struct Tinflex(F0, S)
         this.ds = Discrete!S(cdPoints);
     }
 
+    S pdf(S x) @property const
+    {
+        return _f0(x);
+    }
+
     /// Generated partition points
     package const(GenerationInterval!S[]) gvs() @property const
     {
