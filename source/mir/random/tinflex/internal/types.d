@@ -131,7 +131,8 @@ in
 }
 out(type)
 {
-    assert(type);
+    import std.conv : to;
+    assert(type, iv.to!string);
 }
 body
 {

@@ -107,15 +107,6 @@ unittest
     }
 }
 
-unittest
-{
-    alias S = double;
-    auto iv = Interval!float(-S.infinity, -1.5, 1.5, 1, 0.291415, -0.513491, 1.21443, 0.353903, 0.398052);
-    import std.stdio;
-    determineSqueezeAndHat(iv);
-    writeln(iv);
-}
-
 alias hatArea(S) = area!(true, S);
 alias squeezeArea(S) = area!(false, S);
 

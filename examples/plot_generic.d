@@ -29,7 +29,7 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
     auto aes = Aes!(typeof(values), "x")(values);
 
     // normalize histogram
-    auto rect = statHist(aes, 50);
+    auto rect = statHist(aes, 100);
     auto rTotal =  rect.map!`a.height`.sum;
     auto k = rect.map!((r) {
         r.height = r.height / rTotal;
@@ -39,7 +39,7 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
     auto gg = GGPlotD().put(geomRectangle(k));
 
     // plot PDF
-    auto xs = iota!S(left, right, 0.01).array;
+    auto xs = iota!S(left, right, 0.1).array;
     auto ysfit = xs.map!((x) => exp(tf.pdf(x)) / 100).array;
     gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ysfit),
         "y")( xs, ysfit ) ) );
@@ -191,7 +191,8 @@ void test_normal(string folderName)
 {
     import std.math : exp, PI, sqrt;
     alias S = real;
-    S[] points = [-S.infinity, -1.5, 0, 1.5, S.infinity];
+    //S[] points = [-S.infinity, -1.5, 0, 1.5, S.infinity];
+    S[] points = [-3, -1.5, 0, 1.5, 3];
     S sqrt2PI = sqrt(2 * PI);
     auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
     auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));

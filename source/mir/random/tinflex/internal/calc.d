@@ -212,6 +212,8 @@ body
 
                 // insert new middle part into linked list
                 it.popFront;
+                // @@@bug@@@ in DList, insertBefore with an empty list inserts
+                // at the front
                 if (it.empty)
                     ips.insertBack(midIP);
                 else
@@ -232,8 +234,6 @@ body
         gvs[i++] = GenerationInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
                                      ip.squeeze, ip.hatArea, ip.squeezeArea);
 
-    import std.stdio;
-    writeln("gps", gvs);
     return gvs;
 }
 
@@ -266,7 +266,7 @@ unittest
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
         auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
-        S[] cs = [1.3, 1.4, 1.5, 1.6, 1.7];
+        S[] cs = [1.3, 1.4, 1.5, 1.6];
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
 
@@ -290,29 +290,6 @@ unittest
         auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
         S[] cs = [1.5, 1.5, 1.5, 1.5];
         S[] points = [-3, -1.5, 0, 1.5, 3];
-        auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
-
-        import std.stdio;
-        writeln("IP points generated", ips.length);
-    }
-}
-
-// test standard normal distribution
-unittest
-{
-    import mir.random.tinflex.internal.calc: calcPoints;
-    import mir.internal.math : exp, sqrt;
-    import std.meta : AliasSeq;
-    import std.range : repeat;
-    import std.math : PI;
-    foreach (S; AliasSeq!(float, double, real))
-    {
-        S sqrt2PI = sqrt(2 * PI);
-        auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
-        auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
-        auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
-        S[] cs = [1.5, 1.5, 1.5, 1.5];
-        S[] points = [-S.infinity, -1.5, 0, 1.5, S.infinity];
         auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
 
         import std.stdio;
