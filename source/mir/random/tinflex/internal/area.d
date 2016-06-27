@@ -158,7 +158,7 @@ body
         // check whether approximation is possible, page 5
         if (abs(z) < S(1e-6))
         {
-            area = exp(sh._y) * (iv.rx - iv.lx) * (1 + z / 2 + (z^^2) / 6);
+            area = exp(sh._y) * (iv.rx - iv.lx) * (1 + z / 2 + (z * z) / 6);
         }
         else
         {
