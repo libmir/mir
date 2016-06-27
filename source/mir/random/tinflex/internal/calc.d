@@ -100,7 +100,8 @@ Returns: Array of IntervalPoints
 */
 GenerationInterval!S[] calcPoints(F0, F1, F2, S)
                             (in F0 f0, in F1 f1, in F2 f2,
-                             in S[] cs, in S[] points, in S rho = 1.1, in int apprMaxPoints = 1_000)
+                             in S[] cs, in S[] points, in S rho = 1.1,
+                             in int apprMaxPoints = 1_000, in int maxIterations = 1_000)
 in
 {
     import std.algorithm.searching : all;
@@ -179,7 +180,7 @@ body
     }
 
     // Tinflex is not guaranteed to converge
-    while(apprMaxPoints > nrIntervals)
+    for (auto i = 0; i < maxIterations && nrIntervals < apprMaxPoints; i++)
     {
         immutable totalHatArea = totalHatAreaSummator.sum;
         immutable totalSqueezeArea = totalSqueezeAreaSummator.sum;
@@ -246,10 +247,6 @@ body
             else
             {
                 it.popFront;
-            }
-            version(Tinflex_logging)
-            {
-                log("a");
             }
         }
     }
