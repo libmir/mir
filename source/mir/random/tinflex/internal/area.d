@@ -57,6 +57,18 @@ SqueezeAndHat!S determineSqueezeAndHat(S)(in IntervalPoint!S l, in IntervalPoint
             hat = mixin(sec);
             break;
         case T4a:
+            if (l.x == -S.infinity)
+            {
+                squeeze = squeeze.init;
+                hat = mixin(t_r);
+                break;
+            }
+            if (r.x == +S.infinity)
+            {
+                squeeze = squeeze.init;
+                hat = mixin(t_l);
+                break;
+            }
             squeeze = mixin(sec);
             hat = l.tx > r.tx ? mixin(t_l) : mixin(t_r);
             break;
@@ -152,7 +164,7 @@ body
     else
     {
         // for c < 0, the tangent result must result in a valid (bounded) hat function
-        if (copysign(sh(r), c) < 0 || copysign(sh(l), c) < 0)
+        if (c * sh(r) < 0 || c * sh(l) < 0)
         {
             // returning infinity will yield a split on this interval.
             return S.infinity;
@@ -163,12 +175,12 @@ body
         if (c == 1)
         {
             // T_c^-1 = x^c
-            area = 0.5  * sh._y * (r - l) * (2 + z);
+            area = S(0.5) * sh._y * (r - l) * (2 + z);
         }
-        else if (c == -0.5)
+        else if (c == S(-0.5))
         {
             // T_c = -1/sqrt(x)
-            if (abs(z) < 0.5)
+            if (abs(z) < S(0.5))
             {
                 // T_c^-1 = 1/x^2
                 area = 1 / (sh._y * sh._y) * (1 - z + z * z);
@@ -181,7 +193,7 @@ body
         else if (c == -1)
         {
             // T_C = -1 / x
-            if (abs(z) < 1e-6)
+            if (abs(z) < S(1e-6))
             {
                 // T_C^-1 = -1 / x
                 area = -1 / sh._y * (r - l) * (1 - z / 2 + z * z / 3);
@@ -196,7 +208,7 @@ body
         {
             // T_c = -1 / x
             //area = (r - l) * c / (c + 1) * 1 / z * ((1 + z)^^((c + 1) / c) - 1);
-            if (abs(sh.slope) > 1e-10)
+            if (abs(sh.slope) > S(1e-10))
             {
                 alias ad = antiderivative;
                 area = (ad(sh(r), c) - ad(sh(l), c)) / sh.slope;
