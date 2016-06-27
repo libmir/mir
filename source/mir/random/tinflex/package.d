@@ -1,4 +1,6 @@
 /**
+Tinflex module.
+
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: Sebastian Wilzbach, Ilya Yaroshenko
@@ -10,8 +12,7 @@ point.
 
 These can be easily found by plotting `f''`.
 $(B Inflection point) can be identified by observing at which points `f''` is 0
-and an inflection interval which is defined by two inflection points can either
-be:
+and an inflection interval which is defined by two inflection points can either be:
 
 $(UL
     $(LI $(F_TILDE) is entirely concave (`f''` is entirely negative))
@@ -19,8 +20,7 @@ $(UL
     $(LI $(F_TILDE) contains one inflection point (`f''` intersects the x-axis once))
 )
 
-It is not important to identity the exact inflection points, but the user input
-requires:
+It is not important to identity the exact inflection points, but the user input requires:
 
 $(UL
     $(LI Continuous density function $(F_TILDE).)
@@ -44,8 +44,7 @@ but increases the speed of sampling. For example an efficiency of 1.1 means
 that 10% of all drawn uniform numbers don't match the target distribution
 and need be resampled.
 
-$(H3 Transformation function (T_c))
-<a name="t_c_family></a>
+$(H3 Transformation function (T_c)) $(A_NAME t_c_family)
 
 The Tinflex algorithm uses a family of T_c transformations.
 
@@ -65,6 +64,7 @@ References:
 
 Macros:
     F_TILDE=$(D g(x))
+    A_NAME=<a name="$1"></a>
 */
 module mir.random.tinflex;
 
@@ -193,6 +193,28 @@ struct Tinflex(F0, S)
     }
 }
 
+///
+unittest
+{
+    import std.math : approxEqual;
+    import std.meta : AliasSeq;
+    import std.random : Mt19937;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        auto gen = Mt19937(42);
+        auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
+        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        S[] points = [-3, -1.5, 0, 1.5, 3];
+
+        auto tf = tinflex(f0, f1, f2, 1.5, points, 1.1);
+
+        auto value = tf(gen);
+        assert(value.approxEqual(-1.2631));
+    }
+    // see more examples at mir/examples
+}
+
 /**
 Sample from the distribution with generated, non-overlapping hat and squeeze functions.
 Uses acceptance-rejection algorithm.
@@ -206,7 +228,7 @@ See_Also:
    $(LINK2 https://en.wikipedia.org/wiki/Rejection_sampling,
      Acceptance-rejection sampling)
 */
-protected S tinflexImpl(F0, S, RNG)
+private S tinflexImpl(F0, S, RNG)
           (in F0 f0, in GenerationPoint!S[] gps, in Discrete!S ds, ref RNG rng)
     if (isUniformRNG!RNG)
 {
@@ -251,26 +273,4 @@ protected S tinflexImpl(F0, S, RNG)
         if (t <= exp(f0(X)))
             return X;
     }
-}
-
-///
-unittest
-{
-    import std.math : approxEqual;
-    import std.meta : AliasSeq;
-    import std.random : Mt19937;
-    foreach (S; AliasSeq!(float, double, real))
-    {
-        auto gen = Mt19937(42);
-        auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        auto f2 = (S x) => 10 - 12 * x ^^ 2;
-        S[] points = [-3, -1.5, 0, 1.5, 3];
-
-        auto tf = tinflex(f0, f1, f2, 1.5, points, 1.1);
-
-        auto value = tf(gen);
-        assert(value.approxEqual(-1.2631));
-    }
-    // see more examples at mir/examples
 }

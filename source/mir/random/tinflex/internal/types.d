@@ -2,8 +2,6 @@ module mir.random.tinflex.internal.types;
 
 import std.traits: ReturnType, isFloatingPoint;
 
-protected:
-
 /**
 Major data unit of the Tinflex algorithm.
 It is used to store

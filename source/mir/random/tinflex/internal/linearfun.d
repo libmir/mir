@@ -2,8 +2,6 @@ module mir.random.tinflex.internal.linearfun;
 
 import std.traits : isCallable;
 
-protected:
-
 /**
 Representation of linear function of the form:
     y = slope * x + intercept

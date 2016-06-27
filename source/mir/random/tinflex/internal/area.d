@@ -4,8 +4,6 @@ import mir.random.tinflex.internal.types : IntervalPoint;
 import mir.random.tinflex.internal.linearfun : LinearFun;
 import std.traits : ReturnType;
 
-protected:
-
 /**
 Tuple of hat and squeeze function.
 */

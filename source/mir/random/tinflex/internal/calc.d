@@ -12,7 +12,7 @@ Params:
 Returns:
     Splitting point within the interval
 */
-private auto arcmean(S)(S l, S r)
+auto arcmean(S)(S l, S r)
 {
     import std.math: atan, tan;
     return tan(S(0.5) * (atan(l) + atan(r)));
@@ -28,7 +28,7 @@ Params:
     ipr = Right interval point
     c   = Custom T_c family
 */
-private void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr)
+void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr)
 {
     import mir.random.tinflex.internal.types : determineType;
     import mir.random.tinflex.internal.area: area, determineSqueezeAndHat;
@@ -65,7 +65,7 @@ Params:
 
 Returns: Array of IntervalPoints
 */
-protected GenerationPoint!S[] calcPoints(F0, F1, F2, S, CRange)
+GenerationPoint!S[] calcPoints(F0, F1, F2, S, CRange)
                             (in F0 f0, in F1 f1, in F2 f2,
                              CRange cs, in S[] points, in S rho = 1.1, in int maxIterations = 10_000)
 in

@@ -19,7 +19,7 @@ import ggplotd.stat : statHist;
 /**
 Simple plotting
 */
-void test(F0, S)(Tinflex!(F0, S) tf, string fileName)
+void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right = 3)
 {
     import std.random : rndGen;
     rndGen.seed(42);
@@ -39,7 +39,7 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName)
     auto gg = GGPlotD().put(geomRectangle(k));
 
     // plot PDF
-    auto xs = iota!S(-3, 3, 0.01).array;
+    auto xs = iota!S(left, right, 0.01).array;
     auto ysfit = xs.map!((x) => exp(tf.pdf(x)) / 100).array;
     gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ysfit),
         "y")( xs, ysfit ) ) );
