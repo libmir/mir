@@ -211,11 +211,11 @@ body
                 totalSqueezeAreaSummator += midIP.squeezeArea;
 
                 // insert new middle part into linked list
+                it.popFront;
                 if (it.empty)
                     ips.insertBack(midIP);
                 else
                     ips.insertBefore(it, midIP);
-                it.popFront;
                 nrIntervals++;
             }
             else
@@ -226,13 +226,15 @@ body
     }
 
     // for sampling only a subset of the attributes is needed
-    auto gps = new GenerationInterval!S[nrIntervals];
+    auto gvs = new GenerationInterval!S[nrIntervals];
     size_t i = 0;
     foreach (ref ip; ips)
-        gps[i++] = GenerationInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
+        gvs[i++] = GenerationInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
                                      ip.squeeze, ip.hatArea, ip.squeezeArea);
 
-    return gps;
+    import std.stdio;
+    writeln("gps", gvs);
+    return gvs;
 }
 
 unittest

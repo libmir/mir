@@ -32,15 +32,15 @@ auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool hat = true)
     // each interval is defined in clear bounds
     // as we iterate over the points to be plotted, we have to check to use the
     // correct hat/squeeze function for the current point
-    outer: foreach (i, v; t.gps)
+    outer: foreach (i, v; t.gvs)
     {
         // calculate bounds of the current interval
-        S l = clamp(v.x, rMin, rMax);
+        S l = clamp(v.lx, rMin, rMax);
         // ignore unmatched points at the left
         while (xs[k] < l)
             k++;
 
-        S r = (i < t.gps.length - 1) ? clamp(t.gps[i + 1].x, rMin, rMax) : rMax;
+        S r = clamp(v.rx, rMin, rMax);
 
         // until the right bound is reached
         while (xs[k] < r)
