@@ -137,23 +137,23 @@ body
 
     auto ips = DList!(Interval!S)();
     S l = points[0];
-    S r0 = f0(points[0]);
-    S r1 = f1(points[0]);
-    S r2 = f2(points[0]);
+    S l0 = f0(points[0]);
+    S l1 = f1(points[0]);
+    S l2 = f2(points[0]);
 
     // initialize with user given splitting points
     foreach (i, r; points[1..$])
     {
         // reuse computations
-        S l0 = r0;
-        S l1 = r1;
-        S l2 = r2;
-        r0 = f0(r);
-        r1 = f1(r);
-        r2 = f2(r);
+        S r0 = f0(r);
+        S r1 = f1(r);
+        S r2 = f2(r);
         auto iv = transformToInterval(l, r, cs[i], l0, l1, l2,
                                                    r0, r1, r2);
         l = r;
+        l0 = r0;
+        l1 = r1;
+        l2 = r2;
 
         calcInterval(iv);
         totalHatAreaSummator += iv.hatArea;
