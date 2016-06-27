@@ -71,9 +71,8 @@ module mir.random.tinflex;
 import mir.random.tinflex.internal.types : GenerationPoint;
 import mir.random.discrete : Discrete;
 
-import std.traits : isFloatingPoint, ReturnType;
 import std.random : isUniformRNG;
-
+import std.traits : isCallable, isFloatingPoint, ReturnType;
 
 /**
 The Transformed Density Rejection with Inflection Points (Tinflex) algorithm
@@ -97,7 +96,8 @@ Tinflex!(F0, S) tinflex(F0, F1, F2, S)
                (in F0 f0, in F1 f1, in F2 f2,
                 S c, S[] points, S rho = 1.1)
     if (isFloatingPoint!S && isFloatingPoint!(ReturnType!F0) &&
-        isFloatingPoint!(ReturnType!F1) && isFloatingPoint!(ReturnType!F2))
+        isFloatingPoint!(ReturnType!F1) && isFloatingPoint!(ReturnType!F2) &&
+        isCallable!F0 && isCallable!F1 && isCallable!F2)
 {
     import mir.random.tinflex.internal.calc : calcPoints;
     import std.range : repeat;
@@ -112,7 +112,8 @@ Tinflex!(F0, S) tinflex(F0, F1, F2, S)
                (in F0 f0, in F1 f1, in F2 f2,
                 S[] cs, S[] points, S rho = 1.1)
     if (isFloatingPoint!S && isFloatingPoint!(ReturnType!F0) &&
-        isFloatingPoint!(ReturnType!F1) && isFloatingPoint!(ReturnType!F2))
+        isFloatingPoint!(ReturnType!F1) && isFloatingPoint!(ReturnType!F2) &&
+        isCallable!F0 && isCallable!F1 && isCallable!F2)
 {
     import mir.random.tinflex.internal.calc : calcPoints;
 

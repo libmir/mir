@@ -12,6 +12,7 @@ struct LinearFun(S)
 {
     /// direction and steepness
     S slope; // aka beta
+
     /// x-intercept
     S intercept; // aka alpha
 
@@ -41,7 +42,7 @@ struct LinearFun(S)
     }
 
     // TODO: only internally - remove me
-    // from paper: y = a + b * (x -y)
+    // definition of function was different in paper: y = a + b * (x -y)
     S _y;
 
     bool opEquals()(auto ref const LinearFun!S fun) const
