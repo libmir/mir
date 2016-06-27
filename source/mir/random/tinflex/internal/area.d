@@ -1,40 +1,30 @@
 module mir.random.tinflex.internal.area;
 
-import mir.random.tinflex.internal.types : IntervalPoint;
+import mir.random.tinflex.internal.types : Interval;
 import mir.random.tinflex.internal.linearfun : LinearFun;
 import std.traits : ReturnType;
-
-/**
-Tuple of hat and squeeze function.
-*/
-struct SqueezeAndHat(S)
-{
-    LinearFun!S squeeze, hat;
-}
 
 /**
 Determines the hat and squeeze function of an interval.
 Based on Theorem 1
 */
-SqueezeAndHat!S determineSqueezeAndHat(S)(in IntervalPoint!S l, in IntervalPoint!S r)
+void determineSqueezeAndHat(S)(ref Interval!S iv)
 in
 {
-    assert(l.x < r.x, "invalid interval");
+    assert(iv.lx < iv.rx, "invalid interval");
 }
 body
 {
     import mir.random.tinflex.internal.linearfun : secant, tangent;
     import mir.random.tinflex.internal.types : determineType, FunType;
 
-    enum sec = "secant(l.x, r.x, l.tx, r.tx)";
-    enum t_l = "tangent(l.x, l.tx, l.t1x)";
-    enum t_r = "tangent(r.x, r.tx, r.t1x)";
-
-    SqueezeAndHat!S ret = void;
+    enum sec = "secant(iv.lx, iv.rx, iv.ltx, iv.rtx)";
+    enum t_l = "tangent(iv.lx, iv.ltx, iv.lt1x)";
+    enum t_r = "tangent(iv.rx, iv.rtx, iv.rt1x)";
 
     // could potentially be saved for subsequent calls
-    FunType type = determineType(l, r);
-    with(FunType) with(ret)
+    FunType type = determineType(iv);
+    with(FunType) with(iv)
     switch(type)
     {
         case T1a:
@@ -62,29 +52,28 @@ body
             hat = mixin(sec);
             break;
         case T4a:
-            if (l.x == -S.infinity)
+            if (iv.lx == -S.infinity)
             {
                 squeeze = squeeze.init;
                 hat = mixin(t_r);
                 break;
             }
-            if (r.x == +S.infinity)
+            if (iv.rx == +S.infinity)
             {
                 squeeze = squeeze.init;
                 hat = mixin(t_l);
                 break;
             }
             squeeze = mixin(sec);
-            hat = l.tx > r.tx ? mixin(t_l) : mixin(t_r);
+            hat = iv.ltx > iv.rtx ? mixin(t_l) : mixin(t_r);
             break;
         case T4b:
-            squeeze = l.tx < r.tx ? mixin(t_l) : mixin(t_r);
+            squeeze = iv.ltx < iv.rtx ? mixin(t_l) : mixin(t_r);
             hat = mixin(sec);
             break;
         default:
-            ret = ret.init;
+            //ret = ret.init;
     }
-    return ret;
 }
 
 // TODO: add more tests
@@ -99,8 +88,12 @@ unittest
         const f1 = (S x) => 2 * x;
         const f2 = (S x) => 2.0;
         auto c = 42; // not required for this test
-        auto dhs = (S l, S r) => determineSqueezeAndHat(IntervalPoint!S(f0(l), f1(l), f2(l), l, c),
-                                                        IntervalPoint!S(f0(r), f1(r), f2(r), r, c));
+        auto dhs = (S l, S r) {
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l),
+                                          f0(r), f1(r), f2(r));
+            determineSqueezeAndHat(iv);
+            return iv;
+        };
 
         // test left side
         auto hs1 = dhs(-1, 1);
@@ -113,6 +106,18 @@ unittest
         assert(hs2.squeeze == linearFun!S(2, -1));
     }
 }
+
+unittest
+{
+    alias S = double;
+    auto iv = Interval!float(-S.infinity, -1.5, 1.5, 1, 0.291415, -0.513491, 1.21443, 0.353903, 0.398052);
+    import std.stdio;
+    determineSqueezeAndHat(iv);
+    writeln(iv);
+}
+
+alias hatArea(S) = area!(true, S);
+alias squeezeArea(S) = area!(false, S);
 
 /**
 Computes the area below a function sh in-between l and r.
@@ -130,10 +135,10 @@ Params:
 
 Returns: Computed area below sh.
 */
-S area(S)(in LinearFun!S sh, in S l, in S r, in S ly, in S ry, in S c)
+S area(bool isHat, S)(in ref Interval!S iv)
 in
 {
-    assert(l < r, "invalid interval");
+    assert(iv.lx < iv.rx, "invalid interval");
 }
 out (result)
 {
@@ -148,45 +153,51 @@ body
 
     S area = void;
 
+    static if (isHat)
+        auto sh = iv.hat;
+    else
+        auto sh = iv.squeeze;
+
     // check difference to left and right starting point
-    const byte leftOrRight = (l - sh._y) > (sh._y - r) ? 1 : -1; // sigma in the paper
+    const byte leftOrRight = (iv.lx - sh._y) > (sh._y - iv.rx) ? 1 : -1; // sigma in the paper
 
     // sh.y is the boundary point where f obtains its maximum
 
     // specializations for T_c family (page 6)
-    if (c == 0)
+    if (iv.c == 0)
     {
         // T_c = log(x)
         // Error in table, see equation (4)
-        immutable z = leftOrRight * sh.slope * (r - l);
+        immutable z = leftOrRight * sh.slope * (iv.rx - iv.lx);
         // check whether approximation is possible, page 5
         if (abs(z) < S(1e-6))
         {
-            area = exp(sh._y) * (r - l) * (1 + z / 2 + (z^^2) / 6);
+            area = exp(sh._y) * (iv.rx - iv.lx) * (1 + z / 2 + (z^^2) / 6);
         }
         else
         {
             // F_T = e^x
-            area = (exp(sh(r)) - exp(sh(l))) / sh.slope;
+            area = (exp(sh(iv.rx)) - exp(sh(iv.lx))) / sh.slope;
         }
     }
     else
     {
         // for c < 0, the tangent result must result in a valid (bounded) hat function
-        if (c * sh(r) < 0 || c * sh(l) < 0)
+        if (iv.c * sh(iv.rx) < 0 || iv.c * sh(iv.lx) < 0)
         {
             // returning infinity will yield a split on this interval.
             return S.infinity;
         }
 
-        immutable z = leftOrRight / sh.a * sh.slope * (r - l);
+        immutable intLength = iv.rx - iv.lx;
+        immutable z = leftOrRight / sh.a * sh.slope * intLength;
 
-        if (c == 1)
+        if (iv.c == 1)
         {
             // T_c^-1 = x^c
-            area = S(0.5) * sh._y * (r - l) * (2 + z);
+            area = S(0.5) * sh._y * intLength * (2 + z);
         }
-        else if (c == S(-0.5))
+        else if (iv.c == S(-0.5))
         {
             // T_c = -1/sqrt(x)
             if (abs(z) < S(0.5))
@@ -196,21 +207,21 @@ body
             }
             else
             {
-                area = (-1 / sh(l)) + (1 / sh(r));
+                area = (-1 / sh(iv.lx)) + (1 / sh(iv.rx));
             }
         }
-        else if (c == -1)
+        else if (iv.c == -1)
         {
             // T_C = -1 / x
             if (abs(z) < S(1e-6))
             {
                 // T_C^-1 = -1 / x
-                area = -1 / sh._y * (r - l) * (1 - z / 2 + z * z / 3);
+                area = -1 / sh._y * intLength * (1 - z / 2 + z * z / 3);
             }
             else
             {
                 // F_T = -log(-x)
-                area = -log(-sh(r)) + log(-sh(l));
+                area = -log(-sh(iv.rx)) + log(-sh(iv.lx));
             }
         }
         else
@@ -220,11 +231,11 @@ body
             if (abs(sh.slope) > S(1e-10))
             {
                 alias ad = antiderivative;
-                area = (ad(sh(r), c) - ad(sh(l), c)) / sh.slope;
+                area = (ad(sh(iv.rx), iv.c) - ad(sh(iv.lx), iv.c)) / sh.slope;
             }
             else
             {
-                area = inverse(sh.a, c) * (r - l);
+                area = inverse(sh.a, iv.c) * intLength;
             }
         }
     }
@@ -260,19 +271,19 @@ unittest
         const f2 = (S x) => 10 - 12 * x ^^ 2;
         S c = 1.5;
 
-        auto it = (S x, S c) => transformToInterval(x, c, f0(x), f1(x), f2(x));
+        auto it = (S l, S r, S c) => transformToInterval(r, l, c, f0(l), f1(l), f2(l),
+                                                                  f0(r), f1(r), f2(r));
 
         // calculate the area of all intervals
         foreach (i, p1, p2; points.lockstep(points.save.dropOne))
         {
-            auto s1 = it(p1, c);
-            auto s2 = it(p2, c);
-            auto sh = determineSqueezeAndHat(s1, s2);
+            auto iv = it(p1, p2, c);
+            determineSqueezeAndHat(iv);
 
-            auto aHat = area(sh.hat, s1.x, s2.x, s1.tx, s2.tx, c);
+            auto aHat = hatArea!S(iv);
             assert(aHat.approxEqual(hats[i]));
 
-            auto aSqueeze = area(sh.squeeze, s1.x, s2.x, s1.tx, s2.tx, c);
+            auto aSqueeze = squeezeArea!S(iv);
             assert(aSqueeze.approxEqual(sqs[i]));
         }
     }

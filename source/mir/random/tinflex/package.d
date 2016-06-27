@@ -44,6 +44,11 @@ but increases the speed of sampling. For example an efficiency of 1.1 means
 that 10% of all drawn uniform numbers don't match the target distribution
 and need be resampled.
 
+$(H3 Unbounded intervals)
+
+In each unbounded interval the transformation and thus the density must be
+concave and strictly monotone.
+
 $(H3 Transformation function (T_c)) $(A_NAME t_c_family)
 
 The Tinflex algorithm uses a family of T_c transformations.
@@ -68,7 +73,7 @@ Macros:
 */
 module mir.random.tinflex;
 
-import mir.random.tinflex.internal.types : GenerationPoint;
+import mir.random.tinflex.internal.types : GenerationInterval;
 import mir.random.discrete : Discrete;
 
 import std.random : isUniformRNG;
@@ -100,10 +105,12 @@ Tinflex!(F0, S) tinflex(F0, F1, F2, S)
         isCallable!F0 && isCallable!F1 && isCallable!F2)
 {
     import mir.random.tinflex.internal.calc : calcPoints;
-    import std.range : repeat;
+    S[] cs = new S[points.length - 1];
+    foreach (ref d; cs)
+        d = c;
 
     // pre-calculate all the points
-    const gps = calcPoints(f0, f1, f2, c.repeat, points, 1.1);
+    const gps = calcPoints(f0, f1, f2, cs, points, 1.1);
     return Tinflex!(F0, S)(f0, gps);
 }
 
@@ -133,43 +140,31 @@ struct Tinflex(F0, S)
     private const F0 _f0;
 
     // generated partition points
-    private const GenerationPoint!S[] _gps;
+    private const GenerationInterval!S[] _gvs;
 
     // discrete density sampler
     private const Discrete!S ds;
 
-    package this(const F0 f0, const GenerationPoint!S[] gps)
+    package this(const F0 f0, const GenerationInterval!S[] gvs)
     {
         _f0 = f0;
-        _gps = gps;
+        _gvs = gvs;
 
         // pre-calculate cumulative density points
-        auto cdPoints = new S[gps.length - 1];
-        cdPoints[0] = gps[0].hatArea;
+        auto cdPoints = new S[gvs.length];
+        cdPoints[0] = gvs[0].hatArea;
         foreach (i, ref cp; cdPoints[1..$])
         {
             // i starts at 0
-            cp = cdPoints[i] + gps[i + 1].hatArea;
+            cp = cdPoints[i] + gvs[i + 1].hatArea;
         }
         this.ds = Discrete!S(cdPoints);
     }
 
-    /// density function of the distribution
-    F0 pdf() const @property
-    {
-        return _f0;
-    }
-
-    /// density function of the distribution
-    S pdf(S x) const @property
-    {
-        return _f0(x);
-    }
-
     /// Generated partition points
-    package const(GenerationPoint!S[]) gps() @property const
+    package const(GenerationInterval!S[]) gvs() @property const
     {
-        return _gps;
+        return _gvs;
     }
 
     /**
@@ -182,14 +177,14 @@ struct Tinflex(F0, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tinflexImpl(_f0, _gps, ds, rndGen);
+        return tinflexImpl(_f0, _gvs, ds, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tinflexImpl(_f0, _gps, ds, rng);
+        return tinflexImpl(_f0, _gvs, ds, rng);
     }
 }
 
@@ -221,7 +216,7 @@ Uses acceptance-rejection algorithm.
 
 Params:
     f0 = probability density function of the distribution
-    gps = calculated inflection points
+    gvs = calculated inflection points
     ds = discrete distribution sampler for hat areas
     rng = random number generator to use
 See_Also:
@@ -229,7 +224,7 @@ See_Also:
      Acceptance-rejection sampling)
 */
 private S tinflexImpl(F0, S, RNG)
-          (in F0 f0, in GenerationPoint!S[] gps, in Discrete!S ds, ref RNG rng)
+          (in F0 f0, in GenerationInterval!S[] gvs, in Discrete!S ds, ref RNG rng)
     if (isUniformRNG!RNG)
 {
     import mir.internal.math: exp;
@@ -244,24 +239,23 @@ private S tinflexImpl(F0, S, RNG)
         // sample from interval with density proportional to their hatArea
         auto rndInt = ds(rng); // J in Tinflex paper
         S u = uniform!("()", S, S)(0, 1, rng);
-        immutable c = gps[rndInt].c;
+        immutable c = gvs[rndInt].c;
 
-        if (abs(gps[rndInt].hat.slope) > 1e-10)
+        if (abs(gvs[rndInt].hat.slope) > 1e-10)
         {
             // F_T(x)
-            immutable ad = antiderivative(gps[rndInt].hat(gps[rndInt].x), c);
+            immutable ad = antiderivative(gvs[rndInt].hat(gvs[rndInt].lx), c);
             // F_T(x)^-1
-            immutable inverseAd = inverseAntiderivative(ad + gps[rndInt].hat.slope * u, c);
-            X = gps[rndInt].hat._y + (inverseAd - gps[rndInt].hat.a) / gps[rndInt].hat.slope;
+            immutable inverseAd = inverseAntiderivative(ad + gvs[rndInt].hat.slope * u, c);
+            X = gvs[rndInt].hat._y + (inverseAd - gvs[rndInt].hat.a) / gvs[rndInt].hat.slope;
         }
         else
         {
-            // rndInt: [0, |gps| - 2] (last gp is excluded)
-            X = (1 - u) * gps[rndInt].x + u * gps[rndInt + 1].x;
+            X = (1 - u) * gvs[rndInt].lx + u * gvs[rndInt].rx;
         }
 
-        auto hatX = inverse(gps[rndInt].hat(X), c);
-        auto squeezeX = gps[rndInt].squeezeArea > 0 ? inverse(gps[rndInt].squeeze(X), c) : 0;
+        auto hatX = inverse(gvs[rndInt].hat(X), c);
+        auto squeezeX = gvs[rndInt].squeezeArea > 0 ? inverse(gvs[rndInt].squeeze(X), c) : 0;
 
         immutable t = u * hatX;
 

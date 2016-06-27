@@ -1,6 +1,22 @@
 module mir.random.tinflex.internal.transformations;
 
-import mir.random.tinflex.internal.types : IntervalPoint;
+import mir.random.tinflex.internal.types : Interval;
+
+/**
+In-place c-transformation
+Params:
+    f0 = PDF function
+    f1 = first derivative
+    f2 = second derivative
+*/
+void transform(S)(S x, S c, S f0, S f1, S f2, ref S t0, ref S t1, ref S t2)
+{
+    import mir.internal.math: pow, exp, copysign;
+    // for c=0 no transformations are applied
+    t0 = (c == 0) ? f0 : copysign(S(1), c) * exp(c * f0);
+    t1 = (c == 0) ? f1 : c * t0 * f1;
+    t2 = (c == 0) ? f2 : c * t0 * (c * pow(f1, 2) + f2);
+}
 
 /**
 Create a c-transformation, based on a function and it's first two derivatives
@@ -12,18 +28,16 @@ Params:
 
 Returns:
     Struct with the transformed functions that can be used
-    to generate IntervalPoints given a specific point x
+    to generate Interval given a specific point x
 */
-IntervalPoint!S transformToInterval(S)(in S x, in S c, in S f0, in S f1, in S f2)
+Interval!S transformToInterval(S)(in S l, in S r, in S c,
+            in S lf0, in S lf1, in S lf2,
+            in S rf0, in S rf1, in S rf2)
 {
-    import mir.internal.math: pow, exp, copysign;
-    import mir.random.tinflex.internal.types : IntervalPoint;
-
-    // for c=0 no transformations are applied
-    S t0 = (c == 0) ? f0 : copysign(S(1), c) * exp(c * f0);
-    S t1 = (c == 0) ? f1 : c * t0 * f1;
-    S t2 = (c == 0) ? f2 : c * t0 * (c * pow(f1, 2) + f2);
-    return IntervalPoint!S(t0, t1, t2, x, c);
+    S lt0, lt1, lt2, rt0, rt1, rt2;
+    transform(l, c, lf0, lf1, lf2, lt0, lt1, lt2);
+    transform(l, c, rf0, rf1, rf2, rt0, rt1, rt2);
+    return Interval!S(l, r, c, lt0, lt1, lt2, rt0, rt1, rt2);
 }
 
 // TODO: test for c=0
@@ -37,14 +51,15 @@ unittest
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
         auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
-        S x = -3;
+        S l = -3, r = -1.5;
         S c = 1.5;
-        auto iv = transformToInterval!S(x, c, f0(x), f1(x), f2(x));
+        auto iv = transformToInterval!S(l, r, c, f0(l), f1(l), f2(l),
+                                                 f0(r), f1(r), f2(r));
 
         // magic numbers manually verified
-        assert(iv.tx.approxEqual(-8.75651e-27));
-        assert(iv.t1x.approxEqual(-1.02451e-24));
-        assert(iv.t2x.approxEqual(-1.18581e-22));
+        assert(iv.ltx.approxEqual(-8.75651e-27));
+        assert(iv.lt1x.approxEqual(-1.02451e-24));
+        assert(iv.lt2x.approxEqual(-1.18581e-22));
     }
 }
 

@@ -1,6 +1,6 @@
 module mir.random.tinflex.internal.calc;
 
-import mir.random.tinflex.internal.types : GenerationPoint,  IntervalPoint;
+import mir.random.tinflex.internal.types : GenerationInterval,  Interval;
 import std.container.dlist : DList;
 
 /**
@@ -47,41 +47,37 @@ Given an interval, determine it's type and hat and squeeze function.
 Given these functions, compute the area and overwrite the references data type
 
 Params:
-    ipl = Left interval point
-    ipr = Right interval point
-    c   = Custom T_c family
+    iv = Interval
 */
-void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr)
+void calcInterval(S)(ref Interval!S iv)
 in
 {
-    assert(ipl.x <= ipr.x, "invalid interval");
+    assert(iv.lx < iv.rx, "invalid interval");
 }
 body
 {
     import mir.random.tinflex.internal.types : determineType;
-    import mir.random.tinflex.internal.area: area, determineSqueezeAndHat;
+    import mir.random.tinflex.internal.area: determineSqueezeAndHat, hatArea, squeezeArea;
     import std.math: isInfinity;
 
-    if (ipl.x == ipr.x)
+    // TODO: this is probably not needed anymore
+    if (iv.lx == iv.rx)
     {
-        ipl.hatArea = 0;
-        ipl.squeezeArea = 0;
+        iv.hatArea = 0;
+        iv.squeezeArea = 0;
     }
     else
     {
-
         // calculate hat and squeeze functions
-        auto sh = determineSqueezeAndHat(ipl, ipr);
-        ipl.hat = sh.hat;
-        ipl.squeeze = sh.squeeze;
+        determineSqueezeAndHat(iv);
 
-        // update area of the left interval in-place
-        ipl.hatArea = area(sh.hat, ipl.x, ipr.x, ipl.tx, ipr.tx, ipl.c);
-        ipl.squeezeArea = area(sh.squeeze, ipl.x, ipr.x, ipl.tx, ipr.tx, ipl.c);
+        // update area
+        iv.hatArea     = hatArea!S(iv);
+        iv.squeezeArea = squeezeArea!S(iv);
 
         // squeeze may return infinity
-        if (isInfinity(ipl.squeezeArea))
-            ipl.squeezeArea = 0;
+        if (isInfinity(iv.squeezeArea))
+            iv.squeezeArea = 0;
     }
 }
 
@@ -102,9 +98,9 @@ Params:
 
 Returns: Array of IntervalPoints
 */
-GenerationPoint!S[] calcPoints(F0, F1, F2, S, CRange)
+GenerationInterval!S[] calcPoints(F0, F1, F2, S)
                             (in F0 f0, in F1 f1, in F2 f2,
-                             CRange cs, in S[] points, in S rho = 1.1, in int maxIterations = 10_000)
+                             in S[] cs, in S[] points, in S rho = 1.1, in int maxIterations = 10_000)
 in
 {
     import std.algorithm.searching : all;
@@ -115,7 +111,8 @@ in
     assert(points.length >= 2, "two or more splitting points are required");
     assert(points[1..$-1].all!isFinite, "intermediate interval can't be indefinite");
 
-    assert(!cs.empty, "c point range can't be empty");
+    // check cs
+    assert(cs.length == points.length - 1, "cs must have length equal to |points| - 1");
 
     // check first c
     if (points[0].isInfinity)
@@ -123,14 +120,11 @@ in
 
     // check last c
     if (points[$ - 1].isInfinity)
-    {
-        auto lastC = cs.save.drop(points.length - 1).front;
-        assert(lastC > - 1,"c must be > -1 for unbounded domains");
-    }
+        assert(cs[$ - 1] > - 1,"cs must be > -1 for unbounded domains");
 }
 body
 {
-    import mir.random.tinflex.internal.transformations : transformToInterval;
+    import mir.random.tinflex.internal.transformations : transform,  transformToInterval;
     import mir.sum: Summator, Summation;
     import std.range.primitives : front, empty, popFront;
 
@@ -141,21 +135,32 @@ body
 
     auto nrIntervals = points.length;
 
-    auto ips = DList!(IntervalPoint!S)(transformToInterval(points[0], cs.front,
-                                      f0(points[0]), f1(points[1]), f2(points[2])));
-    cs.popFront();
+    auto ips = DList!(Interval!S)();
+    S l = points[0];
+    S r0 = f0(points[0]);
+    S r1 = f1(points[0]);
+    S r2 = f2(points[0]);
+
+    import std.stdio;
 
     // initialize with user given splitting points
-    foreach (i, p; points[1..$])
+    foreach (i, r; points[1..$])
     {
-        assert(!cs.empty, "number of c values doesn't match points");
-        auto iv = transformToInterval(p, cs.front, f0(p), f1(p), f2(p));
+        // reuse computations
+        S l0 = r0;
+        S l1 = r1;
+        S l2 = r2;
+        r0 = f0(r);
+        r1 = f1(r);
+        r2 = f2(r);
+        auto iv = transformToInterval(l, r, cs[i], l0, l1, l2,
+                                                   r0, r1, r2);
+        l = r;
 
-        calcInterval(ips.back, iv);
-        totalHatAreaSummator += ips.back.hatArea;
-        totalSqueezeAreaSummator += ips.back.squeezeArea;
+        calcInterval(iv);
+        totalHatAreaSummator += iv.hatArea;
+        totalSqueezeAreaSummator += iv.squeezeArea;
         ips.insertBack(iv);
-        cs.popFront;
     }
 
     // Tinflex is not guaranteed to converge
@@ -168,38 +173,45 @@ body
         if (totalHatArea / totalSqueezeArea <= rho)
             break;
 
-        immutable avgArea = (totalHatArea - totalSqueezeArea) / (nrIntervals - 1);
+        immutable avgArea = (totalHatArea - totalSqueezeArea) / (nrIntervals);
         for(auto it = ips[]; !it.empty;)
         {
             immutable curArea = it.front.hatArea - it.front.squeezeArea;
             if (curArea > avgArea)
             {
-                auto left = it.save;
-                it.popFront;
-                auto right = it;
+                // prepare total areas for update
+                totalHatAreaSummator -= it.front.hatArea;
+                totalSqueezeAreaSummator -= it.front.squeezeArea;
 
                 // split the interval at the arcmean into two parts
-                auto mid = arcmean!(S, true)(left.front.x, right.front.x);
-                IntervalPoint!S midIP = transformToInterval(mid, left.front.c,
-                                                    f0(mid), f1(mid), f2(mid));
+                auto mid = arcmean!(S, true)(it.front.lx, it.front.rx);
 
-                // prepare total areas for update
-                totalHatAreaSummator -= left.front.hatArea;
-                totalSqueezeAreaSummator -= left.front.squeezeArea;
+                // create new interval (right side)
+                S m0 = f0(mid);
+                S m1 = f1(mid);
+                S m2 = f2(mid);
+                Interval!S midIP = transformToInterval(mid, it.front.rx, it.front.c,
+                                                       m0, m1, m2,
+                                                       it.front.rtx, it.front.rt1x, it.front.rt2x);
+
+                // left interval: update right values
+                it.front.rx = mid;
+                transform(mid, it.front.c, m0, m1, m2,
+                          it.front.rtx, it.front.rt1x, it.front.rt2x);
 
                 // recalculate intervals
-                calcInterval(left.front, midIP);
-                calcInterval(midIP, right.front);
+                calcInterval(it.front);
+                calcInterval(midIP);
 
                 // update total areas
-                totalHatAreaSummator += left.front.hatArea;
+                totalHatAreaSummator += it.front.hatArea;
                 totalHatAreaSummator += midIP.hatArea;
-                totalSqueezeAreaSummator += left.front.squeezeArea;
+                totalSqueezeAreaSummator += it.front.squeezeArea;
                 totalSqueezeAreaSummator += midIP.squeezeArea;
 
                 // insert new middle part into linked list
+                it.popFront;
                 ips.insertBefore(it, midIP);
-
                 nrIntervals++;
             }
             else
@@ -210,10 +222,11 @@ body
     }
 
     // for sampling only a subset of the attributes is needed
-    auto gps = new GenerationPoint!S[nrIntervals];
+    auto gps = new GenerationInterval!S[nrIntervals];
     size_t i = 0;
     foreach (ref ip; ips)
-        gps[i++] = GenerationPoint!S(ip.x, ip.c, ip.hat, ip.squeeze, ip.hatArea, ip.squeezeArea);
+        gps[i++] = GenerationInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
+                                     ip.squeeze, ip.hatArea, ip.squeezeArea);
 
     return gps;
 }
@@ -228,9 +241,9 @@ unittest
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
         auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
-        S c = 1.5;
+        S[] cs = [1.5, 1.5, 1.5, 1.5];
         S[] points = [-3, -1.5, 0, 1.5, 3];
-        auto ips = calcPoints(f0, f1, f2, c.repeat, points, S(1.1));
+        auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
 
         import std.stdio;
         writeln("IP points generated", ips.length);
@@ -269,9 +282,9 @@ unittest
         auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
         auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
         auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
-        S c = 1.5;
+        S[] cs = [1.5, 1.5, 1.5, 1.5];
         S[] points = [-3, -1.5, 0, 1.5, 3];
-        auto ips = calcPoints(f0, f1, f2, c.repeat, points, S(1.1));
+        auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
 
         import std.stdio;
         writeln("IP points generated", ips.length);
@@ -292,9 +305,9 @@ unittest
         auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
         auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
         auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
-        S c = 1.5;
+        S[] cs = [1.5, 1.5, 1.5, 1.5];
         S[] points = [-S.infinity, -1.5, 0, 1.5, S.infinity];
-        auto ips = calcPoints(f0, f1, f2, c.repeat, points, S(1.1));
+        auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
 
         import std.stdio;
         writeln("IP points generated", ips.length);
