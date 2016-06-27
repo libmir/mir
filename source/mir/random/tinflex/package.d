@@ -144,7 +144,7 @@ struct Tinflex(F0, S)
         _gps = gps;
 
         // pre-calculate cumulative density points
-        auto cdPoints = new S[gps.length - 2];
+        auto cdPoints = new S[gps.length - 1];
         cdPoints[0] = gps[0].hatArea;
         foreach (i, ref cp; cdPoints[1..$])
         {
