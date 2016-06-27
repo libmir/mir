@@ -185,7 +185,7 @@ body
                 auto mid = arcmean!(S, true)(it.front.lx, it.front.rx);
 
                 // create new interval (right side)
-                S m0, m1, m2;
+                S m0 = void, m1 = void, m2 = void;
 
                 // apply transformation to new values
                 transform(it.front.c, f0(mid), f1(mid), f2(mid), m0, m1, m2);
