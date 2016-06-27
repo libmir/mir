@@ -160,20 +160,19 @@ void test2(string folderName)
     //tinflex(f0, f1, f2, 1.5, [-1.0, 0, 1]).test(folderName.buildPath("dist4"));
 //}
 
-// TODO!
 // different values for c
-//void test5(string folderName)
-//{
-    //auto f0 = (double x) => -2 * x^^4 + 4 * x^^2;
-    //auto f1 = (double x) => -8 * x^^3 + 8 * x;
-    //auto f2 = (double x) => -24 * x^^2 + 8;
+void test5(string folderName)
+{
+    auto f0 = (double x) => -2 * x^^4 + 4 * x^^2;
+    auto f1 = (double x) => -8 * x^^3 + 8 * x;
+    auto f2 = (double x) => -24 * x^^2 + 8;
 
-    //tinflex(f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0], [-double.infinity, -2, -1, 0, 1, 2, double.infinity])
-    //.test(folderName.buildPath("dist5_b"));
+    tinflex(f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0], [-double.infinity, -2, -1, 0, 1, 2, double.infinity])
+    .test(folderName.buildPath("dist5_b"));
 
-    //tinflex(f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0], [-3, -2, -1, 0, 1, 2, 3])
-    //.test(folderName.buildPath("dist5_b"));
-//}
+    tinflex(f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0], [-3, -2, -1, 0, 1, 2, 3])
+    .test(folderName.buildPath("dist5_b"));
+}
 
 // inflection point at boundary
 void test6(string folderName)
@@ -211,8 +210,7 @@ void main()
 
     import std.meta : AliasSeq;
     //alias funs = AliasSeq!(test0, test1, test6);
-    //alias funs = AliasSeq!(test0);
-    alias funs = AliasSeq!(test0, test_normal);
+    alias funs = AliasSeq!(test0, test6, test_normal);
     foreach (f; funs)
         f(folderName);
 }
