@@ -72,8 +72,8 @@ body
         determineSqueezeAndHat(iv);
 
         // update area
-        iv.hatArea     = hatArea!S(iv);
-        iv.squeezeArea = squeezeArea!S(iv);
+        hatArea!S(iv);
+        squeezeArea!S(iv);
 
         // squeeze may return infinity
         if (isInfinity(iv.squeezeArea))
@@ -94,13 +94,13 @@ Params:
     cs = T_c family (single value or array)
     points = non-overlapping partitioning with at most one inflection point per interval
     rho = efficiency of the Tinflex algorithm
-    maxIterations = maximal number of iterations before Tinflex is aborted
+    apprMaxPoints = maximal number of splitting points before Tinflex is aborted
 
 Returns: Array of IntervalPoints
 */
 GenerationInterval!S[] calcPoints(F0, F1, F2, S)
                             (in F0 f0, in F1 f1, in F2 f2,
-                             in S[] cs, in S[] points, in S rho = 1.1, in int maxIterations = 10_000)
+                             in S[] cs, in S[] points, in S rho = 1.1, in int apprMaxPoints = 1_000)
 in
 {
     import std.algorithm.searching : all;
@@ -164,7 +164,7 @@ body
     import std.stdio;
 
     // Tinflex is not guaranteed to converge
-    foreach (i; 0..maxIterations)
+    while(apprMaxPoints > nrIntervals)
     {
         immutable totalHatArea = totalHatAreaSummator.sum;
         immutable totalSqueezeArea = totalSqueezeAreaSummator.sum;
@@ -216,8 +216,8 @@ body
                 totalSqueezeAreaSummator += midIP.squeezeArea;
 
                 // insert new middle part into linked list
-                it.popFront;
                 ips.insertBefore(it, midIP);
+                it.popFront;
                 nrIntervals++;
 
                 import std.array;
