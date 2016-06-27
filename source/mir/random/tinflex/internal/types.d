@@ -54,22 +54,22 @@ struct Interval(S)
     invariant {
         import std.math : isFinite, isNaN;
         import std.meta : AliasSeq;
-        //alias seq =  AliasSeq!(x, c, tx, t1x, t2x);
-        alias seq =  AliasSeq!(lx, rx, c, ltx, rtx);
+        import std.conv : to;
+        alias seq =  AliasSeq!(lx, rx, c);
         foreach (i, v; seq)
-            assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
+            assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
 
         if (lx.isFinite)
         {
-            alias tseq =  AliasSeq!(lt1x, lt2x);
+            alias tseq =  AliasSeq!(ltx, lt1x, lt2x);
             foreach (i, v; tseq)
-                assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN");
+                assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
         }
         if (rx.isFinite)
         {
-            alias tseq =  AliasSeq!(rt1x, rt2x);
+            alias tseq =  AliasSeq!(rx, rt1x, rt2x);
             foreach (i, v; tseq)
-                assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN");
+                assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
         }
     }
 }
@@ -127,7 +127,6 @@ in
 {
     import std.math : isInfinity, isNaN;
     assert(iv.lx < iv.rx, "invalid interval");
-    assert(!isNaN(iv.ltx) && !isNaN(iv.rtx), "Invalid interval points");
 }
 out(type)
 {
