@@ -189,6 +189,12 @@ body
         if (totalHatArea / totalSqueezeArea <= rho)
             break;
 
+        version(Tinflex_logging)
+        {
+            tracef("iteration %d: totalHat: %.3f, totalSqueeze: %.3f, rho: %.3f",
+                    i, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
+        }
+
         immutable avgArea = (totalHatArea - totalSqueezeArea) / nrIntervals;
         for(auto it = ips[]; !it.empty;)
         {
