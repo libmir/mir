@@ -31,17 +31,19 @@ Params:
 private void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr)
 {
     import mir.random.tinflex.internal.types : determineType;
-    import mir.random.tinflex.internal.area: area, determineHatAndSqueeze;
+    import mir.random.tinflex.internal.area: area, determineSqueezeAndHat;
+    import std.math: isInfinity;
 
-    auto sh = determineHatAndSqueeze(ipl, ipr);
+    // calculate hat and squeeze functions
+    auto sh = determineSqueezeAndHat(ipl, ipr);
     ipl.hat = sh.hat;
     ipl.squeeze = sh.squeeze;
 
-    // save area with the left interval
+    // update area of the left interval in-place
     ipl.hatArea = area(sh.hat, ipl.x, ipr.x, ipl.tx, ipr.tx, ipl.c);
     ipl.squeezeArea = area(sh.squeeze, ipl.x, ipr.x, ipl.tx, ipr.tx, ipl.c);
 
-    import std.math: isInfinity;
+    // squeeze may return infinity
     if (isInfinity(ipl.squeezeArea))
         ipl.squeezeArea = 0;
 }

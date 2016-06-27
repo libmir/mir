@@ -9,16 +9,16 @@ protected:
 /**
 Tuple of hat and squeeze function.
 */
-struct HatAndSqueeze(S)
+struct SqueezeAndHat(S)
 {
-    LinearFun!S hat, squeeze;
+    LinearFun!S squeeze, hat;
 }
 
 /**
 Determines the hat and squeeze function of an interval.
 Based on Theorem 1
 */
-HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint!S r)
+SqueezeAndHat!S determineSqueezeAndHat(S)(in IntervalPoint!S l, in IntervalPoint!S r)
 {
     import mir.random.tinflex.internal.linearfun : secant, tangent;
     import mir.random.tinflex.internal.types : determineType, FunType;
@@ -30,9 +30,6 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
     // t_m is t_l or t_r wherever f(x) larger
     enum t_m = "(l.tx > r.tx) ? " ~ t_l ~ " : " ~ t_r;
 
-    LinearFun!S hat;
-    LinearFun!S squeeze;
-
     // could potentially be saved for subsequent calls
     FunType type = determineType(l, r);
 
@@ -41,53 +38,36 @@ HatAndSqueeze!S determineHatAndSqueeze(S)(in IntervalPoint!S l, in IntervalPoint
     {
         // concave near b_l and t_r(x) <= f(x) <= t_l(x)
         case T1a:
-            squeeze = mixin(t_r);
-            hat = mixin(t_l);
-            break;
+            return SqueezeAndHat!S(mixin(t_r), mixin(t_l));
 
         // convex near b_l and t_l(x) <= f(x) <= t_r(x)
         case T1b:
-            squeeze = mixin(t_l);
-            hat = mixin(t_r);
-            break;
+            return SqueezeAndHat!S(mixin(t_l), mixin(t_r));
 
         // concave near b_l and r(x) <= f(x) <= t_l(x)
         case T2a:
-            squeeze = mixin(sec);
-            hat = mixin(t_l);
-            break;
+            return SqueezeAndHat!S(mixin(sec), mixin(t_l));
 
         // convex near b_l and r(x) <= f(x) <= mixin(t_r)(x)
         case T2b:
-            squeeze = mixin(sec);
-            hat = mixin(t_r);
-            break;
+            return SqueezeAndHat!S(mixin(sec), mixin(t_r));
 
         // concave near b_l and mixin(t_r)(x) <= f(x) <= r(x)
         case T3a:
-            squeeze = mixin(t_r);
-            hat = mixin(sec);
-            break;
+            return SqueezeAndHat!S(mixin(t_r), mixin(sec));
 
         // convex near b_l and mixin(t_l)(x) <= f(x) <= r(x)
         case T3b:
-            squeeze = mixin(t_l);
-            hat = mixin(sec);
-            break;
+            return SqueezeAndHat!S(mixin(t_l), mixin(sec));
 
         // concave on [b_l, b_r] and r(x) <= f(x) <= mixin(t_m)(x)
         case T4a:
-            squeeze = mixin(sec);
-            hat = mixin(t_m);
-            break;
+            return SqueezeAndHat!S(mixin(sec), mixin(t_m));
 
         // convex on [b_l, b_r] and t_m(x) <= f(x) <= r(x)
         case T4b:
-            squeeze = mixin(t_m);
-            hat = mixin(sec);
-            break;
+            return SqueezeAndHat!S(mixin(t_m), mixin(sec));
     }
-    return HatAndSqueeze!S(hat, squeeze);
 }
 
 // TODO: add more tests
@@ -102,7 +82,7 @@ unittest
         const f1 = (S x) => 2 * x;
         const f2 = (S x) => 2.0;
         auto c = 42; // not required for this test
-        auto dhs = (S l, S r) => determineHatAndSqueeze(IntervalPoint!S(f0(l), f1(l), f2(l), l, c),
+        auto dhs = (S l, S r) => determineSqueezeAndHat(IntervalPoint!S(f0(l), f1(l), f2(l), l, c),
                                                         IntervalPoint!S(f0(r), f1(r), f2(r), r, c));
 
         // test left side
@@ -265,7 +245,7 @@ unittest
         {
             auto s1 = intervalTransform(p1, c);
             auto s2 = intervalTransform(p2, c);
-            auto sh = determineHatAndSqueeze(s1, s2);
+            auto sh = determineSqueezeAndHat(s1, s2);
 
             auto aHat = area(sh.hat, s1.x, s2.x, s1.tx, s2.tx, c);
             assert(aHat.approxEqual(hats[i]));
