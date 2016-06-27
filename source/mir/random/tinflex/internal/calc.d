@@ -133,15 +133,13 @@ body
     Sum totalHatAreaSummator = 0;
     Sum totalSqueezeAreaSummator = 0;
 
-    auto nrIntervals = points.length;
+    auto nrIntervals = cs.length;
 
     auto ips = DList!(Interval!S)();
     S l = points[0];
     S r0 = f0(points[0]);
     S r1 = f1(points[0]);
     S r2 = f2(points[0]);
-
-    import std.stdio;
 
     // initialize with user given splitting points
     foreach (i, r; points[1..$])
@@ -163,6 +161,8 @@ body
         ips.insertBack(iv);
     }
 
+    import std.stdio;
+
     // Tinflex is not guaranteed to converge
     foreach (i; 0..maxIterations)
     {
@@ -173,7 +173,7 @@ body
         if (totalHatArea / totalSqueezeArea <= rho)
             break;
 
-        immutable avgArea = (totalHatArea - totalSqueezeArea) / (nrIntervals);
+        immutable avgArea = (totalHatArea - totalSqueezeArea) / nrIntervals;
         for(auto it = ips[]; !it.empty;)
         {
             immutable curArea = it.front.hatArea - it.front.squeezeArea;
@@ -190,14 +190,20 @@ body
                 S m0 = f0(mid);
                 S m1 = f1(mid);
                 S m2 = f2(mid);
+                writeln("mid", mid, " ", m0, " ", m1, " ", m2);
+                writeln("r", it.front.rx);
                 Interval!S midIP = transformToInterval(mid, it.front.rx, it.front.c,
                                                        m0, m1, m2,
                                                        it.front.rtx, it.front.rt1x, it.front.rt2x);
 
+                writeln("midIP", midIP);
+
                 // left interval: update right values
                 it.front.rx = mid;
-                transform(mid, it.front.c, m0, m1, m2,
+                transform(it.front.c, m0, m1, m2,
                           it.front.rtx, it.front.rt1x, it.front.rt2x);
+
+                writeln("left", it.front);
 
                 // recalculate intervals
                 calcInterval(it.front);
@@ -213,6 +219,10 @@ body
                 it.popFront;
                 ips.insertBefore(it, midIP);
                 nrIntervals++;
+
+                import std.array;
+                import std.algorithm : map;
+                writeln(ips.array.map!`a.lx`);
             }
             else
             {

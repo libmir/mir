@@ -9,7 +9,7 @@ Params:
     f1 = first derivative
     f2 = second derivative
 */
-void transform(S)(S x, S c, S f0, S f1, S f2, ref S t0, ref S t1, ref S t2)
+void transform(S)(S c, S f0, S f1, S f2, ref S t0, ref S t1, ref S t2)
 {
     import mir.internal.math: pow, exp, copysign;
     // for c=0 no transformations are applied
@@ -35,8 +35,8 @@ Interval!S transformToInterval(S)(in S l, in S r, in S c,
             in S rf0, in S rf1, in S rf2)
 {
     S lt0, lt1, lt2, rt0, rt1, rt2;
-    transform(l, c, lf0, lf1, lf2, lt0, lt1, lt2);
-    transform(l, c, rf0, rf1, rf2, rt0, rt1, rt2);
+    transform(c, lf0, lf1, lf2, lt0, lt1, lt2);
+    transform(c, rf0, rf1, rf2, rt0, rt1, rt2);
     return Interval!S(l, r, c, lt0, lt1, lt2, rt0, rt1, rt2);
 }
 
