@@ -35,36 +35,36 @@ SqueezeAndHat!S determineSqueezeAndHat(S)(in IntervalPoint!S l, in IntervalPoint
     final switch(type)
     {
         case T1a:
-            hat = mixin(t_l);
             squeeze = mixin(t_r);
+            hat = mixin(t_l);
             break;
         case T1b:
-            hat = mixin(t_r);
             squeeze = mixin(t_l);
+            hat = mixin(t_r);
             break;
         case T2a:
-            hat = mixin(t_l);
             squeeze = mixin(sec);
+            hat = mixin(t_l);
             break;
         case T2b:
-            hat = mixin(t_r);
             squeeze = mixin(sec);
+            hat = mixin(t_r);
             break;
         case T3a:
-            hat = mixin(sec);
             squeeze = mixin(t_r);
+            hat = mixin(sec);
             break;
         case T3b:
-            hat = mixin(sec);
             squeeze = mixin(t_l);
+            hat = mixin(sec);
             break;
         case T4a:
-            hat = l.tx > r.tx ? mixin(t_l) : mixin(t_r);
             squeeze = mixin(sec);
+            hat = l.tx > r.tx ? mixin(t_l) : mixin(t_r);
             break;
         case T4b:
-            hat = mixin(sec);
             squeeze = l.tx < r.tx ? mixin(t_l) : mixin(t_r);
+            hat = mixin(sec);
             break;
     }
     return ret;
@@ -207,13 +207,12 @@ body
             }
         }
     }
-    import std.math : isNaN;
-    if (isNaN(area))
-    {
-        return 0.0;
-    }
-    else
-        return area;
+    import std.math : isFinite;
+    if (!isFinite(area))
+        area = S.infinity;
+    else if (area < 0)
+        area = S.infinity;
+    return area;
 }
 
 // example from Tinflex
