@@ -67,15 +67,6 @@ LinearFun!S linearFun(S)(in S slope, in S intercept)
 }
 
 /**
-Calculate the secant between two points xl and xr
-*/
-LinearFun!S secant(F, S)(in F f, in S xl, in S xr)
-    if (isCallable!F)
-{
-    return secant(xl, xr, f(xl), f(xr));
-}
-
-/**
 Calculate the secant between xl and xr, given their evaluated yl and yr
 */
 LinearFun!S secant(S)(in S xl, in S xr, in S yl, in S yr)
@@ -93,18 +84,11 @@ unittest
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
-        assert(secant((S x) => x ^^ 2, S(1), S(3)) == linearFun(S(4), S(-3)));
-        assert(secant((S x) => x ^^ 2, S(3), S(5)) == linearFun(S(8), S(-15)));
+        auto f = (S x) => x ^^ 2;
+        auto secant = (S l, S r) => secant!S(l, r, f(l), f(r));
+        assert(secant(1, 3) == linearFun(S(4), S(-3)));
+        assert(secant(3, 5) == linearFun(S(8), S(-15)));
     }
-}
-
-/**
-Calculate tangent of any point (x, y) given it's derivate f1
-*/
-LinearFun!S tangent(F1, S)(in F1 f1, in S x, in S y)
-    if (isCallable!F1)
-{
-    return tangent(x, y, f1(x));
 }
 
 /**
@@ -120,8 +104,9 @@ unittest
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
-        assert(tangent((S x) => 2 * x, S(1), S(1)) == linearFun(S(2), S(-1)));
-        assert(tangent((S x) => 2 * x, S(0), S(0)) == linearFun(S(0), S(0)));
+        auto f1 = (S x) => 2 * x;
+        assert(tangent!S(1, 1, f1(1)) == linearFun(S(2), S(-1)));
+        assert(tangent!S(0, 0, f1(0)) == linearFun(S(0), S(0)));
     }
 }
 

@@ -207,6 +207,7 @@ body
             }
         }
     }
+    // if we receive an invalid value, we require the interval to be split
     import std.math : isFinite;
     if (!isFinite(area))
         area = S.infinity;
