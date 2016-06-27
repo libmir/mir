@@ -18,6 +18,10 @@
             "targetType": "dynamicLibrary",
         },
         {
+            "name": "unittest",
+            "versions": ["tinflex_plot", "Tinflex_logging"]
+        },
+        {
             "name": "median-filter",
             "targetName": "median-filter",
             "targetType": "executable",
@@ -49,7 +53,7 @@
                 "ggplotd": "~>0.9.2"
             },
             "sourceFiles": ["examples/plot_generic.d"],
-            "versions": ["tinflex_plot"]
+            "versions": ["tinflex_plot", "Tinflex_logging"]
         },
         {
             "name": "plot-normal",

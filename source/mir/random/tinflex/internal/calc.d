@@ -141,6 +141,12 @@ body
     S l1 = f1(points[0]);
     S l2 = f2(points[0]);
 
+    version(Tinflex_logging)
+    {
+        import std.stdio;
+        writeln("starting tinflex with p=", points);
+    }
+
     // initialize with user given splitting points
     foreach (i, r; points[1..$])
     {
@@ -159,6 +165,17 @@ body
         totalHatAreaSummator += iv.hatArea;
         totalSqueezeAreaSummator += iv.squeezeArea;
         ips.insertBack(iv);
+    }
+
+    version(Tinflex_logging)
+    {
+        import std.algorithm;
+        import std.array;
+        writeln("----");
+        writeln("Interval: ", ips.array.map!`a.lx`);
+        writeln("hatArea", ips.array.map!`a.hatArea`);
+        writeln("squeezeArea", ips.array.map!`a.squeezeArea`);
+        writeln("----");
     }
 
     // Tinflex is not guaranteed to converge
@@ -193,6 +210,12 @@ body
                 Interval!S midIP = Interval!S(mid, it.front.rx, it.front.c,
                                               m0, m1, m2,
                                               it.front.rtx, it.front.rt1x, it.front.rt2x);
+
+                version(Tinflex_logging)
+                {
+                    writeln("--split ", nrIntervals, " between ", it.front.lx, " - ", it.front.rx);
+                    writeln("new middle interval created: ", midIP);
+                }
 
                 // left interval: update right values
                 it.front.rx = mid;
@@ -234,6 +257,11 @@ body
         gvs[i++] = GenerationInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
                                      ip.squeeze, ip.hatArea, ip.squeezeArea);
 
+    version(Tinflex_logging)
+    {
+        writeln("Intervals generated: ", gvs.length);
+        writeln(gvs.array.map!`a.lx`);
+    }
     return gvs;
 }
 

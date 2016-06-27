@@ -1,5 +1,6 @@
 __dummy.html
 __test__library__
+__test__unittest__
 *.o
 *.obj
 *.a
