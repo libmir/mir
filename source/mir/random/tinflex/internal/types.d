@@ -112,13 +112,56 @@ in
     assert(l.x < r.x, "invalid interval");
     assert(!isNaN(l.tx) && !isNaN(r.tx), "Invalid interval points");
 }
+out(type)
+{
+    assert(type);
+}
 body
 {
-    // slope of the interval
-    auto R = (r.tx - l.tx) / (r.x- l.x);
-
     with(FunType)
     {
+
+        if (l.x == -S.infinity)
+        {
+            if (r.t2x < 0 && r.t1x > 0)
+                return T4a;
+            return undefined;
+        }
+
+        if (r.x == +S.infinity)
+        {
+            if (l.t2x < 0 && l.t1x < 0)
+                return T4a;
+            return undefined;
+        }
+
+        if (l.c > 0  && l.tx == 0 || l.c <= 0 && l.tx == -S.infinity)
+        {
+            if (r.t2x < 0 && r.t1x > 0)
+                return T4a;
+            if (r.t2x > 0 && r.t1x > 0)
+                return T4b;
+            return undefined;
+        }
+
+        if (l.c > 0  && r.tx == 0 || l.c <= 0 && r.tx == -S.infinity)
+        {
+            if (l.t2x < 0 && l.t1x < 0)
+                return T4a;
+            if (l.t2x > 0 && l.t1x < 0)
+                return T4b;
+            return undefined;
+        }
+
+        if (l.c < 0)
+        {
+            if (l.tx == 0  && r.t2x > 0 || r.tx == 0 && l.t2x > 0)
+                return T4b;
+        }
+
+        // slope of the interval
+        auto R = (r.tx - l.tx) / (r.x- l.x);
+
         if (l.t1x >= R && r.t1x >= R)
             return T1a;
         if (l.t1x <= R && r.t1x <= R)
