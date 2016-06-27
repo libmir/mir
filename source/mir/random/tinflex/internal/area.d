@@ -93,7 +93,7 @@ unittest
         // test right side
         auto hs2 = dhs(1, 3);
         assert(hs2.hat == linearFun!S(4.0, -3));
-        assert(hs2.squeeze == linearFun!S(6.0, -9));
+        assert(hs2.squeeze == linearFun!S(2, -1));
     }
 }
 
