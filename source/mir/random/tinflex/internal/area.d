@@ -27,47 +27,47 @@ SqueezeAndHat!S determineSqueezeAndHat(S)(in IntervalPoint!S l, in IntervalPoint
     enum t_l = "tangent(l.x, l.tx, l.t1x)";
     enum t_r = "tangent(r.x, r.tx, r.t1x)";
 
-    // t_m is t_l or t_r wherever f(x) larger
-    enum t_m = "(l.tx > r.tx) ? " ~ t_l ~ " : " ~ t_r;
+    SqueezeAndHat!S ret = void;
 
     // could potentially be saved for subsequent calls
     FunType type = determineType(l, r);
-
-    with(FunType)
+    with(FunType) with(ret)
     final switch(type)
     {
-        // concave near b_l and t_r(x) <= f(x) <= t_l(x)
         case T1a:
-            return SqueezeAndHat!S(mixin(t_r), mixin(t_l));
-
-        // convex near b_l and t_l(x) <= f(x) <= t_r(x)
+            hat = mixin(t_l);
+            squeeze = mixin(t_r);
+            break;
         case T1b:
-            return SqueezeAndHat!S(mixin(t_l), mixin(t_r));
-
-        // concave near b_l and r(x) <= f(x) <= t_l(x)
+            hat = mixin(t_r);
+            squeeze = mixin(t_l);
+            break;
         case T2a:
-            return SqueezeAndHat!S(mixin(sec), mixin(t_l));
-
-        // convex near b_l and r(x) <= f(x) <= mixin(t_r)(x)
+            hat = mixin(t_l);
+            squeeze = mixin(sec);
+            break;
         case T2b:
-            return SqueezeAndHat!S(mixin(sec), mixin(t_r));
-
-        // concave near b_l and mixin(t_r)(x) <= f(x) <= r(x)
+            hat = mixin(t_r);
+            squeeze = mixin(sec);
+            break;
         case T3a:
-            return SqueezeAndHat!S(mixin(t_r), mixin(sec));
-
-        // convex near b_l and mixin(t_l)(x) <= f(x) <= r(x)
+            hat = mixin(sec);
+            squeeze = mixin(t_r);
+            break;
         case T3b:
-            return SqueezeAndHat!S(mixin(t_l), mixin(sec));
-
-        // concave on [b_l, b_r] and r(x) <= f(x) <= mixin(t_m)(x)
+            hat = mixin(sec);
+            squeeze = mixin(t_l);
+            break;
         case T4a:
-            return SqueezeAndHat!S(mixin(sec), mixin(t_m));
-
-        // convex on [b_l, b_r] and t_m(x) <= f(x) <= r(x)
+            hat = l.tx > r.tx ? mixin(t_l) : mixin(t_r);
+            squeeze = mixin(sec);
+            break;
         case T4b:
-            return SqueezeAndHat!S(mixin(t_m), mixin(sec));
+            hat = mixin(sec);
+            squeeze = l.tx < r.tx ? mixin(t_l) : mixin(t_r);
+            break;
     }
+    return ret;
 }
 
 // TODO: add more tests
@@ -126,8 +126,9 @@ body
     import mir.random.tinflex.internal.transformations : antiderivative, inverse;
 
     S area = void;
+
     // check difference to left and right starting point
-    const byte leftOrRight = (l - sh._y) > (sh._y - r) ? 1 : -1;
+    const byte leftOrRight = (l - sh._y) > (sh._y - r) ? 1 : -1; // sigma in the paper
 
     // sh.y is the boundary point where f obtains its maximum
 
@@ -170,7 +171,7 @@ body
             if (abs(z) < 0.5)
             {
                 // T_c^-1 = 1/x^2
-                area = 1 / (sh._y ^^ sh._y) * (1 - z + z ^^ 2);
+                area = 1 / (sh._y * sh._y) * (1 - z + z * z);
             }
             else
             {
@@ -183,7 +184,7 @@ body
             if (abs(z) < 1e-6)
             {
                 // T_C^-1 = -1 / x
-                area = -1 / sh._y * (r - l) * (1 - z / 2 + z^^2 / 3);
+                area = -1 / sh._y * (r - l) * (1 - z / 2 + z * z / 3);
             }
             else
             {
