@@ -34,7 +34,7 @@ Interval!S transformToInterval(S)(in S l, in S r, in S c,
             in S lf0, in S lf1, in S lf2,
             in S rf0, in S rf1, in S rf2)
 {
-    S lt0, lt1, lt2, rt0, rt1, rt2;
+    S lt0 = void, lt1 = void, lt2 = void, rt0 = void, rt1 = void, rt2 = void;
     transform(c, lf0, lf1, lf2, lt0, lt1, lt2);
     transform(c, rf0, rf1, rf2, rt0, rt1, rt2);
     return Interval!S(l, r, c, lt0, lt1, lt2, rt0, rt1, rt2);
