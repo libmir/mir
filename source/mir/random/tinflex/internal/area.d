@@ -17,6 +17,11 @@ Determines the hat and squeeze function of an interval.
 Based on Theorem 1
 */
 SqueezeAndHat!S determineSqueezeAndHat(S)(in IntervalPoint!S l, in IntervalPoint!S r)
+in
+{
+    assert(l.x < r.x, "invalid interval");
+}
+body
 {
     import mir.random.tinflex.internal.linearfun : secant, tangent;
     import mir.random.tinflex.internal.types : determineType, FunType;
@@ -126,6 +131,10 @@ Params:
 Returns: Computed area below sh.
 */
 S area(S)(in LinearFun!S sh, in S l, in S r, in S ly, in S ry, in S c)
+in
+{
+    assert(l < r, "invalid interval");
+}
 out (result)
 {
     import std.math : isNaN;
@@ -151,7 +160,7 @@ body
         // Error in table, see equation (4)
         immutable z = leftOrRight * sh.slope * (r - l);
         // check whether approximation is possible, page 5
-        if (abs(z) < 1e-6)
+        if (abs(z) < S(1e-6))
         {
             area = exp(sh._y) * (r - l) * (1 + z / 2 + (z^^2) / 6);
         }

@@ -52,23 +52,37 @@ Params:
     c   = Custom T_c family
 */
 void calcInterval(S)(ref IntervalPoint!S ipl, ref IntervalPoint!S ipr)
+in
+{
+    assert(ipl.x <= ipr.x, "invalid interval");
+}
+body
 {
     import mir.random.tinflex.internal.types : determineType;
     import mir.random.tinflex.internal.area: area, determineSqueezeAndHat;
     import std.math: isInfinity;
 
-    // calculate hat and squeeze functions
-    auto sh = determineSqueezeAndHat(ipl, ipr);
-    ipl.hat = sh.hat;
-    ipl.squeeze = sh.squeeze;
-
-    // update area of the left interval in-place
-    ipl.hatArea = area(sh.hat, ipl.x, ipr.x, ipl.tx, ipr.tx, ipl.c);
-    ipl.squeezeArea = area(sh.squeeze, ipl.x, ipr.x, ipl.tx, ipr.tx, ipl.c);
-
-    // squeeze may return infinity
-    if (isInfinity(ipl.squeezeArea))
+    if (ipl.x == ipr.x)
+    {
+        ipl.hatArea = 0;
         ipl.squeezeArea = 0;
+    }
+    else
+    {
+
+        // calculate hat and squeeze functions
+        auto sh = determineSqueezeAndHat(ipl, ipr);
+        ipl.hat = sh.hat;
+        ipl.squeeze = sh.squeeze;
+
+        // update area of the left interval in-place
+        ipl.hatArea = area(sh.hat, ipl.x, ipr.x, ipl.tx, ipr.tx, ipl.c);
+        ipl.squeezeArea = area(sh.squeeze, ipl.x, ipr.x, ipl.tx, ipr.tx, ipl.c);
+
+        // squeeze may return infinity
+        if (isInfinity(ipl.squeezeArea))
+            ipl.squeezeArea = 0;
+    }
 }
 
 /**

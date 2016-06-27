@@ -119,7 +119,6 @@ unittest
     }
 }
 
-
 /**
 Compute inverse transformation of antiderivative T_c family given point x.
 Table 1, column 5
@@ -168,4 +167,3 @@ unittest
         //assert(inverseAntiderivative!S(5.5, -4.5).approxEqual(-6.47987));
     }
 }
-

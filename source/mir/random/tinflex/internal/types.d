@@ -183,14 +183,12 @@ unittest
         // concave
         assert(dt(S(-3.0), S(-1)) == T4a);
         assert(dt(-S.infinity, S(-1.0)) == T4a);
-        //assert(dt(f0, f1, f2, double.min_normal, -1.0) == T4a);
 
         // inflection point at x = 0, concave before
         assert(dt(S(-1.0), S(1)) == T1a);
         // convex
         assert(dt(S(1.0), S(3)) == T4b);
         assert(dt(S(1.0), S.infinity) == T4b);
-        //assert(dt(f0, f1, f2, 1.0, double.max) == T4b);
     }
 }
 
