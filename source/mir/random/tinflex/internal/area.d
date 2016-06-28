@@ -192,7 +192,7 @@ body
             if (abs(z) < S(0.5))
             {
                 // T_c^-1 = 1/x^2
-                area = 1 / (sh.a * sh.a) / (1 + z);
+                area = 1 / (sh.a * sh.a) * intLength / (1 + z);
             }
             else
             {
