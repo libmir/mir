@@ -171,7 +171,7 @@ S inverse(S)(in S x, in S c)
         return 1 / (x*x);
     if (c == -1)
         return -1 / x;
-    if (cT == 1)
+    if (c == 1)
         return x;
     auto s = copysign(S(1), c);
     return pow(s * x, 1 / c);
