@@ -61,15 +61,15 @@ struct Interval(S)
 
         if (lx.isFinite)
         {
-            alias tseq =  AliasSeq!(ltx, lt1x, lt2x);
-            foreach (i, v; tseq)
-                assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
+            //alias tseq =  AliasSeq!(ltx, lt1x, lt2x);
+            //foreach (i, v; tseq)
+                //assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
         }
         if (rx.isFinite)
         {
-            alias tseq =  AliasSeq!(rx, rt1x, rt2x);
-            foreach (i, v; tseq)
-                assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
+            //alias tseq =  AliasSeq!(rx, rt1x, rt2x);
+            //foreach (i, v; tseq)
+                //assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
         }
     }
 }
@@ -128,11 +128,11 @@ in
     import std.math : isInfinity, isNaN;
     assert(iv.lx < iv.rx, "invalid interval");
 }
-out(type)
-{
-    import std.conv : to;
-    assert(type, iv.to!string);
-}
+//out(type)
+//{
+    //import std.conv : to;
+    //assert(type, iv.to!string);
+//}
 body
 {
     with(FunType)

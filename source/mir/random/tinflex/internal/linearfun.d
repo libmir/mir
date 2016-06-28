@@ -34,7 +34,7 @@ struct LinearFun(S)
         import std.math: abs, isNaN;
         char sgn = intercept > 0 ? '+' : '-';
         if (slope.isNaN)
-            return "empty#";
+            return "#NaN#";
         else
             return format("%.2fx %c %.2f", slope, sgn, abs(intercept));
     }
