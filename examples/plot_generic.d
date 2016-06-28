@@ -23,13 +23,13 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
 {
     import std.random : rndGen;
     rndGen.seed(42);
-    auto values = tf.sample(2_000, rndGen);
+    auto values = tf.sample(1_000, rndGen);
 
     // plot histogram
     auto aes = Aes!(typeof(values), "x")(values);
 
     // normalize histogram
-    auto rect = statHist(aes, 100);
+    auto rect = statHist(aes, 50);
     auto rTotal =  rect.map!`a.height`.sum;
     auto k = rect.map!((r) {
         r.height = r.height / rTotal;
@@ -95,18 +95,18 @@ void test1(string folderName)
         tinflex(c, [-3.0, -1.5, 0.0, 1.5, 3]).test(folderName.buildPath("dist1_a" ~ c.to!string));
     }
 
-    foreach (c; [-0.9, -0.5, -0.2, 0])
-    {
-        writeln("c", c);
-        tinflex(c, [-double.infinity, -2.1, -1.05, 0.1, 1.2, 2, double.infinity]).test(folderName.buildPath("dist1_b" ~ c.to!string));
-        tinflex(c, [-double.infinity, -1, 0, 1, double.infinity]).test(folderName.buildPath("dist1_c" ~ c.to!string));
-        tinflex(c, [-2, 0, 1.5]).test(folderName.buildPath("dist1_c" ~ c.to!string));
-    }
+    //foreach (c; [-0.9, -0.5, -0.2, 0])
+    //{
+        //writeln("c", c);
+        //tinflex(c, [-double.infinity, -2.1, -1.05, 0.1, 1.2, 2, double.infinity]).test(folderName.buildPath("dist1_b" ~ c.to!string));
+        //tinflex(c, [-double.infinity, -1, 0, 1, double.infinity]).test(folderName.buildPath("dist1_c" ~ c.to!string));
+        //tinflex(c, [-2, 0, 1.5]).test(folderName.buildPath("dist1_c" ~ c.to!string));
+    //}
 
-    foreach (c; [-2, -1.5, -1])
-    {
-        tinflex(c, [-3.0, -2.1, -1.05, 0.1, 1.2, 3]).test(folderName.buildPath("dist1_e" ~ c.to!string));
-    }
+    //foreach (c; [-2, -1.5, -1])
+    //{
+        //tinflex(c, [-3.0, -2.1, -1.05, 0.1, 1.2, 3]).test(folderName.buildPath("dist1_e" ~ c.to!string));
+    //}
 }
 
 // test at and near extrema
@@ -133,32 +133,32 @@ void test2(string folderName)
 }
 
 // density vanishes at boundaries
-//void test3(string folderName)
-//{
-    //import std.math : log;
-    //auto f0 = (double x) => log(1 - x^^4);
-    //auto f1 = (double x) => -4 * x^^3 / (1 - x^^4);
-    //auto f2 = (double x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
-    //auto tinflex = (double c,  double[] ips) => tinflex(f0, f1, f2, c, ips);
+void test3(string folderName)
+{
+    import std.math : log;
+    auto f0 = (double x) => log(1 - x^^4);
+    auto f1 = (double x) => -4 * x^^3 / (1 - x^^4);
+    auto f2 = (double x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
+    auto tinflex = (double c,  double[] ips) => tinflex(f0, f1, f2, c, ips);
 
-    //import std.conv : to;
-    //foreach (c; [1.5, 2])
-        //tinflex(c, [-1, -0.9, -0.5, 0.5, 0.9, 1]).test(folderName.buildPath("dist3_a_" ~ c.to!string));
+    import std.conv : to;
+    foreach (c; [1.5, 2])
+        tinflex(c, [-1, -0.9, -0.5, 0.5, 0.9, 1]).test(folderName.buildPath("dist3_a_" ~ c.to!string));
 
-    //foreach (c; [-2, -1.5, -1, -0.9,  -0.5, -0.2, 0, 0.1, 0.5, 1])
-        //tinflex(c, [-1, -0.5, 0.5, 1]).test(folderName.buildPath("dist3_b_" ~ c.to!string));
-//}
+    foreach (c; [-2, -1.5, -1, -0.9,  -0.5, -0.2, 0, 0.1, 0.5, 1])
+        tinflex(c, [-1, -0.5, 0.5, 1]).test(folderName.buildPath("dist3_b_" ~ c.to!string));
+}
 
 // density with pole
-//void test4(string folderName)
-//{
-    //import std.math : abs, log;
-    //auto f0 = (real x) => - log(abs(x)) / 2;
-    //auto f1 = (real x) => -1 / (2 * x);
-    //auto f2 = (real x) => 1 / (2 * x^^2);
+void test4(string folderName)
+{
+    import std.math : abs, log;
+    auto f0 = (real x) => - log(abs(x)) / 2;
+    auto f1 = (real x) => -1 / (2 * x);
+    auto f2 = (real x) => 1 / (2 * x^^2);
 
-    //tinflex(f0, f1, f2, 1.5, [-1.0, 0, 1]).test(folderName.buildPath("dist4"));
-//}
+    tinflex(f0, f1, f2, 1.5, [-1.0, 0, 1]).test(folderName.buildPath("dist4"));
+}
 
 // different values for c
 void test5(string folderName)
@@ -210,7 +210,7 @@ void main()
 
     import std.meta : AliasSeq;
     //alias funs = AliasSeq!(test0, test1, test6);
-    alias funs = AliasSeq!(test0, test1, test6, test_normal);
+    alias funs = AliasSeq!(test0, test1, test2, test3, test5, test6, test_normal);
     foreach (f; funs)
         f(folderName);
 }
