@@ -5,7 +5,7 @@ import mir.random.tinflex: tinflex, Tinflex;
 import mir.random.tinflex.internal.plot : plot;
 import mir.random.tinflex.internal.random : sample;
 import std.array : array;
-import std.stdio : writeln, File;
+import std.stdio : writeln, writefln, File;
 import std.algorithm : map, joiner, sum;
 import std.range : iota, repeat, take;
 import std.path : buildPath;
@@ -91,22 +91,20 @@ void test1(string folderName)
 
     foreach (c; [0.1, 0.5, 1])
     {
-        writeln("c", c);
         tinflex(c, [-3.0, -1.5, 0.0, 1.5, 3]).test(folderName.buildPath("dist1_a" ~ c.to!string));
     }
 
-    //foreach (c; [-0.9, -0.5, -0.2, 0])
-    //{
-        //writeln("c", c);
-        //tinflex(c, [-double.infinity, -2.1, -1.05, 0.1, 1.2, 2, double.infinity]).test(folderName.buildPath("dist1_b" ~ c.to!string));
-        //tinflex(c, [-double.infinity, -1, 0, 1, double.infinity]).test(folderName.buildPath("dist1_c" ~ c.to!string));
-        //tinflex(c, [-2, 0, 1.5]).test(folderName.buildPath("dist1_c" ~ c.to!string));
-    //}
+    foreach (c; [-0.9, -0.5, -0.2, 0])
+    {
+        tinflex(c, [-double.infinity, -2.1, -1.05, 0.1, 1.2, 2, double.infinity]).test(folderName.buildPath("dist1_b" ~ c.to!string));
+        tinflex(c, [-double.infinity, -1, 0, 1, double.infinity]).test(folderName.buildPath("dist1_c" ~ c.to!string));
+        tinflex(c, [-2, 0, 1.5]).test(folderName.buildPath("dist1_c" ~ c.to!string));
+    }
 
-    //foreach (c; [-2, -1.5, -1])
-    //{
-        //tinflex(c, [-3.0, -2.1, -1.05, 0.1, 1.2, 3]).test(folderName.buildPath("dist1_e" ~ c.to!string));
-    //}
+    foreach (c; [-2, -1.5, -1])
+    {
+        tinflex(c, [-3.0, -2.1, -1.05, 0.1, 1.2, 3]).test(folderName.buildPath("dist1_e" ~ c.to!string));
+    }
 }
 
 // test at and near extrema
@@ -209,8 +207,11 @@ void main()
         folderName.mkdir;
 
     import std.meta : AliasSeq;
-    //alias funs = AliasSeq!(test0, test1, test6);
     alias funs = AliasSeq!(test0, test1, test2, test3, test5, test6, test_normal);
-    foreach (f; funs)
+    import std.traits : fullyQualifiedName;
+    foreach (i, f; funs)
+    {
+        writefln("=== Running: %s", fullyQualifiedName!(funs[i]));
         f(folderName);
+    }
 }
