@@ -14,11 +14,12 @@ struct LinearFun(S)
     /// x-intercept
     S intercept; // aka alpha
 
-    this(in S slope, in S intercept, S _y)
+    this(in S slope, in S intercept, S _y, S _a)
     {
         this.slope = slope;
         this.intercept = intercept;
         this._y = _y;
+        this._a = _a;
     }
 
     /// textual representation of the function
@@ -48,11 +49,13 @@ struct LinearFun(S)
         return slope == fun.slope && intercept == fun.intercept;
     }
 
-    /// calc a from paper
-    // TODO: cache?
-    @property S a() const
+    // different definition in paper
+    // slope * _y + intercept;
+    S _a;
+
+    S a() @property const
     {
-        return slope * _y + intercept;
+        return _a;
     }
 }
 
@@ -61,7 +64,7 @@ Creates a linear function given slope and intercept
 */
 LinearFun!S linearFun(S)(in S slope, in S intercept)
 {
-    return LinearFun!S(slope, intercept, 0);
+    return LinearFun!S(slope, intercept, 0, 0);
 }
 
 /**
@@ -72,9 +75,9 @@ LinearFun!S secant(S)(in S xl, in S xr, in S yl, in S yr)
     auto slope = (yr - yl) / (xr - xl);
     // y (aka x0) is defined to be the maximal point of the boundary
     if (yl >= yr)
-        return LinearFun!S(slope, slope * (-xl) + yl, xl);
+        return LinearFun!S(slope, slope * (-xl) + yl, xl, yl);
     else
-        return LinearFun!S(slope, slope * (-xr) + yr, xr);
+        return LinearFun!S(slope, slope * (-xr) + yr, xr, yr);
 }
 
 unittest
@@ -94,7 +97,7 @@ Calculate tangent of any point (x, y) given it's calculated slope
 */
 LinearFun!S tangent(S)(in S x, in S y, in S slope)
 {
-    return LinearFun!S(slope, slope * (-x) + y, x);
+    return LinearFun!S(slope, slope * (-x) + y, x, y);
 }
 
 unittest
