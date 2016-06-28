@@ -267,8 +267,7 @@ S antiderivative(S)(in S x, in S c)
     auto s = copysign(S(1), c);
     auto d = c + 1;
     auto xs = s * x;
-    // negative pow is not defined in real number
-    if (!(xs > 0))
+    if (xs < 0)
         xs = 0;
     return fabs(c) / d * pow(xs, d / c);
 }
