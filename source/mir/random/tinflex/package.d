@@ -232,9 +232,8 @@ private S tinflexImpl(F0, S, RNG)
           (in F0 f0, in GenerationInterval!S[] gvs, in Discrete!S ds, ref RNG rng)
     if (isUniformRNG!RNG)
 {
-    import mir.internal.math: exp;
+    import mir.internal.math: exp, fabs, log;
     import mir.random.tinflex.internal.transformations : inverse, antiderivative, inverseAntiderivative;
-    import std.math: abs;
     import std.random: dice, uniform;
 
     S X = void;
@@ -246,17 +245,50 @@ private S tinflexImpl(F0, S, RNG)
         S u = uniform!("()", S, S)(0, 1, rng);
         immutable c = gvs[rndInt].c;
 
-        if (abs(gvs[rndInt].hat.slope) > 1e-10)
-        {
-            // F_T(x)
+        enum mEX = "auto eX = exp(gvs[rndInt].hat(gvs[rndInt].lx));";
+        // common approximation
+        enum mInvAD = q{
             immutable ad = antiderivative(gvs[rndInt].hat(gvs[rndInt].lx), c);
-            // F_T(x)^-1
             immutable inverseAd = inverseAntiderivative(ad + gvs[rndInt].hat.slope * u, c);
             X = gvs[rndInt].hat._y + (inverseAd - gvs[rndInt].hat.a) / gvs[rndInt].hat.slope;
+        };
+
+        if (c == 0)
+        {
+            mixin(mEX);
+            auto z = u * gvs[rndInt].hat.slope / eX;
+            if (fabs(z) > S(1e-6))
+            {
+                X = gvs[rndInt].hat._y + (log(eX + gvs[rndInt].hat.slope * u) -
+                                          gvs[rndInt].hat.a) / gvs[rndInt].hat.slope;
+            }
+            else
+                X = gvs[rndInt].lx + u / eX * (1 - z/2 + z * z / 3);
+        }
+        else if (c == 0.5)
+        {
+            mixin(mEX);
+            auto z = u * gvs[rndInt].hat.slope * eX;
+            if (fabs(z) > S(1e-6))
+                mixin(mInvAD);
+            else
+                X = gvs[rndInt].lx + u * eX * (1 - z/2 + z * z / 3);
+        }
+        else if (c == 0.5)
+        {
+            auto k = gvs[rndInt].hat(gvs[rndInt].lx);
+            auto z = u * gvs[rndInt].hat.slope / (k * k);
+            if (fabs(z) > S(1e-6))
+                mixin(mInvAD);
+            else
+                X = gvs[rndInt].lx + u * k * (1 - z/2 + z * z / 2);
         }
         else
         {
-            X = (1 - u) * gvs[rndInt].lx + u * gvs[rndInt].rx;
+            if (fabs(gvs[rndInt].hat.slope) > 1e-10)
+                mixin(mInvAD);
+            else
+                X = (1 - u) * gvs[rndInt].lx + u * gvs[rndInt].rx;
         }
 
         auto hatX = inverse(gvs[rndInt].hat(X), c);
