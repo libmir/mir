@@ -58,7 +58,7 @@ body
 {
     import mir.random.tinflex.internal.types : determineType;
     import mir.random.tinflex.internal.area: determineSqueezeAndHat, hatArea, squeezeArea;
-    import std.math: isInfinity;
+    import std.math: isFinite;
 
     // TODO: this is probably not needed anymore
     if (iv.lx == iv.rx)
@@ -74,9 +74,9 @@ body
         // update area
         hatArea!S(iv);
         squeezeArea!S(iv);
-
-        import std.conv : to;
-        assert(iv.hatArea < S.max, "hat area needs to be lower than S.max - " ~ iv.to!string);
+        
+        assert(iv.hatArea.isFinite, "hat area should be lower than infinity");
+        assert(iv.squeezeArea.isFinite, "squeezeArea area should be lower than infinity");
 
         // squeeze may return infinity
         if (iv.squeezeArea == S.max)
