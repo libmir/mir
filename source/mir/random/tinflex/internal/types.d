@@ -33,9 +33,9 @@ struct Interval(S)
     S squeezeArea;
 
     /// only supported constructor
-    this (in S lx, in S rx, in S c,
-          in S ltx, in S lt1x, in S lt2x,
-          in S rtx, in S rt1x, in S rt2x)
+    this (S lx, S rx, S c,
+          S ltx, S lt1x, S lt2x,
+          S rtx, S rt1x, S rt2x)
     {
         this.lx = lx;
         this.rx = rx;
