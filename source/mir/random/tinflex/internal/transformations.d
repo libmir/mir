@@ -159,6 +159,99 @@ unittest
 }
 
 /**
+Compute inverse transformation of a T_c family given point x.
+From: Table 1, column 3
+*/
+S inverse(S)(in S x, in S c)
+{
+    import mir.internal.math : exp, pow, copysign;
+    if (c == 0)
+        return exp(x);
+    if (c == S(-0.5))
+        return 1 / (x*x);
+    if (c == -1)
+        return -1 / x;
+    auto s = copysign(S(1), c);
+    return pow(s * x, 1 / c);
+}
+
+unittest
+{
+    import std.math: E, approxEqual;
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        assert(inverse!S(1, 0).approxEqual(E));
+
+        assert(inverse!S(2, -0.5) == 0.25);
+        assert(inverse!S(8, -0.5) == 0.015625);
+
+        assert(inverse!S(2, 1) == 2);
+        assert(inverse!S(8, 1) == 8);
+
+        assert(inverse!S(1, 1.5) == 1);
+        assert(inverse!S(2, 1.5).approxEqual(1.58740));
+    }
+}
+
+unittest
+{
+    import std.math: approxEqual, isInfinity, isNaN;
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        S[][] results = [
+            [S.nan, S.nan, S.nan, S.nan, S.nan, S.nan, S(0),
+             0.707106781186548, 1, 1.224744871391589,
+             1.414213562373095, 1.581138830084190, 1.73205080756887],
+            [S.nan, S.nan, S.nan, S.nan, S.nan, S.nan, S(0),
+             0.629960524947437, 1, 1.310370697104448,
+             1.587401051968199, 1.842015749320193, 2.080083823051904],
+            [-3, -2.5, -2, -1.5, -1, -0.5, S(0), 0.5, 1, 1.5, 2, 2.5, 3],
+            [S.nan, S.nan, S.nan, S.nan, S.nan, S.nan, S(0),
+             0.462937356143645, 1, 1.569122877964822,
+             2.160119477784612, 2.767932947224778, 3.389492891729259],
+            [9, 6.25, 4, 2.25, 1, 0.25, S(0),
+             0.25, 1, 2.25, 4, 6.25, 9],
+            [0.0497870683678639, 0.0820849986238988, 0.1353352832366127,
+             0.2231301601484298, 0.3678794411714423, 0.6065306597126334,
+             S(1), 1.6487212707001282, 2.7182818284590451, 4.4816890703380645,
+             7.3890560989306504, 12.1824939607034732, 20.0855369231876679],
+            [S(1)/S(9), 0.16, 0.25, S(4)/S(9), 1, 4, S.infinity, 4,
+             1, S(4)/S(9), 0.25, 0.16, S(1)/S(9)],
+            [0.295029384023820, 0.361280428054673, 0.462937356143645,
+             0.637298718948650, 1, 2.160119477784612, S.infinity,
+             S.nan, S.nan, S.nan, S.nan, S.nan, S.nan],
+            [S(1)/S(3), 0.4, 0.5, S(2)/S(3), 1, 2, S.infinity, -2,
+             -1, -S(2)/S(3), -0.5, -0.4, -S(1)/S(3)],
+            [0.480749856769136, 0.542883523318981, 0.629960524947437,
+             0.763142828368888, 1, 1.587401051968199, S.infinity,
+             S.nan, S.nan, S.nan, S.nan, S.nan, S.nan],
+            [0.577350269189626, 0.632455532033676, 0.707106781186548,
+             0.816496580927726, 1, 1.414213562373095, S.infinity,
+             S.nan, S.nan, S.nan, S.nan, S.nan, S.nan],
+        ];
+        S[] xs = [-3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3.0];
+        S[] cs = [2, 1.5, 1, 0.9, 0.5, 0, -0.5, -0.9, -1, -1.5, -2];
+
+        foreach (i, c; cs)
+        {
+            foreach (j, x; xs)
+            {
+                S r = results[i][j];
+                S v = inverse!S(x, c);
+                if (r.isNaN)
+                    assert(v.isNaN);
+                else if (r.isInfinity)
+                    assert(v.isInfinity);
+                else
+                    assert(v.approxEqual(r));
+            }
+        }
+    }
+}
+
+/**
 Compute antiderivative FT of an inverse transformation: TF_C^-1
 Table 1, column 4
 */
@@ -242,99 +335,6 @@ unittest
             {
                 S r = results[i][j];
                 S v = antiderivative!S(x, c);
-                if (r.isNaN)
-                    assert(v.isNaN);
-                else if (r.isInfinity)
-                    assert(v.isInfinity);
-                else
-                    assert(v.approxEqual(r));
-            }
-        }
-    }
-}
-
-/**
-Compute inverse transformation of a T_c family given point x.
-From: Table 1, column 3
-*/
-S inverse(S)(in S x, in S c)
-{
-    import mir.internal.math : exp, pow, copysign;
-    if (c == 0)
-        return exp(x);
-    if (c == S(-0.5))
-        return 1 / (x*x);
-    if (c == -1)
-        return -1 / x;
-    auto s = copysign(S(1), c);
-    return pow(s * x, 1 / c);
-}
-
-unittest
-{
-    import std.math: E, approxEqual;
-    import std.meta : AliasSeq;
-    foreach (S; AliasSeq!(float, double, real))
-    {
-        assert(inverse!S(1, 0).approxEqual(E));
-
-        assert(inverse!S(2, -0.5) == 0.25);
-        assert(inverse!S(8, -0.5) == 0.015625);
-
-        assert(inverse!S(2, 1) == 2);
-        assert(inverse!S(8, 1) == 8);
-
-        assert(inverse!S(1, 1.5) == 1);
-        assert(inverse!S(2, 1.5).approxEqual(1.58740));
-    }
-}
-
-unittest
-{
-    import std.math: approxEqual, isInfinity, isNaN;
-    import std.meta : AliasSeq;
-    foreach (S; AliasSeq!(float, double, real))
-    {
-        S[][] results = [
-            [S.nan, S.nan, S.nan, S.nan, S.nan, S.nan, S(0),
-             0.707106781186548, 1, 1.224744871391589,
-             1.414213562373095, 1.581138830084190, 1.73205080756887],
-            [S.nan, S.nan, S.nan, S.nan, S.nan, S.nan, S(0),
-             0.629960524947437, 1, 1.310370697104448,
-             1.587401051968199, 1.842015749320193, 2.080083823051904],
-            [-3, -2.5, -2, -1.5, -1, -0.5, S(0), 0.5, 1, 1.5, 2, 2.5, 3],
-            [S.nan, S.nan, S.nan, S.nan, S.nan, S.nan, S(0),
-             0.462937356143645, 1, 1.569122877964822,
-             2.160119477784612, 2.767932947224778, 3.389492891729259],
-            [9, 6.25, 4, 2.25, 1, 0.25, S(0),
-             0.25, 1, 2.25, 4, 6.25, 9],
-            [0.0497870683678639, 0.0820849986238988, 0.1353352832366127,
-             0.2231301601484298, 0.3678794411714423, 0.6065306597126334,
-             S(1), 1.6487212707001282, 2.7182818284590451, 4.4816890703380645,
-             7.3890560989306504, 12.1824939607034732, 20.0855369231876679],
-            [S(1)/S(9), 0.16, 0.25, S(4)/S(9), 1, 4, S.infinity, 4,
-             1, S(4)/S(9), 0.25, 0.16, S(1)/S(9)],
-            [0.295029384023820, 0.361280428054673, 0.462937356143645,
-             0.637298718948650, 1, 2.160119477784612, S.infinity,
-             S.nan, S.nan, S.nan, S.nan, S.nan, S.nan],
-            [S(1)/S(3), 0.4, 0.5, S(2)/S(3), 1, 2, S.infinity, -2,
-             -1, -S(2)/S(3), -0.5, -0.4, -S(1)/S(3)],
-            [0.480749856769136, 0.542883523318981, 0.629960524947437,
-             0.763142828368888, 1, 1.587401051968199, S.infinity,
-             S.nan, S.nan, S.nan, S.nan, S.nan, S.nan],
-            [0.577350269189626, 0.632455532033676, 0.707106781186548,
-             0.816496580927726, 1, 1.414213562373095, S.infinity,
-             S.nan, S.nan, S.nan, S.nan, S.nan, S.nan],
-        ];
-        S[] xs = [-3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3.0];
-        S[] cs = [2, 1.5, 1, 0.9, 0.5, 0, -0.5, -0.9, -1, -1.5, -2];
-
-        foreach (i, c; cs)
-        {
-            foreach (j, x; xs)
-            {
-                S r = results[i][j];
-                S v = inverse!S(x, c);
                 if (r.isNaN)
                     assert(v.isNaN);
                 else if (r.isInfinity)
