@@ -74,13 +74,9 @@ body
         // update area
         hatArea!S(iv);
         squeezeArea!S(iv);
-        
+
         assert(iv.hatArea.isFinite, "hat area should be lower than infinity");
         assert(iv.squeezeArea.isFinite, "squeezeArea area should be lower than infinity");
-
-        // squeeze may return infinity
-        if (iv.squeezeArea == S.max)
-            iv.squeezeArea = 0;
     }
 }
 

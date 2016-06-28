@@ -230,6 +230,7 @@ body
             }
         }
     }
+
     // if we receive an invalid value, we require the interval to be split
     import std.math : isFinite;
     if (!isFinite(area))
@@ -238,6 +239,15 @@ body
         area = S.max;
 
 L:
+    static if (!isHat)
+    {
+        // squeeze may return infinity
+        if (area == S.max)
+        {
+            area = 0;
+        }
+    }
+
     static if (isHat)
         iv.hatArea = area;
     else
@@ -486,7 +496,6 @@ unittest
                 {
                     writefln("Hat failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
                     writeln("hatArea: ", iv.hatArea, " - expected: ", hats[i][j]);
-                    writeln("i: ", i);
                     writeln("iv: ", iv);
                     //assert (iv.hatArea.isNaN && hats[i][j] == 0);
                 }
@@ -500,7 +509,6 @@ unittest
                 {
                     writefln("Squeeze failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
                     writeln("squeezeArea: ", iv.squeezeArea, " - expected: ", sqs[i][j]);
-                    writeln("i: ", i);
                     writeln("iv: ", iv);
                     //assert (iv.squeezeArea.isNaN && sqs[i][j] == 0);
                 }
