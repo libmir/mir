@@ -392,7 +392,7 @@ unittest
     ];
 
     import std.stdio;
-    writeln("________");
+    writeln("=== standard normal ===");
     foreach (S; AliasSeq!(float, double, real))
     {
         import mir.internal.math : exp, sqrt;
@@ -488,6 +488,8 @@ unittest
         [0, 0.274612082617970, 0.9375, 0.274612082617970, 0],
     ];
 
+    import std.stdio;
+    writeln("=== distribution 2 ===");
     foreach (S; AliasSeq!(float, double, real))
     {
         import std.math : log;
@@ -572,6 +574,8 @@ unittest
         [0, 1.12535174719259e-07, 1, 1, 1.12535174719259e-07],
     ];
 
+    import std.stdio;
+    writeln("=== distribution 2 unbounded ===");
     foreach (S; AliasSeq!(float, double, real))
     {
         import std.math : log;
@@ -591,26 +595,7 @@ unittest
                 determineSqueezeAndHat(iv);
 
                 hatArea!S(iv);
-                import std.stdio;
-                if (!iv.hatArea.approxEqual(hats[i][j]))
-                {
-                    writeln("Hat failed for c=", c);
-                    writeln("hatArea: ", iv.hatArea, " - expected: ", hats[i][j]);
-                    writeln("i: ", i);
-                    writeln("iv: ", iv);
-                    break;
-                }
                 assert(iv.hatArea.approxEqual(hats[i][j]));
-
-
-                if (!iv.squeezeArea.approxEqual(sqs[i][j]))
-                {
-                    writeln("Squeeze failed for c=", c);
-                    writeln("squeezeArea: ", iv.squeezeArea, " - expected: ", sqs[i][j]);
-                    writeln("i: ", i);
-                    writeln("iv: ", iv);
-                    break;
-                }
 
                 squeezeArea!S(iv);
                 assert(iv.squeezeArea.approxEqual(sqs[i][j]));
