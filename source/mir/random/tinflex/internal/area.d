@@ -441,5 +441,180 @@ unittest
             }
         }
     }
+}
 
+// distribution 2
+unittest
+{
+    import mir.random.tinflex.internal.transformations : transformToInterval;
+    import mir.random.tinflex.internal.types : determineType;
+    import std.math: approxEqual;
+    import std.meta : AliasSeq;
+    import std.range: dropOne, lockstep, save;
+
+    enum points = [-1, -0.9, -0.5, 0.5, 0.9, 1];
+    enum cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.2, 0.5, 0.9, 1, 1.5, 2];
+    alias T = double;
+
+    enum hats = [
+        [0.0260342748818352, 0.341774164121358, T.infinity, 0.341774164121358, 0.0260342748818352],
+        [0.0255195012598719, 0.340879607179185, 1.45967502781908, 0.340879607179185, 0.0255195012598719],
+        [0.0249051103301305, 0.339910651723605, 1.33969931023869, 0.339910651723605, 0.0249051103301305],
+        [0.0247671298819936, 0.339706935431057, 1.32474434347014, 0.339706935431057, 0.0247671298819936],
+        [0.0241509516030223, 0.338855421686747, 1.27840909090909, 0.338855421686747, 0.0241509516030223],
+        [0.0236042978029155, 0.338174820299361, 1.25280832701565, 0.338174820299361, 0.0236042978029155],
+        [0.0231868425038531, 0.337698990123062, 1.23856323982515, 0.337698990123062, 0.0231868425038531],
+        [0.02271505222945705, 0.337203971697137, 1.22602352052675, 0.337203971697137, 0.02271505222945705],
+        [0.0218704478045944, 0.336422222222222, 1.20972222222222, 0.336422222222222, 0.0218704478045944],
+        [0.020325745898257, 0.33529755225067, 1.19154057993372, 0.33529755225067, 0.020325745898257],
+        [0.019810, 0.33500, 1.1875, 0.33500, 0.019810],
+        [T.infinity, 0.333398373950812, 1.1696547939447, 0.333398373950812, T.infinity],
+        [0.0229266666666667, 0.331569730344363, 1.15489483916219, 0.331569730344363, 0.0229266666666667],
+    ];
+
+    enum sqs = [
+        [0, 0.201283752146090, 0.9375, 0.201283752146090, 0],
+        [0, 0.209217913884886, 0.9375, 0.209217913884886, 0],
+        [0, 0.217877503273927, 0.9375, 0.217877503273927, 0],
+        [0, 0.219685264865866, 0.9375, 0.219685264865866, 0],
+        [0, 0.227123314523190, 0.9375, 0.227123314523190, 0],
+        [0, 0.232873353231109, 0.9375, 0.232873353231109, 0],
+        [0, 0.236761479385710, 0.9375, 0.236761479385710, 0],
+        [0.00573166666666667, 0.240675568820739, 0.9375, 0.240675568820739, 0.00573166666666667],
+        [0.0114633333333333, 0.246561104841063, 0.9375, 0.246561104841063, 0.0114633333333333],
+        [0.01629, 0.25435396130873, 0.9375, 0.25435396130873, 0.01629],
+        [0.017195, 0.25628, 0.9375, 0.25628, 0.017195],
+        [0, 0.265692417223023, 0.9375, 0.265692417223023, 0],
+        [0, 0.274612082617970, 0.9375, 0.274612082617970, 0],
+    ];
+
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        import std.math : log;
+        auto f0 = (S x) => log(1 - x^^4);
+        auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
+        auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
+
+        auto it = (S l, S r, S c) => transformToInterval!S(l, r, c, f0(l), f1(l), f2(l),
+                                                                  f0(r), f1(r), f2(r));
+
+        // calculate the area of all intervals
+        foreach (i, c; cs)
+        {
+            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+            {
+                auto iv = it(p1, p2, c);
+                determineSqueezeAndHat(iv);
+
+                hatArea!S(iv);
+                import std.stdio;
+                if (!iv.hatArea.approxEqual(hats[i][j]))
+                {
+                    writeln("Hat failed for c=", c);
+                    writeln("hatArea: ", iv.hatArea, " - expected: ", hats[i][j]);
+                    writeln("i: ", i);
+                    writeln("iv: ", iv);
+                    break;
+                }
+                assert(iv.hatArea.approxEqual(hats[i][j]));
+
+
+                if (!iv.squeezeArea.approxEqual(sqs[i][j]))
+                {
+                    writeln("Squeeze failed for c=", c);
+                    writeln("squeezeArea: ", iv.squeezeArea, " - expected: ", sqs[i][j]);
+                    writeln("i: ", i);
+                    writeln("iv: ", iv);
+                    break;
+                }
+
+                squeezeArea!S(iv);
+                assert(iv.squeezeArea.approxEqual(sqs[i][j]));
+            }
+        }
+    }
+}
+
+// distribution 2 with other boundaries
+unittest
+{
+    import mir.random.tinflex.internal.transformations : transformToInterval;
+    import mir.random.tinflex.internal.types : determineType;
+    import std.math: approxEqual, pow;
+    import std.meta : AliasSeq;
+    import std.range: dropOne, lockstep, save;
+
+    alias T = double;
+
+    // the second type might induce numeric errors
+    enum points = [-T.infinity, -2, -1, 0, 1, 2, T.infinity];
+
+    // without boundaries needs to be > -1
+    enum cs = [-0.9, -0.5, 0, 0.5, 0.9, 1, 2];
+
+    enum hats = [
+        [2.34448280665123e-08, 7.38905609893065e+00, 7.38905609893065, 7.38905609893065, 7.38905609893065e+00],
+        [4.68896561330246e-09, 7.389056098930649519, 7.38905609893065, 7.38905609893065, 7.389056098930649519],
+        [2.34448280665123e-09, 7.389056098930650, 7.38905609893065, 7.38905609893065, 7.389056098930650],
+        [T.infinity, 7.38905609893065e+00, 7.38905609893065, 7.38905609893065, 7.38905609893065e+00],
+        [T.infinity, 7.38905609893065e+00, 7.38905609893065, 7.38905609893065, 7.38905609893065e+00],
+        [T.infinity, 7.38905609893065e+00, 7.38905609893065, 7.38905609893065, 7.38905609893065e+00],
+        [T.infinity, 7.38905609893065e+00, 7.38905609893065, 7.38905609893065, 7.38905609893065e+00],
+    ];
+
+    enum sqs = [
+        [0, 5.11436710832274e-06, 1, 1, 5.11436710832274e-06],
+        [0, 0.000911881965554516, 1, 1, 0.000911881965554516],
+        [0, 0.410503110355304, 1, 1, 0.410503110355304],
+        [0, 2.44201329140792e-05, 1, 1, 2.44201329140792e-05],
+        [0, 3.67127352051629e-06, 1, 1, 3.67127352051629e-06],
+        [2.81337936798148e-06, 1, 1, 2.81337936798148e-06],
+        [0, 1.12535174719259e-07, 1, 1, 1.12535174719259e-07],
+    ];
+
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        import std.math : log;
+        auto f0 = (S x) => log(1 - x^^4);
+        auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
+        auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
+
+        auto it = (S l, S r, S c) => transformToInterval!S(l, r, c, f0(l), f1(l), f2(l),
+                                                                  f0(r), f1(r), f2(r));
+
+        // calculate the area of all intervals
+        foreach (i, c; cs)
+        {
+            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+            {
+                auto iv = it(p1, p2, c);
+                determineSqueezeAndHat(iv);
+
+                hatArea!S(iv);
+                import std.stdio;
+                if (!iv.hatArea.approxEqual(hats[i][j]))
+                {
+                    writeln("Hat failed for c=", c);
+                    writeln("hatArea: ", iv.hatArea, " - expected: ", hats[i][j]);
+                    writeln("i: ", i);
+                    writeln("iv: ", iv);
+                    break;
+                }
+                assert(iv.hatArea.approxEqual(hats[i][j]));
+
+
+                if (!iv.squeezeArea.approxEqual(sqs[i][j]))
+                {
+                    writeln("Squeeze failed for c=", c);
+                    writeln("squeezeArea: ", iv.squeezeArea, " - expected: ", sqs[i][j]);
+                    writeln("i: ", i);
+                    writeln("iv: ", iv);
+                    break;
+                }
+
+                squeezeArea!S(iv);
+                assert(iv.squeezeArea.approxEqual(sqs[i][j]));
+            }
+        }
+    }
 }
