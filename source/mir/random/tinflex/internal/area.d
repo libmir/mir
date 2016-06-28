@@ -15,7 +15,7 @@ in
 }
 body
 {
-    import mir.random.tinflex.internal.linearfun : secant, tangent;
+    import mir.random.tinflex.internal.linearfun : linearFun, secant, tangent;
     import mir.random.tinflex.internal.types : determineType, FunType;
 
     enum sec = "secant(iv.lx, iv.rx, iv.ltx, iv.rtx)";
@@ -72,7 +72,8 @@ body
             hat = mixin(sec);
             break;
         default:
-            //ret = ret.init;
+            squeeze = linearFun!S(0, 0);
+            hat = linearFun!S(0, 0);
     }
 }
 
@@ -285,6 +286,9 @@ unittest
         [6.37253138293738e-18, 0.0274734583331013, 0.0274734583331013, 6.37253138293738e-18],
     ];
 
+    import std.stdio;
+    writeln("=== default tinflex ===");
+
     foreach (S; AliasSeq!(float, double, real))
     {
         const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -306,20 +310,17 @@ unittest
                 import std.stdio;
                 if (!iv.hatArea.approxEqual(hats[i][j]))
                 {
-                    writeln("Hat failed for c=", c);
+                    writefln("Hat failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
                     writeln("hatArea: ", iv.hatArea, " - expected: ", hats[i][j]);
-                    writeln("i: ", i);
                     writeln("iv: ", iv);
                     break;
                 }
                 assert(iv.hatArea.approxEqual(hats[i][j]));
 
-
                 if (!iv.squeezeArea.approxEqual(sqs[i][j]))
                 {
-                    writeln("Squeeze failed for c=", c);
+                    writefln("Squeeze failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
                     writeln("squeezeArea: ", iv.squeezeArea, " - expected: ", sqs[i][j]);
-                    writeln("i: ", i);
                     writeln("iv: ", iv);
                     break;
                 }
@@ -331,6 +332,7 @@ unittest
     }
 }
 
+/**
 // standard normal distribution
 unittest
 {
@@ -418,7 +420,7 @@ unittest
                 import std.stdio;
                 if (!iv.hatArea.approxEqual(hats[i][j]))
                 {
-                    writeln("Hat failed for c=", c);
+                    writefln("Hat failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
                     writeln("hatArea: ", iv.hatArea, " - expected: ", hats[i][j]);
                     writeln("i: ", i);
                     writeln("iv: ", iv);
@@ -429,7 +431,7 @@ unittest
 
                 if (!iv.squeezeArea.approxEqual(sqs[i][j]))
                 {
-                    writeln("Squeeze failed for c=", c);
+                    writefln("Squeeze failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
                     writeln("squeezeArea: ", iv.squeezeArea, " - expected: ", sqs[i][j]);
                     writeln("i: ", i);
                     writeln("iv: ", iv);
@@ -512,7 +514,7 @@ unittest
                 import std.stdio;
                 if (!iv.hatArea.approxEqual(hats[i][j]))
                 {
-                    writeln("Hat failed for c=", c);
+                    writefln("Hat failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
                     writeln("hatArea: ", iv.hatArea, " - expected: ", hats[i][j]);
                     writeln("i: ", i);
                     writeln("iv: ", iv);
@@ -523,7 +525,7 @@ unittest
 
                 if (!iv.squeezeArea.approxEqual(sqs[i][j]))
                 {
-                    writeln("Squeeze failed for c=", c);
+                    writefln("Squeeze failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
                     writeln("squeezeArea: ", iv.squeezeArea, " - expected: ", sqs[i][j]);
                     writeln("i: ", i);
                     writeln("iv: ", iv);
@@ -603,3 +605,4 @@ unittest
         }
     }
 }
+*/
