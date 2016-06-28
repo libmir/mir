@@ -192,17 +192,17 @@ body
             if (abs(z) < S(0.5))
             {
                 // T_c^-1 = 1/x^2
-                area = 1 / (sh.a * sh.a) * (1 + z);
+                area = 1 / (sh.a * sh.a) / (1 + z);
             }
             else
             {
-                area = ((-1 / sh(iv.lx)) + (1 / sh(iv.rx))) / sh.slope;
+                area = ((-1 / sh(iv.rx)) + (1 / sh(iv.lx))) / sh.slope;
             }
         }
         else if (iv.c == -1)
         {
             // T_C = -1 / x
-            if (abs(z) < S(1e-6))
+            if (abs(z) <= S(1e-6))
             {
                 // T_C^-1 = -1 / x
                 area = -1 / sh.a * intLength * (1 - z / 2 + z * z / 3);
