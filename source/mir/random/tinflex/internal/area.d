@@ -146,7 +146,8 @@ body
         auto sh = iv.squeeze;
 
     // check difference to left and right starting point
-    const byte leftOrRight = (iv.lx - sh._y) > (sh._y - iv.rx) ? 1 : -1; // sigma in the paper
+    // sigma in the paper (1: left side, -1, right side
+    const byte leftOrRight = (iv.rx - sh._y) > (sh._y - iv.lx) ? 1 : -1;
 
     // sh.y is the boundary point where f obtains its maximum
 
@@ -159,7 +160,7 @@ body
         // check whether approximation is possible, page 5
         if (abs(z) < S(1e-6))
         {
-            area = exp(sh._y) * (iv.rx - iv.lx) * (1 + z / 2 + (z * z) / 6);
+            area = exp(sh.a) * (iv.rx - iv.lx) * (1 + z / 2 + (z * z) / 6);
         }
         else
         {
@@ -178,12 +179,12 @@ body
         }
 
         immutable intLength = iv.rx - iv.lx;
-        immutable z = leftOrRight / sh.a * sh.slope * intLength;
+        immutable z = leftOrRight * sh.slope / sh.a * intLength;
 
         if (iv.c == 1)
         {
             // T_c^-1 = x^c
-            area = S(0.5) * sh._y * intLength * (2 + z);
+            area = S(0.5) * sh.a * intLength * (z + 2);
         }
         else if (iv.c == S(-0.5))
         {
@@ -191,11 +192,11 @@ body
             if (abs(z) < S(0.5))
             {
                 // T_c^-1 = 1/x^2
-                area = 1 / (sh._y * sh._y) * (1 - z + z * z);
+                area = 1 / (sh.a * sh.a) * (1 + z);
             }
             else
             {
-                area = (-1 / sh(iv.lx)) + (1 / sh(iv.rx));
+                area = ((-1 / sh(iv.lx)) + (1 / sh(iv.rx))) / sh.slope;
             }
         }
         else if (iv.c == -1)
@@ -204,12 +205,12 @@ body
             if (abs(z) < S(1e-6))
             {
                 // T_C^-1 = -1 / x
-                area = -1 / sh._y * intLength * (1 - z / 2 + z * z / 3);
+                area = -1 / sh.a * intLength * (1 - z / 2 + z * z / 3);
             }
             else
             {
                 // F_T = -log(-x)
-                area = -log(-sh(iv.rx)) + log(-sh(iv.lx));
+                area = (-log(-sh(iv.rx)) + log(-sh(iv.lx))) / sh.slope;
             }
         }
         else
