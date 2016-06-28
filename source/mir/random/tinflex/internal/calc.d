@@ -75,6 +75,9 @@ body
         hatArea!S(iv);
         squeezeArea!S(iv);
 
+        import std.conv : to;
+        assert(iv.hatArea < S.max, "hat area needs to be lower than S.max - " ~ iv.to!string);
+
         // squeeze may return infinity
         if (iv.squeezeArea == S.max)
             iv.squeezeArea = 0;
