@@ -76,7 +76,7 @@ body
         squeezeArea!S(iv);
 
         // squeeze may return infinity
-        if (isInfinity(iv.squeezeArea))
+        if (iv.squeezeArea == S.max)
             iv.squeezeArea = 0;
     }
 }

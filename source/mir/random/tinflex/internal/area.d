@@ -172,7 +172,7 @@ body
         if (iv.c * sh(iv.rx) < 0 || iv.c * sh(iv.lx) < 0)
         {
             // returning infinity will yield a split on this interval.
-            area = S.infinity;
+            area = S.max;
             goto L;
         }
 
@@ -229,9 +229,9 @@ body
     // if we receive an invalid value, we require the interval to be split
     import std.math : isFinite;
     if (!isFinite(area))
-        area = S.infinity;
+        area = S.max;
     else if (area < 0)
-        area = S.infinity;
+        area = S.max;
 
 L:
     static if (isHat)
