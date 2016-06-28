@@ -298,6 +298,8 @@ unittest
         auto it = (S l, S r, S c) => transformToInterval(l, r, c, f0(l), f1(l), f2(l),
                                                                   f0(r), f1(r), f2(r));
 
+        import std.math : isInfinity;
+
         // calculate the area of all intervals
         foreach (i, c; cs)
         {
@@ -308,24 +310,52 @@ unittest
 
                 hatArea!S(iv);
                 import std.stdio;
-                if (!iv.hatArea.approxEqual(hats[i][j]))
+                if (iv.hatArea == S.max)
                 {
-                    writefln("Hat failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
-                    writeln("hatArea: ", iv.hatArea, " - expected: ", hats[i][j]);
-                    writeln("iv: ", iv);
-                    break;
+                    if (!hats[i][j].isInfinity)
+                    {
+                        writefln("Hat failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
+                        writeln("hatArea: ", iv.hatArea, " - expected: ", hats[i][j]);
+                        writeln("iv: ", iv);
+                        break;
+                    }
+                    assert(hats[i][j].isInfinity);
                 }
-                assert(iv.hatArea.approxEqual(hats[i][j]));
-
-                if (!iv.squeezeArea.approxEqual(sqs[i][j]))
+                else
                 {
-                    writefln("Squeeze failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
-                    writeln("squeezeArea: ", iv.squeezeArea, " - expected: ", sqs[i][j]);
-                    writeln("iv: ", iv);
-                    break;
+                    if (!iv.hatArea.approxEqual(hats[i][j]))
+                    {
+                        writefln("Hat failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
+                        writeln("hatArea: ", iv.hatArea, " - expected: ", hats[i][j]);
+                        writeln("iv: ", iv);
+                        break;
+                    }
+                    assert(iv.hatArea.approxEqual(hats[i][j]));
                 }
 
                 squeezeArea!S(iv);
+                if (iv.squeezeArea == S.max)
+                {
+                    if (!sqs[i][j].isInfinity)
+                    {
+                        writefln("SqueezeM failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
+                        writeln("squeezeArea: ", iv.squeezeArea, " - expected: ", sqs[i][j]);
+                        writeln("iv: ", iv);
+                        break;
+                    }
+                    assert(sqs[i][j].isInfinity);
+                }
+                else
+                {
+                    if (!iv.squeezeArea.approxEqual(sqs[i][j]))
+                    {
+                        writefln("Squeeze failed for c=%.1f, from %.2f to %.2f", c, p1, p2);
+                        writeln("squeezeArea: ", iv.squeezeArea, " - expected: ", sqs[i][j]);
+                        writeln("iv: ", iv);
+                        break;
+                    }
+                }
+
                 assert(iv.squeezeArea.approxEqual(sqs[i][j]));
             }
         }
