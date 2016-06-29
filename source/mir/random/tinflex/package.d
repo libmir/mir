@@ -247,6 +247,11 @@ private S tinflexImpl(F0, S, RNG)
         S u = uniform!("()", S, S)(0, 1, rng);
         immutable c = gvs[rndInt].c;
 
+        auto hatX = inverse(gvs[rndInt].hat(X), c);
+        auto squeezeX = gvs[rndInt].squeezeArea > 0 ? inverse(gvs[rndInt].squeeze(X), c) : 0;
+
+        immutable t = u * hatX;
+
         if (c == 0)
         {
             auto eXInv = exp(-gvs[rndInt].hat(gvs[rndInt].lx));
@@ -288,21 +293,15 @@ private S tinflexImpl(F0, S, RNG)
                 X = (1 - u) * gvs[rndInt].lx + u * gvs[rndInt].rx;
             goto all;
         }
-        mInvAD:
-            {
-                // common approximation
-                S ad = antiderivative(gvs[rndInt].hat(gvs[rndInt].lx), c);
-                S inverseAd = inverseAntiderivative(ad + gvs[rndInt].hat.slope * u, c);
-                X = gvs[rndInt].hat._y + (inverseAd - gvs[rndInt].hat.a) / gvs[rndInt].hat.slope;
-                goto all;
-            }
-        all:
-
-        auto hatX = inverse(gvs[rndInt].hat(X), c);
-        auto squeezeX = gvs[rndInt].squeezeArea > 0 ? inverse(gvs[rndInt].squeeze(X), c) : 0;
-
-        immutable t = u * hatX;
-
+mInvAD:
+        // common approximation
+        X = gvs[rndInt].hat._y +
+            (inverseAntiderivative
+                (   antiderivative(gvs[rndInt].hat(gvs[rndInt].lx), c)
+                        + gvs[rndInt].hat.slope * u
+                , c) - gvs[rndInt].hat.a
+            ) / gvs[rndInt].hat.slope;
+all:
         // U * h(c) < s(X)  "squeeze evaluation"
         if (t <= squeezeX)
             return X;
@@ -311,4 +310,5 @@ private S tinflexImpl(F0, S, RNG)
         if (t <= exp(f0(X)))
             return X;
     }
+    assert(0);
 }
