@@ -172,28 +172,10 @@ body
     }
     else
     {
-        // for c < 0, the tangent result must result in a valid (bounded) hat function
-        auto lSH = sh(iv.lx);
-        auto rSH = sh(iv.rx);
-        import std.math : fabs, isInfinity, isNaN;
-        //if (isNaN(iv.lt1x) || isNaN(iv.rt1x))
-        //{
-            ////import std.stdio;
-            ////writeln("FOO");
-            //if (fabs(lSH) < S(1e15) || fabs(rSH) < S(1e15))
-            //{
-                //alias ad = antiderivative;
-                //area = (ad(sh(iv.rx), iv.c) - ad(sh(iv.lx), iv.c)) / sh.slope;
-                //goto L;
-            //}
-        //} else {
-
-        if (iv.c * sh(iv.rx) < 0 || iv.c * sh(iv.lx) < 0)
+        auto sgnc = copysign(S(1), iv.c);
+        if (!(sgnc * sh(iv.rx) >= 0) ||
+            !(sgnc * sh(iv.lx) >= 0))
         {
-            import std.stdio;
-            //writeln("MAXCUTOFF", iv.c * sh(iv.rx), " - ", iv.c * sh(iv.lx));
-            //writeln("SH", iv.c, " - ", iv.rx);
-            // returning infinity will yield a split on this interval.
             area = S.max;
             goto L;
         }
