@@ -237,6 +237,8 @@ private S tinflexImpl(F0, S, RNG)
     import std.random: dice, uniform;
 
     S X = void;
+    enum S one_div_3 = 1 / S(3);
+
     // acceptance-rejection sampling
     for (;;)
     {
@@ -245,51 +247,56 @@ private S tinflexImpl(F0, S, RNG)
         S u = uniform!("()", S, S)(0, 1, rng);
         immutable c = gvs[rndInt].c;
 
-        enum mEX = "auto eX = exp(gvs[rndInt].hat(gvs[rndInt].lx));";
-        // common approximation
-        enum mInvAD = q{
-            immutable ad = antiderivative(gvs[rndInt].hat(gvs[rndInt].lx), c);
-            immutable inverseAd = inverseAntiderivative(ad + gvs[rndInt].hat.slope * u, c);
-            X = gvs[rndInt].hat._y + (inverseAd - gvs[rndInt].hat.a) / gvs[rndInt].hat.slope;
-        };
-
         if (c == 0)
         {
-            mixin(mEX);
-            auto z = u * gvs[rndInt].hat.slope / eX;
+            auto eXInv = exp(-gvs[rndInt].hat(gvs[rndInt].lx));
+            auto z = u * gvs[rndInt].hat.slope * eXInv;
             if (fabs(z) > S(1e-6))
             {
-                X = gvs[rndInt].hat._y + (log(eX + gvs[rndInt].hat.slope * u) -
+                X = gvs[rndInt].hat._y + (log(1 / eXInv + gvs[rndInt].hat.slope * u) -
                                           gvs[rndInt].hat.a) / gvs[rndInt].hat.slope;
             }
             else
-                X = gvs[rndInt].lx + u / eX * (1 - z/2 + z * z / 3);
+                X = gvs[rndInt].lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
+            goto all;
         }
-        else if (c == 0.5)
+        else if (c == S(-0.5))
         {
-            mixin(mEX);
+            auto eX = exp(gvs[rndInt].hat(gvs[rndInt].lx));
             auto z = u * gvs[rndInt].hat.slope * eX;
             if (fabs(z) > S(1e-6))
-                mixin(mInvAD);
+                goto mInvAD;
             else
-                X = gvs[rndInt].lx + u * eX * (1 - z/2 + z * z / 3);
+                X = gvs[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z / one_div_3);
+            goto all;
         }
-        else if (c == 0.5)
+        else if (c == 1)
         {
             auto k = gvs[rndInt].hat(gvs[rndInt].lx);
             auto z = u * gvs[rndInt].hat.slope / (k * k);
             if (fabs(z) > S(1e-6))
-                mixin(mInvAD);
+                goto mInvAD;
             else
-                X = gvs[rndInt].lx + u * k * (1 - z/2 + z * z / 2);
+                X = gvs[rndInt].lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
+            goto all;
         }
         else
         {
-            if (fabs(gvs[rndInt].hat.slope) > 1e-10)
-                mixin(mInvAD);
+            if (fabs(gvs[rndInt].hat.slope) > S(1e-10))
+                goto mInvAD;
             else
                 X = (1 - u) * gvs[rndInt].lx + u * gvs[rndInt].rx;
+            goto all;
         }
+        mInvAD:
+            {
+                // common approximation
+                S ad = antiderivative(gvs[rndInt].hat(gvs[rndInt].lx), c);
+                S inverseAd = inverseAntiderivative(ad + gvs[rndInt].hat.slope * u, c);
+                X = gvs[rndInt].hat._y + (inverseAd - gvs[rndInt].hat.a) / gvs[rndInt].hat.slope;
+                goto all;
+            }
+        all:
 
         auto hatX = inverse(gvs[rndInt].hat(X), c);
         auto squeezeX = gvs[rndInt].squeezeArea > 0 ? inverse(gvs[rndInt].squeeze(X), c) : 0;

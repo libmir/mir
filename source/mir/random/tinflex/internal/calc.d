@@ -144,7 +144,7 @@ body
     version(Tinflex_logging)
     {
         import std.experimental.logger;
-        log("starting tinflex with p=", points);
+        log("starting tinflex with p=", points, ", cs=", cs);
     }
 
     // initialize with user given splitting points
@@ -156,7 +156,7 @@ body
         S r2 = f2(r);
         auto iv = transformToInterval(l, r, cs[i], l0, l1, l2,
                                                    r0, r1, r2);
-        l = r;
+        //l = r;
         l0 = r0;
         l1 = r1;
         l2 = r2;
@@ -164,6 +164,15 @@ body
         calcInterval(iv);
         totalHatAreaSummator += iv.hatArea;
         totalSqueezeAreaSummator += iv.squeezeArea;
+
+        import std.stdio;
+        writeln("iv", iv);
+        writeln("hat.l", iv.hat(l));
+        writeln("hat.r", iv.hat(r));
+        writeln("hat.a", iv.hat.a);
+        writeln("hat.slope ", iv.hat.slope);
+        writeln("hat.y ", iv.hat._y);
+        l = r;
         ips.insertBack(iv);
     }
 
@@ -177,6 +186,8 @@ body
         log("squeezeArea", ips.array.map!`a.squeezeArea`);
         log("----");
     }
+
+    return null;
 
     // Tinflex is not guaranteed to converge
     for (auto i = 0; i < maxIterations && nrIntervals < apprMaxPoints; i++)
@@ -273,18 +284,24 @@ body
 
     version(Tinflex_logging)
     {
+        log("----");
         log("Intervals generated: ", gvs.length);
-        log(gvs.array.map!`a.lx`);
+        import std.algorithm;
+        import std.array;
+        log("Interval: ", ips.array.map!`a.lx`);
+        log("hatArea", ips.array.map!`a.hatArea`);
+        log("squeezeArea", ips.array.map!`a.squeezeArea`);
+        log("----");
     }
+
     return gvs;
 }
 
+/*
 // default tinflex with c=1.5
 unittest
 {
-    import mir.random.tinflex.internal.calc: calcPoints;
     import std.meta : AliasSeq;
-    import std.range : repeat;
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -303,16 +320,14 @@ unittest
 // default tinflex with c=1
 unittest
 {
-    import mir.random.tinflex.internal.calc: calcPoints;
     import std.meta : AliasSeq;
-    import std.range : repeat;
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
         auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
-        S[] cs = [1.0, 1.0, 1.0, 1.0];
         S[] points = [-3, -1.5, 0, 1.5, 3];
+        S[] cs = [1.0, 1.0, 1.0, 1.0];
         auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
 
         import std.stdio;
@@ -324,7 +339,6 @@ unittest
 // default tinflex with custom c's
 unittest
 {
-    import mir.random.tinflex.internal.calc: calcPoints;
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -342,10 +356,8 @@ unittest
 // test standard normal distribution
 unittest
 {
-    import mir.random.tinflex.internal.calc: calcPoints;
     import mir.internal.math : exp, sqrt;
     import std.meta : AliasSeq;
-    import std.range : repeat;
     import std.math : PI;
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -359,5 +371,39 @@ unittest
 
         import std.stdio;
         writeln("IP points generated", ips.length);
+    }
+}
+
+*/
+
+unittest
+{
+    import std.array : array;
+    import std.meta : AliasSeq;
+    import std.range : repeat;
+    enum xs =    [-1, -0.9, -0.681543496892237, -0.5, -0.236067977499790,
+                  0, 0.236067977499790, 0.5, 0.681543496892237, 0.9];
+    enum hats = [0.0229266666666667,  0.136019342722764, 0.161670170668440,
+                 0.2612709044556, 0.236795080652736, 0.236795080652736,
+                 0.2612709044556, 0.161670170668440, 0.136019342722764,
+                 0.0229266666666667];
+    enum sqs = [0, 0.124439727192501, 0.156697988044425, 0.255354531224623,
+                0.235701598814137, 0.235701598814137, 0.255354531224623,
+                0.156697988044425, 0.124439727192501, 0];
+
+    //foreach (S; AliasSeq!(float, double, real))
+    foreach (S; AliasSeq!(real))
+    {
+        import std.math : log;
+        auto f0 = (S x) => log(1 - x^^4);
+        auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
+        auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
+        S[] points = [S(-1), -0.9, -0.5, 0.5, 0.9, 1];
+        S[] cs = S(2).repeat(points.length - 1).array;
+
+        auto ips = calcPoints(f0, f1, f2, cs, points, S(1.1));
+
+        import std.stdio;
+        writeln(points);
     }
 }
