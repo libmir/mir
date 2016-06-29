@@ -99,11 +99,11 @@ in
     import std.math : isInfinity, isNaN;
     assert(iv.lx < iv.rx, "invalid interval");
 }
-//out(type)
-//{
-    //import std.conv : to;
-    //assert(type, iv.to!string);
-//}
+out(type)
+{
+    import std.conv : to;
+    assert(type, iv.to!string);
+}
 body
 {
     with(FunType)
