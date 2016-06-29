@@ -34,6 +34,7 @@ auto arcmean(S, bool sorted = false)(const S x, const S y)
     immutable d = atan(l);
     immutable b = atan(r);
 
+    assert(d <= b);
     if (b - d < S(1e-6))
         return S(0.5) * l + S(0.5) * r;
 
