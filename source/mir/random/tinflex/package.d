@@ -575,10 +575,10 @@ body
 
     version(Tinflex_logging)
     {
-        log("----");
-        log("Intervals generated: ", tfIvs.length);
         import std.algorithm;
         import std.array;
+        log("----");
+        log("Intervals generated: ", tfIvs.length);
         log("Interval: ", ips.array.map!`a.lx`);
         log("hatArea", ips.array.map!`a.hatArea`);
         log("squeezeArea", ips.array.map!`a.squeezeArea`);

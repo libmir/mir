@@ -39,7 +39,6 @@ auto arcmean(S, bool sorted = false)(const S x, const S y)
     return tan(S(0.5) * (d + b));
 }
 
-
 /**
 Calculate the parameters for an interval.
 Given an interval, determine it's type and hat and squeeze function.
