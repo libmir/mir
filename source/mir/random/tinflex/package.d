@@ -136,23 +136,23 @@ struct Tinflex(F0, S)
     private const F0 _f0;
 
     // generated partition points
-    private const TinflexInterval!S[] _tfIvs;
+    private const TinflexInterval!S[] _intervals;
 
     // discrete density sampler
     private const Discrete!S ds;
 
-    package this(const F0 f0, const TinflexInterval!S[] tfIvs)
+    package this(const F0 f0, const TinflexInterval!S[] intervals)
     {
         _f0 = f0;
-        _tfIvs = tfIvs;
+        _intervals = intervals;
 
         // pre-calculate cumulative density points
-        auto cdPoints = new S[tfIvs.length];
-        cdPoints[0] = tfIvs[0].hatArea;
+        auto cdPoints = new S[intervals.length];
+        cdPoints[0] = intervals[0].hatArea;
         foreach (i, ref cp; cdPoints[1..$])
         {
             // i starts at 0
-            cp = cdPoints[i] + tfIvs[i + 1].hatArea;
+            cp = cdPoints[i] + intervals[i + 1].hatArea;
         }
         this.ds = Discrete!S(cdPoints);
     }
@@ -164,13 +164,13 @@ struct Tinflex(F0, S)
 
     S c() @property const
     {
-        return _tfIvs[0].c;
+        return _intervals[0].c;
     }
 
     /// Generated partition points
-    package const(TinflexInterval!S[]) tfIvs() @property const
+    const(TinflexInterval!S[]) intervals() @property const
     {
-        return _tfIvs;
+        return _intervals;
     }
 
     /**
@@ -183,14 +183,14 @@ struct Tinflex(F0, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tinflexImpl(_f0, _tfIvs, ds, rndGen);
+        return tinflexImpl(_f0, _intervals, ds, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tinflexImpl(_f0, _tfIvs, ds, rng);
+        return tinflexImpl(_f0, _intervals, ds, rng);
     }
 }
 
@@ -240,7 +240,7 @@ Uses acceptance-rejection algorithm.
 
 Params:
     f0 = probability density function of the distribution
-    tfIvs = calculated inflection points
+    intervals = calculated inflection points
     ds = discrete distribution sampler for hat areas
     rng = random number generator to use
 See_Also:
@@ -248,7 +248,7 @@ See_Also:
      Acceptance-rejection sampling)
 */
 private S tinflexImpl(F0, S, RNG)
-          (in F0 f0, in TinflexInterval!S[] tfIvs, in Discrete!S ds, ref RNG rng)
+          (in F0 f0, in TinflexInterval!S[] intervals, in Discrete!S ds, ref RNG rng)
     if (isUniformRNG!RNG)
 {
     import mir.internal.math: exp, fabs, log;
@@ -265,65 +265,65 @@ private S tinflexImpl(F0, S, RNG)
         auto rndInt = ds(rng); // J in Tinflex paper
         S u = uniform!("()", S, S)(0, 1, rng);
         import std.stdio;
-        if (rndInt >= tfIvs.length)
-            rndInt = tfIvs.length - 1;
+        if (rndInt >= intervals.length)
+            rndInt = intervals.length - 1;
 
-        immutable c = tfIvs[rndInt].c;
+        immutable c = intervals[rndInt].c;
 
-        auto hatX = inverse(tfIvs[rndInt].hat(X), c);
-        auto squeezeX = tfIvs[rndInt].squeezeArea > 0 ? inverse(tfIvs[rndInt].squeeze(X), c) : 0;
+        auto hatX = inverse(intervals[rndInt].hat(X), c);
+        auto squeezeX = intervals[rndInt].squeezeArea > 0 ? inverse(intervals[rndInt].squeeze(X), c) : 0;
 
         immutable t = u * hatX;
 
         if (c == 0)
         {
-            auto eXInv = exp(-tfIvs[rndInt].hat(tfIvs[rndInt].lx));
-            auto z = u * tfIvs[rndInt].hat.slope * eXInv;
+            auto eXInv = exp(-intervals[rndInt].hat(intervals[rndInt].lx));
+            auto z = u * intervals[rndInt].hat.slope * eXInv;
             if (fabs(z) > S(1e-6))
             {
-                X = tfIvs[rndInt].hat.y + (log(1 / eXInv + tfIvs[rndInt].hat.slope * u) -
-                                          tfIvs[rndInt].hat.a) / tfIvs[rndInt].hat.slope;
+                X = intervals[rndInt].hat.y + (log(1 / eXInv + intervals[rndInt].hat.slope * u) -
+                                          intervals[rndInt].hat.a) / intervals[rndInt].hat.slope;
             }
             else
-                X = tfIvs[rndInt].lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
+                X = intervals[rndInt].lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
             goto all;
         }
         else if (c == S(-0.5))
         {
-            auto eX = exp(tfIvs[rndInt].hat(tfIvs[rndInt].lx));
-            auto z = u * tfIvs[rndInt].hat.slope * eX;
+            auto eX = exp(intervals[rndInt].hat(intervals[rndInt].lx));
+            auto z = u * intervals[rndInt].hat.slope * eX;
             if (fabs(z) > S(1e-6))
                 goto mInvAD;
             else
-                X = tfIvs[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z / one_div_3);
+                X = intervals[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z / one_div_3);
             goto all;
         }
         else if (c == 1)
         {
-            auto k = tfIvs[rndInt].hat(tfIvs[rndInt].lx);
-            auto z = u * tfIvs[rndInt].hat.slope / (k * k);
+            auto k = intervals[rndInt].hat(intervals[rndInt].lx);
+            auto z = u * intervals[rndInt].hat.slope / (k * k);
             if (fabs(z) > S(1e-6))
                 goto mInvAD;
             else
-                X = tfIvs[rndInt].lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
+                X = intervals[rndInt].lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
             goto all;
         }
         else
         {
-            if (fabs(tfIvs[rndInt].hat.slope) > S(1e-10))
+            if (fabs(intervals[rndInt].hat.slope) > S(1e-10))
                 goto mInvAD;
             else
-                X = (1 - u) * tfIvs[rndInt].lx + u * tfIvs[rndInt].rx;
+                X = (1 - u) * intervals[rndInt].lx + u * intervals[rndInt].rx;
             goto all;
         }
 mInvAD:
         // common approximation
-        X = tfIvs[rndInt].hat.y +
+        X = intervals[rndInt].hat.y +
             (inverseAntiderivative
-                (   antiderivative(tfIvs[rndInt].hat(tfIvs[rndInt].lx), c)
-                        + tfIvs[rndInt].hat.slope * u
-                , c) - tfIvs[rndInt].hat.a
-            ) / tfIvs[rndInt].hat.slope;
+                (   antiderivative(intervals[rndInt].hat(intervals[rndInt].lx), c)
+                        + intervals[rndInt].hat.slope * u
+                , c) - intervals[rndInt].hat.a
+            ) / intervals[rndInt].hat.slope;
 all:
         // U * h(c) < s(X)  "squeeze evaluation"
         if (t <= squeezeX)
@@ -567,10 +567,10 @@ body
     }
 
     // for sampling only a subset of the attributes is needed
-    auto tfIvs = new TinflexInterval!S[nrIntervals];
+    auto intervals = new TinflexInterval!S[nrIntervals];
     size_t i = 0;
     foreach (ref ip; ips)
-        tfIvs[i++] = TinflexInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
+        intervals[i++] = TinflexInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
                                      ip.squeeze, ip.hatArea, ip.squeezeArea);
 
     version(Tinflex_logging)
@@ -578,14 +578,14 @@ body
         import std.algorithm;
         import std.array;
         log("----");
-        log("Intervals generated: ", tfIvs.length);
+        log("Intervals generated: ", intervals.length);
         log("Interval: ", ips.array.map!`a.lx`);
         log("hatArea", ips.array.map!`a.hatArea`);
         log("squeezeArea", ips.array.map!`a.squeezeArea`);
         log("----");
     }
 
-    return tfIvs;
+    return intervals;
 }
 
 // default tinflex with c=1.5
@@ -772,3 +772,8 @@ unittest
         assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqsD));
     }
 }
+
+import mir.random.tinflex.internal.transformations : inverse;
+
+///
+alias inverse = inverse;
