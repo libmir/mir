@@ -51,8 +51,5 @@ auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool hat = true)
                 break outer;
         }
     }
-    import std.stdio;
-    foreach (i; 0..xs.length)
-        writeln("i: ", i, ", xs: ", xs[i], ", ys: ", ys[i]);
     return ys;
 }
