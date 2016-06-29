@@ -39,7 +39,7 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
     auto gg = GGPlotD().put(geomRectangle(k));
 
     // plot PDF
-    auto xs = iota!S(left, right, 0.1).array;
+    auto xs = iota!S(left, right, 0.01).array;
     auto ysfit = xs.map!((x) => exp(tf.pdf(x)) / 100).array;
     gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ysfit),
         "y")( xs, ysfit ) ) );
@@ -57,14 +57,14 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
     ggHS.save(fileName ~ "_hs.png");
 
     // chi-square test
-    import std.range.primitives : ElementType;
-    import mir.random.tinflex.internal.stat.analysis : FreqTable;
-    auto ft = FreqTable!(ElementType!(typeof(values)))(100, values);
-    auto bps = ft.binPoints((double x) => tf.pdf(x));
-    import mir.random.tinflex.internal.stat : chisq;
-    writeln(ft.bins.chisq);
-    writeln(ft.bins);
-    writeln(bps);
+    //import std.range.primitives : ElementType;
+    //import mir.random.tinflex.internal.stat.analysis : FreqTable;
+    //auto ft = FreqTable!(ElementType!(typeof(values)))(100, values);
+    //auto bps = ft.binPoints((double x) => tf.pdf(x));
+    //import mir.random.tinflex.internal.stat : chisq;
+    //writeln(ft.bins.chisq);
+    //writeln(ft.bins);
+    //writeln(bps);
 
     // save values to file for further processing
     auto f = File(fileName ~ "_values.csv", "w");
@@ -137,14 +137,16 @@ void test3(string folderName)
     auto f0 = (double x) => log(1 - x^^4);
     auto f1 = (double x) => -4 * x^^3 / (1 - x^^4);
     auto f2 = (double x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
-    auto tinflex = (double c,  double[] ips) => tinflex(f0, f1, f2, c, ips);
+    auto tinflex = (double c,  double[] ips) => tinflex(f0, f1, f2, c, ips, 1.01);
 
     import std.conv : to;
-    foreach (c; [1.5, 2])
-        tinflex(c, [-1, -0.9, -0.5, 0.5, 0.9, 1]).test(folderName.buildPath("dist3_a_" ~ c.to!string));
+    //foreach (c; [1.5, 2])
+    auto c = 2.0;
+    tinflex(c, [-1, -0.9, -0.5, 0.5, 0.9, 1])
+    .test(folderName.buildPath("dist3_a_" ~ c.to!string), -1, 1);
 
-    foreach (c; [-2, -1.5, -1, -0.9,  -0.5, -0.2, 0, 0.1, 0.5, 1])
-        tinflex(c, [-1, -0.5, 0.5, 1]).test(folderName.buildPath("dist3_b_" ~ c.to!string));
+    //foreach (c; [-2, -1.5, -1, -0.9,  -0.5, -0.2, 0, 0.1, 0.5, 1])
+        //tinflex(c, [-1, -0.5, 0.5, 1]).test(folderName.buildPath("dist3_b_" ~ c.to!string));
 }
 
 // density with pole

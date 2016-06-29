@@ -43,13 +43,16 @@ auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool hat = true)
         S r = clamp(v.rx, rMin, rMax);
 
         // until the right bound is reached
-        while (xs[k] < r)
+        while (xs[k] <= r)
         {
             // reverse our T_c transformation and calculate the value
             ys[k] = inverse((hat) ? v.hat(xs[k]) : v.squeeze(xs[k]), v.c);
-            if (k++ >= ys.length)
+            if (++k >= xs.length)
                 break outer;
         }
     }
+    import std.stdio;
+    foreach (i; 0..xs.length)
+        writeln("i: ", i, ", xs: ", xs[i], ", ys: ", ys[i]);
     return ys;
 }
