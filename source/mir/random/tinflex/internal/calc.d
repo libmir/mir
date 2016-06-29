@@ -18,9 +18,9 @@ auto arcmean(S, bool sorted = false)(const S x, const S y)
 
     S l = x;
     S r = y;
-    static if(!sorted)
+    static if (!sorted)
     {
-        if(r < l)
+        if (r < l)
         {
             S t = r;
             r = l;
@@ -196,7 +196,7 @@ body
 
         import std.math: nextDown;
         immutable avgArea = nextDown(totalHatArea - totalSqueezeArea) / nrIntervals;
-        for(auto it = ips[]; !it.empty;)
+        for (auto it = ips[]; !it.empty;)
         {
             immutable curArea = it.front.hatArea - it.front.squeezeArea;
             if (curArea > avgArea)

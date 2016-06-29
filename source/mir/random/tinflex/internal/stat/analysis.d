@@ -263,7 +263,7 @@ struct FreqTable(T)
     ///
     void put(T[] xs)
     {
-        foreach(x; xs)
+        foreach (x; xs)
             put(x);
     }
 
