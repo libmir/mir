@@ -136,23 +136,23 @@ struct Tinflex(F0, S)
     private const F0 _f0;
 
     // generated partition points
-    private const TinflexInterval!S[] _tfivs;
+    private const TinflexInterval!S[] _tfIvs;
 
     // discrete density sampler
     private const Discrete!S ds;
 
-    package this(const F0 f0, const TinflexInterval!S[] tfivs)
+    package this(const F0 f0, const TinflexInterval!S[] tfIvs)
     {
         _f0 = f0;
-        _tfivs = tfivs;
+        _tfIvs = tfIvs;
 
         // pre-calculate cumulative density points
-        auto cdPoints = new S[tfivs.length];
-        cdPoints[0] = tfivs[0].hatArea;
+        auto cdPoints = new S[tfIvs.length];
+        cdPoints[0] = tfIvs[0].hatArea;
         foreach (i, ref cp; cdPoints[1..$])
         {
             // i starts at 0
-            cp = cdPoints[i] + tfivs[i + 1].hatArea;
+            cp = cdPoints[i] + tfIvs[i + 1].hatArea;
         }
         this.ds = Discrete!S(cdPoints);
     }
@@ -164,13 +164,13 @@ struct Tinflex(F0, S)
 
     S c() @property const
     {
-        return _tfivs[0].c;
+        return _tfIvs[0].c;
     }
 
     /// Generated partition points
-    package const(TinflexInterval!S[]) tfivs() @property const
+    package const(TinflexInterval!S[]) tfIvs() @property const
     {
-        return _tfivs;
+        return _tfIvs;
     }
 
     /**
@@ -183,18 +183,37 @@ struct Tinflex(F0, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tinflexImpl(_f0, _tfivs, ds, rndGen);
+        return tinflexImpl(_f0, _tfIvs, ds, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tinflexImpl(_f0, _tfivs, ds, rng);
+        return tinflexImpl(_f0, _tfIvs, ds, rng);
     }
 }
 
 ///
+unittest
+{
+    import std.math : approxEqual;
+    import std.meta : AliasSeq;
+    import std.random : Mt19937;
+    alias S = double;
+    auto gen = Mt19937(42);
+    auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+    auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
+    auto f2 = (S x) => 10 - 12 * x ^^ 2;
+    S[] points = [-3, -1.5, 0, 1.5, 3];
+
+    auto tf = tinflex(f0, f1, f2, 1.5, points, 1.1);
+
+    auto value = tf(gen);
+    //assert(value.approxEqual(-1.2631));
+    // see more examples at mir/examples
+}
+
 unittest
 {
     import std.math : approxEqual;
@@ -213,7 +232,6 @@ unittest
         auto value = tf(gen);
         //assert(value.approxEqual(-1.2631));
     }
-    // see more examples at mir/examples
 }
 
 /**
@@ -222,7 +240,7 @@ Uses acceptance-rejection algorithm.
 
 Params:
     f0 = probability density function of the distribution
-    tfivs = calculated inflection points
+    tfIvs = calculated inflection points
     ds = discrete distribution sampler for hat areas
     rng = random number generator to use
 See_Also:
@@ -230,7 +248,7 @@ See_Also:
      Acceptance-rejection sampling)
 */
 private S tinflexImpl(F0, S, RNG)
-          (in F0 f0, in TinflexInterval!S[] tfivs, in Discrete!S ds, ref RNG rng)
+          (in F0 f0, in TinflexInterval!S[] tfIvs, in Discrete!S ds, ref RNG rng)
     if (isUniformRNG!RNG)
 {
     import mir.internal.math: exp, fabs, log;
@@ -247,65 +265,65 @@ private S tinflexImpl(F0, S, RNG)
         auto rndInt = ds(rng); // J in Tinflex paper
         S u = uniform!("()", S, S)(0, 1, rng);
         import std.stdio;
-        if (rndInt >= tfivs.length)
-            rndInt = tfivs.length - 1;
+        if (rndInt >= tfIvs.length)
+            rndInt = tfIvs.length - 1;
 
-        immutable c = tfivs[rndInt].c;
+        immutable c = tfIvs[rndInt].c;
 
-        auto hatX = inverse(tfivs[rndInt].hat(X), c);
-        auto squeezeX = tfivs[rndInt].squeezeArea > 0 ? inverse(tfivs[rndInt].squeeze(X), c) : 0;
+        auto hatX = inverse(tfIvs[rndInt].hat(X), c);
+        auto squeezeX = tfIvs[rndInt].squeezeArea > 0 ? inverse(tfIvs[rndInt].squeeze(X), c) : 0;
 
         immutable t = u * hatX;
 
         if (c == 0)
         {
-            auto eXInv = exp(-tfivs[rndInt].hat(tfivs[rndInt].lx));
-            auto z = u * tfivs[rndInt].hat.slope * eXInv;
+            auto eXInv = exp(-tfIvs[rndInt].hat(tfIvs[rndInt].lx));
+            auto z = u * tfIvs[rndInt].hat.slope * eXInv;
             if (fabs(z) > S(1e-6))
             {
-                X = tfivs[rndInt].hat.y + (log(1 / eXInv + tfivs[rndInt].hat.slope * u) -
-                                          tfivs[rndInt].hat.a) / tfivs[rndInt].hat.slope;
+                X = tfIvs[rndInt].hat.y + (log(1 / eXInv + tfIvs[rndInt].hat.slope * u) -
+                                          tfIvs[rndInt].hat.a) / tfIvs[rndInt].hat.slope;
             }
             else
-                X = tfivs[rndInt].lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
+                X = tfIvs[rndInt].lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
             goto all;
         }
         else if (c == S(-0.5))
         {
-            auto eX = exp(tfivs[rndInt].hat(tfivs[rndInt].lx));
-            auto z = u * tfivs[rndInt].hat.slope * eX;
+            auto eX = exp(tfIvs[rndInt].hat(tfIvs[rndInt].lx));
+            auto z = u * tfIvs[rndInt].hat.slope * eX;
             if (fabs(z) > S(1e-6))
                 goto mInvAD;
             else
-                X = tfivs[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z / one_div_3);
+                X = tfIvs[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z / one_div_3);
             goto all;
         }
         else if (c == 1)
         {
-            auto k = tfivs[rndInt].hat(tfivs[rndInt].lx);
-            auto z = u * tfivs[rndInt].hat.slope / (k * k);
+            auto k = tfIvs[rndInt].hat(tfIvs[rndInt].lx);
+            auto z = u * tfIvs[rndInt].hat.slope / (k * k);
             if (fabs(z) > S(1e-6))
                 goto mInvAD;
             else
-                X = tfivs[rndInt].lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
+                X = tfIvs[rndInt].lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
             goto all;
         }
         else
         {
-            if (fabs(tfivs[rndInt].hat.slope) > S(1e-10))
+            if (fabs(tfIvs[rndInt].hat.slope) > S(1e-10))
                 goto mInvAD;
             else
-                X = (1 - u) * tfivs[rndInt].lx + u * tfivs[rndInt].rx;
+                X = (1 - u) * tfIvs[rndInt].lx + u * tfIvs[rndInt].rx;
             goto all;
         }
 mInvAD:
         // common approximation
-        X = tfivs[rndInt].hat.y +
+        X = tfIvs[rndInt].hat.y +
             (inverseAntiderivative
-                (   antiderivative(tfivs[rndInt].hat(tfivs[rndInt].lx), c)
-                        + tfivs[rndInt].hat.slope * u
-                , c) - tfivs[rndInt].hat.a
-            ) / tfivs[rndInt].hat.slope;
+                (   antiderivative(tfIvs[rndInt].hat(tfIvs[rndInt].lx), c)
+                        + tfIvs[rndInt].hat.slope * u
+                , c) - tfIvs[rndInt].hat.a
+            ) / tfIvs[rndInt].hat.slope;
 all:
         // U * h(c) < s(X)  "squeeze evaluation"
         if (t <= squeezeX)
@@ -549,16 +567,16 @@ body
     }
 
     // for sampling only a subset of the attributes is needed
-    auto tfivs = new TinflexInterval!S[nrIntervals];
+    auto tfIvs = new TinflexInterval!S[nrIntervals];
     size_t i = 0;
     foreach (ref ip; ips)
-        tfivs[i++] = TinflexInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
+        tfIvs[i++] = TinflexInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
                                      ip.squeeze, ip.hatArea, ip.squeezeArea);
 
     version(Tinflex_logging)
     {
         log("----");
-        log("Intervals generated: ", tfivs.length);
+        log("Intervals generated: ", tfIvs.length);
         import std.algorithm;
         import std.array;
         log("Interval: ", ips.array.map!`a.lx`);
@@ -567,13 +585,34 @@ body
         log("----");
     }
 
-    return tfivs;
+    return tfIvs;
 }
 
 // default tinflex with c=1.5
 unittest
 {
+    import std.algorithm : equal, map;
+    import std.math : approxEqual;
     import std.meta : AliasSeq;
+
+    enum hats = [1.79547e-05, 0.00271776, 0.00846808, 0.0333596, 0.0912821,
+                 0.18815, 0.310255, 0.428808, 0.523965, 0.566373, 0.558716,
+                 0.515606, 0.788248, 0.547819, 0.364081, 0.233837, 0.254661,
+                 0.105682, 0.0790885, 0.0212445, 0.0252439, 0.0252439,
+                 0.0212445, 0.0790885, 0.105682, 0.254661, 0.233837, 0.364081,
+                 0.547819, 0.788248, 0.515606, 0.558716, 0.566373, 0.523965,
+                 0.428808, 0.310255, 0.18815, 0.0912821, 0.0333596, 0.00846808,
+                 0.00271776, 1.79547e-05];
+
+    enum sqs = [2.36004e-18, 3.89553e-05, 0.00374907, 0.0207121, 0.0704188,
+                0.165753, 0.295133, 0.425063, 0.515533, 0.555479, 0.549469,
+                0.508729, 0.769742, 0.539798, 0.352656, 0.224357, 0.215078,
+                0.090285, 0.0522061, 0.0163806, 0.00980223, 0.00980223,
+                0.0163806, 0.0522061, 0.090285, 0.215078, 0.224357, 0.352656,
+                0.539798, 0.769742, 0.508729, 0.549469, 0.555479, 0.515533,
+                0.425063, 0.295133, 0.165753, 0.0704188, 0.0207121,
+                0.00374907, 3.89553e-05, 2.36004e-18];
+
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -583,16 +622,31 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        import std.stdio;
-        writeln("IP points generated", ips.length);
-        //assert(ips.length == 45);
+        assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
+        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
     }
 }
 
 // default tinflex with c=1
 unittest
 {
+    import std.algorithm : equal, map;
+    import std.math : approxEqual;
     import std.meta : AliasSeq;
+    enum hats = [1.49622e-05, 0.00227029, 0.0540631, 0.0880036, 0.184448,
+                 0.752102, 0.524874, 0.566459, 1.10993, 0.789818, 0.547504,
+                 0.606916, 0.249029, 0.103608, 0.119708, 0.0238081, 0.0238081,
+                 0.119708, 0.103608, 0.249029, 0.606916, 0.547504, 0.789818,
+                 1.10993, 0.566459, 0.524874, 0.752102, 0.184448, 0.0880036,
+                 0.0540631, 0.00227029, 1.49622e-05];
+
+    enum sqs = [5.34911e-17, 5.37841e-05, 0.0118652, 0.0738576, 0.17077,
+                0.706057, 0.514791, 0.555317, 1.04196, 0.768265, 0.543916,
+                0.55554, 0.2213, 0.0925191, 0.0495667, 0.00980223, 0.00980223,
+                0.0495667, 0.0925191, 0.2213, 0.55554, 0.543916, 0.768265,
+                1.04196, 0.555317, 0.514791, 0.706057, 0.17077, 0.0738576,
+                0.0118652, 5.37841e-05, 5.34911e-17];
+
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -602,16 +656,36 @@ unittest
         S[] cs = [1.0, 1.0, 1.0, 1.0];
         auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        import std.stdio;
-        writeln("IP points generated", ips.length);
-        //assert(ips.length == 45);
+        assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
+        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
     }
 }
 
 // default tinflex with custom c's
 unittest
 {
+    import std.algorithm : equal, map;
+    import std.math : approxEqual;
     import std.meta : AliasSeq;
+
+    enum hats = [1.69138e-05, 0.00256097, 0.00817838, 0.0325843, 0.0899883,
+                 0.186679, 0.309052, 0.429911, 0.524337, 0.566408, 0.55873,
+                 0.515621, 0.788573, 0.547394, 0.363702, 0.233562, 0.148294,
+                 0.0944699, 0.105271, 0.0783547, 0.0211237, 0.0249657, 0.0252439,
+                 0.0212445, 0.0790885, 0.105682, 0.0945806, 0.148474, 0.233837,
+                 0.364081, 0.547819, 0.788248, 0.515599, 0.558708, 0.566356,
+                 0.523775, 0.429166, 0.310854, 0.188879, 0.0919187, 0.0337363,
+                 0.00860631, 0.00278729, 1.84151e-05];
+
+    enum sqs = [2.36004e-18, 4.33822e-05, 0.0038876, 0.0212517, 0.0716527,
+                0.167594, 0.297054, 0.426515, 0.515237, 0.555414, 0.549468,
+                0.508702, 0.769447, 0.540575, 0.35325, 0.224754, 0.142126,
+                0.0904849, 0.0906882, 0.0526476, 0.0164662, 0.00980223,
+                0.00980223, 0.0163806, 0.0522061, 0.090285, 0.0903335,
+                0.141876, 0.224357, 0.352656, 0.539798, 0.769742,
+                0.508742, 0.549468, 0.555511, 0.515682, 0.424369,
+                0.294228, 0.164902, 0.0698584, 0.0204717, 0.00368856,
+                3.71914e-05, 2.36004e-18];
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -621,7 +695,8 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        //assert(ips.length == 45);
+        assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
+        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
     }
 }
 
@@ -629,8 +704,12 @@ unittest
 unittest
 {
     import mir.internal.math : exp, sqrt;
+    import std.algorithm : equal, map;
     import std.meta : AliasSeq;
-    import std.math : PI;
+    import std.math : approxEqual, PI;
+    enum hats = [1.60809, 1.23761, 0.797556, 0.797556, 1.23761, 1.60809];
+    enum sqs = [1.52164, 1.19821, 0.776976, 0.776976, 1.19821, 1.52164];
+
     foreach (S; AliasSeq!(float, double, real))
     {
         S sqrt2PI = sqrt(2 * PI);
@@ -641,30 +720,27 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        import std.stdio;
-        writeln("IP points generated", ips.length);
+        assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
+        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
     }
 }
 
 unittest
 {
+    import std.algorithm : equal, map;
     import std.array : array;
+    import std.math : approxEqual, log;
     import std.meta : AliasSeq;
     import std.range : repeat;
-    enum xs =    [-1, -0.9, -0.681543496892237, -0.5, -0.236067977499790,
-                  0, 0.236067977499790, 0.5, 0.681543496892237, 0.9];
-    enum hats = [0.0229266666666667,  0.136019342722764, 0.161670170668440,
-                 0.2612709044556, 0.236795080652736, 0.236795080652736,
-                 0.2612709044556, 0.161670170668440, 0.136019342722764,
-                 0.0229266666666667];
-    enum sqs = [0, 0.124439727192501, 0.156697988044425, 0.255354531224623,
-                0.235701598814137, 0.235701598814137, 0.255354531224623,
-                0.156697988044425, 0.124439727192501, 0];
 
-    //foreach (S; AliasSeq!(float, double, real))
-    foreach (S; AliasSeq!(real))
+    enum hats = [0.00648327, 0.0133705, 0.136019, 0.16167, 0.5, 0.5,
+                 0.16167, 0.136019, 0.0133705, 0.00648327];
+
+    enum sqs = [0, 0.0125563, 0.12444, 0.156698, 0.484543,
+                0.484543, 0.156698, 0.12444, 0.0125563, 0];
+
+    foreach (S; AliasSeq!(float, real))
     {
-        import std.math : log;
         auto f0 = (S x) => log(1 - x^^4);
         auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
         auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
@@ -672,8 +748,27 @@ unittest
         S[] cs = S(2).repeat(points.length - 1).array;
 
         auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
+        assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
+        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
+    }
 
-        import std.stdio;
-        writeln(points);
+    // double behavior is different
+    {
+        alias S = double;
+
+        S[] hatsD = [0.0229267, 0.136019, 0.16167, 0.5, 0.5,
+                     0.16167, 0.136019, 0.0229267];
+        S[] sqsD =  [0, 0.12444, 0.156698, 0.484543,
+                     0.484543, 0.156698, 0.12444, 0];
+
+        auto f0 = (S x) => log(1 - x^^4);
+        auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
+        auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
+        S[] points = [S(-1), -0.9, -0.5, 0.5, 0.9, 1];
+        S[] cs = S(2).repeat(points.length - 1).array;
+
+        auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
+        assert(ips.map!`a.hatArea`.equal!approxEqual(hatsD));
+        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqsD));
     }
 }
