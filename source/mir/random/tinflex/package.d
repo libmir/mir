@@ -85,9 +85,9 @@ first two derivatives and a partitioning into intervals with at most one inflect
 point. The partitioning needs to be mutually exclusive and sorted.
 
 Params:
-    f0 = probability density function of the distribution
-    f1 = first derivative of f0
-    f2 = second derivative of f0
+    pdf = probability density function of the distribution
+    f1 = first derivative of pdf
+    f2 = second derivative of pdf
     c = $(LINK2 #t_c_family, T_c family) value
     cs = $(LINK2 #t_c_family, T_c family) array
     points = non-overlapping partitioning with at most one inflection point per interval
@@ -96,44 +96,52 @@ Params:
 Returns:
     Tinflex Generator.
 */
-Tinflex!(F0, S) tinflex(F0, F1, F2, S)
-               (in F0 f0, in F1 f1, in F2 f2,
+Tinflex!(PDF, S) tinflex(PDF, F1, F2, S)
+               (in PDF pdf, in F1 f1, in F2 f2,
                 S c, S[] points, S rho = 1.1)
-    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!F0) &&
+    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!PDF) &&
         isFloatingPoint!(ReturnType!F1) && isFloatingPoint!(ReturnType!F2) &&
-        isCallable!F0 && isCallable!F1 && isCallable!F2)
+        isCallable!PDF && isCallable!F1 && isCallable!F2)
 {
     S[] cs = new S[points.length - 1];
     foreach (ref d; cs)
         d = c;
 
     // pre-calculate all the points
-    const gps = tinflexIntervals(f0, f1, f2, cs, points, rho);
-    return Tinflex!(F0, S)(f0, gps);
+    const intervals = tinflexIntervals(pdf, f1, f2, cs, points, rho);
+    return Tinflex!(PDF, S)(pdf, intervals);
 }
 
 /// ditto
-Tinflex!(F0, S) tinflex(F0, F1, F2, S)
-               (in F0 f0, in F1 f1, in F2 f2,
+Tinflex!(PDF, S) tinflex(PDF, F1, F2, S)
+               (in PDF pdf, in F1 f1, in F2 f2,
                 S[] cs, S[] points, S rho = 1.1)
-    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!F0) &&
+    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!PDF) &&
         isFloatingPoint!(ReturnType!F1) && isFloatingPoint!(ReturnType!F2) &&
-        isCallable!F0 && isCallable!F1 && isCallable!F2)
+        isCallable!PDF && isCallable!F1 && isCallable!F2)
 {
     // pre-calculate all the points
-    const gps = tinflexIntervals(f0, f1, f2, cs, points, 1.1);
-    return Tinflex!(F0, S)(f0, gps);
+    const intervals = tinflexIntervals(pdf, f1, f2, cs, points, 1.1);
+    return Tinflex!(PDF, S)(pdf, intervals);
+}
+
+/// ditto
+Tinflex!(PDF, S) tinflex(PDF, S)
+               (in PDF pdf, TinflexInterval!S intervals)
+    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!PDF))
+{
+    return Tinflex!(PDF, S)(pdf, intervals);
 }
 
 /**
 Data body of the Tinflex algorithm.
 Can be used to sample from the distribution.
 */
-struct Tinflex(F0, S)
+struct Tinflex(PDF, S)
     if (isFloatingPoint!S)
 {
     // density function
-    private const F0 _f0;
+    private const PDF _pdf;
 
     // generated partition points
     private const TinflexInterval!S[] _intervals;
@@ -141,9 +149,9 @@ struct Tinflex(F0, S)
     // discrete density sampler
     private const Discrete!S ds;
 
-    package this(const F0 f0, const TinflexInterval!S[] intervals)
+    package this(const PDF pdf, const TinflexInterval!S[] intervals)
     {
-        _f0 = f0;
+        _pdf = pdf;
         _intervals = intervals;
 
         // pre-calculate cumulative density points
@@ -159,12 +167,7 @@ struct Tinflex(F0, S)
 
     S pdf(S x) @property const
     {
-        return _f0(x);
-    }
-
-    S c() @property const
-    {
-        return _intervals[0].c;
+        return _pdf(x);
     }
 
     /// Generated partition points
@@ -183,14 +186,14 @@ struct Tinflex(F0, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tinflexImpl(_f0, _intervals, ds, rndGen);
+        return tinflexImpl(_pdf, _intervals, ds, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tinflexImpl(_f0, _intervals, ds, rng);
+        return tinflexImpl(_pdf, _intervals, ds, rng);
     }
 }
 
@@ -239,7 +242,7 @@ Sample from the distribution with generated, non-overlapping hat and squeeze fun
 Uses acceptance-rejection algorithm.
 
 Params:
-    f0 = probability density function of the distribution
+    pdf = probability density function of the distribution
     intervals = calculated inflection points
     ds = discrete distribution sampler for hat areas
     rng = random number generator to use
@@ -247,8 +250,9 @@ See_Also:
    $(LINK2 https://en.wikipedia.org/wiki/Rejection_sampling,
      Acceptance-rejection sampling)
 */
-private S tinflexImpl(F0, S, RNG)
-          (in F0 f0, in TinflexInterval!S[] intervals, in Discrete!S ds, ref RNG rng)
+private S tinflexImpl(Pdf, S, RNG)
+          (in Pdf pdf, in TinflexInterval!S[] intervals,
+           in Discrete!S ds, ref RNG rng)
     if (isUniformRNG!RNG)
 {
     import mir.internal.math: exp, fabs, log;
@@ -330,7 +334,7 @@ all:
             return X;
 
         // U * h(c) < f(X)  "density evaluation"
-        if (t <= exp(f0(X)))
+        if (t <= exp(pdf(X)))
             return X;
     }
     assert(0);

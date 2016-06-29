@@ -129,10 +129,11 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
         ggHS.put( geomLine( Aes!(typeof(xs), "x", typeof(ys),
             "y", string[], "colour")( xs, ys, "red".repeat.take(xs.length).array)));
 
+        auto c = tf.intervals[0].c;
         import std.math : sgn;
         S delegate(S x) g;
         if (isTransformed)
-            g = (S x) => sgn(tf.c) * exp(tf.c * tf.pdf(x));
+            g = (S x) => sgn(c) * exp(c * tf.pdf(x));
         else
             g = (S x) => exp(x);
         auto ysPDF = xs.map!((x) => g(tf.pdf(x))).array;
