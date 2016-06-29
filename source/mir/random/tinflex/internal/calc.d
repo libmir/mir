@@ -29,7 +29,7 @@ auto arcmean(S, bool sorted = false)(const S x, const S y)
     }
 
     if (r < -S(1e3) || l > S(1e3))
-        return  S(0.5) * (1 / l + 1 / r);
+        return  2 / (1 / l + 1 / r);
 
     immutable d = atan(l);
     immutable b = atan(r);
