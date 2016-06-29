@@ -38,23 +38,38 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
     });
     auto gg = GGPlotD().put(geomRectangle(k));
 
-    // plot PDF
+    // plot histogram
     auto xs = iota!S(left, right, 0.01).array;
-    auto ysfit = xs.map!((x) => exp(tf.pdf(x)) / 100).array;
-    gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ysfit),
-        "y")( xs, ysfit ) ) );
+
+    gg.save(fileName ~ "_hist.pdf");
 
     // plot hat, squeeze
-    gg.save(fileName ~ "_hist.png");
+    bool isTransformed = false;
+    //foreach (isTransformed; [false, true])
+    //{
+        // hat
+        auto ys = tf.plot(xs, true, isTransformed);
+        auto ggHS = GGPlotD().put(geomLine(Aes!(typeof(xs), "x", typeof(ys),
+            "y", string[], "colour")(xs, ys, "blue".repeat.take(xs.length).array)));
 
-    auto ys = tf.plot(xs);
-    auto ggHS = GGPlotD().put( geomLine( Aes!(typeof(xs), "x", typeof(ys),
-        "y", string[], "colour")( xs, ys, "blue".repeat.take(xs.length).array ) ) );
+        // squeeze
+        ys = tf.plot(xs, false, isTransformed);
+        ggHS.put( geomLine( Aes!(typeof(xs), "x", typeof(ys),
+            "y", string[], "colour")( xs, ys, "red".repeat.take(xs.length).array)));
 
-    ys = tf.plot(xs, false);
-    ggHS.put( geomLine( Aes!(typeof(xs), "x", typeof(ys),
-        "y", string[], "colour")( xs, ys, "red".repeat.take(xs.length).array ) ) );
-    ggHS.save(fileName ~ "_hs.png");
+        import std.math : sgn;
+        S delegate(S x) g;
+        if (isTransformed)
+            g = (S x) => sgn(tf.c) * exp(tf.c * tf.pdf(x));
+        else
+            g = (S x) => exp(x);
+        auto ysPDF = xs.map!((x) => g(tf.pdf(x))).array;
+
+        //ggHS.put(geomLine(Aes!(typeof(xs), "x", typeof(ysPDF), "y")(xs, ysPDF)));
+        //auto suffix = isTransformed ? "_transformed" : "";
+        enum suffix = "";
+        ggHS.save(fileName ~ suffix ~ "_hs.pdf");
+    //}
 
     // chi-square test
     //import std.range.primitives : ElementType;
@@ -98,7 +113,7 @@ void test1(string folderName)
     {
         tinflex(c, [-double.infinity, -2.1, -1.05, 0.1, 1.2, 2, double.infinity]).test(folderName.buildPath("dist1_b" ~ c.to!string));
         tinflex(c, [-double.infinity, -1, 0, 1, double.infinity]).test(folderName.buildPath("dist1_c" ~ c.to!string));
-        tinflex(c, [-2, 0, 1.5]).test(folderName.buildPath("dist1_c" ~ c.to!string));
+        tinflex(c, [-2, 0, 1.5]).test(folderName.buildPath("dist1_d" ~ c.to!string), -4, 6);
     }
 
     foreach (c; [-2, -1.5, -1])
@@ -140,13 +155,12 @@ void test3(string folderName)
     auto tinflex = (double c,  double[] ips) => tinflex(f0, f1, f2, c, ips, 1.01);
 
     import std.conv : to;
-    //foreach (c; [1.5, 2])
-    auto c = 2.0;
-    tinflex(c, [-1, -0.9, -0.5, 0.5, 0.9, 1])
-    .test(folderName.buildPath("dist3_a_" ~ c.to!string), -1, 1);
+    foreach (c; [1.5, 2])
+        tinflex(c, [-1, -0.9, -0.5, 0.5, 0.9, 1])
+        .test(folderName.buildPath("dist3_a_" ~ c.to!string), -1, 1);
 
-    //foreach (c; [-2, -1.5, -1, -0.9,  -0.5, -0.2, 0, 0.1, 0.5, 1])
-        //tinflex(c, [-1, -0.5, 0.5, 1]).test(folderName.buildPath("dist3_b_" ~ c.to!string));
+    foreach (c; [-2, -1.5, -1, -0.9,  -0.5, -0.2, 0, 0.1, 0.5, 1])
+        tinflex(c, [-1, -0.5, 0.5, 1]).test(folderName.buildPath("dist3_b_" ~ c.to!string));
 }
 
 // density with pole
@@ -214,7 +228,7 @@ void main(string[] args)
     import std.traits : fullyQualifiedName;
     import std.algorithm.searching : canFind;
 
-    alias funs = AliasSeq!(test0, test1, test2, test3, test5, test6, test_normal);
+    alias funs = AliasSeq!(test0, test1, test2, test3, test4, test5, test6, test_normal);
     foreach (i, f; funs)
     {
         bool isSelected = runAll;

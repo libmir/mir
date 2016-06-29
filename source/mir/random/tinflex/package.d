@@ -166,6 +166,11 @@ struct Tinflex(F0, S)
         return _f0(x);
     }
 
+    S c() @property const
+    {
+        return _gvs[0].c;
+    }
+
     /// Generated partition points
     package const(GenerationInterval!S[]) gvs() @property const
     {

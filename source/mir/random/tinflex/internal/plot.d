@@ -17,9 +17,10 @@ will be ignored.
 Params:
     t = Tinflex generator
     xs = x points to be plotted
-    hat = whether hat (true) or squeeze (false) should be plotted
+    isHat = whether hat (true) or squeeze (false) should be plotted
+    isTransformed = whether to plot the transformed functions
 */
-auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool hat = true)
+auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool isHat = true, bool isTransformed = false)
 {
     import mir.random.tinflex.internal.transformations : inverse;
     import std.algorithm.comparison : clamp;
@@ -46,7 +47,9 @@ auto plot(F0, S)(Tinflex!(F0, S) t, S[] xs, bool hat = true)
         while (xs[k] <= r)
         {
             // reverse our T_c transformation and calculate the value
-            ys[k] = inverse((hat) ? v.hat(xs[k]) : v.squeeze(xs[k]), v.c);
+            ys[k] = (isHat) ? v.hat(xs[k]) : v.squeeze(xs[k]);
+            if (!isTransformed)
+                ys[k] = inverse(ys[k], v.c);
             if (++k >= xs.length)
                 break outer;
         }
