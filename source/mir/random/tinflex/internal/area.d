@@ -14,7 +14,7 @@ in
 }
 body
 {
-    import mir.random.tinflex.internal.linearfun : emptyFun, secant, tangent;
+    import mir.utility.linearfun : emptyFun, secant, tangent;
     import mir.random.tinflex.internal.types : determineType, FunType;
 
     enum sec = "secant(iv.lx, iv.rx, iv.ltx, iv.rtx)";
@@ -149,7 +149,7 @@ body
 
     // check difference to left and right starting point
     // sigma in the paper (1: left side, -1, right side
-    const byte leftOrRight = (iv.rx - sh._y) > (sh._y - iv.lx) ? 1 : -1;
+    const byte leftOrRight = (iv.rx - sh.y) > (sh.y - iv.lx) ? 1 : -1;
 
     // sh.y is the boundary point where f obtains its maximum
 
@@ -519,7 +519,7 @@ unittest
                 writefln("p1 %.10f - p2 %.10f", p1, p2);
                 writefln("hat.a %a", iv.hat.a);
                 writefln("hat.slope %a", iv.hat.slope);
-                writefln("hat.y %a", iv.hat._y);
+                writefln("hat.y %a", iv.hat.y);
                 writefln("hat(p1) %f %1$a", iv.hat(p1));
                 writefln("hat(p2) %f %1$a", iv.hat(p2));
 
@@ -531,7 +531,7 @@ unittest
                     //writeln("p1 p2", p1, " - ", p2);
                     //writeln("hat.a", iv.hat.a);
                     //writeln("hat.slope ", iv.hat.slope);
-                    //writeln("hat.y ", iv.hat._y);
+                    //writeln("hat.y ", iv.hat.y);
                     //writeln("hat(p1) ", iv.hat(p1));
                     //writeln("hat(p2) ", iv.hat(p2));
                     //writeln(S.stringof);

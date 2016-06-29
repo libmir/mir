@@ -13,7 +13,7 @@ be exactly one interval with right = 0)
 struct Interval(S)
     if (isFloatingPoint!S)
 {
-    import mir.random.tinflex.internal.linearfun : LinearFun;
+    import mir.utility.linearfun : LinearFun;
 
     /// positions of the interval
     immutable S lx;
@@ -59,6 +59,8 @@ struct Interval(S)
         foreach (i, v; seq)
             assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
 
+        assert(lx < rx, "invalid interval - right side must be larger than the left side");
+
         if (lx.isFinite)
         {
             //alias tseq =  AliasSeq!(ltx, lt1x, lt2x);
@@ -71,37 +73,6 @@ struct Interval(S)
             //foreach (i, v; tseq)
                 //assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
         }
-    }
-}
-
-/**
-Reduced version of $(LREF Interval). Contains only the necessary information
-needed in the generation phase.
-*/
-struct GenerationInterval(S)
-    if (isFloatingPoint!S)
-{
-    import mir.random.tinflex.internal.linearfun : LinearFun;
-
-    /// left position of the interval
-    S lx, rx;
-
-    /// T_c family of the interval
-    S c;
-
-    LinearFun!S hat;
-    LinearFun!S squeeze;
-
-    S hatArea;
-    S squeezeArea;
-
-    // disallow NaN points
-    invariant {
-        import std.math : isNaN;
-        import std.meta : AliasSeq;
-        alias seq =  AliasSeq!(lx, rx, c, hatArea, squeezeArea);
-        foreach (i, v; seq)
-            assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
     }
 }
 

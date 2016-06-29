@@ -1,4 +1,4 @@
-module mir.random.tinflex.internal.linearfun;
+module mir.utility.linearfun;
 
 import std.traits : isCallable;
 
@@ -20,11 +20,17 @@ struct LinearFun(S)
     /// direction and steepness
     S slope; // aka beta
 
-    this(in S slope, in S _y, in S _a)
+    ///
+    S y;
+
+    ///
+    S a;
+
+    this(in S slope, in S y, in S a)
     {
         this.slope = slope;
-        this._y = _y;
-        this._a = _a;
+        this.y = y;
+        this.a = a;
     }
 
     /// textual representation of the function
@@ -42,31 +48,13 @@ struct LinearFun(S)
     /// call the linear function with x
     S opCall(in S x) const
     {
-        return _a + slope * (x - _y);
-    }
-
-    // TODO: only internally - remove me
-    // definition of function was different in paper: y = a + b * (x -y)
-    S _y;
-
-    bool opEquals()(auto ref const LinearFun!S fun) const
-    {
-        return slope == fun.slope && a == fun._a && _y == fun._y;
-    }
-
-    // different definition in paper
-    // slope * _y + intercept;
-    S _a;
-
-    S a() @property const
-    {
-        return _a;
+        return a + slope * (x - y);
     }
 
     // calculate intercept (for debugging)
     S intercept() @property const
     {
-        return slope * -_y + _a;
+        return slope * -y + a;
     }
 }
 
