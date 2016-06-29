@@ -198,8 +198,10 @@ void test_normal(string folderName)
     .test(folderName.buildPath("dist_normal"));
 }
 
-void main()
+void main(string[] args)
 {
+    bool runAll = args.length <= 1;
+
     import std.file : exists, mkdir;
     string folderName = "plots";
 
@@ -207,11 +209,30 @@ void main()
         folderName.mkdir;
 
     import std.meta : AliasSeq;
-    alias funs = AliasSeq!(test0, test1, test2, test3, test5, test6, test_normal);
     import std.traits : fullyQualifiedName;
+    import std.algorithm.searching : canFind;
+
+    alias funs = AliasSeq!(test0, test1, test2, test3, test5, test6, test_normal);
     foreach (i, f; funs)
     {
-        writefln("=== Running: %s", fullyQualifiedName!(funs[i]));
-        f(folderName);
+        bool isSelected = runAll;
+        enum funName = fullyQualifiedName!(funs[i]);
+        if (!runAll)
+        {
+            // not very elegant, will be rewritten soon
+            foreach (arg; args[1..$])
+            {
+                if (funName.canFind(arg))
+                {
+                    isSelected = true;
+                    break;
+                }
+            }
+        }
+        if (isSelected)
+        {
+            writefln("=== Running: %s", funName);
+            f(folderName);
+        }
     }
 }
