@@ -156,7 +156,7 @@ body
         S r2 = f2(r);
         auto iv = transformToInterval(l, r, cs[i], l0, l1, l2,
                                                    r0, r1, r2);
-        //l = r;
+        l = r;
         l0 = r0;
         l1 = r1;
         l2 = r2;
@@ -165,14 +165,6 @@ body
         totalHatAreaSummator += iv.hatArea;
         totalSqueezeAreaSummator += iv.squeezeArea;
 
-        import std.stdio;
-        writeln("iv", iv);
-        writeln("hat.l", iv.hat(l));
-        writeln("hat.r", iv.hat(r));
-        writeln("hat.a", iv.hat.a);
-        writeln("hat.slope ", iv.hat.slope);
-        writeln("hat.y ", iv.hat._y);
-        l = r;
         ips.insertBack(iv);
     }
 
@@ -186,8 +178,6 @@ body
         log("squeezeArea", ips.array.map!`a.squeezeArea`);
         log("----");
     }
-
-    return null;
 
     // Tinflex is not guaranteed to converge
     for (auto i = 0; i < maxIterations && nrIntervals < apprMaxPoints; i++)
@@ -297,7 +287,6 @@ body
     return gvs;
 }
 
-/*
 // default tinflex with c=1.5
 unittest
 {
@@ -373,8 +362,6 @@ unittest
         writeln("IP points generated", ips.length);
     }
 }
-
-*/
 
 unittest
 {
