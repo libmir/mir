@@ -210,7 +210,7 @@ unittest
     auto tf = tinflex(f0, f1, f2, 1.5, points, 1.1);
 
     auto value = tf(gen);
-    //assert(value.approxEqual(-1.2631));
+    assert(value.approxEqual(S(1.8488)));
     // see more examples at mir/examples
 }
 
@@ -230,7 +230,7 @@ unittest
         auto tf = tinflex(f0, f1, f2, 1.5, points, 1.1);
 
         auto value = tf(gen);
-        //assert(value.approxEqual(-1.2631));
+        assert(value.approxEqual(S(1.8488)));
     }
 }
 

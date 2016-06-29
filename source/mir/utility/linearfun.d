@@ -8,10 +8,10 @@ Representation of linear function of the form:
     y = slope * x + intercept
 
 _IMPORTANT_: we can't store the intercept directly as it will lead to
-numerical errors if x and _y are similar or equal.
+numerical errors if x and y are similar or equal.
 Hence the representation of a function from the Tinflex paper is used:
 
-    y = slope * (x - _y) + _a
+    y = slope * (x - y) + a
 
 For a detailed explanation, see https://github.com/libmir/mir/wiki/Numerical-failures
 */
@@ -26,7 +26,8 @@ struct LinearFun(S)
     ///
     S a;
 
-    this(in S slope, in S y, in S a)
+    ///
+    this(S slope, S y, S a)
     {
         this.slope = slope;
         this.y = y;
@@ -58,9 +59,46 @@ struct LinearFun(S)
     }
 }
 
-LinearFun!S emptyFun(S)()
+///
+LinearFun!S linearFun(S)(S slope, S y, S a)
 {
-    return LinearFun!S(0, 0, 0);
+    return LinearFun!S(slope, y, a);
+}
+
+unittest
+{
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        auto f1 = (S x) => 2 * x;
+
+        auto t1 = linearFun!S(f1(1), 1, 1);
+        assert(t1.slope == 2);
+        assert(t1.intercept == -1);
+
+        auto t2 = linearFun!S(f1(0), 0, 0);
+        assert(t2.slope == 0);
+        assert(t2.intercept == 0);
+    }
+}
+
+unittest
+{
+    import mir.internal.math : cos;
+    import std.math : PI, approxEqual;
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        auto f = (S x) => cos(x);
+        auto buildTan = (S x, S y) => linearFun(f(x), x, y);
+        auto t1 = buildTan(0, 0);
+        assert(t1.slope == 1);
+        assert(t1.intercept == 0);
+
+        auto t2 = buildTan(PI / 2, 1);
+        assert(t2.slope.approxEqual(0));
+        assert(t2.intercept.approxEqual(1));
+    }
 }
 
 /**
@@ -91,49 +129,5 @@ unittest
         auto s2 = secant(3, 5);
         assert(s2.slope == 8);
         assert(s2.intercept == -15);
-    }
-}
-
-/**
-Calculate tangent of any point (x, y) given it's calculated slope
-*/
-LinearFun!S tangent(S)(in S x, in S y, in S slope)
-{
-    return LinearFun!S(slope, x, y);
-}
-
-unittest
-{
-    import std.meta : AliasSeq;
-    foreach (S; AliasSeq!(float, double, real))
-    {
-        auto f1 = (S x) => 2 * x;
-
-        auto t1 = tangent!S(1, 1, f1(1));
-        assert(t1.slope == 2);
-        assert(t1.intercept == -1);
-
-        auto t2 = tangent!S(0, 0, f1(0));
-        assert(t2.slope == 0);
-        assert(t2.intercept == 0);
-    }
-}
-
-unittest
-{
-    import mir.internal.math : cos;
-    import std.math : PI, approxEqual;
-    import std.meta : AliasSeq;
-    foreach (S; AliasSeq!(float, double, real))
-    {
-        auto f = (S x) => cos(x);
-        auto buildTan = (S x, S y) => tangent(x, y, f(x));
-        auto t1 = buildTan(0, 0);
-        assert(t1.slope == 1);
-        assert(t1.intercept == 0);
-
-        auto t2 = buildTan(PI / 2, 1);
-        assert(t2.slope.approxEqual(0));
-        assert(t2.intercept.approxEqual(1));
     }
 }
