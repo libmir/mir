@@ -110,7 +110,7 @@ Tinflex!(F0, S) tinflex(F0, F1, F2, S)
         d = c;
 
     // pre-calculate all the points
-    const gps = calcPoints(f0, f1, f2, cs, points, 1.1);
+    const gps = calcPoints(f0, f1, f2, cs, points, rho);
     return Tinflex!(F0, S)(f0, gps);
 }
 
