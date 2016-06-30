@@ -294,7 +294,7 @@ unittest
 
 /**
 Sample from the distribution with generated, non-overlapping hat and squeeze functions.
-Uses acceptance-rejection algorithm.
+Uses acceptance-rejection algorithm. Based on Table 4 from Botts et al. (2013).
 
 Params:
     pdf = probability density function of the distribution

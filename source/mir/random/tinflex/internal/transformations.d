@@ -160,7 +160,7 @@ unittest
 
 /**
 Compute inverse transformation of a T_c family given point x.
-From: Table 1, column 3
+From: Table 1, column 3 of Botts et al. (2013).
 */
 S inverse(bool common = false, S)(in S x, in S c)
 {
@@ -258,7 +258,7 @@ unittest
 
 /**
 Compute antiderivative FT of an inverse transformation: TF_C^-1
-Table 1, column 4
+Table 1, column 4 of Botts et al. (2013).
 */
 S antiderivative(bool common = false, S)(in S x, in S c)
 {
@@ -367,7 +367,7 @@ unittest
 
 /**
 Compute inverse transformation of antiderivative T_c family given point x.
-Table 1, column 5
+Table 1, column 5 of Botts et al. (2013).
 */
 S inverseAntiderivative(S)(in S x, in S c)
 {

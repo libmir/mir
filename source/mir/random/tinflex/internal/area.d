@@ -5,7 +5,7 @@ import std.traits : ReturnType;
 
 /**
 Determines the hat and squeeze function of an interval.
-Based on Theorem 1
+Based on Theorem 1 of Botts et al. (2013).
 */
 void determineSqueezeAndHat(S)(ref Interval!S iv)
 in
@@ -128,7 +128,7 @@ template constants(S)
 /**
 Computes the area below either the hat or squeeze function
 in-between a interval `iv`.
-Based on table 1 and general equation (3) from the Tinflex paper
+Based on table 1 and general equation (3) from Botts et al. (2013)
 
     (F_T(sh(r))- F_T(sh(l))) / sh.slope
 

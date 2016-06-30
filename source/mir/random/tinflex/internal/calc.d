@@ -13,13 +13,24 @@ the arcmean favors the mean region more.
 Params:
     l = Left point
     r = Right point
+
 Returns:
     Splitting point within the interval
+
 See_Also:
     $(LINK2 http://www.wolframalpha.com/input/?i=tan(0.5+*+(ArcTan%5Bx%5D+%2B+ArcTan%5By%5D)),
     WolframAlpha visualization of the arc-mean)
+
+References:
+    Hormann, W., J. Leydold, and G. Derflinger.
+    "Automatic Nonuniform Random Number Generation." (2004): Formula 4.23
 */
 auto arcmean(S, bool sorted = false)(const S l, const S r)
+out (result)
+{
+    assert(iv.lx <= result && result <= iv.rx);
+}
+body
 {
     import std.math: atan, tan;
 
@@ -46,6 +57,61 @@ auto arcmean(S, bool sorted = false)(const S l, const S r)
         return S(0.5) * _l + S(0.5) * r;
 
     return tan(S(0.5) * (d + b));
+}
+
+/**
+Calculate the exponential mean between an Interval `iv`.
+
+ \int_l^r x * (h(x) - s(x)) dx
+ -----------------------------
+ \int^l^r      h(x) - s(x)  dx
+
+It can't be applied for unbounded intervals if c <= -1/2
+
+References:
+    Hormann, W., J. Leydold, and G. Derflinger.
+    "Automatic Nonuniform Random Number Generation." (2004): Formula 4.22
+*/
+auto expmean(S)(in ref Interval!S iv)
+out (result)
+{
+    assert(iv.lx <= result && result <= iv.rx);
+}
+body
+{
+    import mir.internal.math : pow;
+    enum one_div_3 = 1 / S(3);
+    auto f_upper = (S x) => S(0.5) * x * x * (iv.hat.a - iv.squeeze.a
+                                              - iv.hat.slope * iv.hat.y
+                                              - iv.squeeze.slope * iv.squeeze.y)
+                            + one_div_3 * (iv.hat.slope + iv.squeeze.slope) * pow(x, 3);
+
+    auto f_lower = (S x) => iv.hat.a * x - iv.squeeze.a * x
+                            + (iv.hat.slope *  x * x) * S(0.5)
+                            + (iv.squeeze.slope *  x * x) * S(0.5)
+                            - iv.hat.slope *  x * iv.hat.y
+                            - iv.squeeze.slope * x * iv.squeeze.y;
+
+    auto upper = f_upper(iv.rx) - f_upper(iv.lx);
+    auto lower = f_lower(iv.rx) - f_lower(iv.lx);
+
+    auto res = upper / lower;
+    return res;
+}
+
+unittest
+{
+    import mir.utility.linearfun : LinearFun;
+    import std.math : approxEqual;
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        alias LF = LinearFun!S;
+        auto iv = Interval!S(-3, -1.36003, 1.5, 0, 0, 0, 0, 0, 0);
+        iv.hat = LF(0.159263, -1.36003, 1.26786),
+        iv.squeeze = LF(0.0200763, -3, 1.00667),
+        assert(expmean(iv).approxEqual(-1.90669));
+    }
 }
 
 /**
