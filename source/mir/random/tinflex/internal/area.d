@@ -119,21 +119,9 @@ enum real cbrt4 = 0x1.965fea53d6e3c82b05999ab43dc4def1980762158a0a815f2291ac0cf9
 
 template constants(S)
 {
-    enum epsBits = S.mant_dig - 1;
-    
-    enum epsBitsLogC = epsBits + 2; // * 4
-    enum epsBitsLogV = epsBitsLogC / 3;
-    enum epsBitsLogR = epsBitsLogC % 3;
-
-    enum epsBitsExpC = epsBits + 3; // * *
-    enum epsBitsExpV = epsBitsExpC / 3;
-    enum epsBitsExpR = epsBitsExpC % 3;
-
-    //cbrt(S.epsilon / 4);
-    enum S smallLog = 1 / (2.0L ^^ epsBitsLogV * (epsBitsLogR == 2 ? cbrt4 : epsBitsLogR == 1 ? cbrt2 : 1));
-
-    //cbrt(S.epsilon / 24);
-    enum S smallExp = 1 / (2.0L ^^ epsBitsExpV * (epsBitsExpR == 2 ? cbrt4 : epsBitsExpR == 1 ? cbrt2 : 1) * cbrt3);
+    import mir.internal.math: sqrt;
+    enum S smallLog = sqrt(sqrt(S.epsilon * 5));
+    enum S smallExp = sqrt(sqrt(S.epsilon * 120));
 }
 
 
@@ -182,7 +170,7 @@ body
         // check whether approximation is possible, page 5
         if (fabs(z) < constants!S.smallExp)
         {
-            area = exp(sh.a) * (iv.rx - iv.lx) * (1 + z / 2 + (z * z) / 6);
+            area = exp(sh.a) * (iv.rx - iv.lx) * (1 + z / 2 + (z * z) / 6 + (z * z * z) / 24);
         }
         else
         {
@@ -218,7 +206,7 @@ body
             }
             else
             {
-                area = ((-1 / sh(iv.rx)) + (1 / sh(iv.lx))) / sh.slope;
+                area = (1 / sh(iv.lx) - 1 / sh(iv.rx)) / sh.slope;
             }
         }
         else if (iv.c == -1)
@@ -227,7 +215,7 @@ body
             if (fabs(z) < constants!S.smallLog)
             {
                 // T_C^-1 = -1 / x
-                area = -1 / sh.a * intLength * (1 - z / 2 + z * z / 3);
+                area = -1 / sh.a * intLength * (1 - z / 2 + z * z / 3 - z * z * z / 4);
             }
             else
             {
