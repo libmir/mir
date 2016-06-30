@@ -120,7 +120,7 @@ enum real cbrt4 = 0x1.965fea53d6e3c82b05999ab43dc4def1980762158a0a815f2291ac0cf9
 template constants(S)
 {
     enum epsBits = S.mant_dig - 1;
-    
+
     enum epsBitsLogC = epsBits + 2; // * 4
     enum epsBitsLogV = epsBitsLogC / 3;
     enum epsBitsLogR = epsBitsLogC % 3;
