@@ -337,7 +337,7 @@ private S tinflexImpl(Pdf, S, RNG)
             auto z = u * intervals[rndInt].hat.slope * eX;
             if (fabs(z) > S(1e-6))
                 goto mInvAD;
-            X = intervals[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z * one_div_3);
+            X = intervals[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z);
             goto all;
         }
         else if (c == 1)
