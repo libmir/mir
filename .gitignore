@@ -13,8 +13,7 @@ build
 .generated
 web
 plots
-plot-*
-
+tinflex-plot
 
 __test__d_source_library__
 
