@@ -96,12 +96,12 @@ Params:
 Returns:
     Tinflex Generator.
 */
-Tinflex!(PDF, S) tinflex(PDF, F1, F2, S)
-               (in PDF pdf, in F1 f1, in F2 f2,
+Tinflex!(Pdf, S) tinflex(Pdf, F1, F2, S)
+               (in Pdf pdf, in F1 f1, in F2 f2,
                 S c, S[] points, S rho = 1.1)
-    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!PDF) &&
+    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!Pdf) &&
         isFloatingPoint!(ReturnType!F1) && isFloatingPoint!(ReturnType!F2) &&
-        isCallable!PDF && isCallable!F1 && isCallable!F2)
+        isCallable!Pdf && isCallable!F1 && isCallable!F2)
 {
     S[] cs = new S[points.length - 1];
     foreach (ref d; cs)
@@ -109,39 +109,38 @@ Tinflex!(PDF, S) tinflex(PDF, F1, F2, S)
 
     // pre-calculate all the points
     const intervals = tinflexIntervals(pdf, f1, f2, cs, points, rho);
-    return Tinflex!(PDF, S)(pdf, intervals);
+    return Tinflex!(Pdf, S)(pdf, intervals);
 }
 
 /// ditto
-Tinflex!(PDF, S) tinflex(PDF, F1, F2, S)
-               (in PDF pdf, in F1 f1, in F2 f2,
+Tinflex!(Pdf, S) tinflex(Pdf, F1, F2, S)
+               (in Pdf pdf, in F1 f1, in F2 f2,
                 S[] cs, S[] points, S rho = 1.1)
-    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!PDF) &&
+    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!Pdf) &&
         isFloatingPoint!(ReturnType!F1) && isFloatingPoint!(ReturnType!F2) &&
-        isCallable!PDF && isCallable!F1 && isCallable!F2)
+        isCallable!Pdf && isCallable!F1 && isCallable!F2)
 {
     // pre-calculate all the points
     const intervals = tinflexIntervals(pdf, f1, f2, cs, points, 1.1);
-    return Tinflex!(PDF, S)(pdf, intervals);
+    return Tinflex!(Pdf, S)(pdf, intervals);
 }
 
 /// ditto
-Tinflex!(PDF, S) tinflex(PDF, S)
-               (in PDF pdf, TinflexInterval!S intervals)
-    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!PDF))
+Tinflex!(Pdf, S) tinflex(Pdf, S)(in Pdf pdf, in TinflexInterval!S[] intervals)
+    if (isFloatingPoint!S && isFloatingPoint!(ReturnType!Pdf))
 {
-    return Tinflex!(PDF, S)(pdf, intervals);
+    return Tinflex!(Pdf, S)(pdf, intervals);
 }
 
 /**
 Data body of the Tinflex algorithm.
 Can be used to sample from the distribution.
 */
-struct Tinflex(PDF, S)
+struct Tinflex(Pdf, S)
     if (isFloatingPoint!S)
 {
     // density function
-    private const PDF _pdf;
+    private const Pdf _pdf;
 
     // generated partition points
     private const TinflexInterval!S[] _intervals;
@@ -149,7 +148,7 @@ struct Tinflex(PDF, S)
     // discrete density sampler
     private const Discrete!S ds;
 
-    package this(const PDF pdf, const TinflexInterval!S[] intervals)
+    package this(in Pdf pdf, in TinflexInterval!S[] intervals)
     {
         _pdf = pdf;
         _intervals = intervals;
@@ -215,6 +214,46 @@ unittest
     auto value = tf(gen);
     assert(value.approxEqual(S(1.8488)));
     // see more examples at mir/examples
+}
+
+unittest
+{
+    import std.meta : AliasSeq;
+    import std.math : approxEqual, PI;
+    import std.random : Mt19937;
+    import mir.internal.math : exp, sqrt;
+    import mir.utility.linearfun : LinearFun;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        S sqrt2PI = sqrt(2 * PI);
+        auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
+        auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
+        auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
+        S[] points = [-3.0, 0, 3];
+        alias TF = TinflexInterval!S;
+        alias LF = LinearFun!S;
+
+        auto intervals = [
+            TF(-3, -1.36003, 1.5, LF(0.159263, -1.36003, 1.26786),
+                                  LF(0.0200763, -3, 1.00667), 1.78593, 1.66515),
+            TF(-1.36003, -0.720759, 1.5, LF(0.498434, -0.720759, 1.58649),
+                                         LF(0.409229, -1.36003, 1.26786), 0.80997, 0.799256),
+            TF(-0.720759, 0, 1.5, LF(-0, 0, 1.81923),
+                                  LF(0.322909, 0, 1.81923), 1.07411, 1.02762),
+            TF(0, 0.720759, 1.5, LF(-0, 0, 1.81923),
+                                 LF(-0.322909, 0, 1.81923), 1.07411, 1.02762),
+            TF(0.720759, 1.36003, 1.5, LF(-0.498434, 0.720759, 1.58649),
+                                       LF(-0.409229, 1.36003, 1.26786), 0.80997, 0.799256),
+            TF(1.36003, 3, 1.5, LF(-0.159263, 1.36003, 1.26786),
+                                LF(-0.0200763, 3, 1.00667), 1.78593, 1.66515)
+        ];
+        auto tf = tinflex(f0, intervals);
+        auto gen = Mt19937(42);
+        auto value = tf(gen);
+        import std.stdio;
+        writeln(value);
+        //assert(value.approxEqual(S(1.8488)));
+    }
 }
 
 unittest
@@ -599,7 +638,7 @@ unittest
     import std.math : approxEqual;
     import std.meta : AliasSeq;
 
-    enum hats = [1.79547e-05, 0.00271776, 0.00846808, 0.0333596, 0.0912821,
+    static immutable hats = [1.79547e-05, 0.00271776, 0.00846808, 0.0333596, 0.0912821,
                  0.18815, 0.310255, 0.428808, 0.523965, 0.566373, 0.558716,
                  0.515606, 0.788248, 0.547819, 0.364081, 0.233837, 0.254661,
                  0.105682, 0.0790885, 0.0212445, 0.0252439, 0.0252439,
@@ -608,7 +647,7 @@ unittest
                  0.428808, 0.310255, 0.18815, 0.0912821, 0.0333596, 0.00846808,
                  0.00271776, 1.79547e-05];
 
-    enum sqs = [2.36004e-18, 3.89553e-05, 0.00374907, 0.0207121, 0.0704188,
+    static immutable sqs = [2.36004e-18, 3.89553e-05, 0.00374907, 0.0207121, 0.0704188,
                 0.165753, 0.295133, 0.425063, 0.515533, 0.555479, 0.549469,
                 0.508729, 0.769742, 0.539798, 0.352656, 0.224357, 0.215078,
                 0.090285, 0.0522061, 0.0163806, 0.00980223, 0.00980223,
@@ -637,14 +676,14 @@ unittest
     import std.algorithm : equal, map;
     import std.math : approxEqual;
     import std.meta : AliasSeq;
-    enum hats = [1.49622e-05, 0.00227029, 0.0540631, 0.0880036, 0.184448,
+    static immutable hats = [1.49622e-05, 0.00227029, 0.0540631, 0.0880036, 0.184448,
                  0.752102, 0.524874, 0.566459, 1.10993, 0.789818, 0.547504,
                  0.606916, 0.249029, 0.103608, 0.119708, 0.0238081, 0.0238081,
                  0.119708, 0.103608, 0.249029, 0.606916, 0.547504, 0.789818,
                  1.10993, 0.566459, 0.524874, 0.752102, 0.184448, 0.0880036,
                  0.0540631, 0.00227029, 1.49622e-05];
 
-    enum sqs = [5.34911e-17, 5.37841e-05, 0.0118652, 0.0738576, 0.17077,
+    static immutable sqs = [5.34911e-17, 5.37841e-05, 0.0118652, 0.0738576, 0.17077,
                 0.706057, 0.514791, 0.555317, 1.04196, 0.768265, 0.543916,
                 0.55554, 0.2213, 0.0925191, 0.0495667, 0.00980223, 0.00980223,
                 0.0495667, 0.0925191, 0.2213, 0.55554, 0.543916, 0.768265,
@@ -672,7 +711,7 @@ unittest
     import std.math : approxEqual;
     import std.meta : AliasSeq;
 
-    enum hats = [1.69138e-05, 0.00256097, 0.00817838, 0.0325843, 0.0899883,
+    static immutable hats = [1.69138e-05, 0.00256097, 0.00817838, 0.0325843, 0.0899883,
                  0.186679, 0.309052, 0.429911, 0.524337, 0.566408, 0.55873,
                  0.515621, 0.788573, 0.547394, 0.363702, 0.233562, 0.148294,
                  0.0944699, 0.105271, 0.0783547, 0.0211237, 0.0249657, 0.0252439,
@@ -681,7 +720,7 @@ unittest
                  0.523775, 0.429166, 0.310854, 0.188879, 0.0919187, 0.0337363,
                  0.00860631, 0.00278729, 1.84151e-05];
 
-    enum sqs = [2.36004e-18, 4.33822e-05, 0.0038876, 0.0212517, 0.0716527,
+    static immutable sqs = [2.36004e-18, 4.33822e-05, 0.0038876, 0.0212517, 0.0716527,
                 0.167594, 0.297054, 0.426515, 0.515237, 0.555414, 0.549468,
                 0.508702, 0.769447, 0.540575, 0.35325, 0.224754, 0.142126,
                 0.0904849, 0.0906882, 0.0526476, 0.0164662, 0.00980223,
@@ -711,8 +750,8 @@ unittest
     import std.algorithm : equal, map;
     import std.meta : AliasSeq;
     import std.math : approxEqual, PI;
-    enum hats = [1.60809, 1.23761, 0.797556, 0.797556, 1.23761, 1.60809];
-    enum sqs = [1.52164, 1.19821, 0.776976, 0.776976, 1.19821, 1.52164];
+    static immutable hats = [1.60809, 1.23761, 0.797556, 0.797556, 1.23761, 1.60809];
+    static immutable sqs = [1.52164, 1.19821, 0.776976, 0.776976, 1.19821, 1.52164];
 
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -737,10 +776,10 @@ unittest
     import std.meta : AliasSeq;
     import std.range : repeat;
 
-    enum hats = [0.00648327, 0.0133705, 0.136019, 0.16167, 0.5, 0.5,
+    static immutable hats = [0.00648327, 0.0133705, 0.136019, 0.16167, 0.5, 0.5,
                  0.16167, 0.136019, 0.0133705, 0.00648327];
 
-    enum sqs = [0, 0.0125563, 0.12444, 0.156698, 0.484543,
+    static immutable sqs = [0, 0.0125563, 0.12444, 0.156698, 0.484543,
                 0.484543, 0.156698, 0.12444, 0.0125563, 0];
 
     foreach (S; AliasSeq!(float, real))
