@@ -113,6 +113,30 @@ unittest
 alias hatArea(S) = area!(true, S);
 alias squeezeArea(S) = area!(false, S);
 
+enum real cbrt2 = 0x1.428a2f98d728ae223ddab715be25p-0;
+enum real cbrt3 = 0x1.7137449123ef65cdde7f16c56e3267c0a1894c2af56ecd99f4574287d2052p-0;
+enum real cbrt4 = 0x1.965fea53d6e3c82b05999ab43dc4def1980762158a0a815f2291ac0cf9304p-0;
+
+template constants(S)
+{
+    enum epsBits = S.mant_dig - 1;
+    
+    enum epsBitsLogC = epsBits + 2; // * 4
+    enum epsBitsLogV = epsBitsLogC / 3;
+    enum epsBitsLogR = epsBitsLogC % 3;
+
+    enum epsBitsExpC = epsBits + 3; // * *
+    enum epsBitsExpV = epsBitsExpC / 3;
+    enum epsBitsExpR = epsBitsExpC % 3;
+
+    //cbrt(S.epsilon / 4);
+    enum S smallLog = 1 / (2.0L ^^ epsBitsLogV * (epsBitsLogR == 2 ? cbrt4 : epsBitsLogR == 1 ? cbrt2 : 1));
+
+    //cbrt(S.epsilon / 24);
+    enum S smallExp = 1 / (2.0L ^^ epsBitsExpV * (epsBitsExpR == 2 ? cbrt4 : epsBitsExpR == 1 ? cbrt2 : 1) * cbrt3);
+}
+
+
 /**
 Computes the area below either the hat or squeeze function
 in-between a interval `iv`.
@@ -133,8 +157,7 @@ in
 }
 body
 {
-    import mir.internal.math: copysign, exp, log;
-    import std.math: abs, sgn;
+    import mir.internal.math: copysign, exp, log, fabs;
     import mir.random.tinflex.internal.transformations : antiderivative, inverse;
 
     S area = void;
@@ -146,7 +169,7 @@ body
 
     // check difference to left and right starting point
     // sigma in the paper (1: left side, -1, right side
-    const byte leftOrRight = (iv.rx - sh.y) > (sh.y - iv.lx) ? 1 : -1;
+    immutable S leftOrRight = (iv.rx - sh.y) > (sh.y - iv.lx) ? 1 : -1;
 
     // sh.y is the boundary point where f obtains its maximum
 
@@ -157,7 +180,7 @@ body
         // Error in table, see equation (4)
         immutable z = leftOrRight * sh.slope * (iv.rx - iv.lx);
         // check whether approximation is possible, page 5
-        if (abs(z) < S(1e-6))
+        if (fabs(z) < constants!S.smallExp)
         {
             area = exp(sh.a) * (iv.rx - iv.lx) * (1 + z / 2 + (z * z) / 6);
         }
@@ -178,7 +201,7 @@ body
         }
 
         immutable intLength = iv.rx - iv.lx;
-        immutable z = leftOrRight * sh.slope / sh.a * intLength;
+        immutable z = leftOrRight / sh.a * sh.slope * intLength;
 
         if (iv.c == 1)
         {
@@ -188,7 +211,7 @@ body
         else if (iv.c == S(-0.5))
         {
             // T_c = -1/sqrt(x)
-            if (abs(z) < S(0.5))
+            if (fabs(z) < S(0.5))
             {
                 // T_c^-1 = 1/x^2
                 area = 1 / (sh.a * sh.a) * intLength / (1 + z);
@@ -201,7 +224,7 @@ body
         else if (iv.c == -1)
         {
             // T_C = -1 / x
-            if (abs(z) <= S(1e-6))
+            if (fabs(z) < constants!S.smallLog)
             {
                 // T_C^-1 = -1 / x
                 area = -1 / sh.a * intLength * (1 - z / 2 + z * z / 3);
@@ -216,7 +239,7 @@ body
         {
             // T_c = -1 / x
             //area = (r - l) * c / (c + 1) * 1 / z * ((1 + z)^^((c + 1) / c) - 1);
-            if (abs(sh.slope) > S(1e-10))
+            if (fabs(sh.slope) > S(1e-10))
             {
                 alias ad = antiderivative;
                 area = (ad(sh(iv.rx), iv.c) - ad(sh(iv.lx), iv.c)) / sh.slope;
