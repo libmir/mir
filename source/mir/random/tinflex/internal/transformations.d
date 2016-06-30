@@ -345,17 +345,15 @@ unittest
                         //writefln("x : %1.f, c: %1.f", x, c);
                     //}
 
-                if (r.isNaN)
-                    assert(1);
-                    //assert(v.isNaN);
-                else if (r.isInfinity)
-                    assert(1);
-                    //assert(v.isInfinity);
-                else
-                {
-                    assert(1);
-                    //assert(v.approxEqual(r));
-                }
+                // disabled to uncleared behavior of inverse for negative x
+                //if (r.isNaN)
+                    ////assert(v.isNaN);
+                //else if (r.isInfinity)
+                    ////assert(v.isInfinity);
+                //else
+                //{
+                    ////assert(v.approxEqual(r));
+                //}
             }
         }
     }
