@@ -169,10 +169,10 @@ body
     }
     else
     {
-        // for c < 0, the tangent, result must result in a valid (bounded) hat function
-        if (iv.c * sh(iv.rx) < 0 || iv.c * sh(iv.lx) < 0)
+        auto sgnc = copysign(S(1), iv.c);
+        if (!(sgnc * sh(iv.rx) >= 0) ||
+            !(sgnc * sh(iv.lx) >= 0))
         {
-            // we will trigger a split and hope the numerical error gets reduced
             area = S.max;
             goto L;
         }

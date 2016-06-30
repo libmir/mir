@@ -36,11 +36,12 @@ auto arcmean(S, bool sorted = false)(const S l, const S r)
     }
 
     if (_r < -S(1e3) || _l > S(1e3))
-        return  S(0.5) * (1 / _l + 1 / r);
+        return 2 / (1 / _l + 1 / r);
 
     immutable d = atan(_l);
     immutable b = atan(_r);
 
+    assert(d <= b);
     if (b - d < S(1e-6))
         return S(0.5) * _l + S(0.5) * r;
 
