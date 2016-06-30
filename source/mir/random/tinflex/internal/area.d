@@ -193,15 +193,12 @@ body
 
         if (iv.c == 1)
         {
-            // T_c^-1 = x^c
             area = S(0.5) * sh.a * intLength * (z + 2);
         }
         else if (iv.c == S(-0.5))
         {
-            // T_c = -1/sqrt(x)
             if (fabs(z) < S(0.5))
             {
-                // T_c^-1 = 1/x^2
                 area = 1 / (sh.a * sh.a) * intLength / (1 + z);
             }
             else
@@ -211,22 +208,17 @@ body
         }
         else if (iv.c == -1)
         {
-            // T_C = -1 / x
             if (fabs(z) < constants!S.smallLog)
             {
-                // T_C^-1 = -1 / x
                 area = -1 / sh.a * intLength * (1 - z / 2 + z * z / 3 - z * z * z / 4);
             }
             else
             {
-                // F_T = -log(-x)
                 area = (-log(-sh(iv.rx)) + log(-sh(iv.lx))) / sh.slope;
             }
         }
         else
         {
-            // T_c = -1 / x
-            //area = (r - l) * c / (c + 1) * 1 / z * ((1 + z)^^((c + 1) / c) - 1);
             if (fabs(sh.slope) > S(1e-10))
             {
                 alias ad = antiderivative;
