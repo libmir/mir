@@ -162,17 +162,20 @@ unittest
 Compute inverse transformation of a T_c family given point x.
 From: Table 1, column 3
 */
-S inverse(S)(in S x, in S c)
+S inverse(bool common = false, S)(in S x, in S c)
 {
     import mir.internal.math : exp, pow, copysign;
-    if (c == 0)
-        return exp(x);
-    if (c == S(-0.5))
-        return 1 / (x*x);
-    if (c == -1)
-        return -1 / x;
-    if (c == 1)
-        return x;
+    static if (!common)
+    {
+        if (c == 0)
+            return exp(x);
+        if (c == S(-0.5))
+            return 1 / (x * x);
+        if (c == -1)
+            return -1 / x;
+        if (c == 1)
+            return x;
+    }
     auto s = copysign(S(1), c);
     return pow(s * x, 1 / c);
 }
@@ -183,16 +186,16 @@ unittest
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
-        assert(inverse!S(1, 0).approxEqual(E));
+        assert(inverse!(false, S)(1, 0).approxEqual(E));
 
-        assert(inverse!S(2, -0.5) == 0.25);
-        assert(inverse!S(8, -0.5) == 0.015625);
+        assert(inverse!(false, S)(2, -0.5) == 0.25);
+        assert(inverse!(false, S)(8, -0.5) == 0.015625);
 
-        assert(inverse!S(2, 1) == 2);
-        assert(inverse!S(8, 1) == 8);
+        assert(inverse!(false, S)(2, 1) == 2);
+        assert(inverse!(false, S)(8, 1) == 8);
 
-        assert(inverse!S(1, 1.5) == 1);
-        assert(inverse!S(2, 1.5).approxEqual(1.58740));
+        assert(inverse!(false, S)(1, 1.5) == 1);
+        assert(inverse!(false, S)(2, 1.5).approxEqual(1.58740));
     }
 }
 
@@ -241,7 +244,7 @@ unittest
             foreach (j, x; xs)
             {
                 S r = results[i][j];
-                S v = inverse!S(x, c);
+                S v = inverse!(false, S)(x, c);
                 if (r.isNaN)
                     assert(v.isNaN);
                 else if (r.isInfinity)
@@ -257,15 +260,18 @@ unittest
 Compute antiderivative FT of an inverse transformation: TF_C^-1
 Table 1, column 4
 */
-S antiderivative(S)(in S x, in S c)
+S antiderivative(bool common = false, S)(in S x, in S c)
 {
     import mir.internal.math : exp, log, pow, copysign, fabs;
-    if (c == 0)
-        return exp(x);
-    if (c == S(-0.5))
-        return -1 / x;
-    if (c == -1)
-        return -log(-x);
+    static if (!common)
+    {
+        if (c == 0)
+            return exp(x);
+        if (c == S(-0.5))
+            return -1 / x;
+        if (c == -1)
+            return -log(-x);
+    }
     auto s = copysign(S(1), c);
     auto d = c + 1;
     auto xs = s * x;
@@ -280,11 +286,11 @@ unittest
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
-        assert(antiderivative!S(1, 0.0).approxEqual(E));
-        assert(antiderivative!S(1, -0.5) == -1);
-        assert(antiderivative!S(1, -0.5) == -1);
-        assert(antiderivative!S(-1, -1.0) == 0);
-        assert(antiderivative!S(1, 2.0) == S(2) / 3);
+        assert(antiderivative!(false, S)(1, 0.0).approxEqual(E));
+        assert(antiderivative!(false, S)(1, -0.5) == -1);
+        assert(antiderivative!(false, S)(1, -0.5) == -1);
+        assert(antiderivative!(false, S)(-1, -1.0) == 0);
+        assert(antiderivative!(false, S)(1, 2.0) == S(2) / 3);
     }
 }
 
@@ -336,7 +342,7 @@ unittest
             foreach (j, x; xs)
             {
                 S r = results[i][j];
-                S v = antiderivative!S(x, c);
+                S v = antiderivative!(false, S)(x, c);
                     //if (!v.approxEqual(r))
                     //{
                         //import std.stdio;

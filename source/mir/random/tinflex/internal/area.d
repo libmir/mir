@@ -221,12 +221,11 @@ body
         {
             if (fabs(sh.slope) > S(1e-10))
             {
-                alias ad = antiderivative;
-                area = (ad(sh(iv.rx), iv.c) - ad(sh(iv.lx), iv.c)) / sh.slope;
+                area = (antiderivative!true(sh(iv.rx), iv.c) - antiderivative!true(sh(iv.lx), iv.c)) / sh.slope;
             }
             else
             {
-                area = inverse(sh.a, iv.c) * intLength;
+                area = inverse!true(sh.a, iv.c) * intLength;
             }
         }
     }
