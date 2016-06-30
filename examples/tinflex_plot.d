@@ -95,13 +95,13 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
 {
     import std.random : rndGen;
     rndGen.seed(42);
-    auto values = tf.sample(1_000, rndGen);
+    auto values = tf.sample(2_000, rndGen);
 
     // plot histogram
     auto aes = Aes!(typeof(values), "x")(values);
 
     // normalize histogram
-    auto rect = statHist(aes, 50);
+    auto rect = statHist(aes, 20);
     auto rTotal =  rect.map!`a.height`.sum;
     auto k = rect.map!((r) {
         r.height = r.height / rTotal;
@@ -133,12 +133,12 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
         import std.math : sgn;
         S delegate(S x) g;
         if (isTransformed)
-            g = (S x) => sgn(c) * exp(c * tf.pdf(x));
+            g = (S x) => sgn(c) * exp(c * x);
         else
-            g = (S x) => exp(x);
+            g = (S x) => x;
         auto ysPDF = xs.map!((x) => g(tf.pdf(x))).array;
 
-        //ggHS.put(geomLine(Aes!(typeof(xs), "x", typeof(ysPDF), "y")(xs, ysPDF)));
+        ggHS.put(geomLine(Aes!(typeof(xs), "x", typeof(ysPDF), "y")(xs, ysPDF)));
         //auto suffix = isTransformed ? "_transformed" : "";
         enum suffix = "";
         ggHS.save(fileName ~ suffix ~ "_hs.pdf");
@@ -275,14 +275,17 @@ void test6(string folderName)
 
 void test_normal(string folderName)
 {
-    import std.math : exp, PI, sqrt;
+    import std.math : exp, log, PI, sqrt;
     alias S = real;
     //S[] points = [-S.infinity, -1.5, 0, 1.5, S.infinity];
     S[] points = [-3, -1.5, 0, 1.5, 3];
     S sqrt2PI = sqrt(2 * PI);
-    auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
-    auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
-    auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
+    //auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
+    //auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
+    //auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
+    auto f0 = (S x) => log(1 / (exp(x * x / 2) * sqrt2PI));
+    auto f1 = (S x) => -x;
+    auto f2 = (S x) => -1.0;
     tinflex(f0, f1, f2, 1.5, points)
     .test(folderName.buildPath("dist_normal"));
 }

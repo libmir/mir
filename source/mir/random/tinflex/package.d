@@ -151,6 +151,7 @@ struct Tinflex(Pdf, S)
     package this(in Pdf pdf, in TinflexInterval!S[] intervals)
     {
         _pdf = pdf;
+
         _intervals = intervals;
 
         // pre-calculate cumulative density points
@@ -166,7 +167,22 @@ struct Tinflex(Pdf, S)
 
     S pdf(S x) @property const
     {
-        return _pdf(x);
+        import mir.internal.math : exp;
+        bool isLog = true;
+        if (isLog)
+            return exp(_pdf(x));
+        else
+            return _pdf(x);
+    }
+
+    S lpdf(S x) @property const
+    {
+        import mir.internal.math : log;
+        bool isLog = true;
+        if (!isLog)
+            return log(_pdf(x));
+        else
+            return _pdf(x);
     }
 
     /// Generated partition points
@@ -307,7 +323,6 @@ private S tinflexImpl(Pdf, S, RNG)
         // sample from interval with density proportional to their hatArea
         auto rndInt = ds(rng); // J in Tinflex paper
         S u = uniform!("()", S, S)(0, 1, rng);
-        import std.stdio;
         if (rndInt >= intervals.length)
             rndInt = intervals.length - 1;
 
@@ -370,7 +385,7 @@ all:
             return X;
 
         // U * h(c) < f(X)  "density evaluation"
-        if (t <= exp(pdf(X)))
+        if (t <= pdf(X))
             return X;
     }
     assert(0);
