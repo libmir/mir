@@ -3,38 +3,46 @@ module mir.random.tinflex.internal.calc;
 import mir.random.tinflex.internal.types : Interval;
 
 /**
-Splits an interval into two points.
+Calculate the mean between two points using the arcmean:
+
+    tan(0.5 * (atan(l) + atan(r))
+
+In contrast to the normal mean (`0.5 * (l + r)`) being a geometric plane,
+the arcmean favors the mean region more.
 
 Params:
-    l = Left starting point of the interval
-    r = Right ending point of the interval
+    l = Left point
+    r = Right point
 Returns:
     Splitting point within the interval
+See_Also:
+    $(LINK2 http://www.wolframalpha.com/input/?i=tan(0.5+*+(ArcTan%5Bx%5D+%2B+ArcTan%5By%5D)),
+    WolframAlpha visualization of the arc-mean)
 */
-auto arcmean(S, bool sorted = false)(const S x, const S y)
+auto arcmean(S, bool sorted = false)(const S l, const S r)
 {
     import std.math: atan, tan;
 
-    S l = x;
-    S r = y;
+    S _l = l;
+    S _r = r;
     static if (!sorted)
     {
-        if (r < l)
+        if (_r < _l)
         {
-            S t = r;
-            r = l;
-            l = t;
+            S t = _r;
+            _r = _l;
+            _l = t;
         }
     }
 
-    if (r < -S(1e3) || l > S(1e3))
-        return  S(0.5) * (1 / l + 1 / r);
+    if (_r < -S(1e3) || _l > S(1e3))
+        return  S(0.5) * (1 / _l + 1 / r);
 
-    immutable d = atan(l);
-    immutable b = atan(r);
+    immutable d = atan(_l);
+    immutable b = atan(_r);
 
     if (b - d < S(1e-6))
-        return S(0.5) * l + S(0.5) * r;
+        return S(0.5) * _l + S(0.5) * r;
 
     return tan(S(0.5) * (d + b));
 }

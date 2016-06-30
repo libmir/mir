@@ -114,20 +114,17 @@ alias hatArea(S) = area!(true, S);
 alias squeezeArea(S) = area!(false, S);
 
 /**
-Computes the area below a function sh in-between l and r.
+Computes the area below either the hat or squeeze function
+in-between a interval `iv`.
 Based on table 1 and general equation (3) from the Tinflex paper
 
     (F_T(sh(r))- F_T(sh(l))) / sh.slope
 
 Params:
-    sh = linear function
-    l  = start of interval
-    r  = end of interval
-    ly = start of interval (y-value)
-    ry = end of interval (y-value)
-    c  =  interval type (see paper)
+    isHat = whether to calculate the hat or squeeze area
+    iv = Interval to use
 
-Returns: Computed area below sh.
+Returns: Computed area below either hat or squeeze.
 */
 void area(bool isHat, S)(ref Interval!S iv)
 in
