@@ -337,8 +337,7 @@ private S tinflexImpl(Pdf, S, RNG)
             auto z = u * intervals[rndInt].hat.slope * eX;
             if (fabs(z) > S(1e-6))
                 goto mInvAD;
-            else
-                X = intervals[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z * one_div_3);
+            X = intervals[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z * one_div_3);
             goto all;
         }
         else if (c == 1)
@@ -347,16 +346,14 @@ private S tinflexImpl(Pdf, S, RNG)
             auto z = u * intervals[rndInt].hat.slope / (k * k);
             if (fabs(z) > S(1e-6))
                 goto mInvAD;
-            else
-                X = intervals[rndInt].lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
+            X = intervals[rndInt].lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
             goto all;
         }
         else
         {
             if (fabs(intervals[rndInt].hat.slope) > S(1e-10))
                 goto mInvAD;
-            else
-                X = (1 - u) * intervals[rndInt].lx + u * intervals[rndInt].rx;
+            X = (1 - u) * intervals[rndInt].lx + u * intervals[rndInt].rx;
             goto all;
         }
 mInvAD:
