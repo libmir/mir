@@ -15,8 +15,10 @@ struct Interval(S)
 {
     import mir.utility.linearfun : LinearFun;
 
-    /// positions of the interval
+    /// left position of the interval
     immutable S lx;
+
+    /// right position of the interval
     S rx;
 
     /// T_c family of the interval
@@ -26,10 +28,16 @@ struct Interval(S)
     immutable S ltx, lt1x, lt2x;
     S rtx, rt1x, rt2x;
 
+    /// hat function of the interval
     LinearFun!S hat;
+
+    /// squeeze function of the interval
     LinearFun!S squeeze;
 
+    /// calculated area of the integrated hat function
     S hatArea;
+
+    /// calculated area of the integrated squeeze function
     S squeezeArea;
 
     /// only supported constructor
