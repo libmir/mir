@@ -214,7 +214,7 @@ body
             }
             else
             {
-                area = (log(-sh(iv.lx) - log(-sh(iv.rx)))) / sh.slope;
+                area = (log(-sh(iv.lx)) - log(-sh(iv.rx))) / sh.slope;
             }
         }
         else
