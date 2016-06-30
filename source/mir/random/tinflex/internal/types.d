@@ -24,9 +24,23 @@ struct Interval(S)
     /// T_c family of the interval
     immutable S c;
 
-    /// transformed values
-    immutable S ltx, lt1x, lt2x;
-    S rtx, rt1x, rt2x;
+    /// transformed left value of lx
+    immutable S ltx;
+
+    /// transformed value of the first derivate of the left lx value
+    immutable S lt1x;
+
+    /// transformed value of the second derivate of the left lx value
+    immutable S lt2x;
+
+    /// transformed rght value of rx
+    S rtx;
+
+    /// transformed value of the first derivate of the right rx value
+    S rt1x;
+
+    /// transformed value of the second derivate of the right rx value
+    S rt2x;
 
     /// hat function of the interval
     LinearFun!S hat;
@@ -40,7 +54,7 @@ struct Interval(S)
     /// calculated area of the integrated squeeze function
     S squeezeArea;
 
-    /// only supported constructor
+    /// construct an Interval with all necessary points
     this (S lx, S rx, S c,
           S ltx, S lt1x, S lt2x,
           S rtx, S rt1x, S rt2x)
@@ -69,6 +83,7 @@ struct Interval(S)
 
         assert(lx < rx, "invalid interval - right side must be larger than the left side");
 
+        // invariant temporarily disabled
         if (lx.isFinite)
         {
             //alias tseq =  AliasSeq!(ltx, lt1x, lt2x);
