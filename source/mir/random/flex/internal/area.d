@@ -105,13 +105,9 @@ unittest
     }
 }
 
-alias hatArea(S) = area!(true, S);
-alias squeezeArea(S) = area!(false, S);
-
-enum real cbrt2 = 0x1.428a2f98d728ae223ddab715be25p-0;
-enum real cbrt3 = 0x1.7137449123ef65cdde7f16c56e3267c0a1894c2af56ecd99f4574287d2052p-0;
-enum real cbrt4 = 0x1.965fea53d6e3c82b05999ab43dc4def1980762158a0a815f2291ac0cf9304p-0;
-
+/**
+Flex-specific constants cutoffs for numeric errors.
+*/
 template constants(S)
 {
     import mir.internal.math: sqrt;
@@ -119,6 +115,8 @@ template constants(S)
     enum S smallExp = sqrt(sqrt(S.epsilon * 120));
 }
 
+alias hatArea(S) = area!(true, S);
+alias squeezeArea(S) = area!(false, S);
 
 /**
 Computes the area below either the hat or squeeze function
