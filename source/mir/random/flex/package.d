@@ -460,10 +460,12 @@ in
 body
 {
     import mir.random.flex.internal.calc: arcmean, calcInterval;
-    import mir.random.flex.internal.transformations : transform,  transformToInterval;
+    import mir.random.flex.internal.transformations : transformToInterval;
     import mir.random.flex.internal.types: Interval;
+    import mir.internal.math: pow, exp, copysign;
     import mir.sum: Summator, Summation;
     import std.container.dlist : DList;
+    import std.math: nextDown;
     import std.range.primitives : front, empty, popFront;
 
     alias Sum = Summator!(S, Summation.precise);
@@ -533,7 +535,6 @@ body
                     i, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
         }
 
-        import std.math: nextDown;
         immutable avgArea = nextDown(totalHatArea - totalSqueezeArea) / nrIntervals;
         for (auto it = ips[]; !it.empty;)
         {
@@ -547,14 +548,21 @@ body
                 // split the interval at the arcmean into two parts
                 auto mid = arcmean!S(it.front);
 
-                // create new interval (right side)
-                S m0 = void, m1 = void, m2 = void;
+                // cache
+                immutable c = it.front.c;
 
-                // apply transformation to new values
-                transform(it.front.c, f0(mid), f1(mid), f2(mid), m0, m1, m2);
+                // calculate new values
+                S mx0 = f0(mid);
+                S mx1 = f1(mid);
+                S mx2 = f2(mid);
+
+                // apply transformation to right side (for c=0 no transformations are applied)
+                S mt0 = (c == 0) ? mx0 : copysign(S(1), c) * exp(c * mx0);
+                S mt1 = (c == 0) ? mx1 : c * mt0 * mx1;
+                S mt2 = (c == 0) ? mx2 : c * mt0 * (c * pow(mx1, 2) + mx2);
 
                 Interval!S midIP = Interval!S(mid, it.front.rx, it.front.c,
-                                              m0, m1, m2,
+                                              mt0, mt1, mt2,
                                               it.front.rtx, it.front.rt1x, it.front.rt2x);
 
                 version(Flex_logging)
@@ -566,9 +574,9 @@ body
 
                 // left interval: update right values
                 it.front.rx = mid;
-                it.front.rtx = m0;
-                it.front.rt1x = m1;
-                it.front.rt2x = m2;
+                it.front.rtx = mt0;
+                it.front.rt1x = mt1;
+                it.front.rt2x = mt2;
 
                 // recalculate intervals
                 calcInterval(it.front);

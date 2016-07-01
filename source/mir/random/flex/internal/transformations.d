@@ -3,22 +3,6 @@ module mir.random.flex.internal.transformations;
 import mir.random.flex.internal.types : Interval;
 
 /**
-In-place c-transformation
-Params:
-    f0 = PDF function
-    f1 = first derivative
-    f2 = second derivative
-*/
-void transform(S)(S c, S f0, S f1, S f2, ref S t0, ref S t1, ref S t2)
-{
-    import mir.internal.math: pow, exp, copysign;
-    // for c=0 no transformations are applied
-    t0 = (c == 0) ? f0 : copysign(S(1), c) * exp(c * f0);
-    t1 = (c == 0) ? f1 : c * t0 * f1;
-    t2 = (c == 0) ? f2 : c * t0 * (c * pow(f1, 2) + f2);
-}
-
-/**
 Create a c-transformation, based on a function and it's first two derivatives
 
 Params:
@@ -34,9 +18,18 @@ Interval!S transformToInterval(S)(in S l, in S r, in S c,
             in S lf0, in S lf1, in S lf2,
             in S rf0, in S rf1, in S rf2)
 {
-    S lt0 = void, lt1 = void, lt2 = void, rt0 = void, rt1 = void, rt2 = void;
-    transform(c, lf0, lf1, lf2, lt0, lt1, lt2);
-    transform(c, rf0, rf1, rf2, rt0, rt1, rt2);
+    import mir.internal.math: pow, exp, copysign;
+
+    // left side (for c=0 no transformations are applied)
+    S lt0 = (c == 0) ? lf0 : copysign(S(1), c) * exp(c * lf0);
+    S lt1 = (c == 0) ? lf1 : c * lt0 * lf1;
+    S lt2 = (c == 0) ? lf2 : c * lt0 * (c * pow(lf1, 2) + lf2);
+
+    // right side (for c=0 no transformations are applied)
+    S rt0 = (c == 0) ? rf0 : copysign(S(1), c) * exp(c * rf0);
+    S rt1 = (c == 0) ? rf1 : c * rt0 * rf1;
+    S rt2 = (c == 0) ? rf2 : c * rt0 * (c * pow(rf1, 2) + rf2);
+
     return Interval!S(l, r, c, lt0, lt1, lt2, rt0, rt1, rt2);
 }
 
