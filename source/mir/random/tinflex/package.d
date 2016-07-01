@@ -304,13 +304,13 @@ private S tinflexImpl(Pdf, S, RNG)
             {
                 auto eXInv = exp(-hatLx);
                 auto z = u * hat.slope * eXInv;
-                if (fabs(z) > S(1e-6))
+                if (fabs(z) < S(1e-6))
                 {
-                    X = hat.y + (log(1 / eXInv + hat.slope * u) - hat.a) / hat.slope;
+                    X = lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
                 }
                 else
                 {
-                    X = lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
+                    X = hat.y + (log(1 / eXInv + hat.slope * u) - hat.a) / hat.slope;
                 }
             }
             else
