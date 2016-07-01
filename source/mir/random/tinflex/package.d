@@ -349,10 +349,10 @@ private S tinflexImpl(Pdf, S, RNG)
 
         finish:
 
-            immutable haX = hat(X);
+            immutable hatX = hat(X);
             immutable squeezeX = squeeze(X);
 
-            auto invHatX = inverse(haX, c);
+            auto invHatX = inverse(hatX, c);
             auto invSqueezeX = squeezeArea > 0 ? inverse(squeezeX, c) : 0;
 
             immutable t = u * invHatX;
