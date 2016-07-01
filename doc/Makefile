@@ -27,8 +27,8 @@ ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 # packages and their modules.
 MIR_PACKAGES = mir $(addprefix mir/,\
 			   blas combinatorics model/lda ndslice \
-			   random random/tinflex \
-			   sparse sparse/blas)
+			   random random/flex \
+			   sparse sparse/blas utility)
 
 PACKAGE_mir = math sum
 PACKAGE_mir_blas = package dot gemm gemv
@@ -36,9 +36,10 @@ PACKAGE_mir_combinatorics = package
 PACKAGE_mir_model_lda = hoffman
 PACKAGE_mir_ndslice = package iteration selection slice
 PACKAGE_mir_random = discrete
-PACKAGE_mir_random_tinflex = package
+PACKAGE_mir_random_flex = package
 PACKAGE_mir_sparse = package
 PACKAGE_mir_sparse_blas = package axpy dot gemm gemv
+PACKAGE_mir_utility = linearfun
 
 MOD_EXCLUDES=$(addprefix --ex=, mir.ndslice.internal mir.internal. mir.blas)
 
