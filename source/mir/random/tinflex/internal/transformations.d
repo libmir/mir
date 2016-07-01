@@ -164,7 +164,9 @@ From: Table 1, column 3 of Botts et al. (2013).
 */
 S inverse(bool common = false, S)(in S x, in S c)
 {
-    import mir.internal.math : exp, pow, copysign;
+    import mir.internal.math : fabs, exp, pow, copysign;
+    import std.math: sgn;
+    assert(sgn(c) * x >= 0);
     static if (!common)
     {
         if (c == 0)
@@ -176,8 +178,7 @@ S inverse(bool common = false, S)(in S x, in S c)
         if (c == 1)
             return x;
     }
-    auto s = copysign(S(1), c);
-    return pow(s * x, 1 / c);
+    return pow(fabs(x), 1 / c);
 }
 
 unittest
@@ -187,9 +188,6 @@ unittest
     foreach (S; AliasSeq!(float, double, real))
     {
         assert(inverse!(false, S)(1, 0).approxEqual(E));
-
-        assert(inverse!(false, S)(2, -0.5) == 0.25);
-        assert(inverse!(false, S)(8, -0.5) == 0.015625);
 
         assert(inverse!(false, S)(2, 1) == 2);
         assert(inverse!(false, S)(8, 1) == 8);
@@ -201,7 +199,7 @@ unittest
 
 unittest
 {
-    import std.math: approxEqual, isInfinity, isNaN;
+    import std.math;
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -243,14 +241,15 @@ unittest
         {
             foreach (j, x; xs)
             {
-                S r = results[i][j];
-                S v = inverse!(false, S)(x, c);
-                if (r.isNaN)
-                    assert(v.isNaN);
-                else if (r.isInfinity)
-                    assert(v.isInfinity);
-                else
-                    assert(v.approxEqual(r));
+                if(sgn(c) * x >= 0)
+                {
+                    S r = results[i][j];
+                        S v = inverse!(false, S)(x, c);
+                    if (r.isInfinity)
+                        assert(v.isInfinity);
+                    else
+                        assert(v.approxEqual(r));
+                }
             }
         }
     }
