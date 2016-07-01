@@ -220,9 +220,6 @@ body
             }
             else
             {
-                import std.math: sgn;
-                assert(shR * sgn(iv.c) >= 0);
-                assert(shL * sgn(iv.c) >= 0);
                 area = (antiderivative!true(shR, iv.c) - antiderivative!true(shL, iv.c)) / sh.slope;
             }
         }
