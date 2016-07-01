@@ -460,7 +460,7 @@ in
 body
 {
     import mir.random.flex.internal.calc: arcmean, calcInterval;
-    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types: Interval;
     import mir.internal.math: pow, exp, copysign;
     import mir.sum: Summator, Summation;
@@ -494,8 +494,9 @@ body
         S r0 = f0(r);
         S r1 = f1(r);
         S r2 = f2(r);
-        auto iv = transformToInterval(l, r, cs[i], l0, l1, l2,
-                                                   r0, r1, r2);
+        Interval!S iv;
+        transformInterval(iv, l, r, cs[i], l0, l1, l2,
+                                           r0, r1, r2);
         l = r;
         l0 = r0;
         l1 = r1;
@@ -556,14 +557,17 @@ body
                 S mx1 = f1(mid);
                 S mx2 = f2(mid);
 
-                // apply transformation to right side (for c=0 no transformations are applied)
-                S mt0 = (c == 0) ? mx0 : copysign(S(1), c) * exp(c * mx0);
-                S mt1 = (c == 0) ? mx1 : c * mt0 * mx1;
-                S mt2 = (c == 0) ? mx2 : c * mt0 * (c * pow(mx1, 2) + mx2);
-
-                Interval!S midIP = Interval!S(mid, it.front.rx, it.front.c,
-                                              mt0, mt1, mt2,
+                Interval!S midIP = Interval!S(mid, it.front.rx, c,
+                                              mx0, mx1, mx2,
                                               it.front.rtx, it.front.rt1x, it.front.rt2x);
+
+                // apply transformation to right side (for c=0 no transformations are applied)
+                if (c != 0)
+                {
+                    midIP.ltx  = copysign(S(1), c) * exp(c * mx0);
+                    midIP.lt1x = c * midIP.ltx * mx1;
+                    midIP.lt2x = c * midIP.ltx * (c * mx1 * mx1 + mx2);
+                }
 
                 version(Flex_logging)
                 {
@@ -574,9 +578,9 @@ body
 
                 // left interval: update right values
                 it.front.rx = mid;
-                it.front.rtx = mt0;
-                it.front.rt1x = mt1;
-                it.front.rt2x = mt2;
+                it.front.rtx = midIP.ltx;
+                it.front.rt1x = midIP.lt1x;
+                it.front.rt2x = midIP.lt2x;
 
                 // recalculate intervals
                 calcInterval(it.front);

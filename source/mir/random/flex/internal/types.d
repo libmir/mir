@@ -16,22 +16,22 @@ struct Interval(S)
     import mir.utility.linearfun : LinearFun;
 
     /// left position of the interval
-    immutable S lx;
+    S lx;
 
     /// right position of the interval
     S rx;
 
     /// T_c family of the interval
-    immutable S c;
+    S c;
 
     /// transformed left value of lx
-    immutable S ltx;
+    S ltx;
 
     /// transformed value of the first derivate of the left lx value
-    immutable S lt1x;
+    S lt1x;
 
     /// transformed value of the second derivate of the left lx value
-    immutable S lt2x;
+    S lt2x;
 
     /// transformed rght value of rx
     S rtx;
@@ -53,50 +53,6 @@ struct Interval(S)
 
     /// calculated area of the integrated squeeze function
     S squeezeArea;
-
-    /// construct an Interval with all necessary points
-    this (S lx, S rx, S c,
-          S ltx, S lt1x, S lt2x,
-          S rtx, S rt1x, S rt2x)
-    {
-        this.lx = lx;
-        this.rx = rx;
-        this.c = c;
-
-        this.ltx  = ltx;
-        this.lt1x = lt1x;
-        this.lt2x = lt2x;
-
-        this.rtx  = rtx;
-        this.rt1x = rt1x;
-        this.rt2x = rt2x;
-    }
-
-    // disallow NaN points
-    invariant {
-        import std.math : isFinite, isNaN;
-        import std.meta : AliasSeq;
-        import std.conv : to;
-        alias seq =  AliasSeq!(lx, rx, c);
-        foreach (i, v; seq)
-            assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
-
-        assert(lx < rx, "invalid interval - right side must be larger than the left side");
-
-        // invariant temporarily disabled
-        if (lx.isFinite)
-        {
-            //alias tseq =  AliasSeq!(ltx, lt1x, lt2x);
-            //foreach (i, v; tseq)
-                //assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
-        }
-        if (rx.isFinite)
-        {
-            //alias tseq =  AliasSeq!(rx, rt1x, rt2x);
-            //foreach (i, v; tseq)
-                //assert(!v.isNaN, "variable " ~ tseq[i].stringof ~ " isn't allowed to be NaN:" ~ this.to!string);
-        }
-    }
 }
 
 /**

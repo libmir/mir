@@ -248,7 +248,7 @@ body
 // example from Botts et al. (2013) (distribution 1)
 unittest
 {
-    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
@@ -296,8 +296,12 @@ unittest
         const f1 = (S x) => 10 * x - 4 * x ^^ 3;
         const f2 = (S x) => 10 - 12 * x ^^ 2;
 
-        auto it = (S l, S r, S c) => transformToInterval(l, r, c, f0(l), f1(l), f2(l),
-                                                                  f0(r), f1(r), f2(r));
+        auto it = (S l, S r, S c)
+        {
+            Interval!S iv;
+            transformInterval!S(iv, l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            return iv;
+        };
 
         import std.math : isInfinity;
         import std.conv;
@@ -327,7 +331,7 @@ unittest
 // standard normal distribution
 unittest
 {
-    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
@@ -394,8 +398,12 @@ unittest
         auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
         auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
 
-        auto it = (S l, S r, S c) => transformToInterval(l, r, c, f0(l), f1(l), f2(l),
-                                                                  f0(r), f1(r), f2(r));
+        auto it = (S l, S r, S c)
+        {
+            Interval!S iv;
+            transformInterval(iv, l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            return iv;
+        };
 
         // calculate the area of all intervals
         foreach (i, c; cs)
@@ -418,7 +426,7 @@ unittest
 // distribution 3
 unittest
 {
-    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
@@ -466,8 +474,13 @@ unittest
         auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
         auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
 
-        auto it = (S l, S r, S c) => transformToInterval!S(l, r, c, f0(l), f1(l), f2(l),
-                                                                    f0(r), f1(r), f2(r));
+        auto it = (S l, S r, S c)
+        {
+            Interval!S iv;
+            transformInterval(iv, l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            return iv;
+        };
+
         S[] points = [-1, -0.9, -0.5, 0.5, 0.9, 1];
         S[] cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.2, 0.5, 0.9, 1];
 
@@ -496,7 +509,7 @@ unittest
 // distribution 4
 unittest
 {
-    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
@@ -538,8 +551,12 @@ unittest
         auto f1 = (S x) => -1/(2*x);
         auto f2 = (S x) => 1/(2*x^^2);
 
-        auto it = (S l, S r, S c) => transformToInterval!S(l, r, c, f0(l), f1(l), f2(l),
-                                                                    f0(r), f1(r), f2(r));
+        auto it = (S l, S r, S c)
+        {
+            Interval!S iv;
+            transformInterval(iv, l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            return iv;
+        };
 
         // calculate the area of all intervals
         foreach (i, c; cs)
@@ -565,7 +582,7 @@ unittest
 // distribution 3 with other boundaries
 unittest
 {
-    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
@@ -615,9 +632,12 @@ unittest
         auto f1 = (double x) => -8 *  x^^3 + 8 * x;
         auto f2 = (double x) => -24 * x^^2 + 8;
 
-
-        auto it = (S l, S r, S c) => transformToInterval!S(l, r, c, f0(l), f1(l), f2(l),
-                                                                    f0(r), f1(r), f2(r));
+        auto it = (S l, S r, S c)
+        {
+            Interval!S iv;
+            transformInterval(iv, l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            return iv;
+        };
 
         // calculate the area of all intervals
         foreach (i, c; cs)
