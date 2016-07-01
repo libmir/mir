@@ -327,13 +327,13 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
     // first plot hat/squeeze in case we crash during samplign
     version(Tinflex_Plot_Matplotlib)
     {
-        tf.npPlotHatAndSqueeze(fileName ~ "_hs.pdf");
-        tf.npPlotHatAndSqueezeArea(fileName ~ "_hs_area.pdf");
+        tf.npPlotHatAndSqueeze(fileName ~ "_hs.np.pdf");
+        tf.npPlotHatAndSqueezeArea(fileName ~ "_hs_area.np.pdf");
     }
     version(Tinflex_Plot_GGplotd)
     {
-        tf.ggPlotHatAndSqueeze(fileName ~ "_hs.pdf");
-        tf.ggPlotHatAndSqueezeArea(fileName ~ "_hs_area.pdf");
+        tf.ggPlotHatAndSqueeze(fileName ~ "_hs.gg.pdf");
+        tf.ggPlotHatAndSqueezeArea(fileName ~ "_hs_area.gg.pdf");
     }
 
     import std.random : rndGen;
@@ -341,9 +341,9 @@ void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right =
     auto values = tf.sample(2_000, rndGen);
 
     version(Tinflex_Plot_Matplotlib)
-        values.npPlotHistogram(fileName ~ "_hist.pdf");
+        values.npPlotHistogram(fileName ~ "_hist.np.pdf");
     version(Tinflex_Plot_GGplotd)
-        values.ggPlotHistogram(fileName ~ "_hist.pdf");
+        values.ggPlotHistogram(fileName ~ "_hist.gg.pdf");
 
     // save values to file for further processing
     //auto f = File(fileName ~ "_values.csv", "w");
