@@ -273,12 +273,8 @@ S antiderivative(bool common = false, S)(in S x, in S c)
         if (c == -1)
             return -log(-x);
     }
-    auto s = copysign(S(1), c);
     auto d = c + 1;
-    auto xs = s * x;
-    if (xs < 0)
-        xs = 0;
-    return fabs(c) / d * pow(xs, d / c);
+    return fabs(c) / d * pow(fabs(x), d / c);
 }
 
 unittest
@@ -387,15 +383,9 @@ unittest
         assert(inverseAntiderivative!S(5.5, -0.5).approxEqual(-0.181818));
 
         assert(inverseAntiderivative!S(1, -1).approxEqual(-1 / E));
-        //assert(inverseAntiderivative!S(3, -1).approxEqual(20.0855));
-        //assert(inverseAntiderivative!S(-2, -1).approxEqual(0.135335));
-        //assert(inverseAntiderivative!S(5.5, -1).approxEqual(244.692));
-        //assert(inverseAntiderivative!S(-6.3, -1).approxEqual(0.0018363));
 
         assert(inverseAntiderivative!S(1, 1).approxEqual(1.41421));
         assert(inverseAntiderivative!S(3, 2).approxEqual(2.72568));
-        //assert(inverseAntiderivative!S(-2, 3.5).approxEqual(2.08461));
-        //assert(inverseAntiderivative!S(5.5, -4.5).approxEqual(-6.47987));
     }
 }
 
