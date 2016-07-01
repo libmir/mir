@@ -280,7 +280,7 @@ private S flexImpl(Pdf, S, RNG)
     if (isUniformRNG!RNG)
 {
     import mir.internal.math: exp, fabs, log;
-    import mir.random.flex.internal.transformations : inverse, antiderivative, inverseAntiderivative;
+    import mir.random.flex.internal.transformations : antiderivative, inverseAntiderivative;
     import std.random: dice, uniform;
 
     S X = void;
@@ -352,8 +352,8 @@ private S flexImpl(Pdf, S, RNG)
             immutable hatX = hat(X);
             immutable squeezeX = squeeze(X);
 
-            auto invHatX = inverse(hatX, c);
-            auto invSqueezeX = squeezeArea > 0 ? inverse(squeezeX, c) : 0;
+            auto invHatX = flexInverse(hatX, c);
+            auto invSqueezeX = squeezeArea > 0 ? flexInverse(squeezeX, c) : 0;
 
             immutable t = u * invHatX;
 
@@ -810,7 +810,108 @@ unittest
     }
 }
 
-import mir.random.flex.internal.transformations : inverse;
+/**
+Compute inverse transformation of a T_c family given point x.
+Based on Table 1, column 3 of Botts et al. (2013).
 
-///
-alias inverse = inverse;
+Params:
+    common = can c be 0, -0.5, -1 or 1
+    x = value to transform
+    c = T_c family to use for the transformation
+
+Returns: flex-inversed value of x
+*/
+S flexInverse(bool common = false, S)(in S x, in S c)
+{
+    import mir.internal.math : fabs, exp, pow, copysign;
+    import std.math: sgn;
+    assert(sgn(c) * x >= 0);
+    static if (!common)
+    {
+        if (c == 0)
+            return exp(x);
+        if (c == S(-0.5))
+            return 1 / (x * x);
+        if (c == -1)
+            return -1 / x;
+        if (c == 1)
+            return x;
+    }
+    return pow(fabs(x), 1 / c);
+}
+
+unittest
+{
+    import std.math: E, approxEqual;
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        assert(flexInverse!(false, S)(1, 0).approxEqual(E));
+
+        assert(flexInverse!(false, S)(2, 1) == 2);
+        assert(flexInverse!(false, S)(8, 1) == 8);
+
+        assert(flexInverse!(false, S)(1, 1.5) == 1);
+        assert(flexInverse!(false, S)(2, 1.5).approxEqual(1.58740));
+    }
+}
+
+unittest
+{
+    import std.math;
+    import std.meta : AliasSeq;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        S[][] results = [
+            [S.nan, S.nan, S.nan, S.nan, S.nan, S.nan, S(0),
+             0.707106781186548, 1, 1.224744871391589,
+             1.414213562373095, 1.581138830084190, 1.73205080756887],
+            [S.nan, S.nan, S.nan, S.nan, S.nan, S.nan, S(0),
+             0.629960524947437, 1, 1.310370697104448,
+             1.587401051968199, 1.842015749320193, 2.080083823051904],
+            [-3, -2.5, -2, -1.5, -1, -0.5, S(0), 0.5, 1, 1.5, 2, 2.5, 3],
+            [S.nan, S.nan, S.nan, S.nan, S.nan, S.nan, S(0),
+             0.462937356143645, 1, 1.569122877964822,
+             2.160119477784612, 2.767932947224778, 3.389492891729259],
+            [9, 6.25, 4, 2.25, 1, 0.25, S(0),
+             0.25, 1, 2.25, 4, 6.25, 9],
+            [0.0497870683678639, 0.0820849986238988, 0.1353352832366127,
+             0.2231301601484298, 0.3678794411714423, 0.6065306597126334,
+             S(1), 1.6487212707001282, 2.7182818284590451, 4.4816890703380645,
+             7.3890560989306504, 12.1824939607034732, 20.0855369231876679],
+            [S(1)/S(9), 0.16, 0.25, S(4)/S(9), 1, 4, S.infinity, 4,
+             1, S(4)/S(9), 0.25, 0.16, S(1)/S(9)],
+            [0.295029384023820, 0.361280428054673, 0.462937356143645,
+             0.637298718948650, 1, 2.160119477784612, S.infinity,
+             S.nan, S.nan, S.nan, S.nan, S.nan, S.nan],
+            [S(1)/S(3), 0.4, 0.5, S(2)/S(3), 1, 2, S.infinity, -2,
+             -1, -S(2)/S(3), -0.5, -0.4, -S(1)/S(3)],
+            [0.480749856769136, 0.542883523318981, 0.629960524947437,
+             0.763142828368888, 1, 1.587401051968199, S.infinity,
+             S.nan, S.nan, S.nan, S.nan, S.nan, S.nan],
+            [0.577350269189626, 0.632455532033676, 0.707106781186548,
+             0.816496580927726, 1, 1.414213562373095, S.infinity,
+             S.nan, S.nan, S.nan, S.nan, S.nan, S.nan],
+        ];
+        S[] xs = [-3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3.0];
+        S[] cs = [2, 1.5, 1, 0.9, 0.5, 0, -0.5, -0.9, -1, -1.5, -2];
+
+        foreach (i, c; cs)
+        {
+            foreach (j, x; xs)
+            {
+                if(sgn(c) * x >= 0)
+                {
+                    S r = results[i][j];
+                        S v = flexInverse!(false, S)(x, c);
+                    if (r.isInfinity)
+                        assert(v.isInfinity);
+                    else
+                        assert(v.approxEqual(r));
+                }
+            }
+        }
+    }
+}
+
+

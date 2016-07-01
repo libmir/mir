@@ -142,7 +142,8 @@ body
 {
     import std.math: signbit, frexp, LOG2E, isFinite;
     import mir.internal.math: copysign, exp, log2, fabs;
-    import mir.random.flex.internal.transformations : antiderivative, inverse;
+    import mir.random.flex.internal.transformations : antiderivative;
+    import mir.random.flex : flexInverse;
 
     S area = void;
 
@@ -216,7 +217,7 @@ body
             {
                 import std.math: sgn;
                 assert(sh.a * sgn(iv.c) >= 0);
-                area = inverse!true(sh.a, iv.c) * intLength;
+                area = flexInverse!true(sh.a, iv.c) * intLength;
             }
             else
             {

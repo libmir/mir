@@ -1,7 +1,7 @@
 /**
 Simple plot
 */
-import mir.random.flex: flex, Flex, FlexInterval;
+import mir.random.flex: FlexInterval;
 import std.array : array;
 import std.stdio : writeln, writefln, File;
 import std.algorithm : map, joiner, sum;
@@ -62,7 +62,7 @@ Params:
 auto plotArea(S, T)(in FlexInterval!S[] intervals, T[] xs, bool isHat = true,
                     bool isTransformed = false)
 {
-    import mir.random.flex : inverse;
+    import mir.random.flex : flexInverse;
     import std.algorithm.comparison : clamp;
 
     T[] ys = new T[xs.length];
@@ -89,7 +89,7 @@ auto plotArea(S, T)(in FlexInterval!S[] intervals, T[] xs, bool isHat = true,
             // reverse our T_c transformation and calculate the value
             ys[k] = (isHat) ? v.hat(xs[k]) : v.squeeze(xs[k]);
             if (!isTransformed)
-                ys[k] = inverse(ys[k], v.c);
+                ys[k] = flexInverse(ys[k], v.c);
             if (++k >= xs.length)
                 break outer;
         }
@@ -157,7 +157,7 @@ in
 }
 body
 {
-    import mir.random.flex : inverse;
+    import mir.random.flex : flexInverse;
     import std.algorithm.comparison : max, min;
     import std.math : ceil;
 
@@ -178,7 +178,7 @@ body
             xs[i][k] = x;
             ys[i][k] = (isHat) ? iv.hat(x) : iv.squeeze(x);
             if (!isTransformed)
-                ys[i][k] = inverse(ys[i][k], iv.c);
+                ys[i][k] = flexInverse(ys[i][k], iv.c);
 
             x += stepSize;
         }
@@ -261,8 +261,10 @@ struct CFlex(S)
     auto plot(string name, in S function(S) f0, in S function(S) f1, in S function(S) f2,
          S[] cs, S[] points, S left = -3, S right = 3) const
     {
+        import mir.random.flex : flex;
         import std.math : exp;
         import std.random : Mt19937;
+
         auto tf = flex(f0, f1, f2, cs, points, rho);
         auto pdf = (S x) => exp(f0(x));
 
@@ -274,7 +276,6 @@ struct CFlex(S)
         tf.intervals.npPlotHatAndSqueezeArea(pdf, fileName ~ "_hs_area.pdf",
             stepSize, left, right);
 
-        import std.random : Mt19937;
         auto gen = Mt19937(42);
         S[] values = new S[n];
         foreach (ref v; values)
@@ -347,7 +348,6 @@ void test3(S, F)(in ref F test)
     auto f0 = (S x) => cast(S) log(1 - pow(x, 4));
     auto f1 = (S x) => -4 * pow(x, 3) / (1 - pow(x, 4));
     auto f2 = (S x) => -(4 * pow(x, 6) + 12 * x * x) / (pow(x, 8) - 2 * pow(x, 4) + 1);
-    auto flex = (S c,  S [] ips) => flex(f0, f1, f2, c, ips, 1.01);
 
     foreach (c; [1.5, 2])
         test.plot("dist3_a_" ~ c.to!string, f0, f1, f2, c, [-1, -0.9, -0.5, 0.5, 0.9, 1], -1, 1);
