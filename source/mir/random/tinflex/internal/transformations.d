@@ -262,6 +262,8 @@ Table 1, column 4 of Botts et al. (2013).
 S antiderivative(bool common = false, S)(in S x, in S c)
 {
     import mir.internal.math : exp, log, pow, copysign, fabs;
+    import std.math: sgn;
+    assert(sgn(c) * x >= 0);
     static if (!common)
     {
         if (c == 0)
@@ -286,16 +288,13 @@ unittest
     foreach (S; AliasSeq!(float, double, real))
     {
         assert(antiderivative!(false, S)(1, 0.0).approxEqual(E));
-        assert(antiderivative!(false, S)(1, -0.5) == -1);
-        assert(antiderivative!(false, S)(1, -0.5) == -1);
-        assert(antiderivative!(false, S)(-1, -1.0) == 0);
         assert(antiderivative!(false, S)(1, 2.0) == S(2) / 3);
     }
 }
 
 unittest
 {
-    import std.math: approxEqual, isInfinity, isNaN;
+    import std.math;
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -340,25 +339,15 @@ unittest
         {
             foreach (j, x; xs)
             {
-                S r = results[i][j];
-                S v = antiderivative!(false, S)(x, c);
-                    //if (!v.approxEqual(r))
-                    //{
-                        //import std.stdio;
-                        //writeln("--------------------");
-                        //writeln(v ,", != ", r);
-                        //writefln("x : %1.f, c: %1.f", x, c);
-                    //}
-
-                // disabled to uncleared behavior of inverse for negative x
-                //if (r.isNaN)
-                    ////assert(v.isNaN);
-                //else if (r.isInfinity)
-                    ////assert(v.isInfinity);
-                //else
-                //{
-                    ////assert(v.approxEqual(r));
-                //}
+                if(sgn(c) * x >= 0)
+                {
+                    S r = results[i][j];
+                    S v = antiderivative!(false, S)(x, c);
+                    if (r.isInfinity)
+                        assert(v.isInfinity);
+                    else
+                        assert(v.approxEqual(r));
+                }
             }
         }
     }

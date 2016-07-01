@@ -140,7 +140,7 @@ in
 }
 body
 {
-    import std.math: signbit, frexp, LOG2E;
+    import std.math: signbit, frexp, LOG2E, isFinite;
     import mir.internal.math: copysign, exp, log2, fabs;
     import mir.random.tinflex.internal.transformations : antiderivative, inverse;
 
@@ -175,12 +175,9 @@ body
     }
     else
     {
-        immutable sgnbc = signbit(iv.c);
-        immutable sgnbl = signbit(shL);
-        immutable sgnbr = signbit(shR);
         z /= sh.a;
-
-        if ((sgnbc ^ sgnbl) | (sgnbc ^ sgnbr))
+        auto sgnc = copysign(S(1), iv.c);
+        if (!(sgnc * shL >= 0) || !(sgnc * shR >= 0))
         {
             area = S.max;
         }
@@ -217,17 +214,21 @@ body
         {
             if (fabs(sh.slope) < S(1e-10))
             {
+                import std.math: sgn;
+                assert(sh.a * sgn(iv.c) >= 0);
                 area = inverse!true(sh.a, iv.c) * intLength;
             }
             else
             {
+                import std.math: sgn;
+                assert(shR * sgn(iv.c) >= 0);
+                assert(shL * sgn(iv.c) >= 0);
                 area = (antiderivative!true(shR, iv.c) - antiderivative!true(shL, iv.c)) / sh.slope;
             }
         }
     }
 
     // if we receive an invalid value, we require the interval to be split
-    import std.math : isFinite;
     if (!isFinite(area))
         area = S.max;
     else if (area < 0)
@@ -303,6 +304,7 @@ unittest
                                                                   f0(r), f1(r), f2(r));
 
         import std.math : isInfinity;
+        import std.conv;
 
         // calculate the area of all intervals
         foreach (i, c; cs)
@@ -317,7 +319,7 @@ unittest
                 if (iv.hatArea == S.max)
                     assert(hats[i][j].isInfinity);
                 else
-                    assert(iv.hatArea.approxEqual(hats[i][j]));
+                    assert(iv.hatArea.approxEqual(hats[i][j]), text(c, " ", iv.hatArea, " ", hats[i][j]));
 
                 squeezeArea!S(iv);
                 assert(iv.squeezeArea.approxEqual(sqs[i][j]));
