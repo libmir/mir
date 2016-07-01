@@ -99,15 +99,15 @@ Params:
     isHat = whether hat (true) or squeeze (false) should be plotted
     isTransformed = whether to plot the transformed functions
 */
-auto plotArea(F0, S)(Tinflex!(F0, S) t, S[] xs, bool isHat = true, bool isTransformed = false)
+auto plotArea(F0, S, T)(Tinflex!(F0, S) t, T[] xs, bool isHat = true, bool isTransformed = false)
 {
     import mir.random.tinflex : inverse;
     import std.algorithm.comparison : clamp;
 
-    S[] ys = new S[xs.length];
+    T[] ys = new T[xs.length];
     int k = 0;
-    S rMin = xs[0];
-    S rMax = xs[$ - 1];
+    T rMin = xs[0];
+    T rMax = xs[$ - 1];
 
     // each interval is defined in clear bounds
     // as we iterate over the points to be plotted, we have to check to use the
@@ -139,6 +139,9 @@ auto plotArea(F0, S)(Tinflex!(F0, S) t, S[] xs, bool isHat = true, bool isTransf
 auto npPlotHatAndSqueezeArea(F0, S)(Tinflex!(F0, S) tf, string fileName,
                               S stepSize = 0.1, S left = -3, S right = 3)
 {
+    import std.array : array;
+    import std.traits : ReturnType;
+
     static immutable script = `
         import matplotlib.pyplot as plt
         plt.plot(xs, ys, color='black')
@@ -150,8 +153,7 @@ auto npPlotHatAndSqueezeArea(F0, S)(Tinflex!(F0, S) tf, string fileName,
 
     auto pythonContext = new InterpContext();
     alias T = double;
-    import std.array : array;
-    T[] xs = iota(left, right + stepSize, stepSize).array;
+    T[] xs = iota!(T, T, T)(left, right + stepSize, stepSize).array;
     pythonContext.xs = xs.toNumpyArray;
 
     // PDF
@@ -164,11 +166,11 @@ auto npPlotHatAndSqueezeArea(F0, S)(Tinflex!(F0, S) tf, string fileName,
     bool isTransformed = false;
 
     // hat
-    auto hats = tf.plotArea(xs, true, isTransformed);
+    auto hats = cast(T[]) tf.plotArea(xs, true, isTransformed);
     pythonContext.hat = hats.toNumpyArray;
 
     // squeeze
-    auto squeeze = tf.plotArea(xs, false, isTransformed);
+    auto squeeze = cast(T[]) tf.plotArea(xs, false, isTransformed);
     pythonContext.squeeze = squeeze.toNumpyArray;
 
     pythonContext.fileName = fileName;
@@ -263,7 +265,7 @@ auto npPlotHatAndSqueeze(F0, S)(Tinflex!(F0, S) tf, string fileName,
     auto pythonContext = new InterpContext();
     alias T = double;
     import std.array : array;
-    T[] xs = iota(left, right + stepSize, stepSize).array;
+    T[] xs = iota!(T, T, T)(left, right + stepSize, stepSize).array;
     auto hats = plotWithIntervals(tf, true);
     // TODO: this allocates the xs array twice
     auto squeezes = plotWithIntervals(tf, false);
