@@ -349,7 +349,9 @@ private S tinflexImpl(Pdf, S, RNG)
                     , c) - intervals[rndInt].hat.a
                 ) / intervals[rndInt].hat.slope;
         }
-finish:
+    
+    finish:
+    
         auto hatX = inverse(intervals[rndInt].hat(X), c);
         auto squeezeX = intervals[rndInt].squeezeArea > 0 ? inverse(intervals[rndInt].squeeze(X), c) : 0;
 
