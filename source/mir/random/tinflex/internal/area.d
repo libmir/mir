@@ -140,7 +140,8 @@ in
 }
 body
 {
-    import mir.internal.math: copysign, exp, log, fabs;
+    import std.math: frexp, LOG2E;
+    import mir.internal.math: copysign, exp, log2, fabs;
     import mir.random.tinflex.internal.transformations : antiderivative, inverse;
 
     S area = void;
@@ -153,6 +154,10 @@ body
     // check difference to left and right starting point
     // sigma in the paper (1: left side, -1, right side
     immutable S leftOrRight = (iv.rx - sh.y) > (sh.y - iv.lx) ? 1 : -1;
+    immutable shL = sh(iv.lx);
+    immutable shR = sh(iv.rx);
+    immutable intLength = iv.rx - iv.lx;
+    auto z = leftOrRight * sh.slope * intLength;
 
     // sh.y is the boundary point where f obtains its maximum
 
@@ -161,7 +166,6 @@ body
     {
         // T_c = log(x)
         // Error in table, see equation (4)
-        immutable z = leftOrRight * sh.slope * (iv.rx - iv.lx);
         // check whether approximation is possible, page 5
         if (fabs(z) < constants!S.smallExp)
         {
@@ -170,21 +174,20 @@ body
         else
         {
             // F_T = e^x
-            area = (exp(sh(iv.rx)) - exp(sh(iv.lx))) / sh.slope;
+            area = (exp(shR) - exp(shL)) / sh.slope;
         }
     }
     else
     {
-        auto sgnc = copysign(S(1), iv.c);
-        if (!(sgnc * sh(iv.rx) >= 0) ||
-            !(sgnc * sh(iv.lx) >= 0))
+        immutable sgnc = copysign(S(1), iv.c);
+        z /= sh.a;
+
+        if (!(sgnc * shR >= 0) ||
+            !(sgnc * shL >= 0))
         {
             area = S.max;
             goto L;
         }
-
-        immutable intLength = iv.rx - iv.lx;
-        immutable z = leftOrRight / sh.a * sh.slope * intLength;
 
         if (iv.c == 1)
         {
@@ -198,7 +201,7 @@ body
             }
             else
             {
-                area = (1 / sh(iv.lx) - 1 / sh(iv.rx)) / sh.slope;
+                area = (1 / shL - 1 / shR) / sh.slope;
             }
         }
         else if (iv.c == -1)
@@ -209,18 +212,21 @@ body
             }
             else
             {
-                area = (log(-sh(iv.lx)) - log(-sh(iv.rx))) / sh.slope;
+                int lexp = void;
+                int rexp = void;
+                immutable rem = log2(frexp(-shL, lexp) / frexp(-shR, rexp));
+                area = (lexp - rexp + rem) / (S(LOG2E) * sh.slope);
             }
         }
         else
         {
-            if (fabs(sh.slope) > S(1e-10))
+            if (fabs(sh.slope) < S(1e-10))
             {
-                area = (antiderivative!true(sh(iv.rx), iv.c) - antiderivative!true(sh(iv.lx), iv.c)) / sh.slope;
+                area = inverse!true(sh.a, iv.c) * intLength;
             }
             else
             {
-                area = inverse!true(sh.a, iv.c) * intLength;
+                area = (antiderivative!true(shR, iv.c) - antiderivative!true(shL, iv.c)) / sh.slope;
             }
         }
     }
