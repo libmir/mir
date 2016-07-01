@@ -900,7 +900,7 @@ unittest
         {
             foreach (j, x; xs)
             {
-                if(sgn(c) * x >= 0)
+                if (sgn(c) * x >= 0)
                 {
                     S r = results[i][j];
                         S v = flexInverse!(false, S)(x, c);

@@ -238,7 +238,7 @@ unittest
         {
             foreach (j, x; xs)
             {
-                if(sgn(c) * x >= 0)
+                if (sgn(c) * x >= 0)
                 {
                     S r = results[i][j];
                     S v = antiderivative!(false, S)(x, c);
@@ -342,7 +342,7 @@ unittest
         {
             foreach (j, x; xs)
             {
-                if(x * sgn(c + 1) >= 0)
+                if (x * sgn(c + 1) >= 0)
                 {
                     S r = results[i][j];
                     S v = inverseAntiderivative!S(x, c);
