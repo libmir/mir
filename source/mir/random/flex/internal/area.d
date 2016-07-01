@@ -121,7 +121,7 @@ alias squeezeArea(S) = area!(false, S);
 /**
 Computes the area below either the hat or squeeze function
 in-between a interval `iv`.
-Based on table 1 and general equation (3) from Botts et al. (2013)
+Based on table 1 and general equation (3) from Botts et al. (2013).
 
     (F_T(sh(r))- F_T(sh(l))) / sh.slope
 
@@ -245,7 +245,7 @@ body
         iv.squeezeArea = area;
 }
 
-// example from Tinflex (distribution 1)
+// example from Botts et al. (2013) (distribution 1)
 unittest
 {
     import mir.random.flex.internal.transformations : transformToInterval;

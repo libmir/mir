@@ -40,7 +40,7 @@ Interval!S transformToInterval(S)(in S l, in S r, in S c,
     return Interval!S(l, r, c, lt0, lt1, lt2, rt0, rt1, rt2);
 }
 
-// example from Tinflex
+// example from Botts et al. (2013)
 unittest
 {
     import std.math: approxEqual;

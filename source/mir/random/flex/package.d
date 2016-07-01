@@ -290,7 +290,7 @@ private S flexImpl(Pdf, S, RNG)
     for (;;)
     {
         // sample from interval with density proportional to their hatArea
-        immutable index = ds(rng); // J in Tinflex paper
+        immutable index = ds(rng); // J in Botts et al. (2013)
         assert(index < intervals.length);
 
         S u = uniform!("[)", S, S)(0, 1, rng);

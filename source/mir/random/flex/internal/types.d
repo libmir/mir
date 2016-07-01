@@ -100,7 +100,7 @@ struct Interval(S)
 }
 
 /**
-Notations of different function types according to the Tinflex paper.
+Notations of different function types according to Botts et al. (2013).
 It is based on this naming scheme:
 
 - a: concAve
