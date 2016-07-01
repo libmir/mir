@@ -2182,7 +2182,7 @@ private template SummationType(F)
     {
         static if (!is(Unqual!F == real) && (isComplex!F || !is(Unqual!(typeof(F.init.re)) == real)))
         {
-            enum note =  "Note: Summation algorithms on x86 use 80bit representation"
+            enum note =  "Note: Summation algorithms on x86 use 80bit representation "
                        ~ "for single and double floating point numbers.";
             pragma(msg, note);
         }
