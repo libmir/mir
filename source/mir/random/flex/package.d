@@ -71,7 +71,7 @@ Macros:
     F_TILDE=$(D g(x))
     A_NAME=<a name="$1"></a>
 */
-module mir.random.tinflex;
+module mir.random.flex;
 
 import mir.random.discrete : Discrete;
 
@@ -96,26 +96,26 @@ Params:
 Returns:
     Flex Generator.
 */
-auto tinflex(F0, F1, F2, S)
+auto flex(F0, F1, F2, S)
                (in F0 f0, in F1 f1, in F2 f2,
                 S c, S[] points, S rho = 1.1)
 {
     S[] cs = new S[points.length - 1];
     foreach (ref d; cs)
         d = c;
-    return tinflex(f0, f1, f2, cs, points, rho);
+    return flex(f0, f1, f2, cs, points, rho);
 }
 
 /// ditto
-auto tinflex(F0, F1, F2, S)
+auto flex(F0, F1, F2, S)
                (in F0 f0, in F1 f1, in F2 f2,
                 S[] cs, S[] points, S rho = 1.1)
 {
-    return tinflex(f0, tinflexIntervals(f0, f1, f2, cs, points, rho));
+    return flex(f0, flexIntervals(f0, f1, f2, cs, points, rho));
 }
 
 /// ditto
-auto tinflex(F0, S)(in F0 f0, in FlexInterval!S[] intervals)
+auto flex(F0, S)(in F0 f0, in FlexInterval!S[] intervals)
 {
     import std.math: exp;
     auto pdf = (S x) => exp(f0(x));
@@ -171,14 +171,14 @@ struct Flex(Pdf, S)
     S opCall() const
     {
         import std.random : rndGen;
-        return tinflexImpl(_pdf, _intervals, ds, rndGen);
+        return flexImpl(_pdf, _intervals, ds, rndGen);
     }
 
     /// ditto
     S opCall(RNG)(ref RNG rng) const
         if (isUniformRNG!RNG)
     {
-        return tinflexImpl(_pdf, _intervals, ds, rng);
+        return flexImpl(_pdf, _intervals, ds, rng);
     }
 }
 
@@ -195,7 +195,7 @@ unittest
     auto f2 = (S x) => 10 - 12 * x ^^ 2;
     S[] points = [-3, -1.5, 0, 1.5, 3];
 
-    auto tf = tinflex(f0, f1, f2, 1.5, points, 1.1);
+    auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
 
     auto value = tf(gen);
 }
@@ -233,7 +233,7 @@ unittest
 //            TF(1.36003, 3, 1.5, LF(-0.159263, 1.36003, 1.26786),
 //                                LF(-0.0200763, 3, 1.00667), 1.78593, 1.66515)
 //        ];
-//        auto tf = tinflex(f0, intervals);
+//        auto tf = flex(f0, intervals);
 //        auto gen = Mt19937(42);
 //        auto value = tf(gen);
 //        import std.stdio;
@@ -255,7 +255,7 @@ unittest
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
         S[] points = [-3, -1.5, 0, 1.5, 3];
 
-        auto tf = tinflex(f0, f1, f2, 1.5, points, 1.1);
+        auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
 
         auto value = tf(gen);
     }
@@ -274,13 +274,13 @@ See_Also:
    $(LINK2 https://en.wikipedia.org/wiki/Rejection_sampling,
      Acceptance-rejection sampling)
 */
-private S tinflexImpl(Pdf, S, RNG)
+private S flexImpl(Pdf, S, RNG)
           (in Pdf pdf, in FlexInterval!S[] intervals,
            in Discrete!S ds, ref RNG rng)
     if (isUniformRNG!RNG)
 {
     import mir.internal.math: exp, fabs, log;
-    import mir.random.tinflex.internal.transformations : inverse, antiderivative, inverseAntiderivative;
+    import mir.random.flex.internal.transformations : inverse, antiderivative, inverseAntiderivative;
     import std.random: dice, uniform;
 
     S X = void;
@@ -428,7 +428,7 @@ Params:
 
 Returns: Array of IntervalPoints
 */
-FlexInterval!S[] tinflexIntervals(F0, F1, F2, S)
+FlexInterval!S[] flexIntervals(F0, F1, F2, S)
                             (in F0 f0, in F1 f1, in F2 f2,
                              in S[] cs, in S[] points, in S rho = 1.1,
                              in int apprMaxPoints = 1_000, in int maxIterations = 1_000)
@@ -459,9 +459,9 @@ in
 }
 body
 {
-    import mir.random.tinflex.internal.calc: arcmean, calcInterval;
-    import mir.random.tinflex.internal.transformations : transform,  transformToInterval;
-    import mir.random.tinflex.internal.types: Interval;
+    import mir.random.flex.internal.calc: arcmean, calcInterval;
+    import mir.random.flex.internal.transformations : transform,  transformToInterval;
+    import mir.random.flex.internal.types: Interval;
     import mir.sum: Summator, Summation;
     import std.container.dlist : DList;
     import std.range.primitives : front, empty, popFront;
@@ -482,7 +482,7 @@ body
     version(Flex_logging)
     {
         import std.experimental.logger;
-        log("starting tinflex with p=", points, ", cs=", cs);
+        log("starting flex with p=", points, ", cs=", cs);
     }
 
     // initialize with user given splitting points
@@ -625,7 +625,7 @@ body
     return intervals;
 }
 
-// default tinflex with c=1.5
+// default flex with c=1.5
 unittest
 {
     import std.algorithm : equal, map;
@@ -657,14 +657,14 @@ unittest
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
         S[] cs = [1.5, 1.5, 1.5, 1.5];
         S[] points = [-3, -1.5, 0, 1.5, 3];
-        auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
+        auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
         assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
         assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
     }
 }
 
-// default tinflex with c=1
+// default flex with c=1
 unittest
 {
     import std.algorithm : equal, map;
@@ -691,14 +691,14 @@ unittest
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
         S[] points = [-3, -1.5, 0, 1.5, 3];
         S[] cs = [1.0, 1.0, 1.0, 1.0];
-        auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
+        auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
         assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
         assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
     }
 }
 
-// default tinflex with custom c's
+// default flex with custom c's
 unittest
 {
     import std.algorithm : equal, map;
@@ -730,7 +730,7 @@ unittest
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
         S[] cs = [1.3, 1.4, 1.5, 1.6];
         S[] points = [-3, -1.5, 0, 1.5, 3];
-        auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
+        auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
         assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
         assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
@@ -755,7 +755,7 @@ unittest
         auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
         S[] cs = [1.5, 1.5, 1.5, 1.5];
         S[] points = [-3, -1.5, 0, 1.5, 3];
-        auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
+        auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
         assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
         assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
@@ -784,7 +784,7 @@ unittest
         S[] points = [S(-1), -0.9, -0.5, 0.5, 0.9, 1];
         S[] cs = S(2).repeat(points.length - 1).array;
 
-        auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
+        auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
         assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
         assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
     }
@@ -804,13 +804,13 @@ unittest
         S[] points = [S(-1), -0.9, -0.5, 0.5, 0.9, 1];
         S[] cs = S(2).repeat(points.length - 1).array;
 
-        auto ips = tinflexIntervals(f0, f1, f2, cs, points, S(1.1));
+        auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
         assert(ips.map!`a.hatArea`.equal!approxEqual(hatsD));
         assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqsD));
     }
 }
 
-import mir.random.tinflex.internal.transformations : inverse;
+import mir.random.flex.internal.transformations : inverse;
 
 ///
 alias inverse = inverse;

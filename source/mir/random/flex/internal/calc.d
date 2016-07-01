@@ -1,6 +1,6 @@
-module mir.random.tinflex.internal.calc;
+module mir.random.flex.internal.calc;
 
-import mir.random.tinflex.internal.types : Interval;
+import mir.random.flex.internal.types : Interval;
 
 /**
 Calculate the mean between two points using the arcmean:
@@ -124,8 +124,8 @@ in
 }
 body
 {
-    import mir.random.tinflex.internal.types : determineType;
-    import mir.random.tinflex.internal.area: determineSqueezeAndHat, hatArea, squeezeArea;
+    import mir.random.flex.internal.types : determineType;
+    import mir.random.flex.internal.area: determineSqueezeAndHat, hatArea, squeezeArea;
     import std.math: isFinite;
 
     // TODO: this is probably not needed anymore

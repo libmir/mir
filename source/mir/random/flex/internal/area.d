@@ -1,6 +1,6 @@
-module mir.random.tinflex.internal.area;
+module mir.random.flex.internal.area;
 
-import mir.random.tinflex.internal.types : Interval;
+import mir.random.flex.internal.types : Interval;
 import std.traits : ReturnType;
 
 /**
@@ -10,7 +10,7 @@ Based on Theorem 1 of Botts et al. (2013).
 void determineSqueezeAndHat(S)(ref Interval!S iv)
 {
     import mir.utility.linearfun : linearFun, secant, LinearFun;
-    import mir.random.tinflex.internal.types : determineType, FunType;
+    import mir.random.flex.internal.types : determineType, FunType;
 
     enum sec = "secant(iv.lx, iv.rx, iv.ltx, iv.rtx)";
     enum t_l = "linearFun!S(iv.lt1x, iv.lx, iv.ltx)";
@@ -75,7 +75,7 @@ void determineSqueezeAndHat(S)(ref Interval!S iv)
 unittest
 {
     import std.meta : AliasSeq;
-    import mir.random.tinflex.internal.types: determineType;
+    import mir.random.flex.internal.types: determineType;
     foreach (S; AliasSeq!(float, double, real))
     {
         const f0 = (S x) => x * x;
@@ -142,7 +142,7 @@ body
 {
     import std.math: signbit, frexp, LOG2E, isFinite;
     import mir.internal.math: copysign, exp, log2, fabs;
-    import mir.random.tinflex.internal.transformations : antiderivative, inverse;
+    import mir.random.flex.internal.transformations : antiderivative, inverse;
 
     S area = void;
 
@@ -249,8 +249,8 @@ body
 // example from Tinflex (distribution 1)
 unittest
 {
-    import mir.random.tinflex.internal.transformations : transformToInterval;
-    import mir.random.tinflex.internal.types : determineType;
+    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;
@@ -328,8 +328,8 @@ unittest
 // standard normal distribution
 unittest
 {
-    import mir.random.tinflex.internal.transformations : transformToInterval;
-    import mir.random.tinflex.internal.types : determineType;
+    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual;
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;
@@ -419,8 +419,8 @@ unittest
 // distribution 3
 unittest
 {
-    import mir.random.tinflex.internal.transformations : transformToInterval;
-    import mir.random.tinflex.internal.types : determineType;
+    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;
@@ -497,8 +497,8 @@ unittest
 // distribution 4
 unittest
 {
-    import mir.random.tinflex.internal.transformations : transformToInterval;
-    import mir.random.tinflex.internal.types : determineType;
+    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;
@@ -566,8 +566,8 @@ unittest
 // distribution 3 with other boundaries
 unittest
 {
-    import mir.random.tinflex.internal.transformations : transformToInterval;
-    import mir.random.tinflex.internal.types : determineType;
+    import mir.random.flex.internal.transformations : transformToInterval;
+    import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;

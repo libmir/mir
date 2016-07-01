@@ -1,4 +1,4 @@
-module mir.random.tinflex.internal.types;
+module mir.random.flex.internal.types;
 
 import std.traits: ReturnType, isFloatingPoint;
 

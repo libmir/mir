@@ -1,6 +1,6 @@
-module mir.random.tinflex.internal.transformations;
+module mir.random.flex.internal.transformations;
 
-import mir.random.tinflex.internal.types : Interval;
+import mir.random.flex.internal.types : Interval;
 
 /**
 In-place c-transformation
