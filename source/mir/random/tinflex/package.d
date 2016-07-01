@@ -344,12 +344,7 @@ private S tinflexImpl(Pdf, S, RNG)
                     }
                 }
                 // common approximation
-                X = hat.y +
-                    (inverseAntiderivative
-                        (   antiderivative(hatLx, c)
-                                + hat.slope * u
-                        , c) - hat.a
-                    ) / hat.slope;
+                X = hat.y + (inverseAntiderivative(antiderivative(hatLx, c) + hat.slope * u, c) - hat.a) / hat.slope;
             }
         
         finish:
