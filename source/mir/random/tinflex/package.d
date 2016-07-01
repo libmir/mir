@@ -343,43 +343,49 @@ private S tinflexImpl(Pdf, S, RNG)
                                           intervals[rndInt].hat.a) / intervals[rndInt].hat.slope;
             }
             else
+            {
                 X = intervals[rndInt].lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
-            goto all;
-        }
-        else if (c == S(-0.5))
-        {
-            auto eX = exp(intervals[rndInt].hat(intervals[rndInt].lx));
-            auto z = u * intervals[rndInt].hat.slope * eX;
-            if (fabs(z) > S(1e-6))
-                goto mInvAD;
-            X = intervals[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z);
-            goto all;
-        }
-        else if (c == 1)
-        {
-            auto k = intervals[rndInt].hat(intervals[rndInt].lx);
-            auto z = u * intervals[rndInt].hat.slope / (k * k);
-            if (fabs(z) > S(1e-6))
-                goto mInvAD;
-            X = intervals[rndInt].lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
-            goto all;
+            }
         }
         else
         {
-            if (fabs(intervals[rndInt].hat.slope) > S(1e-10))
-                goto mInvAD;
-            X = (1 - u) * intervals[rndInt].lx + u * intervals[rndInt].rx;
-            goto all;
+            if (c == S(-0.5))
+            {
+                auto eX = exp(intervals[rndInt].hat(intervals[rndInt].lx));
+                auto z = u * intervals[rndInt].hat.slope * eX;
+                if (fabs(z) < S(1e-6))
+                {
+                    X = intervals[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z);
+                    goto finish;
+                }
+            }
+            else if (c == 1)
+            {
+                auto k = intervals[rndInt].hat(intervals[rndInt].lx);
+                auto z = u * intervals[rndInt].hat.slope / (k * k);
+                if (fabs(z) < S(1e-6))
+                {
+                    X = intervals[rndInt].lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
+                    goto finish;
+                }
+            }
+            else
+            {
+                if (fabs(intervals[rndInt].hat.slope) < S(1e-10))
+                {
+                    X = (1 - u) * intervals[rndInt].lx + u * intervals[rndInt].rx;
+                    goto finish;
+                }
+            }
+            // common approximation
+            X = intervals[rndInt].hat.y +
+                (inverseAntiderivative
+                    (   antiderivative(intervals[rndInt].hat(intervals[rndInt].lx), c)
+                            + intervals[rndInt].hat.slope * u
+                    , c) - intervals[rndInt].hat.a
+                ) / intervals[rndInt].hat.slope;
         }
-mInvAD:
-        // common approximation
-        X = intervals[rndInt].hat.y +
-            (inverseAntiderivative
-                (   antiderivative(intervals[rndInt].hat(intervals[rndInt].lx), c)
-                        + intervals[rndInt].hat.slope * u
-                , c) - intervals[rndInt].hat.a
-            ) / intervals[rndInt].hat.slope;
-all:
+finish:
         // U * h(c) < s(X)  "squeeze evaluation"
         if (t <= squeezeX)
             return X;

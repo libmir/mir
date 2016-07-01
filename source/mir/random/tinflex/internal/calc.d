@@ -26,11 +26,6 @@ References:
     "Automatic Nonuniform Random Number Generation." (2004): Formula 4.23
 */
 auto arcmean(S, bool sorted = false)(const S l, const S r)
-out (result)
-{
-    assert(iv.lx <= result && result <= iv.rx);
-}
-body
 {
     import std.math: atan, tan;
 
