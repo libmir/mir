@@ -1,7 +1,7 @@
 /**
 Simple plot
 */
-import mir.random.tinflex: tinflex, Tinflex;
+import mir.random.tinflex: tinflex, Tinflex, TinflexInterval;
 import std.array : array;
 import std.stdio : writeln, writefln, File;
 import std.algorithm : map, joiner, sum;
@@ -84,7 +84,7 @@ Params:
     isHat = whether hat (true) or squeeze (false) should be plotted
     isTransformed = whether to plot the transformed functions
 */
-auto plotArea(F0, S, T)(Tinflex!(F0, S) t, T[] xs, bool isHat = true, bool isTransformed = false)
+auto plotArea(S, T)(in TinflexInterval!S[] intervals, T[] xs, bool isHat = true, bool isTransformed = false)
 {
     import mir.random.tinflex : inverse;
     import std.algorithm.comparison : clamp;
@@ -97,7 +97,7 @@ auto plotArea(F0, S, T)(Tinflex!(F0, S) t, T[] xs, bool isHat = true, bool isTra
     // each interval is defined in clear bounds
     // as we iterate over the points to be plotted, we have to check to use the
     // correct hat/squeeze function for the current point
-    outer: foreach (i, v; t.intervals)
+    outer: foreach (i, v; intervals)
     {
         // calculate bounds of the current interval
         S l = clamp(v.lx, rMin, rMax);
@@ -121,7 +121,7 @@ auto plotArea(F0, S, T)(Tinflex!(F0, S) t, T[] xs, bool isHat = true, bool isTra
     return ys;
 }
 
-auto npPlotHatAndSqueezeArea(F0, S)(Tinflex!(F0, S) tf, string fileName,
+auto npPlotHatAndSqueezeArea(S, Pdf)(in TinflexInterval!S[] intervals, Pdf pdf, string fileName,
                               S stepSize = 0.1, S left = -3, S right = 3)
 {
     import std.array : array;
@@ -144,18 +144,18 @@ auto npPlotHatAndSqueezeArea(F0, S)(Tinflex!(F0, S) tf, string fileName,
     // PDF
     T[] ys = new T[xs.length];
     foreach (i, ref y; ys)
-        y = tf.pdf(xs[i]);
+        y = pdf(xs[i]);
 
     pythonContext.ys = ys.toNumpyArray;
 
     bool isTransformed = false;
 
     // hat
-    auto hats = cast(T[]) tf.plotArea(xs, true, isTransformed);
+    auto hats = cast(T[]) intervals.plotArea(xs, true, isTransformed);
     pythonContext.hat = hats.toNumpyArray;
 
     // squeeze
-    auto squeeze = cast(T[]) tf.plotArea(xs, false, isTransformed);
+    auto squeeze = cast(T[]) intervals.plotArea(xs, false, isTransformed);
     pythonContext.squeeze = squeeze.toNumpyArray;
 
     pythonContext.fileName = fileName;
@@ -165,19 +165,19 @@ auto npPlotHatAndSqueezeArea(F0, S)(Tinflex!(F0, S) tf, string fileName,
 /**
 Plots every interval as a separate line with a given stepsize.
 */
-auto plotWithIntervals(F0, S)(Tinflex!(F0, S) tf, bool isHat = true, S stepSize = 0.01, bool isTransformed = false)
+auto plotWithIntervals(S)(in TinflexInterval!S[] intervals, bool isHat = true, S stepSize = 0.01, bool isTransformed = false)
 {
     import mir.random.tinflex : inverse;
     import std.math : ceil;
     import std.algorithm.comparison : max;
 
-    auto len = tf.intervals.length;
+    auto len = intervals.length;
 
     // TODO: do something smart to avoid many allocations here
     S[][] xs = new S[][len];
     S[][] ys = new S[][xs.length];
 
-    foreach (i, iv; tf.intervals)
+    foreach (i, iv; intervals)
     {
         size_t nrIntervals = cast(size_t) ((iv.rx - iv.lx) / stepSize).ceil;
         xs[i] = new S[max(nrIntervals, 2)];
@@ -203,7 +203,7 @@ auto plotWithIntervals(F0, S)(Tinflex!(F0, S) tf, bool isHat = true, S stepSize 
     return tuple!("xs", "ys")(xs, ys);
 }
 
-auto npPlotHatAndSqueeze(F0, S)(Tinflex!(F0, S) tf, string fileName,
+auto npPlotHatAndSqueeze(S, Pdf)(in TinflexInterval!S[] intervals, Pdf pdf, string fileName,
                               S stepSize = 0.1, S left = -3, S right = 3)
 {
     static immutable script = `
@@ -221,13 +221,13 @@ auto npPlotHatAndSqueeze(F0, S)(Tinflex!(F0, S) tf, string fileName,
     alias T = double;
     import std.array : array;
     T[] xs = iota!(T, T, T)(left, right + stepSize, stepSize).array;
-    auto hats = plotWithIntervals(tf, true);
+    auto hats = plotWithIntervals(intervals, true);
     // TODO: this allocates the xs array twice
-    auto squeezes = plotWithIntervals(tf, false);
+    auto squeezes = plotWithIntervals(intervals, false);
 
     T[] ys = new T[xs.length];
     foreach (i, ref y; ys)
-        y = tf.pdf(xs[i]);
+        y = pdf(xs[i]);
 
     pythonContext.xs = xs.toNumpyArray;
     pythonContext.ys = ys.toNumpyArray;
@@ -244,11 +244,13 @@ auto npPlotHatAndSqueeze(F0, S)(Tinflex!(F0, S) tf, string fileName,
 /**
 Simple plotting
 */
-void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right = 3)
+void test(F0, S, Pdf)(Tinflex!(F0, S) tf, Pdf f0, string fileName, int left = -3, int right = 3)
 {
-    // first plot hat/squeeze in case we crash during samplign
-    tf.npPlotHatAndSqueeze(fileName ~ "_hs.pdf");
-    tf.npPlotHatAndSqueezeArea(fileName ~ "_hs_area.pdf");
+    import std.math : exp;
+    auto pdf = (S x) => exp(f0(x));
+    // first plot hat/squeeze in case we crash during sampling
+    tf.intervals.npPlotHatAndSqueeze(pdf, fileName ~ "_hs.pdf");
+    tf.intervals.npPlotHatAndSqueezeArea(pdf, fileName ~ "_hs_area.pdf");
 
     import std.random : rndGen;
     rndGen.seed(42);
@@ -267,7 +269,7 @@ void test0(string folderName)
     auto f1 = (double x) => 10 * x - 4 * x ^^ 3;
     auto f2 = (double x) => 10 - 12 * x ^^ 2;
     auto tf = tinflex(f0, f1, f2, 1.5, [-3.0, -1.5, 0.0, 1.5, 3]);
-    tf.test(folderName.buildPath("dist0"));
+    tf.test(f0, folderName.buildPath("dist0"));
 }
 
 // default tinflex testing distribution
@@ -281,19 +283,19 @@ void test1(string folderName)
 
     foreach (c; [0.1, 0.5, 1])
     {
-        tinflex(c, [-3.0, -1.5, 0.0, 1.5, 3]).test(folderName.buildPath("dist1_a" ~ c.to!string));
+        tinflex(c, [-3.0, -1.5, 0.0, 1.5, 3]).test(f0, folderName.buildPath("dist1_a" ~ c.to!string));
     }
 
     foreach (c; [-0.9, -0.5, -0.2, 0])
     {
-        tinflex(c, [-double.infinity, -2.1, -1.05, 0.1, 1.2, 2, double.infinity]).test(folderName.buildPath("dist1_b" ~ c.to!string));
-        tinflex(c, [-double.infinity, -1, 0, 1, double.infinity]).test(folderName.buildPath("dist1_c" ~ c.to!string));
-        tinflex(c, [-2, 0, 1.5]).test(folderName.buildPath("dist1_d" ~ c.to!string), -4, 6);
+        tinflex(c, [-double.infinity, -2.1, -1.05, 0.1, 1.2, 2, double.infinity]).test(f0, folderName.buildPath("dist1_b" ~ c.to!string));
+        tinflex(c, [-double.infinity, -1, 0, 1, double.infinity]).test(f0, folderName.buildPath("dist1_c" ~ c.to!string));
+        tinflex(c, [-2, 0, 1.5]).test(f0, folderName.buildPath("dist1_d" ~ c.to!string), -4, 6);
     }
 
     foreach (c; [-2, -1.5, -1])
     {
-        tinflex(c, [-3.0, -2.1, -1.05, 0.1, 1.2, 3]).test(folderName.buildPath("dist1_e" ~ c.to!string));
+        tinflex(c, [-3.0, -2.1, -1.05, 0.1, 1.2, 3]).test(f0, folderName.buildPath("dist1_e" ~ c.to!string));
     }
 }
 
@@ -309,14 +311,14 @@ void test2(string folderName)
 
     foreach (c; [-2, -1.1, -1, 0.5, 1, 1.5, 2])
     {
-        tinflex(c, [-3, -1, 0, 1, 3]).test(folderName.buildPath("dist2_c_" ~ c.to!string));
-        tinflex(c, [-3, -1 + (cast(real) 2) ^^-52, 1e-20, 1 - (cast(real) 2)^^(-53), 3]).test(folderName.buildPath("dist2_d_" ~ c.to!string));
+        tinflex(c, [-3, -1, 0, 1, 3]).test(f0, folderName.buildPath("dist2_c_" ~ c.to!string));
+        tinflex(c, [-3, -1 + (cast(real) 2) ^^-52, 1e-20, 1 - (cast(real) 2)^^(-53), 3]).test(f0, folderName.buildPath("dist2_d_" ~ c.to!string));
     }
 
     foreach (c; [-0.9, -0.5, -0.2, 0])
     {
-        tinflex(c, [-double.infinity, -2, -1, 0, 1, 2, double.infinity]).test(folderName.buildPath("dist2_a" ~ c.to!string));
-        tinflex(c, [-double.infinity, -2, -1 + (cast(real)2)^^-52, 1e-20, 1-(cast(real)2)^^(-53), 2, double.infinity]).test(folderName.buildPath("dist2_" ~ c.to!string));
+        tinflex(c, [-double.infinity, -2, -1, 0, 1, 2, double.infinity]).test(f0, folderName.buildPath("dist2_a" ~ c.to!string));
+        tinflex(c, [-double.infinity, -2, -1 + (cast(real)2)^^-52, 1e-20, 1-(cast(real)2)^^(-53), 2, double.infinity]).test(f0, folderName.buildPath("dist2_" ~ c.to!string));
     }
 }
 
@@ -332,10 +334,10 @@ void test3(string folderName)
     import std.conv : to;
     foreach (c; [1.5, 2])
         tinflex(c, [-1, -0.9, -0.5, 0.5, 0.9, 1])
-        .test(folderName.buildPath("dist3_a_" ~ c.to!string), -1, 1);
+        .test(f0, folderName.buildPath("dist3_a_" ~ c.to!string), -1, 1);
 
     foreach (c; [-2, -1.5, -1, -0.9,  -0.5, -0.2, 0, 0.1, 0.5, 1])
-        tinflex(c, [-1, -0.5, 0.5, 1]).test(folderName.buildPath("dist3_b_" ~ c.to!string));
+        tinflex(c, [-1, -0.5, 0.5, 1]).test(f0, folderName.buildPath("dist3_b_" ~ c.to!string));
 }
 
 // density with pole
@@ -346,7 +348,7 @@ void test4(string folderName)
     auto f1 = (real x) => -1 / (2 * x);
     auto f2 = (real x) => 1 / (2 * x^^2);
 
-    tinflex(f0, f1, f2, 1.5, [-1.0, 0, 1]).test(folderName.buildPath("dist4"));
+    tinflex(f0, f1, f2, 1.5, [-1.0, 0, 1]).test(f0, folderName.buildPath("dist4"));
 }
 
 // different values for c
@@ -357,10 +359,10 @@ void test5(string folderName)
     auto f2 = (double x) => -24 * x^^2 + 8;
 
     tinflex(f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0], [-double.infinity, -2, -1, 0, 1, 2, double.infinity])
-    .test(folderName.buildPath("dist5_b"));
+    .test(f0, folderName.buildPath("dist5_b"));
 
     tinflex(f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0], [-3, -2, -1, 0, 1, 2, 3])
-    .test(folderName.buildPath("dist5_b"));
+    .test(f0, folderName.buildPath("dist5_b"));
 }
 
 // inflection point at boundary
@@ -371,7 +373,7 @@ void test6(string folderName)
     auto f2 = (double x) => 12 - 12 * x^^2;
 
     tinflex(f0, f1, f2, 0, [-double.infinity, -2, -1, 0, 1, 2, double.infinity])
-    .test(folderName.buildPath("dist6"));
+    .test(f0, folderName.buildPath("dist6"));
 }
 
 
@@ -389,7 +391,7 @@ void test_normal(string folderName)
     auto f1 = (S x) => -x;
     auto f2 = (S x) => -1.0;
     tinflex(f0, f1, f2, 1.5, points)
-    .test(folderName.buildPath("dist_normal"));
+    .test(f0, folderName.buildPath("dist_normal"));
 }
 
 void main(string[] args)
