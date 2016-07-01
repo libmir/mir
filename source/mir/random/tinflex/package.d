@@ -438,6 +438,10 @@ in
     import std.math : isFinite, isInfinity;
     import std.range: drop, empty, front, save;
 
+    // check efficiency rho
+    assert(rho.isFinite, "rho must be a valid value");
+    assert(rho > 1, "rho must be > 1");
+
     // check points
     assert(points.length >= 2, "two or more splitting points are required");
     assert(points[1..$-1].all!isFinite, "intermediate interval can't be indefinite");
