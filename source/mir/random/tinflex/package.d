@@ -359,14 +359,14 @@ private S tinflexImpl(Pdf, S, RNG)
 
             // U * h(c) < s(X)  "squeeze evaluation"
             if (t <= invSqueezeX)
-                return X;
+                break;
 
             // U * h(c) < f(X)  "density evaluation"
             if (t <= pdf(X))
-                return X;
+                break;
         }
     }
-    assert(0);
+    return X;
 }
 
 /**
