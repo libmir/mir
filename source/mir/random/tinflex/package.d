@@ -290,80 +290,86 @@ private S tinflexImpl(Pdf, S, RNG)
     for (;;)
     {
         // sample from interval with density proportional to their hatArea
-        auto rndInt = ds(rng); // J in Tinflex paper
+        immutable index = ds(rng); // J in Tinflex paper
+        assert(index < intervals.length);
+
         S u = uniform!("()", S, S)(0, 1, rng);
-        if (rndInt >= intervals.length)
-            rndInt = intervals.length - 1;
 
-        immutable c = intervals[rndInt].c;
+        immutable interval = intervals[index];
 
-        if (c == 0)
+        with(interval)
         {
-            auto eXInv = exp(-intervals[rndInt].hat(intervals[rndInt].lx));
-            auto z = u * intervals[rndInt].hat.slope * eXInv;
-            if (fabs(z) > S(1e-6))
+            immutable hatLx = hat(lx);
+            if (c == 0)
             {
-                X = intervals[rndInt].hat.y + (log(1 / eXInv + intervals[rndInt].hat.slope * u) -
-                                          intervals[rndInt].hat.a) / intervals[rndInt].hat.slope;
-            }
-            else
-            {
-                X = intervals[rndInt].lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
-            }
-        }
-        else
-        {
-            if (c == S(-0.5))
-            {
-                auto eX = exp(intervals[rndInt].hat(intervals[rndInt].lx));
-                auto z = u * intervals[rndInt].hat.slope * eX;
-                if (fabs(z) < S(1e-6))
+                auto eXInv = exp(-hatLx);
+                auto z = u * hat.slope * eXInv;
+                if (fabs(z) > S(1e-6))
                 {
-                    X = intervals[rndInt].lx + u * eX * (1 - z * S(0.5) + z * z);
-                    goto finish;
+                    X = hat.y + (log(1 / eXInv + hat.slope * u) - hat.a) / hat.slope;
                 }
-            }
-            else if (c == 1)
-            {
-                auto k = intervals[rndInt].hat(intervals[rndInt].lx);
-                auto z = u * intervals[rndInt].hat.slope / (k * k);
-                if (fabs(z) < S(1e-6))
+                else
                 {
-                    X = intervals[rndInt].lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
-                    goto finish;
+                    X = lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
                 }
             }
             else
             {
-                if (fabs(intervals[rndInt].hat.slope) < S(1e-10))
+                if (c == S(-0.5))
                 {
-                    X = (1 - u) * intervals[rndInt].lx + u * intervals[rndInt].rx;
-                    goto finish;
+                    auto eX = exp(hatLx);
+                    auto z = u * hat.slope * eX;
+                    if (fabs(z) < S(1e-6))
+                    {
+                        X = lx + u * eX * (1 - z * S(0.5) + z * z);
+                        goto finish;
+                    }
                 }
+                else if (c == 1)
+                {
+                    auto k = hatLx;
+                    auto z = u * hat.slope / (k * k);
+                    if (fabs(z) < S(1e-6))
+                    {
+                        X = lx + u * k * (1 - z * S(0.5) + z * z * S(0.5));
+                        goto finish;
+                    }
+                }
+                else
+                {
+                    if (fabs(hat.slope) < S(1e-10))
+                    {
+                        X = (1 - u) * lx + u * rx;
+                        goto finish;
+                    }
+                }
+                // common approximation
+                X = hat.y +
+                    (inverseAntiderivative
+                        (   antiderivative(hatLx, c)
+                                + hat.slope * u
+                        , c) - hat.a
+                    ) / hat.slope;
             }
-            // common approximation
-            X = intervals[rndInt].hat.y +
-                (inverseAntiderivative
-                    (   antiderivative(intervals[rndInt].hat(intervals[rndInt].lx), c)
-                            + intervals[rndInt].hat.slope * u
-                    , c) - intervals[rndInt].hat.a
-                ) / intervals[rndInt].hat.slope;
+        
+        finish:
+        
+            immutable haX = hat(X);
+            immutable squeezeX = squeeze(X);
+
+            auto invHatX = inverse(haX, c);
+            auto invSqueezeX = squeezeArea > 0 ? inverse(squeezeX, c) : 0;
+
+            immutable t = u * invHatX;
+
+            // U * h(c) < s(X)  "squeeze evaluation"
+            if (t <= invSqueezeX)
+                return X;
+
+            // U * h(c) < f(X)  "density evaluation"
+            if (t <= pdf(X))
+                return X;
         }
-    
-    finish:
-    
-        auto hatX = inverse(intervals[rndInt].hat(X), c);
-        auto squeezeX = intervals[rndInt].squeezeArea > 0 ? inverse(intervals[rndInt].squeeze(X), c) : 0;
-
-        immutable t = u * hatX;
-
-        // U * h(c) < s(X)  "squeeze evaluation"
-        if (t <= squeezeX)
-            return X;
-
-        // U * h(c) < f(X)  "density evaluation"
-        if (t <= pdf(X))
-            return X;
     }
     assert(0);
 }
