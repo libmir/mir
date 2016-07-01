@@ -289,20 +289,13 @@ struct CFlex(S)
     }
 }
 
-void test0(S, F)(in ref F test)
-{
-    auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-    auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-    auto f2 = (S x) => 10 - 12 * x ^^ 2;
-    test.plot("dist0", f0, f1, f2, 1.5, [-3.0, -1.5, 0.0, 1.5, 3]);
-}
-
 // default tinflex testing distribution
 void test1(S, F)(in ref F test)
 {
-    auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-    auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-    auto f2 = (S x) => 10 - 12 * x ^^ 2;
+    import std.math : pow;
+    auto f0 = (S x) => -pow(x, 4) + 5 * pow(x, 2) - 4;
+    auto f1 = (S x) => 10 * x - 4 * pow(x, 3);
+    auto f2 = (S x) => 10 - 12 * pow(x, 2);
 
     foreach (c; [0.1, 0.5, 1])
     {
@@ -326,9 +319,10 @@ void test1(S, F)(in ref F test)
 // test at and near extrema
 void test2(S, F)(in ref F test)
 {
-    auto f0 = (S x) => -2 *  x^^4 + 4 * x^^2;
-    auto f1 = (S x) => -8 *  x^^3 + 8 * x;
-    auto f2 = (S x) => -24 * x^^2 + 8;
+    import std.math : pow;
+    auto f0 = (S x) => -2 *  pow(x, 4) + 4 * x * x;
+    auto f1 = (S x) => -8 *  pow(x, 3) + 8 * x;
+    auto f2 = (S x) => -24 * x * x + 8;
 
     foreach (c; [-2, -1.1, -1, 0.5, 1, 1.5, 2])
     {
@@ -349,10 +343,10 @@ void test2(S, F)(in ref F test)
 // density vanishes at boundaries
 void test3(S, F)(in ref F test)
 {
-    import std.math : log;
-    auto f0 = (S x) => cast(S) log(1 - x^^4);
-    auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
-    auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
+    import std.math : log, pow;
+    auto f0 = (S x) => cast(S) log(1 - pow(x, 4));
+    auto f1 = (S x) => -4 * pow(x, 3) / (1 - pow(x, 4));
+    auto f2 = (S x) => -(4 * pow(x, 6) + 12 * x * x) / (pow(x, 8) - 2 * pow(x, 4) + 1);
     auto tinflex = (S c,  S [] ips) => tinflex(f0, f1, f2, c, ips, 1.01);
 
     foreach (c; [1.5, 2])
@@ -376,9 +370,10 @@ void test4(S, F)(in ref F test)
 // different values for c
 void test5(S, F)(in ref F test)
 {
-    auto f0 = (S x) => -2 * x^^4 + 4 * x^^2;
-    auto f1 = (S x) => -8 * x^^3 + 8 * x;
-    auto f2 = (S x) => -24 * x^^2 + 8;
+    import std.math : pow;
+    auto f0 = (S x) => -2 * pow(x, 4)  + 4 * x * x;
+    auto f1 = (S x) => -8 * pow(x, 3) + 8 * x;
+    auto f2 = (S x) => -24 * x * x + 8;
 
     test.plot("dist5_a", f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0],
         [-S.infinity, -2, -1, 0, 1, 2, S.infinity]);
@@ -389,9 +384,10 @@ void test5(S, F)(in ref F test)
 // inflection point at boundary
 void test6(S, F)(in ref F test)
 {
-    auto f0 = (S x) => -x^^4 + 6 * x^^2;
-    auto f1 = (S x) => 12 * x - 4 * x^^3;
-    auto f2 = (S x) => 12 - 12 * x^^2;
+    import std.math : pow;
+    auto f0 = (S x) => -pow(x, 4) + 6 * x * x;
+    auto f1 = (S x) => 12 * x - 4 * pow(x, 3);
+    auto f2 = (S x) => 12 - 12 * x * x;
 
     test.plot("dist6", f0, f1, f2, 0, [-S.infinity, -2, -1, 0, 1, 2, S.infinity]);
 }
@@ -429,7 +425,7 @@ void main(string[] args)
     import std.traits : fullyQualifiedName;
     import std.algorithm.searching : canFind;
 
-    alias funs = AliasSeq!(test0, test1, test2, test3, test4, test5, test6, test_normal);
+    alias funs = AliasSeq!(test1, test2, test3, test4, test5, test6, test_normal);
 
     auto cf = CFlex!T(n, plotDir, rho);
     foreach (i, f; funs)
