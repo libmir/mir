@@ -393,6 +393,7 @@ void test6(S, F)(in ref F test)
 }
 
 
+// https://en.wikipedia.org/wiki/Normal_distribution
 void test_normal(S, F)(in ref F test)
 {
     import std.math : exp, log, PI, sqrt;
@@ -406,6 +407,42 @@ void test_normal(S, F)(in ref F test)
     auto f1 = (S x) => -x;
     auto f2 = (S x) => S(-1);
     test.plot("dist_normal", f0, f1, f2, 1.5, points);
+}
+
+// a=2, b=5
+// https://en.wikipedia.org/wiki/Beta_distribution
+void test_beta(S, F)(in ref F test)
+{
+    import std.math : log, pow;
+    auto f0 = (S x) => cast(S) log(30 * (1 - x).pow(x));
+    auto f1 = (S x) => (1 - 5 * x)/(x - x * x);
+    auto f2 = (S x) => (-1 + 2 * x - 5 * x * x) / (pow(-1 + x, 2) * x * x);
+    S[] points = [0,  1];
+    test.plot("dist_beta", f0, f1, f2, 1.5, points);
+}
+
+// https://en.wikipedia.org/wiki/Arcsine_distribution
+void test_arcsine(S, F)(in ref F test)
+{
+    import std.math : log, pow, PI, sqrt;
+    auto f0 = (S x) => cast(S) (-S(0.5) * log(-(x-1) * x) - log(PI));
+    auto f1 = (S x) => (1 - 2 * x)/(2 * (-1 + x) * x);
+    auto f2 = (S x) => (1 - 2 * x + 2 * x * x) / (2 * pow(1 - x, 2) * x * x);
+    S[] points = [0.01, 0.99];
+    test.plot("dist_arcsine", f0, f1, f2, 1.5, points);
+}
+
+// https://en.wikipedia.org/wiki/Gamma_distribution
+// a = 4, b = 3
+void test_gamma(S, F)(in ref F test)
+{
+    import std.math : log, pow, PI, sqrt;
+    enum one_div_3 = S(1) / 3;
+    auto f0 = (S x) => cast(S) (-pow(x, 3) + 3 * log(x) - log(486));
+    auto f1 = (S x) => - one_div_3 + 3/x;
+    auto f2 = (S x) => -3 / (x * x);
+    S[] points = [0,  2.5];
+    test.plot("dist_gamma", f0, f1, f2, 1.5, points);
 }
 
 void main(string[] args)
@@ -425,7 +462,8 @@ void main(string[] args)
     import std.traits : fullyQualifiedName;
     import std.algorithm.searching : canFind;
 
-    alias funs = AliasSeq!(test1, test2, test3, test4, test5, test6, test_normal);
+    alias funs = AliasSeq!(test1, test2, test3, test4, test5, test6,
+                          test_normal, test_beta, test_arcsine, test_gamma);
 
     auto cf = CFlex!T(n, plotDir, rho);
     foreach (i, f; funs)
