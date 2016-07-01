@@ -1,7 +1,7 @@
 /**
 Simple plot
 */
-import mir.random.tinflex: tinflex, Tinflex, TinflexInterval;
+import mir.random.flex: flex, Flex, FlexInterval;
 import std.array : array;
 import std.stdio : writeln, writefln, File;
 import std.algorithm : map, joiner, sum;
@@ -48,21 +48,21 @@ void npPlotHistogram(S)(S[] values, string fileName)
 }
 
 /**
-Generates a series of y-values of all hat or squeeze functions of an Tinflex
+Generates a series of y-values of all hat or squeeze functions of an Flex
 object. This is useful for plotting.
-Points in xs need to be in the boundaries of the Tinflex algorithm, otherwise they
+Points in xs need to be in the boundaries of the Flex algorithm, otherwise they
 will be ignored.
 
 Params:
-    t = Tinflex generator
+    t = Flex generator
     xs = x points to be plotted
     isHat = whether hat (true) or squeeze (false) should be plotted
     isTransformed = whether to plot the transformed functions
 */
-auto plotArea(S, T)(in TinflexInterval!S[] intervals, T[] xs, bool isHat = true,
+auto plotArea(S, T)(in FlexInterval!S[] intervals, T[] xs, bool isHat = true,
                     bool isTransformed = false)
 {
-    import mir.random.tinflex : inverse;
+    import mir.random.flex : inverse;
     import std.algorithm.comparison : clamp;
 
     T[] ys = new T[xs.length];
@@ -97,7 +97,7 @@ auto plotArea(S, T)(in TinflexInterval!S[] intervals, T[] xs, bool isHat = true,
     return ys;
 }
 
-auto npPlotHatAndSqueezeArea(S, Pdf)(in TinflexInterval!S[] intervals, Pdf pdf,
+auto npPlotHatAndSqueezeArea(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
                                      string fileName, S stepSize = 0.1,
                                      S left = -3, S right = 3)
 {
@@ -147,7 +147,7 @@ auto npPlotHatAndSqueezeArea(S, Pdf)(in TinflexInterval!S[] intervals, Pdf pdf,
 /**
 Plots every interval as a separate line with a given stepsize.
 */
-auto plotWithIntervals(S)(in TinflexInterval!S[] intervals, bool isHat = true,
+auto plotWithIntervals(S)(in FlexInterval!S[] intervals, bool isHat = true,
                           S stepSize = 0.01, bool isTransformed = false, S left = -3,
                           S right = 3)
 in
@@ -157,7 +157,7 @@ in
 }
 body
 {
-    import mir.random.tinflex : inverse;
+    import mir.random.flex : inverse;
     import std.algorithm.comparison : max, min;
     import std.math : ceil;
 
@@ -194,7 +194,7 @@ body
     return tuple!("xs", "ys")(xs, ys);
 }
 
-auto npPlotHatAndSqueeze(S, Pdf)(in TinflexInterval!S[] intervals, Pdf pdf,
+auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
                                  string fileName, S stepSize = 0.01,
                                  S left = -3, S right = 3)
 {
@@ -263,7 +263,7 @@ struct CFlex(S)
     {
         import std.math : exp;
         import std.random : Mt19937;
-        auto tf = tinflex(f0, f1, f2, cs, points, rho);
+        auto tf = flex(f0, f1, f2, cs, points, rho);
         auto pdf = (S x) => exp(f0(x));
 
         string fileName = plotDir.buildPath(name);
@@ -289,7 +289,7 @@ struct CFlex(S)
     }
 }
 
-// default tinflex testing distribution
+// default flex testing distribution
 void test1(S, F)(in ref F test)
 {
     import std.math : pow;
@@ -347,7 +347,7 @@ void test3(S, F)(in ref F test)
     auto f0 = (S x) => cast(S) log(1 - pow(x, 4));
     auto f1 = (S x) => -4 * pow(x, 3) / (1 - pow(x, 4));
     auto f2 = (S x) => -(4 * pow(x, 6) + 12 * x * x) / (pow(x, 8) - 2 * pow(x, 4) + 1);
-    auto tinflex = (S c,  S [] ips) => tinflex(f0, f1, f2, c, ips, 1.01);
+    auto flex = (S c,  S [] ips) => flex(f0, f1, f2, c, ips, 1.01);
 
     foreach (c; [1.5, 2])
         test.plot("dist3_a_" ~ c.to!string, f0, f1, f2, c, [-1, -0.9, -0.5, 0.5, 0.9, 1], -1, 1);

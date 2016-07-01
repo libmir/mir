@@ -42,8 +42,8 @@
             "sourceFiles": ["examples/lda_hoffman_sparse.d"]
         },
         {
-            "name": "tinflex-plot",
-            "targetName": "tinflex-plot",
+            "name": "flex-plot",
+            "targetName": "flex-plot",
             "targetType": "executable",
             "dependencies": {
                 "pyd": "~>0.9.8",
@@ -51,8 +51,8 @@
             "subConfigurations": {
                 "pyd": "python35",
             },
-            "sourceFiles": ["examples/tinflex_plot.d"],
-            "versions": ["Tinflex_logging", "Tinflex_Plot_Matplotlib"],
+            "sourceFiles": ["examples/flex_plot.d"],
+            "versions": ["Flex_logging"],
         }
     ]
 }
