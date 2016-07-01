@@ -8,11 +8,6 @@ Determines the hat and squeeze function of an interval.
 Based on Theorem 1 of Botts et al. (2013).
 */
 void determineSqueezeAndHat(S)(ref Interval!S iv)
-in
-{
-    assert(iv.lx < iv.rx, "invalid interval");
-}
-body
 {
     import mir.utility.linearfun : linearFun, secant, LinearFun;
     import mir.random.tinflex.internal.types : determineType, FunType;
