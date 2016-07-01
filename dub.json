@@ -53,17 +53,6 @@
             },
             "sourceFiles": ["examples/tinflex_plot.d"],
             "versions": ["Tinflex_logging", "Tinflex_Plot_Matplotlib"],
-        },
-        {
-            "name": "tinflex-plot-gg",
-            "targetName": "tinflex-plot",
-            "targetType": "executable",
-            "dependencies": {
-                "ggplotd": "~>0.9.2",
-            },
-            "sourceFiles": ["examples/tinflex_plot.d"],
-            "versions": ["Tinflex_logging", "Tinflex_Plot_GGplotd"],
-        },
-
+        }
     ]
 }

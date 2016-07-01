@@ -10,18 +10,15 @@ import std.path : buildPath;
 import std.conv: to;
 import std.math : exp;
 
-version(Tinflex_Plot_Matplotlib)
-{
-    import pyd.pyd;
-    import pyd.embedded;
-    import pyd.extra;
+import pyd.pyd;
+import pyd.embedded;
+import pyd.extra;
 
-    alias toNumpyArray = d_to_python_numpy_ndarray;
+alias toNumpyArray = d_to_python_numpy_ndarray;
 
-    shared static this() {
-        //initializes PyD package.
-        py_init();
-    }
+shared static this() {
+    //initializes PyD package.
+    py_init();
 }
 
 /**
@@ -73,18 +70,6 @@ void npPlotHistogram(S)(S[] values, string fileName)
     pythonContext.num_bins = 50;
     pythonContext.fileName = fileName;
     pythonContext.py_stmts(script);
-}
-
-void ggPlotHistogram(S)(S[] values, string fileName)
-{
-    import ggplotd.ggplotd : GGPlotD;
-    import ggplotd.geom : geomHist;
-    import ggplotd.aes : Aes;
-
-    // plot histogram
-    auto aes = Aes!(typeof(values), "x")(values);
-    auto gg = GGPlotD().put(geomHist(aes, 50));
-    gg.save(fileName ~ "_hist.pdf");
 }
 
 /**
@@ -177,36 +162,6 @@ auto npPlotHatAndSqueezeArea(F0, S)(Tinflex!(F0, S) tf, string fileName,
     pythonContext.py_stmts(script);
 }
 
-auto ggPlotHatAndSqueezeArea(F0, S)(Tinflex!(F0, S) tf, string fileName,
-                              S stepSize = 0.01, S left = -3, S right = 3)
-{
-    import ggplotd.ggplotd : GGPlotD;
-    import ggplotd.aes : Aes;
-    import ggplotd.geom : geomLine;
-    import std.array : array;
-
-    auto gg = GGPlotD();
-    scope(exit) gg.save(fileName);
-
-    bool isTransformed = false;
-
-    auto xs = iota!S(left, right, stepSize).array;
-
-    // hat
-    auto ys = tf.plotArea(xs, true, isTransformed);
-    gg.put(geomLine(Aes!(typeof(xs), "x", typeof(ys),
-        "y", string[], "colour")(xs, ys, "blue".repeat.take(xs.length).array)));
-
-    // squeeze
-    ys = tf.plotArea(xs, false, isTransformed);
-    gg.put( geomLine( Aes!(typeof(xs), "x", typeof(ys),
-        "y", string[], "colour")( xs, ys, "red".repeat.take(xs.length).array)));
-
-    // PDF
-    ys = xs.map!((x) => tf.pdf(x)).array;
-    gg.put(geomLine(Aes!(typeof(xs), "x", typeof(ys), "y")(xs, ys)));
-}
-
 /**
 Plots every interval as a separate line with a given stepsize.
 */
@@ -286,64 +241,20 @@ auto npPlotHatAndSqueeze(F0, S)(Tinflex!(F0, S) tf, string fileName,
     pythonContext.py_stmts(script);
 }
 
-auto ggPlotHatAndSqueeze(F0, S)(Tinflex!(F0, S) tf, string fileName,
-                              S stepSize = 0.1, S left = -3, S right = 3)
-{
-    import ggplotd.ggplotd : GGPlotD;
-    import ggplotd.aes : Aes;
-    import ggplotd.geom : geomLine;
-    import std.array : array;
-
-    auto gg = GGPlotD();
-    scope(exit) gg.save(fileName);
-
-    S[] xs = iota(left, right + stepSize, stepSize).array;
-    // plot PDF
-    S[] ys = new S[xs.length];
-    foreach (i, ref y; ys)
-        y = tf.pdf(xs[i]);
-
-    gg.put(geomLine(Aes!(typeof(xs), "x", typeof(ys), "y")(xs, ys)));
-
-    auto hats = plotWithIntervals(tf, true);
-    foreach (i, h; hats.ys)
-        gg.put(geomLine(Aes!(typeof(hats.xs[i]), "x", typeof(h),
-            "y", string[], "colour")(hats.xs[i], h, "blue".repeat.take(h.length).array)));
-
-    // TODO: this allocates the xs array twice
-    auto squeezes = plotWithIntervals(tf, false);
-    foreach (i, s; squeezes.ys)
-        gg.put(geomLine(Aes!(typeof(squeezes.xs[i]), "x", typeof(s),
-            "y", string[], "colour")(squeezes.xs[i], s, "red".repeat.take(s.length).array)));
-
-    gg.save(fileName);
-}
-
 /**
 Simple plotting
 */
 void test(F0, S)(Tinflex!(F0, S) tf, string fileName, int left = -3, int right = 3)
 {
     // first plot hat/squeeze in case we crash during samplign
-    version(Tinflex_Plot_Matplotlib)
-    {
-        tf.npPlotHatAndSqueeze(fileName ~ "_hs.np.pdf");
-        tf.npPlotHatAndSqueezeArea(fileName ~ "_hs_area.np.pdf");
-    }
-    version(Tinflex_Plot_GGplotd)
-    {
-        tf.ggPlotHatAndSqueeze(fileName ~ "_hs.gg.pdf");
-        tf.ggPlotHatAndSqueezeArea(fileName ~ "_hs_area.gg.pdf");
-    }
+    tf.npPlotHatAndSqueeze(fileName ~ "_hs.pdf");
+    tf.npPlotHatAndSqueezeArea(fileName ~ "_hs_area.pdf");
 
     import std.random : rndGen;
     rndGen.seed(42);
     auto values = tf.sample(2_000, rndGen);
 
-    version(Tinflex_Plot_Matplotlib)
-        values.npPlotHistogram(fileName ~ "_hist.np.pdf");
-    version(Tinflex_Plot_GGplotd)
-        values.ggPlotHistogram(fileName ~ "_hist.gg.pdf");
+    values.npPlotHistogram(fileName ~ "_hist.pdf");
 
     // save values to file for further processing
     //auto f = File(fileName ~ "_values.csv", "w");
@@ -494,11 +405,6 @@ void main(string[] args)
     import std.meta : AliasSeq;
     import std.traits : fullyQualifiedName;
     import std.algorithm.searching : canFind;
-
-    version(Tinflex_Plot_Matplotlib)
-        writeln("using matplotlib");
-    version(Tinflex_Plot_GGplotd)
-        writeln("using ggplotd");
 
     alias funs = AliasSeq!(test0, test1, test2, test3, test4, test5, test6, test_normal);
     foreach (i, f; funs)
