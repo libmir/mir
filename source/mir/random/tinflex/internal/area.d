@@ -140,7 +140,7 @@ in
 }
 body
 {
-    import std.math: frexp, LOG2E;
+    import std.math: signbit, frexp, LOG2E;
     import mir.internal.math: copysign, exp, log2, fabs;
     import mir.random.tinflex.internal.transformations : antiderivative, inverse;
 
@@ -164,32 +164,27 @@ body
     // specializations for T_c family (page 6)
     if (iv.c == 0)
     {
-        // T_c = log(x)
-        // Error in table, see equation (4)
-        // check whether approximation is possible, page 5
         if (fabs(z) < constants!S.smallExp)
         {
             area = exp(sh.a) * (iv.rx - iv.lx) * (1 + z / 2 + (z * z) / 6 + (z * z * z) / 24);
         }
         else
         {
-            // F_T = e^x
             area = (exp(shR) - exp(shL)) / sh.slope;
         }
     }
     else
     {
-        immutable sgnc = copysign(S(1), iv.c);
+        immutable sgnbc = signbit(iv.c);
+        immutable sgnbl = signbit(shL);
+        immutable sgnbr = signbit(shR);
         z /= sh.a;
 
-        if (!(sgnc * shR >= 0) ||
-            !(sgnc * shL >= 0))
+        if ((sgnbc ^ sgnbl) | (sgnbc ^ sgnbr))
         {
             area = S.max;
-            goto L;
         }
-
-        if (iv.c == 1)
+        else if (iv.c == 1)
         {
             area = S(0.5) * sh.a * intLength * (z + 2);
         }
@@ -231,7 +226,6 @@ body
         }
     }
 
-L:
     // if we receive an invalid value, we require the interval to be split
     import std.math : isFinite;
     if (!isFinite(area))
