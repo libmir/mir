@@ -29,27 +29,27 @@ auto arcmean(S, bool sorted = false)(const S l, const S r)
 {
     import std.math: atan, tan;
 
-    S _l = l;
-    S _r = r;
+    S x = l;
+    S y = r;
     static if (!sorted)
     {
-        if (_r < _l)
+        if (y < x)
         {
-            S t = _r;
-            _r = _l;
-            _l = t;
+            S t = x;
+            x = y;
+            y = t;
         }
     }
 
-    if (_r < -S(1e3) || _l > S(1e3))
-        return 2 / (1 / _l + 1 / r);
+    if (y < -S(1e3) || x > S(1e3))
+        return 2 / (1 / x + 1 / y);
 
-    immutable d = atan(_l);
-    immutable b = atan(_r);
+    immutable d = atan(x);
+    immutable b = atan(y);
 
     assert(d <= b);
     if (b - d < S(1e-6))
-        return S(0.5) * _l + S(0.5) * r;
+        return S(0.5) * x + S(0.5) * y;
 
     return tan(S(0.5) * (d + b));
 }
