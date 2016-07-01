@@ -3,7 +3,7 @@ module mir.random.tinflex.internal.types;
 import std.traits: ReturnType, isFloatingPoint;
 
 /**
-Major data unit of the Tinflex algorithm.
+Major data unit of the Flex algorithm.
 It is used to store
 - (cached) values of the transformation (and its derivatives)
 - area below the hat and squeeze function
@@ -111,7 +111,7 @@ enum FunType {undefined, T1a, T1b, T2a, T2b, T3a, T3b, T4a, T4b}
 
 /**
 Determine the function type of an interval.
-Based on Theorem 1 of the Tinflex paper.
+Based on Theorem 1 of the Flex paper.
 Params:
     bl = left side of the interval
     br = right side of the interval

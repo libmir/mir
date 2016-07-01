@@ -1,11 +1,11 @@
 /**
-Tinflex module.
+Flex module.
 
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: Sebastian Wilzbach, Ilya Yaroshenko
 
-The Transformed Density Rejection with Inflection Points (Tinflex) algorithm
+The Transformed Density Rejection with Inflection Points (Flex) algorithm
 can sample from arbitrary distributions given its density function f, its
 first two derivatives and a partitioning into intervals with at most one inflection
 point.
@@ -31,7 +31,7 @@ $(UL
     $(LI At most one inflection point per interval)
 )
 
-Internally the Tinflex algorithm transforms the distribution with a special
+Internally the Flex algorithm transforms the distribution with a special
 transformation function and constructs for every interval a linear `hat` function
 that majorizes the `pdf` and a linear `squeeze` function that is majorized by
 the `pdf` from the user-defined, mutually-exclusive partitioning.
@@ -51,7 +51,7 @@ concave and strictly monotone.
 
 $(H3 Transformation function (T_c)) $(A_NAME t_c_family)
 
-The Tinflex algorithm uses a family of T_c transformations.
+The Flex algorithm uses a family of T_c transformations.
 
 $(UL
     $(LI For unbounded domains, `c > -1` is required)
@@ -79,7 +79,7 @@ import std.random : isUniformRNG;
 import std.traits : isCallable, isFloatingPoint, ReturnType;
 
 /**
-The Transformed Density Rejection with Inflection Points (Tinflex) algorithm
+The Transformed Density Rejection with Inflection Points (Flex) algorithm
 can sample from arbitrary distributions given its density function f, its
 first two derivatives and a partitioning into intervals with at most one inflection
 point. The partitioning needs to be mutually exclusive and sorted.
@@ -91,10 +91,10 @@ Params:
     c = $(LINK2 #t_c_family, T_c family) value
     cs = $(LINK2 #t_c_family, T_c family) array
     points = non-overlapping partitioning with at most one inflection point per interval
-    rho = efficiency of the Tinflex algorithm
+    rho = efficiency of the Flex algorithm
 
 Returns:
-    Tinflex Generator.
+    Flex Generator.
 */
 auto tinflex(F0, F1, F2, S)
                (in F0 f0, in F1 f1, in F2 f2,
@@ -115,30 +115,30 @@ auto tinflex(F0, F1, F2, S)
 }
 
 /// ditto
-auto tinflex(F0, S)(in F0 f0, in TinflexInterval!S[] intervals)
+auto tinflex(F0, S)(in F0 f0, in FlexInterval!S[] intervals)
 {
     import std.math: exp;
     auto pdf = (S x) => exp(f0(x));
-    return Tinflex!(typeof(pdf), S)(pdf, intervals);
+    return Flex!(typeof(pdf), S)(pdf, intervals);
 }
 
 /**
-Data body of the Tinflex algorithm.
+Data body of the Flex algorithm.
 Can be used to sample from the distribution.
 */
-struct Tinflex(Pdf, S)
+struct Flex(Pdf, S)
     if (isFloatingPoint!S)
 {
     // density function
     private const Pdf _pdf;
 
     // generated partition points
-    private const TinflexInterval!S[] _intervals;
+    private const FlexInterval!S[] _intervals;
 
     // discrete density sampler
     private const Discrete!S ds;
 
-    package this(in Pdf pdf, in TinflexInterval!S[] intervals)
+    package this(in Pdf pdf, in FlexInterval!S[] intervals)
     {
         _pdf = pdf;
 
@@ -156,7 +156,7 @@ struct Tinflex(Pdf, S)
     }
 
     /// Generated partition points
-    const(TinflexInterval!S[]) intervals() @property const
+    const(FlexInterval!S[]) intervals() @property const
     {
         return _intervals;
     }
@@ -216,7 +216,7 @@ unittest
 //        auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
 //        auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
 //        S[] points = [-3.0, 0, 3];
-//        alias TF = TinflexInterval!S;
+//        alias TF = FlexInterval!S;
 //        alias LF = LinearFun!S;
 
 //        auto intervals = [
@@ -275,7 +275,7 @@ See_Also:
      Acceptance-rejection sampling)
 */
 private S tinflexImpl(Pdf, S, RNG)
-          (in Pdf pdf, in TinflexInterval!S[] intervals,
+          (in Pdf pdf, in FlexInterval!S[] intervals,
            in Discrete!S ds, ref RNG rng)
     if (isUniformRNG!RNG)
 {
@@ -373,7 +373,7 @@ private S tinflexImpl(Pdf, S, RNG)
 Reduced version of $(LREF Interval). Contains only the necessary information
 needed in the generation phase.
 */
-struct TinflexInterval(S)
+struct FlexInterval(S)
     if (isFloatingPoint!S)
 {
     import mir.utility.linearfun : LinearFun;
@@ -412,9 +412,9 @@ struct TinflexInterval(S)
 }
 
 /**
-Calculate the intervals for the Tinflex algorithm for a T_c family given its
+Calculate the intervals for the Flex algorithm for a T_c family given its
 density function, the first two derivatives and a valid start partitioning.
-The Tinflex algorithm will try to split the intervals until a chosen efficiency
+The Flex algorithm will try to split the intervals until a chosen efficiency
 rho is reached.
 
 Params:
@@ -423,12 +423,12 @@ Params:
     f1 = second derivative of f0
     cs = T_c family (single value or array)
     points = non-overlapping partitioning with at most one inflection point per interval
-    rho = efficiency of the Tinflex algorithm
-    apprMaxPoints = maximal number of splitting points before Tinflex is aborted
+    rho = efficiency of the Flex algorithm
+    apprMaxPoints = maximal number of splitting points before Flex is aborted
 
 Returns: Array of IntervalPoints
 */
-TinflexInterval!S[] tinflexIntervals(F0, F1, F2, S)
+FlexInterval!S[] tinflexIntervals(F0, F1, F2, S)
                             (in F0 f0, in F1 f1, in F2 f2,
                              in S[] cs, in S[] points, in S rho = 1.1,
                              in int apprMaxPoints = 1_000, in int maxIterations = 1_000)
@@ -479,7 +479,7 @@ body
     S l1 = f1(points[0]);
     S l2 = f2(points[0]);
 
-    version(Tinflex_logging)
+    version(Flex_logging)
     {
         import std.experimental.logger;
         log("starting tinflex with p=", points, ", cs=", cs);
@@ -506,7 +506,7 @@ body
         ips.insertBack(iv);
     }
 
-    version(Tinflex_logging)
+    version(Flex_logging)
     {
         import std.algorithm;
         import std.array;
@@ -517,17 +517,17 @@ body
         log("----");
     }
 
-    // Tinflex is not guaranteed to converge
+    // Flex is not guaranteed to converge
     for (auto i = 0; i < maxIterations && nrIntervals < apprMaxPoints; i++)
     {
         immutable totalHatArea = totalHatAreaSummator.sum;
         immutable totalSqueezeArea = totalSqueezeAreaSummator.sum;
 
-        // Tinflex aims for a user defined efficiency
+        // Flex aims for a user defined efficiency
         if (totalHatArea / totalSqueezeArea <= rho)
             break;
 
-        version(Tinflex_logging)
+        version(Flex_logging)
         {
             tracef("iteration %d: totalHat: %.3f, totalSqueeze: %.3f, rho: %.3f",
                     i, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
@@ -557,7 +557,7 @@ body
                                               m0, m1, m2,
                                               it.front.rtx, it.front.rt1x, it.front.rt2x);
 
-                version(Tinflex_logging)
+                version(Flex_logging)
                 {
                     log("--split ", nrIntervals, " between ", it.front.lx, " - ", it.front.rx);
                     log("interval to be splitted: ", it.front);
@@ -574,7 +574,7 @@ body
                 calcInterval(it.front);
                 calcInterval(midIP);
 
-                version(Tinflex_logging)
+                version(Flex_logging)
                 {
                     log("update left: ", it.front);
                     log("update mid: ", midIP);
@@ -604,13 +604,13 @@ body
     }
 
     // for sampling only a subset of the attributes is needed
-    auto intervals = new TinflexInterval!S[nrIntervals];
+    auto intervals = new FlexInterval!S[nrIntervals];
     size_t i = 0;
     foreach (ref ip; ips)
-        intervals[i++] = TinflexInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
+        intervals[i++] = FlexInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
                                      ip.squeeze, ip.hatArea, ip.squeezeArea);
 
-    version(Tinflex_logging)
+    version(Flex_logging)
     {
         import std.algorithm;
         import std.array;
