@@ -360,6 +360,8 @@ Table 1, column 5 of Botts et al. (2013).
 S inverseAntiderivative(S)(in S x, in S c)
 {
     import mir.internal.math : exp, log, pow, copysign, fabs;
+    import std.math: sgn;
+    assert(sgn(c) * x >= 0);
     if (c == 0)
         return log(x);
     if (c == S(-0.5))
@@ -382,30 +384,19 @@ unittest
         assert(inverseAntiderivative!S(5.5, 0).approxEqual(1.70475));
         assert(inverseAntiderivative!S(-2, 0).isNaN);
 
-        assert(inverseAntiderivative!S(1, -0.5) == -1);
-        assert(inverseAntiderivative!S(3, -0.5) == - S(1) / 3);
         assert(inverseAntiderivative!S(-2, -0.5) == 0.5);
-        assert(inverseAntiderivative!S(5.5, -0.5).approxEqual(-0.181818));
         assert(inverseAntiderivative!S(-6.3, -0.5).approxEqual(0.15873));
-
-        assert(inverseAntiderivative!S(1, -1).approxEqual(-1 / E));
-        //assert(inverseAntiderivative!S(3, -1).approxEqual(20.0855));
-        //assert(inverseAntiderivative!S(-2, -1).approxEqual(0.135335));
-        //assert(inverseAntiderivative!S(5.5, -1).approxEqual(244.692));
-        //assert(inverseAntiderivative!S(-6.3, -1).approxEqual(0.0018363));
 
         assert(inverseAntiderivative!S(1, 1).approxEqual(1.41421));
         assert(inverseAntiderivative!S(3, 2).approxEqual(2.72568));
         assert(inverseAntiderivative!S(-6.3, -7).approxEqual(-7.15253));
-        //assert(inverseAntiderivative!S(-2, 3.5).approxEqual(2.08461));
-        //assert(inverseAntiderivative!S(5.5, -4.5).approxEqual(-6.47987));
     }
 }
 
 unittest
 {
 
-    import std.math: approxEqual, isInfinity, isNaN;
+    import std.math;
     import std.meta : AliasSeq;
     import std.range : retro;
     foreach (S; AliasSeq!(float, double, real))
@@ -452,14 +443,17 @@ unittest
         {
             foreach (j, x; xs)
             {
-                S r = results[i][j];
-                S v = inverseAntiderivative!S(x, c);
-                if (r.isNaN)
-                    assert(v.isNaN);
-                else if (r.isInfinity)
-                    assert(v.isInfinity);
-                else
-                    assert(v.approxEqual(r));
+                if(sgn(c) * x >= 0)
+                {
+                    S r = results[i][j];
+                    S v = inverseAntiderivative!S(x, c);
+                    if (r.isNaN)
+                        assert(v.isNaN);
+                    else if (r.isInfinity)
+                        assert(v.isInfinity);
+                    else
+                        assert(v.approxEqual(r));
+                }
             }
         }
     }
