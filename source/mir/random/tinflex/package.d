@@ -293,7 +293,7 @@ private S tinflexImpl(Pdf, S, RNG)
         immutable index = ds(rng); // J in Tinflex paper
         assert(index < intervals.length);
 
-        S u = uniform!("()", S, S)(0, 1, rng);
+        S u = uniform!("[)", S, S)(0, 1, rng);
 
         immutable interval = intervals[index];
 
