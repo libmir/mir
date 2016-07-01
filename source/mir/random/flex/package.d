@@ -545,7 +545,7 @@ body
                 totalSqueezeAreaSummator -= it.front.squeezeArea;
 
                 // split the interval at the arcmean into two parts
-                auto mid = arcmean!(S, true)(it.front.lx, it.front.rx);
+                auto mid = arcmean!S(it.front);
 
                 // create new interval (right side)
                 S m0 = void, m1 = void, m2 = void;

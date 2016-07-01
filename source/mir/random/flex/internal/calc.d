@@ -25,33 +25,24 @@ References:
     Hormann, W., J. Leydold, and G. Derflinger.
     "Automatic Nonuniform Random Number Generation." (2004): Formula 4.23
 */
-auto arcmean(S, bool sorted = false)(const S l, const S r)
+auto arcmean(S)(in ref Interval!S iv)
 {
     import std.math: atan, tan;
 
-    S x = l;
-    S y = r;
-    static if (!sorted)
+    with(iv)
     {
-        if (y < x)
-        {
-            S t = x;
-            x = y;
-            y = t;
-        }
+        if (rx < -S(1e3) || lx > S(1e3))
+            return 2 / (1 / lx + 1 / rx);
+
+        immutable d = atan(lx);
+        immutable b = atan(rx);
+
+        assert(d <= b);
+        if (b - d < S(1e-6))
+            return S(0.5) * lx + S(0.5) * rx;
+
+        return tan(S(0.5) * (d + b));
     }
-
-    if (y < -S(1e3) || x > S(1e3))
-        return 2 / (1 / x + 1 / y);
-
-    immutable d = atan(x);
-    immutable b = atan(y);
-
-    assert(d <= b);
-    if (b - d < S(1e-6))
-        return S(0.5) * x + S(0.5) * y;
-
-    return tan(S(0.5) * (d + b));
 }
 
 /**
