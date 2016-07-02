@@ -298,8 +298,8 @@ unittest
 
         auto it = (S l, S r, S c)
         {
-            Interval!S iv;
-            transformInterval!S(iv, l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            transformInterval(iv);
             return iv;
         };
 
@@ -400,8 +400,8 @@ unittest
 
         auto it = (S l, S r, S c)
         {
-            Interval!S iv;
-            transformInterval(iv, l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            transformInterval(iv);
             return iv;
         };
 
@@ -476,8 +476,8 @@ unittest
 
         auto it = (S l, S r, S c)
         {
-            Interval!S iv;
-            transformInterval(iv, l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            transformInterval(iv);
             return iv;
         };
 
@@ -553,8 +553,8 @@ unittest
 
         auto it = (S l, S r, S c)
         {
-            Interval!S iv;
-            transformInterval(iv, l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            transformInterval(iv);
             return iv;
         };
 
@@ -634,8 +634,8 @@ unittest
 
         auto it = (S l, S r, S c)
         {
-            Interval!S iv;
-            transformInterval(iv, l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            transformInterval(iv);
             return iv;
         };
 

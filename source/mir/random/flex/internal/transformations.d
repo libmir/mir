@@ -10,52 +10,45 @@ Params:
     f1 = first derivative
     f2 = second derivative
 
-Returns:
-    Struct with the transformed functions that can be used
-    to generate Interval given a specific point x
+Returns: In-place code for the transformation
+**/
+template transform(string f0, string f1, string f2, string c)
+{
+    import std.array : replace;
+    enum raw = `_f0 = copysign(exp(_c * _f0), _c);
+                _f2 = _c * _f0 * (_c * _f1 * _f1 + _f2);
+                _f1 = _c * _f0 * _f1;`;
+    enum transform = raw.replace("_f0", f0).replace("_f1", f1).replace("_f2", f2).replace("_c", c);
+}
+
+/**
+Transform an Interval with a c-transformation by reference.
+
+Params:
+    iv = Interval to be transformed
 */
-void transformInterval(S)(ref Interval!S iv, in S l, in S r, in S c,
-            in S lf0, in S lf1, in S lf2,
-            in S rf0, in S rf1, in S rf2)
+void transformInterval(S)(ref Interval!S iv)
 in
 {
     import std.conv : to;
     import std.math : isNaN;
     import std.meta : AliasSeq;
-    assert(!c.isNaN, "c can't be NaN");
-    assert(!l.isNaN, "l can't be NaN");
-    assert(!r.isNaN, "r can't be NaN");
-    assert(l < r, "invalid interval - right side must be larger than the left side");
+    assert(!iv.c.isNaN, "c can't be NaN");
+    assert(!iv.lx.isNaN, "l can't be NaN");
+    assert(!iv.rx.isNaN, "r can't be NaN");
+    assert(iv.lx < iv.rx, "invalid interval - right side must be larger than the left side");
 }
 body
 {
     import mir.internal.math: pow, exp, copysign;
-
-    iv.lx = l;
-    iv.rx = r;
-    iv.c = c;
-
-    // left side (for c=0 no transformations are applied)
-    if (c == 0)
+    with(iv)
     {
-        iv.ltx  = lf0;
-        iv.lt1x = lf1;
-        iv.lt2x = lf2;
-
-        iv.rtx  = rf0;
-        iv.rt1x = rf1;
-        iv.rt2x = rf2;
-    }
-    else
-    {
-        iv.ltx  = copysign(S(1), c) * exp(c * lf0);
-        iv.lt1x = c * iv.ltx * lf1;
-        iv.lt2x = c * iv.ltx * (c * lf1 * lf1 + lf2);
-
-        // right side (for c=0 no transformations are applied)
-        iv.rtx = copysign(S(1), c) * exp(c * rf0);
-        iv.rt1x = c * iv.rtx * rf1;
-        iv.rt2x = c * iv.rtx * (c * rf1 * rf1 + rf2);
+        // for c=0 no transformations are applied
+        if (c)
+        {
+            mixin(transform!("ltx", "lt1x", "lt2x", "c"));
+            mixin(transform!("rtx", "rt1x", "rt2x", "c"));
+        }
     }
 }
 
@@ -70,12 +63,10 @@ unittest
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
         auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
         auto f2 = (S x) => 10 - 12 * x ^^ 2;
-        S l = -3, r = -1.5;
-        S c = 1.5;
+        S l = -3, r = -1.5, c = 1.5;
 
-        Interval!S iv;
-        transformInterval!S(iv, l, r, c, f0(l), f1(l), f2(l),
-                                       f0(r), f1(r), f2(r));
+        auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+        transformInterval!S(iv);
 
         // magic numbers manually verified
         assert(iv.ltx.approxEqual(-8.75651e-27));
@@ -107,9 +98,8 @@ unittest
 
         foreach (i, l, r; lockstep(points, points.save.dropOne))
         {
-            Interval!S iv;
-            transformInterval!S(iv, l, r, c, f0(l), f1(l), f2(l),
-                                             f0(r), f1(r), f2(r));
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            iv.transformInterval;
             assert(iv.ltx.approxEqual(resT0x[i]));
             assert(iv.lt1x.approxEqual(resT1x[i]));
             assert(iv.lt2x.approxEqual(resT2x[i]));
@@ -142,9 +132,8 @@ unittest
 
         foreach (i, l, r; lockstep(points, points.save.dropOne))
         {
-            Interval!S iv;
-            transformInterval!S(iv, l, r, c, f0(l), f1(l), f2(l),
-                                             f0(r), f1(r), f2(r));
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            iv.transformInterval;
             assert(iv.ltx.approxEqual(resT0x[i]));
             assert(iv.lt1x.approxEqual(resT1x[i]));
             assert(iv.lt2x.approxEqual(resT2x[i]));
@@ -172,9 +161,8 @@ unittest
 
         foreach (i, l, r; lockstep(points, points.save.dropOne))
         {
-            Interval!S iv;
-            transformInterval!S(iv, l, r, c, f0(l), f1(l), f2(l),
-                                             f0(r), f1(r), f2(r));
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            iv.transformInterval;
             assert(iv.ltx.approxEqual(resT0x[i]));
             assert(iv.lt1x.approxEqual(resT1x[i]));
             assert(iv.lt2x.approxEqual(resT2x[i]));

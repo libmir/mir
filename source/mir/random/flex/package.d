@@ -460,7 +460,7 @@ in
 body
 {
     import mir.random.flex.internal.calc: arcmean, calcInterval;
-    import mir.random.flex.internal.transformations : transformInterval;
+    import mir.random.flex.internal.transformations : transform, transformInterval;
     import mir.random.flex.internal.types: Interval;
     import mir.internal.math: pow, exp, copysign;
     import mir.sum: Summator, Summation;
@@ -494,9 +494,8 @@ body
         S r0 = f0(r);
         S r1 = f1(r);
         S r2 = f2(r);
-        Interval!S iv;
-        transformInterval(iv, l, r, cs[i], l0, l1, l2,
-                                           r0, r1, r2);
+        auto iv = Interval!S(l, r, cs[i], l0, l1, l2, r0, r1, r2);
+        transformInterval(iv);
         l = r;
         l0 = r0;
         l1 = r1;
@@ -562,12 +561,8 @@ body
                                               it.front.rtx, it.front.rt1x, it.front.rt2x);
 
                 // apply transformation to right side (for c=0 no transformations are applied)
-                if (c != 0)
-                {
-                    midIP.ltx  = copysign(S(1), c) * exp(c * mx0);
-                    midIP.lt1x = c * midIP.ltx * mx1;
-                    midIP.lt2x = c * midIP.ltx * (c * mx1 * mx1 + mx2);
-                }
+                if (c)
+                    mixin(transform!("midIP.ltx", "midIP.lt1x", "midIP.lt2x", "c"));
 
                 version(Flex_logging)
                 {
