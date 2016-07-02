@@ -294,9 +294,9 @@ struct CFlex(S)
 void test1(S, F)(in ref F test)
 {
     import std.math : pow;
-    auto f0 = (S x) => -pow(x, 4) + 5 * pow(x, 2) - 4;
+    auto f0 = (S x) => -pow(x, 4) + 5 * x * x - 4;
     auto f1 = (S x) => 10 * x - 4 * pow(x, 3);
-    auto f2 = (S x) => 10 - 12 * pow(x, 2);
+    auto f2 = (S x) => 10 - 12 * x * x;
 
     foreach (c; [0.1, 0.5, 1])
     {

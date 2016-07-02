@@ -244,15 +244,15 @@ unittest
 
 unittest
 {
-    import std.math : approxEqual;
+    import std.math : approxEqual, pow;
     import std.meta : AliasSeq;
     import std.random : Mt19937;
     foreach (S; AliasSeq!(float, double, real))
     {
         auto gen = Mt19937(42);
-        auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        auto f0 = (S x) => -pow(x, 4) + 5 * x * x - 4;
+        auto f1 = (S x) => 10 * x - 4 * pow(x, 3);
+        auto f2 = (S x) => 10 - 12 * x * x;
         S[] points = [-3, -1.5, 0, 1.5, 3];
 
         auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
@@ -490,16 +490,12 @@ body
     // initialize with user given splitting points
     foreach (i, r; points[1..$])
     {
-        // reuse computations
-        S r0 = f0(r);
-        S r1 = f1(r);
-        S r2 = f2(r);
-        auto iv = Interval!S(l, r, cs[i], l0, l1, l2, r0, r1, r2);
-        transformInterval(iv);
+        auto iv = Interval!S(l, r, cs[i], l0, l1, l2, f0(r), f1(r), f2(r));
         l = r;
-        l0 = r0;
-        l1 = r1;
-        l2 = r2;
+        l0 = iv.rtx;
+        l1 = iv.rt1x;
+        l2 = iv.rt2x;
+        transformInterval(iv);
 
         calcInterval(iv);
         totalHatAreaSummator += iv.hatArea;
