@@ -41,6 +41,5 @@
             "targetPath": "build",
             "sourceFiles": ["examples/lda_hoffman_sparse.d"]
         }
-
     ]
 }
