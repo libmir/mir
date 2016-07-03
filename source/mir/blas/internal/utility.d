@@ -2,7 +2,11 @@ module mir.blas.internal.utility;
 
 import std.traits;
 import mir.internal.utility;
+import mir.blas.internal.config;
 
+@fastmath:
+
+pragma(inline, true)
 void set_zero(size_t A, size_t B, size_t C, V)(ref V[C][B][A] to)
 {
     foreach (p; Iota!A)
@@ -11,6 +15,7 @@ void set_zero(size_t A, size_t B, size_t C, V)(ref V[C][B][A] to)
         to[p][m][n] = 0;
 }
 
+pragma(inline, true)
 void load(size_t A, size_t B, size_t C, V)(ref V[C][B][A] to, ref V[C][B][A] from)
 {
     foreach (p; Iota!A)
@@ -19,6 +24,7 @@ void load(size_t A, size_t B, size_t C, V)(ref V[C][B][A] to, ref V[C][B][A] fro
         to[p][m][n] = from[p][m][n];
 }
 
+pragma(inline, true)
 void load(size_t A, size_t C, V, F)
 (ref V[C][A] to, ref const F[C][A] from)
     if(isFloatingPoint!F || isSIMDVector!F)
@@ -42,6 +48,7 @@ void load(size_t A, size_t C, V, F)
         to[p][n] = from[p][n];
 }
 
+pragma(inline, true)
 void load(size_t A, V, F)
 (ref V[A] to, ref const F[A] from)
     if(isFloatingPoint!F || isSIMDVector!F)
@@ -60,4 +67,22 @@ void load(size_t A, V, F)
     else
     foreach (p; Iota!A)
         to[p] = from[p];
+}
+
+pragma(inline, true)
+void load(V, F)
+(ref V to, ref const F from)
+    if(isFloatingPoint!F || isSIMDVector!F)
+{
+    static if (isSIMDVector!V && !isSIMDVector!F)
+        version(LDC)
+            to = from;
+        else
+        {
+            auto e = from;
+            foreach(s; Iota!(to.array.length))
+                to.array[s] = e;
+        }
+    else
+        to = from;
 }

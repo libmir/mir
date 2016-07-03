@@ -20,3 +20,9 @@ __test__d_source_library__
 __test__unittest__
 
 flex-plot
+
+source/micro_kernel.s
+
+source/__main.s
+
+source/micro_kernel
