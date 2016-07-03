@@ -54,6 +54,7 @@ $(H3 Transformation function (T_c)) $(A_NAME t_c_family)
 The Flex algorithm uses a family of T_c transformations.
 
 $(UL
+    $(LI Decreasing `c` may decrease the number of inflection points)
     $(LI For unbounded domains, `c > -1` is required)
     $(LI For unbounded densities, `c` must be sufficiently small, but should
          be great than -1. A common choice is `-0.5`)
