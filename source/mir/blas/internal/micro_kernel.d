@@ -9,125 +9,29 @@ import mir.blas.internal.config;
 @fastmath:
 
 
-/// Conjunctions type.
-enum Conj
+/// Typeunctions type.
+enum MulType
 {
     /// For real numbers
     none,
-    /// `c = a b`
-    complexNone,
-    /// `c = a' b`
-    complexA,
-    /// `c = a b'`
-    complexB,
-    ///`c = (a b)'`
-    complexC,
+    /// `c -= a b`
+    sub,
+    /// `c += a' b`
+    conjA,
+    /// `c += a b'`
+    conjB,
+    ///`c += (a b)'`
+    conjC,
 }
 
 
 
 pragma(inline, false)
 void gemm_micro_kernel (
-    Conj conj,
+    MulType conj,
     size_t P,
     size_t N,
     size_t M,
-    V,
-    F,
-)
-(
-    ref V[N][P][M] c,
-    scope const(V[N][P])* a,
-    scope const(F[M][P])* b,
-    size_t length,
-)
-    if (is(V == F) || isSIMDVector!V)
-{
-    V[N][P][M] reg = void;
-    reg.set_zero;
-    gemm_micro_kernel_impl!conj(reg, a, b, length);
-    c.load(reg);
-}
-
-pragma(inline, true)
-void gemm_micro_kernel_impl (
-    Conj conj,
-    size_t P,
-    size_t N,
-    size_t M,
-    V,
-    F,
-)
-(
-    ref V[N][P][M] c,
-    scope const(V[N][P])* a,
-    scope const(F[M][P])* b,
-    size_t length,
-)
-    if (is(V == F) || isSIMDVector!V)
-{
-    pragma(inline, true);
-    enum msg = "Wrong kernel compile time arguments.";
-    static assert(conj == Conj.none && P == 1 || conj != Conj.none && P == 2, msg);
-
-    V[N][P][M] reg = void;
-    reg.load(c);
-
-    foreach(size_t i; 0 .. length)
-    {
-        V[N][P] ai = void;
-        V[M][P] bi = void;
-
-        ai.load(a[i]);
-        bi.load(b[i]);
-
-        foreach (m; Iota!M)
-        foreach (n; Iota!N)
-        {
-            static if (conj == Conj.none)
-            {
-                reg[m][0][n] += ai[0][n] * bi[0][m];
-            }
-            else static if (conj == Conj.complexNone)
-            {
-                reg[m][0][n] += ai[0][n] * bi[0][m];
-                reg[m][1][n] += ai[0][n] * bi[1][m];
-                reg[m][0][n] -= ai[1][n] * bi[1][m];
-                reg[m][1][n] += ai[1][n] * bi[0][m];
-            }
-            else static if (conj == Conj.complexA)
-            {
-                reg[m][0][n] += ai[0][n] * bi[0][m];
-                reg[m][1][n] += ai[0][n] * bi[1][m];
-                reg[m][0][n] += ai[1][n] * bi[1][m];
-                reg[m][1][n] -= ai[1][n] * bi[0][m];
-            }
-            else static if (conj == Conj.complexB)
-            {
-                reg[m][0][n] += ai[0][n] * bi[0][m];
-                reg[m][1][n] -= ai[0][n] * bi[1][m];
-                reg[m][0][n] += ai[1][n] * bi[1][m];
-                reg[m][1][n] += ai[1][n] * bi[0][m];
-            }
-            else static if (conj == Conj.complexC)
-            {
-                reg[m][0][n] += ai[0][n] * bi[0][m];
-                reg[m][1][n] -= ai[0][n] * bi[1][m];
-                reg[m][0][n] -= ai[1][n] * bi[1][m];
-                reg[m][1][n] -= ai[1][n] * bi[0][m];
-            }
-            else static assert(0);
-        }
-    }
-
-    c.load(reg);
-}
-
-pragma(inline, true)
-void gemm_micro_kernel_scale (
-    size_t P,
-    size_t M,
-    size_t N,
     V,
     F,
 )
@@ -138,12 +42,153 @@ void gemm_micro_kernel_scale (
     scope const(F[M][P])* b,
     size_t length,
 )
+    if (is(V == F) || isSIMDVector!V)
+{
+    V[N][P][M] reg = void;
+    reg.set_zero;
+    gemm_micro_kernel_impl!conj(reg, a, b, length);
+    reg.scale_micro_kernel(alpha);
+    c.load(reg);
+}
+
+pragma(inline, false)
+void trsm_micro_kernel (
+    size_t P,
+    size_t N,
+    size_t M,
+    V,
+    F,
+)
+(
+    F[P] alpha,
+    ref V[N][P][M] c,
+    scope const(V[N][P])* a,
+    const(F[M][P])* b,
+    size_t length,
+)
+    if (is(V == F) || isSIMDVector!V)
+{
+    V[N][P][M] reg = void;
+    reg.load(c);
+    reg.scale_micro_kernel(alpha),
+    b = gemm_micro_kernel_impl!(MulType.sub)(reg, a, b, length);
+    trsm_micro_kernel_impl!(P, M, N, V, F)(reg, * cast(F[M][P][M]*) b);
+    c.load(reg);
+}
+
+pragma(inline, true)
+const(F[M][P])* gemm_micro_kernel_impl (
+    MulType type,
+    bool sub = false,
+    size_t P,
+    size_t N,
+    size_t M,
+    V,
+    F,
+)
+(
+    ref V[N][P][M] c,
+    scope const(V[N][P])* a,
+    const(F[M][P])* b,
+    size_t length,
+)
+    if (is(V == F) || isSIMDVector!V)
+{
+    pragma(inline, true);
+    enum msg = "Wrong kernel compile time arguments.";
+    //static assert(type == MulType.none && P == 1 || type != MulType.none && P == 2, msg);
+
+    V[N][P][M] reg = void;
+    reg.load(c);
+
+    size_t i;
+    do
+    {
+        V[N][P] ai = void;
+        V[M][P] bi = void;
+
+        ai.load(*a++);
+        bi.load(*b++);
+
+        foreach (m; Iota!M)
+        foreach (n; Iota!N)
+        {
+            static if (type == MulType.none)
+            {
+                static if(P == 1)
+                {
+                    reg[m][0][n] += ai[0][n] * bi[0][m];
+                }
+                else
+                {
+                    reg[m][0][n] += ai[0][n] * bi[0][m];
+                    reg[m][1][n] += ai[0][n] * bi[1][m];
+                    reg[m][0][n] -= ai[1][n] * bi[1][m];
+                    reg[m][1][n] += ai[1][n] * bi[0][m];
+                }
+            }
+            else static if (type == MulType.sub)
+            {
+                static if(P == 1)
+                {
+                    reg[m][0][n] -= ai[0][n] * bi[0][m];
+                }
+                else
+                {
+                    reg[m][0][n] -= ai[0][n] * bi[0][m];
+                    reg[m][1][n] -= ai[0][n] * bi[1][m];
+                    reg[m][0][n] += ai[1][n] * bi[1][m];
+                    reg[m][1][n] -= ai[1][n] * bi[0][m];
+                }
+            }
+            else static if (type == MulType.conjA)
+            {
+                reg[m][0][n] += ai[0][n] * bi[0][m];
+                reg[m][1][n] += ai[0][n] * bi[1][m];
+                reg[m][0][n] += ai[1][n] * bi[1][m];
+                reg[m][1][n] -= ai[1][n] * bi[0][m];
+            }
+            else static if (type == MulType.conjB)
+            {
+                reg[m][0][n] += ai[0][n] * bi[0][m];
+                reg[m][1][n] -= ai[0][n] * bi[1][m];
+                reg[m][0][n] += ai[1][n] * bi[1][m];
+                reg[m][1][n] += ai[1][n] * bi[0][m];
+            }
+            else static if (type == MulType.conjC)
+            {
+                reg[m][0][n] += ai[0][n] * bi[0][m];
+                reg[m][1][n] -= ai[0][n] * bi[1][m];
+                reg[m][0][n] -= ai[1][n] * bi[1][m];
+                reg[m][1][n] -= ai[1][n] * bi[0][m];
+            }
+            else static assert(0);
+        }
+    }
+    while(--length);
+
+    c.load(reg);
+    return b;
+}
+
+pragma(inline, true)
+void scale_micro_kernel (
+    size_t P,
+    size_t M,
+    size_t N,
+    V,
+    F,
+)
+(
+    ref V[N][P][M] c,
+    F[P] alpha,
+)
 {
     V[N][P][M] reg = void;
     reg.load(c);
 
     V[P] s = void;
-    s.load(a);
+    s.load(alpha);
 
     foreach (m; Iota!M)
     foreach (n; Iota!N)
@@ -176,9 +221,8 @@ void trsm_micro_kernel_impl (
     F,
 )
 (
-    ref F[M][P][M] a,
     ref V[N][P][M] b,
-    size_t length,
+    ref F[M][P][M] a,
 )
     if (is(V == F) || isSIMDVector!V)
 {
@@ -233,27 +277,28 @@ void trsm_micro_kernel_impl (
     b.load(reg);
 }
 
-alias  trsm_mecro_kernel_inst = trsm_micro_kernel_impl!(1, 4, 4, __vector(double[4]), double);
-alias  gemm_mecro_kernel_inst = gemm_micro_kernel_impl!(Conj.none, 1, 2, 4, __vector(double[4]), double);
+alias  trsm_mecro_kernel_inst = trsm_micro_kernel!(1, 2, 4, __vector(double[4]), double);
+//alias  gemm_mecro_kernel_inst = gemm_micro_kernel!(Type.none, 1, 2, 6, __vector(double[4]), double);
+alias  gemm_mecro_kernel_inst = gemm_micro_kernel!(MulType.none, 1, 2, 6, __vector(float[8]), float);
 
 unittest
 {
     import std.meta: AliasSeq;
-    with(Conj)
-    foreach (conj; AliasSeq!(none, complexNone, complexA, complexB))
+    with(MulType)
+    foreach (type; AliasSeq!(none, conjA, conjB))
     {
-        enum P = conj == none ? 1 : 2;
-        {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, float, float);}
-        {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, double, double);}
+        enum P = type == none ? 1 : 2;
+        {alias temp = gemm_micro_kernel!(type, P, 2 / P, 4 / P, float, float);}
+        {alias temp = gemm_micro_kernel!(type, P, 2 / P, 4 / P, double, double);}
         version(X86_64)
         {
-            {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, __vector(float[4]), float);}
-            {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, __vector(double[2]), double);}
+            {alias temp = gemm_micro_kernel!(type, P, 2 / P, 4 / P, __vector(float[4]), float);}
+            {alias temp = gemm_micro_kernel!(type, P, 2 / P, 4 / P, __vector(double[2]), double);}
         }
         version(LDC)
         {
-            {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, __vector(float[8]), float);}
-            {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, __vector(double[4]), double);}
+            {alias temp = gemm_micro_kernel!(type, P, 2 / P, 4 / P, __vector(float[8]), float);}
+            {alias temp = gemm_micro_kernel!(type, P, 2 / P, 4 / P, __vector(double[4]), double);}
         }
     }
 }
