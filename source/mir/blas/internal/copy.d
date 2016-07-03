@@ -3,24 +3,21 @@ module blas.internal.copy;
 import mir.ndslice.slice;
 import mir.internal.utility;
 
-//template gepb_opt2(size_t[])
-
-
-template pack_matrix(sizes...)
+template pack_matrix(size_t[] sizes)
 {
 	void pack_matrix(T, Range)(Slice!(2, Range) from, T* to)
 	{
 		while(from.length >= sizes[0])
 		{
 			to = pack_panel_generic(from[0 .. sizes[0]], to);
-			from.popFrontExacly(sizes[0])
+			from.popFrontExacly(sizes[0]);
 		}
-		foreach(size; sizes[1..$])
+		foreach(i; Iota(1, sizes.length))
 		{
 			if(from.length >= size)
 			{
-				to = pack_panel_generic(from[0 .. size], to);
-				from.popFrontExacly(size);
+				to = pack_panel_generic(from[0 .. sizes[i]], to);
+				from.popFrontExacly(sizes[i]);
 			}
 		}
 		assert(from.empty);
@@ -28,11 +25,6 @@ template pack_matrix(sizes...)
 }
 
 T* pack_panel_generic(T, Range)(Slice!(2, Range) from, T* to)
-in
-{
-	assert(from.length >= size);
-}
-body
 {
 	import mir.ndslice.iteration: transposed;
 
@@ -68,21 +60,22 @@ body
 	}
 }
 
-T* save_block_generic(T, Range)(T* from, Slice!(2, Range) to)
+/++
+T* unpack_panel_generic(T, Range)(T* from, Slice!(2, Range) to)
 {
 	static if (isComplex!(DeepElementType!(Slice!(2, Range))))
 	{
-		auto re = to;
-		auto im = to + from.length!1;
+		auto re = from;
+		auto im = from + from.length!1;
 		immutable shift = from.length!1 << 1;
-		foreach(row; from)
+		foreach(row; tp)
 		{
 			foreach(i; 0..row.length)
 			{
 				row.front = typeof(row.front)(re[i], im[i]);
 				row.popFront;
 			}
-			to += shift;
+			re += shift;
 			im += shift;
 		}
 	}
@@ -95,7 +88,38 @@ T* save_block_generic(T, Range)(T* from, Slice!(2, Range) to)
 				row.front = cast(typeof(row.front)) from[i];
 				row.popFront;
 			}
-			to += from.length!1;
+			from += from.length!1;
 		}
 	}
 }
+
+T* unpack_panel_generic(T, Range)(const(T)* from, Slice!(2, Range) to, Complex!T beta)
+{
+	auto from_re = from;
+	auto from_im = from + from.length!1;
+	immutable shift = from.length!1 << 1;
+	foreach(row; tp)
+	{
+		foreach(i; 0..row.length)
+		{
+			row.front = typeof(row.front)(Complex!T(from_re[i], from_im[i]) + beta * cast(Complex!T) row.front);
+			row.popFront;
+		}
+		from_re += shift;
+		from_im += shift;
+	}
+}
+
+T* unpack_panel_generic(T, Range)(T* from, Slice!(2, Range) to, T beta)
+{
+	foreach(row; from)
+	{
+		foreach(i; 0..row.length)
+		{
+			row.front = cast(typeof(row.front)) (from[i] + beta * cast(T) row.front);
+			row.popFront;
+		}
+		from += from.length!1;
+	}
+}
++/

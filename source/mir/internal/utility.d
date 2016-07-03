@@ -26,6 +26,8 @@ template isComplex(C)
     enum bool isComplex = is(C : Complex!F, F);
 }
 
+//enum isSIMDVector(V) = is(V : __vector(F[N]), F, size_t N);
+
 auto toDense(R)(Slice!(1, R) x)
 {
     assert(x.stride == 1);
