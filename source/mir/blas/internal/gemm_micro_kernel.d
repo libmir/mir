@@ -34,7 +34,6 @@ Params:
 +/
 void gemm_micro_kernel (
     Conj conj,
-    Flag!"add" add,
     size_t P,
     size_t M,
     size_t N,
@@ -60,10 +59,6 @@ body
     static assert(conj == Conj.none && P == 1 || conj != Conj.none && P == 2, msg);
 
     V[N][P][M] reg = void;
-    static if (add)
-        reg.load(c);
-    else
-        reg.set_zero;
 
     foreach(size_t i; 0 .. length)
     {
@@ -139,23 +134,21 @@ body
 unittest
 {
     import std.meta: AliasSeq;
-    import std.typecons: Yes, No;
     with(Conj)
     foreach (conj; AliasSeq!(none, complexNone, complexA, complexB))
-    foreach (add; AliasSeq!(No.add, Yes.add))
     {
         enum P = conj == none ? 1 : 2;
-        {alias temp = gemm_micro_kernel!(conj, add, P, 2 / P, 4 / P, float, float);}
-        {alias temp = gemm_micro_kernel!(conj, add, P, 2 / P, 4 / P, double, double);}
+        {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, float, float);}
+        {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, double, double);}
         version(X86_64)
         {
-            {alias temp = gemm_micro_kernel!(conj, add, P, 2 / P, 4 / P, __vector(float[4]), float);}
-            {alias temp = gemm_micro_kernel!(conj, add, P, 2 / P, 4 / P, __vector(double[2]), double);}
+            {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, __vector(float[4]), float);}
+            {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, __vector(double[2]), double);}
         }
         version(LDC)
         {
-            {alias temp = gemm_micro_kernel!(conj, add, P, 2 / P, 4 / P, __vector(float[8]), float);}
-            {alias temp = gemm_micro_kernel!(conj, add, P, 2 / P, 4 / P, __vector(double[4]), double);}
+            {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, __vector(float[8]), float);}
+            {alias temp = gemm_micro_kernel!(conj, P, 2 / P, 4 / P, __vector(double[4]), double);}
         }
     }
 }
