@@ -59,6 +59,7 @@ body
     static assert(conj == Conj.none && P == 1 || conj != Conj.none && P == 2, msg);
 
     V[N][P][M] reg = void;
+    reg.set_zero;
 
     foreach(size_t i; 0 .. length)
     {
