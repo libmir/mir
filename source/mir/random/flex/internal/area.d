@@ -9,10 +9,14 @@ Based on Theorem 1 of Botts et al. (2013).
 */
 void determineSqueezeAndHat(S)(ref Interval!S iv)
 {
-    import mir.utility.linearfun : linearFun, secant, LinearFun;
+    import mir.utility.linearfun : linearFun;
     import mir.random.flex.internal.types : determineType, FunType;
 
-    enum sec = "secant(iv.lx, iv.rx, iv.ltx, iv.rtx)";
+    // y (aka x0) is defined to be the maximal point of the boundary points
+    enum sec = `(iv.ltx >= iv.rtx) ?
+                linearFun!S((iv.rtx - iv.ltx) / (iv.rx - iv.lx), iv.lx, iv.ltx) :
+                linearFun!S((iv.rtx - iv.ltx) / (iv.rx - iv.lx), iv.rx, iv.rtx)`;
+
     enum t_l = "linearFun!S(iv.lt1x, iv.lx, iv.ltx)";
     enum t_r = "linearFun!S(iv.rt1x, iv.rx, iv.rtx)";
 

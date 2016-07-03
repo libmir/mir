@@ -100,34 +100,3 @@ unittest
         assert(t2.intercept.approxEqual(1));
     }
 }
-
-/**
-Calculate the secant between xl and xr, given their evaluated yl and yr
-*/
-LinearFun!S secant(S)(in S xl, in S xr, in S yl, in S yr)
-{
-    auto slope = (yr - yl) / (xr - xl);
-    // y (aka x0) is defined to be the maximal point of the boundary
-    if (yl >= yr)
-        return LinearFun!S(slope, xl, yl);
-    else
-        return LinearFun!S(slope, xr, yr);
-}
-
-unittest
-{
-    import std.meta : AliasSeq;
-    foreach (S; AliasSeq!(float, double, real))
-    {
-        auto f = (S x) => x ^^ 2;
-        auto secant = (S l, S r) => secant!S(l, r, f(l), f(r));
-
-        auto s1 = secant(1, 3);
-        assert(s1.slope == 4);
-        assert(s1.intercept == -3);
-
-        auto s2 = secant(3, 5);
-        assert(s2.slope == 8);
-        assert(s2.intercept == -15);
-    }
-}
