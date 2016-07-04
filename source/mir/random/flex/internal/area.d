@@ -6,6 +6,11 @@ import std.traits : ReturnType;
 /**
 Determines the hat and squeeze function of an interval.
 Based on Theorem 1 of Botts et al. (2013).
+
+The hat and squeeze function are set in-place in the given `Interval`.
+
+Params:
+    iv = Interval to calculate hat and squeeze for
 */
 void determineSqueezeAndHat(S)(ref Interval!S iv)
 {
