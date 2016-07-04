@@ -28,7 +28,7 @@ enum MulType
 
 pragma(inline, false)
 void gemm_micro_kernel (
-    MulType conj,
+    MulType type,
     size_t P,
     size_t N,
     size_t M,
@@ -46,8 +46,8 @@ void gemm_micro_kernel (
 {
     V[N][P][M] reg = void;
     reg.set_zero;
-    gemm_micro_kernel_impl!conj(reg, a, b, length);
-    reg.scale_micro_kernel(alpha);
+    gemm_nano_kernel!type(reg, a, b, length);
+    reg.scale_nano _kernel(alpha);
     c.load(reg);
 }
 
@@ -70,14 +70,14 @@ void trsm_micro_kernel (
 {
     V[N][P][M] reg = void;
     reg.load(c);
-    reg.scale_micro_kernel(alpha),
-    b = gemm_micro_kernel_impl!(MulType.sub)(reg, a, b, length);
-    trsm_micro_kernel_impl!(P, M, N, V, F)(reg, * cast(F[M][P][M]*) b);
+    reg.scale_nano_kernel(alpha),
+    b = gemm_nano_kernel!(MulType.sub)(reg, a, b, length);
+    trsm_nano_kernel!(P, M, N, V, F)(reg, * cast(F[M][P][M]*) b);
     c.load(reg);
 }
 
 pragma(inline, true)
-const(F[M][P])* gemm_micro_kernel_impl (
+const(F[M][P])* gemm_nano_kernel (
     MulType type,
     bool sub = false,
     size_t P,
@@ -101,7 +101,6 @@ const(F[M][P])* gemm_micro_kernel_impl (
     V[N][P][M] reg = void;
     reg.load(c);
 
-    size_t i;
     do
     {
         V[N][P] ai = void;
@@ -172,7 +171,7 @@ const(F[M][P])* gemm_micro_kernel_impl (
 }
 
 pragma(inline, true)
-void scale_micro_kernel (
+void scale_nano_kernel (
     size_t P,
     size_t M,
     size_t N,
@@ -213,7 +212,7 @@ void scale_micro_kernel (
 
 
 pragma(inline, true)
-void trsm_micro_kernel_impl (
+void trsm_nano_kernel (
     size_t P,
     size_t M,
     size_t N,
@@ -277,9 +276,9 @@ void trsm_micro_kernel_impl (
     b.load(reg);
 }
 
-alias  trsm_mecro_kernel_inst = trsm_micro_kernel!(1, 2, 4, __vector(double[4]), double);
+alias  trsm_mecro_kernel_inst = trsm_micro_kernel!(2, 1, 2, __vector(float[2]), float);
 //alias  gemm_mecro_kernel_inst = gemm_micro_kernel!(Type.none, 1, 2, 6, __vector(double[4]), double);
-alias  gemm_mecro_kernel_inst = gemm_micro_kernel!(MulType.none, 1, 2, 6, __vector(float[8]), float);
+//alias  gemm_mecro_kernel_inst = gemm_micro_kernel!(MulType.none, 1, 2, 6, __vector(float[8]), float);
 
 unittest
 {
