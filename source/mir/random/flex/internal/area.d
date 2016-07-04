@@ -146,6 +146,9 @@ body
     import mir.internal.math: copysign, exp, log2, fabs;
     import mir.random.flex.internal.transformations : antiderivative;
     import mir.random.flex : flexInverse;
+    enum one_div_3 = S(1) / 3;
+    enum one_div_6 = S(1) / 6;
+    enum one_div_24 = S(1) / 24;
 
     S area = void;
 
@@ -159,8 +162,8 @@ body
     immutable S leftOrRight = (iv.rx - sh.y) > (sh.y - iv.lx) ? 1 : -1;
     immutable shL = sh(iv.lx);
     immutable shR = sh(iv.rx);
-    immutable intLength = iv.rx - iv.lx;
-    auto z = leftOrRight * sh.slope * intLength;
+    immutable ivLength = iv.rx - iv.lx;
+    auto z = leftOrRight * sh.slope * ivLength;
 
     // sh.y is the boundary point where f obtains its maximum
 
@@ -169,7 +172,8 @@ body
     {
         if (fabs(z) < constants!S.smallExp)
         {
-            area = exp(sh.a) * (iv.rx - iv.lx) * (1 + z / 2 + (z * z) / 6 + (z * z * z) / 24);
+            area = exp(sh.a) * (iv.rx - iv.lx) * (1 + z * S(0.5) + (z * z) * one_div_6
+                                                    + (z * z * z) * one_div_24);
         }
         else
         {
@@ -186,13 +190,13 @@ body
         }
         else if (iv.c == 1)
         {
-            area = S(0.5) * sh.a * intLength * (z + 2);
+            area = S(0.5) * sh.a * ivLength * (z + 2);
         }
         else if (iv.c == S(-0.5))
         {
             if (fabs(z) < S(0.5))
             {
-                area = 1 / (sh.a * sh.a) * intLength / (1 + z);
+                area = 1 / (sh.a * sh.a) * ivLength / (z + 1);
             }
             else
             {
@@ -203,12 +207,11 @@ body
         {
             if (fabs(z) < constants!S.smallLog)
             {
-                area = -1 / sh.a * intLength * (1 - z / 2 + z * z / 3 - z * z * z / 4);
+                area = S(-1) / sh.a * ivLength * (1 - z * S(0.5) + z * z * one_div_3);
             }
             else
             {
-                int lexp = void;
-                int rexp = void;
+                int lexp = void, rexp = void;
                 immutable rem = log2(frexp(-shL, lexp) / frexp(-shR, rexp));
                 area = (lexp - rexp + rem) / (S(LOG2E) * sh.slope);
             }
@@ -219,7 +222,7 @@ body
             {
                 import std.math: sgn;
                 assert(sh.a * sgn(iv.c) >= 0);
-                area = flexInverse!true(sh.a, iv.c) * intLength;
+                area = flexInverse!true(sh.a, iv.c) * ivLength;
             }
             else
             {
