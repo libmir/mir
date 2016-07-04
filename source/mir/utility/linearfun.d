@@ -52,6 +52,7 @@ struct LinearFun(S)
         return a + slope * (x - y);
     }
 
+    /// calculate inverse of x
     S inverse(S x) const
     {
         return y + (x- a) / slope;
