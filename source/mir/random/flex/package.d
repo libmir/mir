@@ -36,13 +36,16 @@ transformation function and constructs for every interval a linear `hat` functio
 that majorizes the `pdf` and a linear `squeeze` function that is majorized by
 the `pdf` from the user-defined, mutually-exclusive partitioning.
 
+$(H3 Efficiency `rho`)
+
 In further steps the algorithm splits those intervals until a chosen efficiency
 `rho` between the ratio of the sum of all hat areas to the sum of
 all squeeze areas is reached.
-A higher efficiency may require more iterations and thus a longer setup phase,
-but increases the speed of sampling. For example an efficiency of 1.1 means
-that 10% of all drawn uniform numbers don't match the target distribution
+For example an efficiency of 1.1 means
+that `10 / 110` of all drawn uniform numbers don't match the target distribution
 and need be resampled.
+A higher efficiency constructs more intervals, and thus requires more iterations
+and a longer setup phase, but increases the speed of sampling.
 
 $(H3 Unbounded intervals)
 
@@ -51,7 +54,14 @@ concave and strictly monotone.
 
 $(H3 Transformation function (T_c)) $(A_NAME t_c_family)
 
-The Flex algorithm uses a family of T_c transformations.
+The Flex algorithm uses a family of T_c transformations:
+
+$(UL
+    $(LI `T_0(x) = log(x))
+    $(LI `T_c(x) = sign(c) * x^c)
+)
+
+Thus `c` has the following properties
 
 $(UL
     $(LI Decreasing `c` may decrease the number of inflection points)
@@ -290,14 +300,14 @@ private S flexImpl(Pdf, S, RNG)
     // acceptance-rejection sampling
     for (;;)
     {
-        // sample from interval with density proportional to their hatArea
+        // sample an interval with density proportional to their hatArea
         immutable index = ds(rng); // J in Botts et al. (2013)
         assert(index < intervals.length);
+        immutable interval = intervals[index];
 
         S u = uniform!("[)", S, S)(0, 1, rng);
 
-        immutable interval = intervals[index];
-
+        // generate X with density proportional to the selected interval
         with(interval)
         {
             immutable hatLx = hat(lx);
@@ -311,7 +321,7 @@ private S flexImpl(Pdf, S, RNG)
                 }
                 else
                 {
-                    X = hat.y + (log(1 / eXInv + hat.slope * u) - hat.a) / hat.slope;
+                    X = hat.inverse(log(hat.slope * u + exp(hatLx)));
                 }
             }
             else
@@ -344,8 +354,7 @@ private S flexImpl(Pdf, S, RNG)
                         goto finish;
                     }
                 }
-                // common approximation
-                X = hat.y + (inverseAntiderivative(antiderivative(hatLx, c) + hat.slope * u, c) - hat.a) / hat.slope;
+                X = hat.inverse(inverseAntiderivative(u * hat.slope + antiderivative(hatLx, c), c));
             }
 
         finish:
@@ -358,11 +367,11 @@ private S flexImpl(Pdf, S, RNG)
 
             immutable t = u * invHatX;
 
-            // U * h(c) < s(X)  "squeeze evaluation"
+            // u * h(c) < s(X)  "squeeze evaluation"
             if (t <= invSqueezeX)
                 break;
 
-            // U * h(c) < f(X)  "density evaluation"
+            // u * h(c) < f(X)  "density evaluation"
             if (t <= pdf(X))
                 break;
         }

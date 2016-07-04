@@ -20,7 +20,7 @@ struct LinearFun(S)
     /// direction and steepness
     S slope; // aka beta
 
-    ///
+    /// boundary point where f obtains it's maximum
     S y;
 
     ///
@@ -50,6 +50,11 @@ struct LinearFun(S)
     S opCall(in S x) const
     {
         return a + slope * (x - y);
+    }
+
+    S inverse(S x) const
+    {
+        return y + (x- a) / slope;
     }
 
     // calculate intercept (for debugging)
