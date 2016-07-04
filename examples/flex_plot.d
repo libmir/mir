@@ -108,8 +108,8 @@ auto npPlotHatAndSqueezeArea(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
     static immutable script = `
         import matplotlib.pyplot as plt
         plt.plot(xs, ys, color='black')
-        plt.plot(xs, hat, color='blue')
-        plt.plot(xs, squeeze, color='red')
+        plt.plot(xs, hat, color='red')
+        plt.plot(xs, squeeze, color='green')
         plt.savefig(fileName, bbox_inches='tight')
         plt.close()
     `;
@@ -169,25 +169,28 @@ body
 
     foreach (i, iv; intervals)
     {
-        size_t nrIntervals = cast(size_t) ((iv.rx - iv.lx) / stepSize).ceil;
+        S x = max(iv.lx, left);
+        size_t nrIntervals = iv.rx < x ? 0 : cast(size_t) ((iv.rx - x) / stepSize).ceil;
         xs[i] = new S[max(nrIntervals, 2)];
         ys[i] = new S[max(nrIntervals, 2)];
-        S x = max(iv.lx, left);
+
         foreach (k; 0..nrIntervals)
         {
             xs[i][k] = x;
             ys[i][k] = (isHat) ? iv.hat(x) : iv.squeeze(x);
             if (!isTransformed)
-                ys[i][k] = flexInverse(ys[i][k], iv.c);
+                ys[i][k] = (ys[i][k] * iv.c >= 0) ? flexInverse(ys[i][k], iv.c) : 0;
 
             x += stepSize;
         }
         if (x < iv.rx || nrIntervals == 1)
         {
             // plot last value too
-            S r = iv.rx;
-            xs[i][$ - 1] = min(iv.rx, right);
+            S r = min(iv.rx, right);
+            xs[i][$ - 1] = r;
             ys[i][$ - 1] = (isHat) ? iv.hat(r) : iv.squeeze(r);
+            if (!isTransformed)
+                ys[i][$ - 1] = (ys[i][$ - 1] * iv.c >= 0) ? flexInverse(ys[i][$ - 1], iv.c) : 0;
         }
     }
     import std.typecons : tuple;
@@ -203,11 +206,13 @@ auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
 
     static immutable script = `
         import matplotlib.pyplot as plt
+        import numpy as np
         plt.plot(xs, ys, color='black')
-        for i, h in enumerate(hats):
-            plt.plot(xsHS[i], h, color='blue')
+        for i, h in enumerate(hats[0: len(hats) - 1]):
+            if not np.isnan(h).any():
+                plt.plot(xsHS[i], h, color='red')
         for i, s in enumerate(squeezes):
-            plt.plot(xsHS[i], s, color='red')
+            plt.plot(xsHS[i], s, color='green')
         plt.savefig(fileName, bbox_inches='tight')
         plt.close()
     `;
@@ -274,8 +279,8 @@ struct CFlex(S)
         // first plot hat/squeeze in case we crash during sampling
         tf.intervals.npPlotHatAndSqueeze(pdf, fileName ~ "_hs.pdf",
             stepSize, left, right);
-        tf.intervals.npPlotHatAndSqueezeArea(pdf, fileName ~ "_hs_area.pdf",
-            stepSize, left, right);
+        //tf.intervals.npPlotHatAndSqueezeArea(pdf, fileName ~ "_hs_area.pdf",
+            //stepSize, left, right);
 
         if (plotHistogram)
         {
@@ -393,7 +398,7 @@ void test6(S, F)(in ref F test)
     auto f1 = (S x) => 12 * x - 4 * pow(x, 3);
     auto f2 = (S x) => 12 - 12 * x * x;
 
-    test.plot("dist6", f0, f1, f2, 0, [-S.infinity, -2, -1, 0, 1, 2, S.infinity]);
+    test.plot("dist6", f0, f1, f2, 0, [-S.infinity, -2, -1, 0, 1, 2, S.infinity], -5, 5);
 }
 
 
@@ -477,8 +482,11 @@ void main(string[] args)
     import std.traits : fullyQualifiedName;
     import std.algorithm.searching : canFind;
 
+    //alias funs = AliasSeq!(test1, test2, test3, test4, test5, test6,
+                          //test_normal, test_beta, test_arcsine, test_gamma);
+
     alias funs = AliasSeq!(test1, test2, test3, test4, test5, test6,
-                          test_normal, test_beta, test_arcsine, test_gamma);
+                          test_normal, test_arcsine, test_gamma);
 
     bool runAll = args.length <= 1;
 
