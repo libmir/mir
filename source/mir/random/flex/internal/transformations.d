@@ -5,6 +5,20 @@ import mir.random.flex.internal.types : Interval;
 /**
 Create a c-transformation, based on a function and it's first two derivatives
 
+Tinflex expects the logarithm of the pdf, which means that for `c = 0`,
+no transformations need to be applied.
+However for `c != 0` the inverse function is needed.
+We first need to apply the inverse `T_c^{-1}(x) = exp(x)` and then apply the
+other `T_c` transformation:
+
+    f(x) = exp(T_{c != 0}(x))
+         = exp(sgn(c) * x^c)
+         = sgn(c) * exp(x * c)
+
+Warning:
+For performance reasons the transformation is directly applied, it is thus
+necessary to check before whether `c == 0` and avoid the transformation.
+
 Params:
     f0 = PDF function
     f1 = first derivative
