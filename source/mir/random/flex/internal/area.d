@@ -172,8 +172,8 @@ body
     {
         if (fabs(z) < constants!S.smallExp)
         {
-            area = exp(sh.a) * (iv.rx - iv.lx) * (1 + z * S(0.5) + (z * z) * one_div_6
-                                                    + (z * z * z) * one_div_24);
+            area = exp(sh.a) * (ivLength) * (1 + z * S(0.5) + (z * z) * one_div_6
+                                               + (z * z * z) * one_div_24);
         }
         else
         {
