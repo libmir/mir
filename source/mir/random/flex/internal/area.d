@@ -586,6 +586,83 @@ unittest
     }
 }
 
+// distribution 4 with less points
+unittest
+{
+    import mir.random.flex.internal.transformations : transformInterval;
+    import mir.random.flex.internal.types : determineType;
+    import std.math: approxEqual, isInfinity;
+    import std.meta : AliasSeq;
+    import std.range: dropOne, lockstep, save;
+
+    static immutable points = [-1, 0, 1];
+    // -2 yields "undefined" type
+    static immutable cs = [-1.5, -1, -0.9, -0.5, 0, 0.5, 0.9, 1, 1.5, 2];
+    alias T = double;
+
+    static immutable hats = [
+        [T(3)],
+        [T.infinity],
+        [T.infinity],
+        [T.infinity],
+        [T.infinity],
+        [T.infinity],
+        [T.infinity],
+        [T.infinity],
+        [T.infinity],
+        [T.infinity],
+        [T.infinity],
+    ];
+
+    static immutable sqs = [
+        [1.48016],
+        [1.38629436111989],
+        [1.37364470014208],
+        [1.33333333333333],
+        [1.29744254140026],
+        [1.27083333333333],
+        [1.25380850551221],
+        [1.25],
+        [1.2330750067473],
+        [1.21895141649746],
+    ];
+
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        import std.math : abs, log;
+        auto f0 = (S x) => -log(abs(x))/2;
+        auto f1 = (S x) => -1/(2*x);
+        auto f2 = (S x) => 1/(2*x^^2);
+
+        auto it = (S l, S r, S c)
+        {
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            transformInterval(iv);
+            return iv;
+        };
+
+        // calculate the area of all intervals
+        foreach (i, c; cs)
+        {
+            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+            {
+                auto iv = it(p1, p2, c);
+                determineSqueezeAndHat(iv);
+
+                hatArea!S(iv);
+
+                if (iv.hatArea == S.max)
+                    assert(hats[i][0].isInfinity);
+                else
+                    assert(iv.hatArea.approxEqual(hats[i][0]));
+
+                squeezeArea!S(iv);
+                assert(iv.squeezeArea.approxEqual(sqs[i][0]));
+            }
+        }
+    }
+}
+
 // distribution 3 with other boundaries
 unittest
 {
