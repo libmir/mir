@@ -50,6 +50,8 @@ void determineSqueezeAndHat(S)(ref Interval!S iv)
             hat = mixin(sec);
             break;
         case T4a:
+            // In each unbounded interval f must be concave and strictly monotone
+            // Condition 4 in section 2.3 from Botts et al. (2013)
             if (iv.lx == -S.infinity)
             {
                 squeeze = squeeze.init;
@@ -66,6 +68,20 @@ void determineSqueezeAndHat(S)(ref Interval!S iv)
             hat = iv.ltx > iv.rtx ? mixin(t_l) : mixin(t_r);
             break;
         case T4b:
+            // In each unbounded interval f must be concave and strictly monotone
+            // Condition 4 in section 2.3 from Botts et al. (2013)
+            if (iv.lx == -S.infinity)
+            {
+                hat = hat.init;
+                squeeze = mixin(t_l);
+                break;
+            }
+            if (iv.rx == +S.infinity)
+            {
+                hat = hat.init;
+                squeeze = mixin(t_r);
+                break;
+            }
             squeeze = iv.ltx < iv.rtx ? mixin(t_l) : mixin(t_r);
             hat = mixin(sec);
             break;
@@ -125,7 +141,7 @@ alias squeezeArea(S) = area!(false, S);
 /**
 Computes the area below either the hat or squeeze function
 in-between a interval `iv`.
-Based on table 1 and general equation (3) from Botts et al. (2013).
+Based on table 1, 2 and general equation (3) from Botts et al. (2013).
 
     (F_T(sh(r))- F_T(sh(l))) / sh.slope
 
@@ -167,7 +183,7 @@ body
 
     // sh.y is the boundary point where f obtains its maximum
 
-    // specializations for T_c family (page 6)
+    // specializations for T_c family (page 6, table 2 from Botts et al. (2013))
     if (iv.c == 0)
     {
         if (fabs(z) < constants!S.smallExp)

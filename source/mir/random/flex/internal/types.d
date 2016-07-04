@@ -87,7 +87,8 @@ body
 {
     with(FunType)
     {
-        // in each unbounded interval f must be concave and strictly monotone
+        // In each unbounded interval f must be concave and strictly monotone
+        // Condition 4 in section 2.3 from Botts et al. (2013)
         if (iv.lx == -S.infinity)
         {
             if (iv.rt2x < 0 && iv.rt1x > 0)
