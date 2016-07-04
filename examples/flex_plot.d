@@ -246,7 +246,8 @@ struct CFlex(S)
     int n;
     string plotDir;
     S rho;
-    S stepSize = 0.01;
+    bool plotHistogram;
+    S stepSize = 0.005;
 
     /// @@@BUG@@@ template injection doesn't work with opCall
     auto plot(string name, in S function(S) f0, in S function(S) f1, in S function(S) f2,
@@ -276,12 +277,15 @@ struct CFlex(S)
         tf.intervals.npPlotHatAndSqueezeArea(pdf, fileName ~ "_hs_area.pdf",
             stepSize, left, right);
 
-        auto gen = Mt19937(42);
-        S[] values = new S[n];
-        foreach (ref v; values)
-            v = tf(gen);
+        if (plotHistogram)
+        {
+            auto gen = Mt19937(42);
+            S[] values = new S[n];
+            foreach (ref v; values)
+                v = tf(gen);
 
-        values.npPlotHistogram(fileName ~ "_hist.pdf");
+            values.npPlotHistogram(fileName ~ "_hist.pdf");
+        }
 
         // save values to file for further processing
         //auto f = File(fileName ~ "_values.csv", "w");
@@ -362,9 +366,9 @@ void test4(S, F)(in ref F test)
     import std.math : abs, log;
     auto f0 = (S x) => - cast(S) log(abs(x)) * S(0.5);
     auto f1 = (S x) => -1 / (2 * x);
-    auto f2 = (S x) => 1 / (2 * x * x);
+    auto f2 = (S x) => S(0.5) / (x * x);
 
-    test.plot("dist4", f0, f1, f2, 1.5, [-1.0, 0, 1]);
+    test.plot("dist4", f0, f1, f2, -1.5, [-1.0, 0, 1]);
 }
 
 // different values for c
@@ -447,13 +451,24 @@ void test_gamma(S, F)(in ref F test)
 
 void main(string[] args)
 {
-    bool runAll = args.length <= 1;
-
     import std.file : exists, mkdir;
+    import std.getopt: getopt, defaultGetoptPrinter;
+
     alias T = double;
     string plotDir = "plots";
     int n = 5_000;
     T rho = 1.1;
+    bool plotHistogram = true;
+
+    auto flags = getopt(
+        args,
+        "plotDir",  "Plot directory", &plotDir,
+        "n|num_samples", "Number of samples", &n,
+        "p|plot_histogram", "Plot histogram", &plotHistogram,
+        "r|rho", "Efficiency rho", &rho);
+
+    if (flags.helpWanted)
+        defaultGetoptPrinter("Some information about the program.", flags.options);
 
     if (!plotDir.exists)
         plotDir.mkdir;
@@ -465,7 +480,9 @@ void main(string[] args)
     alias funs = AliasSeq!(test1, test2, test3, test4, test5, test6,
                           test_normal, test_beta, test_arcsine, test_gamma);
 
-    auto cf = CFlex!T(n, plotDir, rho);
+    bool runAll = args.length <= 1;
+
+    auto cf = CFlex!T(n, plotDir, rho, plotHistogram);
     foreach (i, f; funs)
     {
         bool isSelected = runAll;
