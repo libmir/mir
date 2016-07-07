@@ -316,11 +316,11 @@ void test_normal(S, F)(in ref F test)
 {
     import std.math : exp, log, PI, sqrt;
     S[] points = [-S.infinity, -1.5, 0, 1.5, S.infinity];
-    enum S sqrt2PI = sqrt(2 * PI);
+    enum S halfLog2PI = S(0.5) * log(2 * PI);
     //auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
     //auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
     //auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
-    auto f0 = (S x) => cast(S) log(1 / (exp(x * x / 2) * sqrt2PI));
+    auto f0 = (S x) => -(x * x) * S(0.5) - halfLog2PI;
     auto f1 = (S x) => -x;
     auto f2 = (S x) => S(-1);
     test.plot("dist_normal", f0, f1, f2, -0.5, points, -4, 4);
