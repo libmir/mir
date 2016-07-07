@@ -362,8 +362,8 @@ void test_gamma(S, F)(in ref F test)
     auto f0 = (S x) => cast(S) (-x / 3 + 3 * log(x) - log(486));
     auto f1 = (S x) => - one_div_3 + 3/x;
     auto f2 = (S x) => -3 / (x * x);
-    S[] points = [0,  5, 30];
-    test.plot("dist_gamma", f0, f1, f2, 1.5, points, 0, 30);
+    S[] points = [0,  5, 40];
+    test.plot("dist_gamma", f0, f1, f2, 1.5, points, 0, 40);
 }
 
 void main(string[] args)
