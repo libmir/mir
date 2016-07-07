@@ -1,7 +1,7 @@
 #!/usr/bin/env dub
 /+ dub.sdl:
 name "lda_hoffman_sparse"
-dependency "mir" version=">0.15.1"
+dependency "mir" path=".."
 +/
 
 /++
@@ -26,7 +26,7 @@ void main(string[] args)
     if (args.length > 1)
         curFolder = args[1];
     else
-        curFolder = thisExePath.dirName;
+        curFolder = getcwd.buildPath("examples");
 
 	auto stop = curFolder.buildPath("data/stop_words")
 		.readText

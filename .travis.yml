@@ -27,8 +27,10 @@ branches:
 script:
  - echo "$ARCH"
  - dub test --arch "$ARCH" -b unittest-cov
- - dub build -c median-filter
- - dub build -c means-of-columns
+ - dub build --single examples/lda_hoffman_sparse.d
+ - dub fetch imageformats && dub build imageformats
+ - dub build --single examples/median_filter.d
+ - dub build --single examples/means_of_columns.d
 after_success:
  - bash <(curl -s https://codecov.io/bash)
 
