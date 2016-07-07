@@ -102,6 +102,7 @@ test_script:
  - echo %PATH%
  - '%DC% --version'
  - dub test --arch=%Darch% --compiler=%DC%
+ - dub build --single examples/flex_plot.d
  - dub build -c median-filter
  - dub build -c means-of-columns
 
