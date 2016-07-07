@@ -329,6 +329,7 @@ void test_normal(S, F)(in ref F test)
 
 // a=2, b=5
 // https://en.wikipedia.org/wiki/Beta_distribution
+// http://www.wolframalpha.com/input/?i=PDF%5BGammaDistribution%5B2,+5%5D%5D
 void test_beta(S, F)(in ref F test)
 {
     import std.math : log, pow;
@@ -340,6 +341,7 @@ void test_beta(S, F)(in ref F test)
 }
 
 // https://en.wikipedia.org/wiki/Arcsine_distribution
+// http://www.wolframalpha.com/input/?i=PDF%5BArcsineDistribution%5B0,+1%5D%5D
 void test_arcsine(S, F)(in ref F test)
 {
     import std.math : log, pow, PI, sqrt;
@@ -351,6 +353,7 @@ void test_arcsine(S, F)(in ref F test)
 }
 
 // https://en.wikipedia.org/wiki/Gamma_distribution
+// http://www.wolframalpha.com/input/?i=PDF%5BGammaDistribution%5B4,+3%5D%5D
 // a = 4, b = 3
 void test_gamma(S, F)(in ref F test)
 {
