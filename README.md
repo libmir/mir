@@ -47,7 +47,7 @@ Compatibility
 | LDC 32 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | OS X >= 10.7 is x86-64 only | [#120](https://github.com/libmir/mir/issues/120) |
 
 - DMD (reference D compiler) >= `2.068`
-- LDC (LLVM D Compiler) `0.17.0`+.
+- LDC (LLVM D Compiler) >= `1.0.0`
 
 Installation
 ------------

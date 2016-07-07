@@ -40,7 +40,19 @@
             "targetType": "executable",
             "targetPath": "build",
             "sourceFiles": ["examples/lda_hoffman_sparse.d"]
+        },
+        {
+            "name": "flex-plot",
+            "targetName": "flex-plot",
+            "targetType": "executable",
+            "dependencies": {
+                "pyd": "~>0.9.8",
+            },
+            "subConfigurations": {
+                "pyd": "python35",
+            },
+            "sourceFiles": ["examples/flex_plot.d"],
+            "versions": ["Flex_logging"],
         }
-
     ]
 }
