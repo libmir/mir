@@ -22,12 +22,13 @@ shared static this() {
 }
 
 // plot histogram with matplotlib
-void npPlotHistogram(S)(S[] values, string fileName)
+void npPlotHistogram(S)(S[] values, string fileName, string title)
 {
     import std.math : isNaN;
     static immutable script = `
         import matplotlib.pyplot as plt
         n, bins, patches = plt.hist(sample, num_bins, normed=1)
+        plt.title(title)
         plt.savefig(fileName, bbox_inches='tight')
         plt.close()
     `;
@@ -44,6 +45,7 @@ void npPlotHistogram(S)(S[] values, string fileName)
     pythonContext.sample = npValues.toNumpyArray;
     pythonContext.num_bins = 50;
     pythonContext.fileName = fileName;
+    pythonContext.title = title;
     pythonContext.py_stmts(script);
 }
 
@@ -103,7 +105,7 @@ body
 }
 
 auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
-                                 string fileName, S stepSize = 0.01,
+                                 string fileName, string title, S stepSize = 0.01,
                                  S left = -3, S right = 3)
 {
     import std.algorithm.comparison : max, min;
@@ -118,6 +120,7 @@ auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
                 plt.plot(xsHS[i], h, color='red')
         for i, s in enumerate(squeezes):
             plt.plot(xsHS[i], s, color='green')
+        plt.title(title)
         plt.savefig(fileName, bbox_inches='tight', format="pdf")
         plt.close()
     `;
@@ -147,6 +150,7 @@ auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
     pythonContext.squeezes = squeezes.ys.d_to_python;
 
     pythonContext.fileName = fileName;
+    pythonContext.title = title;
     pythonContext.py_stmts(script);
 }
 
@@ -173,6 +177,7 @@ struct CFlex(S)
          S[] cs, S[] points, S left = -3, S right = 3) const
     {
         import mir.random.flex : flex;
+        import std.format : format;
         import std.math : exp;
         import std.random : Mt19937;
 
@@ -180,9 +185,10 @@ struct CFlex(S)
         auto pdf = (S x) => exp(f0(x));
 
         string fileName = plotDir.buildPath(name);
+        string title = "%s, c=%g, rho=%g".format(name, tf.intervals[0].c, rho);
 
         // first plot hat/squeeze in case we crash during sampling
-        tf.intervals.npPlotHatAndSqueeze(pdf, fileName ~ "_hs.pdf",
+        tf.intervals.npPlotHatAndSqueeze(pdf, fileName ~ "_hs.pdf", title,
             stepSize, left, right);
 
         if (plotHistogram)
@@ -192,7 +198,7 @@ struct CFlex(S)
             foreach (ref v; values)
                 v = tf(gen);
 
-            values.npPlotHistogram(fileName ~ "_hist.pdf");
+            values.npPlotHistogram(fileName ~ "_hist.pdf", title);
         }
 
         // save values to file for further processing
