@@ -474,8 +474,11 @@ body
     import mir.random.flex.internal.types: Interval;
     import mir.internal.math: pow, exp, copysign;
     import mir.sum: Summator, Summation;
-    import std.container.dlist : DList;
-    import std.math: nextDown;
+    import std.algorithm.sorting : sort;
+    import std.container.array: Array;
+    import std.container.binaryheap: BinaryHeap;
+    import std.container.rbtree: RedBlackTree;
+    import std.math: isNaN, nextDown;
     import std.range.primitives : front, empty, popFront;
 
     alias Sum = Summator!(S, Summation.precise);
@@ -485,7 +488,17 @@ body
 
     auto nrIntervals = cs.length;
 
-    auto ips = DList!(Interval!S)();
+    // binary heap can't be extended with normal arrays, see
+    // https://github.com/dlang/phobos/pull/4359
+    auto arr = Array!(Interval!S)();
+    auto ips = BinaryHeap!(typeof(arr), (Interval!S a, Interval!S b){
+    //auto ips = new RedBlackTree!(Interval!S, (Interval!S a, Interval!S b){
+        //return a.hatArea < b.hatArea;
+        auto as = (a.squeezeArea == 0) ? a.hatArea : a.hatArea / a.squeezeArea;
+        auto bs = (b.squeezeArea == 0) ? b.hatArea : b.hatArea / b.squeezeArea;
+        return as < bs;
+    })(arr);
+    //}, true);
     S l = points[0];
     S l0 = f0(points[0]);
     S l1 = f1(points[0]);
@@ -511,18 +524,29 @@ body
         totalHatAreaSummator += iv.hatArea;
         totalSqueezeAreaSummator += iv.squeezeArea;
 
-        ips.insertBack(iv);
+        ips.insert(iv);
     }
 
     version(Flex_logging)
     {
-        import std.algorithm;
-        import std.array;
-        log("----");
-        log("Interval: ", ips.array.map!`a.lx`);
-        log("hatArea", ips.array.map!`a.hatArea`);
-        log("squeezeArea", ips.array.map!`a.squeezeArea`);
-        log("----");
+        void printHeap()
+        {
+            import std.algorithm;
+            auto tArr = new Interval!S[ips.length];
+            auto curEl = ips.front;
+            // binary heap is an one-way store
+            // be careful to have a symmetric predicate!
+            for (auto k = 0; !ips.empty; ips.removeFront)
+                tArr[k++] = ips.front;
+            foreach (el; tArr)
+                ips.insert(el);
+            log("----");
+            log("Interval: ", tArr.map!`a.lx`);
+            log("hatArea", tArr.map!`a.hatArea`);
+            log("squeezeArea", tArr.map!`a.squeezeArea`);
+            log("----");
+        }
+        printHeap();
     }
 
     // Flex is not guaranteed to converge
@@ -542,77 +566,71 @@ body
         }
 
         immutable avgArea = nextDown(totalHatArea - totalSqueezeArea) / nrIntervals;
-        for (auto it = ips[]; !it.empty;)
+
+        // remove the first element and split it
+        auto curEl = ips.front;
+        ips.removeFront;
+
+        // prepare total areas for update
+        totalHatAreaSummator -= curEl.hatArea;
+        totalSqueezeAreaSummator -= curEl.squeezeArea;
+
+        // split the interval at the arcmean into two parts
+        auto mid = arcmean!S(curEl);
+
+        // cache
+        immutable c = curEl.c;
+
+        // calculate new values
+        S mx0 = f0(mid);
+        S mx1 = f1(mid);
+        S mx2 = f2(mid);
+
+        Interval!S midIP = Interval!S(mid, curEl.rx, c,
+                                      mx0, mx1, mx2,
+                                      curEl.rtx, curEl.rt1x, curEl.rt2x);
+
+        // apply transformation to right side (for c=0 no transformations are applied)
+        if (c)
+            mixin(transform!("midIP.ltx", "midIP.lt1x", "midIP.lt2x", "c"));
+
+        // left interval: update right values
+        curEl.rx = mid;
+        curEl.rtx = midIP.ltx;
+        curEl.rt1x = midIP.lt1x;
+        curEl.rt2x = midIP.lt2x;
+
+        // recalculate intervals
+        calcInterval(curEl);
+        calcInterval(midIP);
+
+        version(Flex_logging)
         {
-            immutable curArea = it.front.hatArea - it.front.squeezeArea;
-            if (curArea > avgArea)
-            {
-                // prepare total areas for update
-                totalHatAreaSummator -= it.front.hatArea;
-                totalSqueezeAreaSummator -= it.front.squeezeArea;
+            log("--split ", nrIntervals, " between ", curEl.lx, " - ", curEl.rx);
+            log("interval to be splitted: ", curEl);
+            log("new middle interval created: ", midIP);
+        }
 
-                // split the interval at the arcmean into two parts
-                auto mid = arcmean!S(it.front);
+        version(Flex_logging)
+        {
+            log("update left: ", curEl);
+            log("update mid: ", midIP);
+        }
 
-                // cache
-                immutable c = it.front.c;
+        // update total areas
+        totalHatAreaSummator += curEl.hatArea;
+        totalHatAreaSummator += midIP.hatArea;
+        totalSqueezeAreaSummator += curEl.squeezeArea;
+        totalSqueezeAreaSummator += midIP.squeezeArea;
 
-                // calculate new values
-                S mx0 = f0(mid);
-                S mx1 = f1(mid);
-                S mx2 = f2(mid);
+        // insert new middle part into linked list
+        ips.insert(curEl);
+        ips.insert(midIP);
+        nrIntervals++;
 
-                Interval!S midIP = Interval!S(mid, it.front.rx, c,
-                                              mx0, mx1, mx2,
-                                              it.front.rtx, it.front.rt1x, it.front.rt2x);
-
-                // apply transformation to right side (for c=0 no transformations are applied)
-                if (c)
-                    mixin(transform!("midIP.ltx", "midIP.lt1x", "midIP.lt2x", "c"));
-
-                version(Flex_logging)
-                {
-                    log("--split ", nrIntervals, " between ", it.front.lx, " - ", it.front.rx);
-                    log("interval to be splitted: ", it.front);
-                    log("new middle interval created: ", midIP);
-                }
-
-                // left interval: update right values
-                it.front.rx = mid;
-                it.front.rtx = midIP.ltx;
-                it.front.rt1x = midIP.lt1x;
-                it.front.rt2x = midIP.lt2x;
-
-                // recalculate intervals
-                calcInterval(it.front);
-                calcInterval(midIP);
-
-                version(Flex_logging)
-                {
-                    log("update left: ", it.front);
-                    log("update mid: ", midIP);
-                }
-
-                // update total areas
-                totalHatAreaSummator += it.front.hatArea;
-                totalHatAreaSummator += midIP.hatArea;
-                totalSqueezeAreaSummator += it.front.squeezeArea;
-                totalSqueezeAreaSummator += midIP.squeezeArea;
-
-                // insert new middle part into linked list
-                it.popFront;
-                // @@@bug@@@ in DList, insertBefore with an empty list inserts
-                // at the front
-                if (it.empty)
-                    ips.insertBack(midIP);
-                else
-                    ips.insertBefore(it, midIP);
-                nrIntervals++;
-            }
-            else
-            {
-                it.popFront;
-            }
+        version(Flex_logging)
+        {
+            printHeap();
         }
     }
 
@@ -623,15 +641,17 @@ body
         intervals[i++] = FlexInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
                                      ip.squeeze, ip.hatArea, ip.squeezeArea);
 
+    // intervals are sorted after hatArea atm
+    intervals.sort!`a.lx < b.lx`();
     version(Flex_logging)
     {
         import std.algorithm;
         import std.array;
         log("----");
         log("Intervals generated: ", intervals.length);
-        log("Interval: ", ips.array.map!`a.lx`);
-        log("hatArea", ips.array.map!`a.hatArea`);
-        log("squeezeArea", ips.array.map!`a.squeezeArea`);
+        log("Interval: ", intervals.map!`a.lx`);
+        log("hatArea", intervals.map!`a.hatArea`);
+        log("squeezeArea", intervals.map!`a.squeezeArea`);
         log("----");
     }
 
