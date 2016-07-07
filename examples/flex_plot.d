@@ -48,103 +48,6 @@ void npPlotHistogram(S)(S[] values, string fileName)
 }
 
 /**
-Generates a series of y-values of all hat or squeeze functions of an Flex
-object. This is useful for plotting.
-Points in xs need to be in the boundaries of the Flex algorithm, otherwise they
-will be ignored.
-
-Params:
-    t = Flex generator
-    xs = x points to be plotted
-    isHat = whether hat (true) or squeeze (false) should be plotted
-    isTransformed = whether to plot the transformed functions
-*/
-auto plotArea(S, T)(in FlexInterval!S[] intervals, T[] xs, bool isHat = true,
-                    bool isTransformed = false)
-{
-    import mir.random.flex : flexInverse;
-    import std.algorithm.comparison : clamp;
-
-    T[] ys = new T[xs.length];
-    int k = 0;
-    T rMin = xs[0];
-    T rMax = xs[$ - 1];
-
-    // each interval is defined in clear bounds
-    // as we iterate over the points to be plotted, we have to check to use the
-    // correct hat/squeeze function for the current point
-    outer: foreach (i, v; intervals)
-    {
-        // calculate bounds of the current interval
-        S l = clamp(v.lx, rMin, rMax);
-        // ignore unmatched points at the left
-        while (xs[k] < l)
-            k++;
-
-        S r = clamp(v.rx, rMin, rMax);
-
-        // until the right bound is reached
-        while (xs[k] <= r)
-        {
-            // reverse our T_c transformation and calculate the value
-            ys[k] = (isHat) ? v.hat(xs[k]) : v.squeeze(xs[k]);
-            if (!isTransformed)
-                ys[k] = flexInverse(ys[k], v.c);
-            if (++k >= xs.length)
-                break outer;
-        }
-    }
-    return ys;
-}
-
-auto npPlotHatAndSqueezeArea(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
-                                     string fileName, S stepSize = 0.1,
-                                     S left = -3, S right = 3)
-{
-    import std.algorithm.comparison : max, min;
-    import std.array : array;
-    import std.traits : ReturnType;
-
-    static immutable script = `
-        import matplotlib.pyplot as plt
-        plt.plot(xs, ys, color='black')
-        plt.plot(xs, hat, color='red')
-        plt.plot(xs, squeeze, color='green')
-        plt.savefig(fileName, bbox_inches='tight')
-        plt.close()
-    `;
-
-    auto pythonContext = new InterpContext();
-    alias T = double;
-
-    S l = max(left, intervals[0].lx);
-    S r = min(right, intervals[$ - 1].rx);
-
-    T[] xs = iota!(T, T, T)(l, r + stepSize, stepSize).array;
-    pythonContext.xs = xs.toNumpyArray;
-
-    // PDF
-    T[] ys = new T[xs.length];
-    foreach (i, ref y; ys)
-        y = pdf(xs[i]);
-
-    pythonContext.ys = ys.toNumpyArray;
-
-    bool isTransformed = false;
-
-    // hat
-    auto hats = cast(T[]) intervals.plotArea(xs, true, isTransformed);
-    pythonContext.hat = hats.toNumpyArray;
-
-    // squeeze
-    auto squeeze = cast(T[]) intervals.plotArea(xs, false, isTransformed);
-    pythonContext.squeeze = squeeze.toNumpyArray;
-
-    pythonContext.fileName = fileName;
-    pythonContext.py_stmts(script);
-}
-
-/**
 Plots every interval as a separate line with a given stepsize.
 */
 auto plotWithIntervals(S)(in FlexInterval!S[] intervals, bool isHat = true,
@@ -281,8 +184,6 @@ struct CFlex(S)
         // first plot hat/squeeze in case we crash during sampling
         tf.intervals.npPlotHatAndSqueeze(pdf, fileName ~ "_hs.pdf",
             stepSize, left, right);
-        //tf.intervals.npPlotHatAndSqueezeArea(pdf, fileName ~ "_hs_area.pdf",
-            //stepSize, left, right);
 
         if (plotHistogram)
         {
