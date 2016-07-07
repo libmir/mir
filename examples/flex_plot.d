@@ -356,11 +356,11 @@ void test_gamma(S, F)(in ref F test)
 {
     import std.math : log, pow, PI, sqrt;
     enum one_div_3 = S(1) / 3;
-    auto f0 = (S x) => cast(S) (-pow(x, 3) + 3 * log(x) - log(486));
+    auto f0 = (S x) => cast(S) (-x / 3 + 3 * log(x) - log(486));
     auto f1 = (S x) => - one_div_3 + 3/x;
     auto f2 = (S x) => -3 / (x * x);
-    S[] points = [0,  2.5];
-    test.plot("dist_gamma", f0, f1, f2, 1.5, points);
+    S[] points = [0,  5, 30];
+    test.plot("dist_gamma", f0, f1, f2, 1.5, points, 0, 30);
 }
 
 void main(string[] args)
