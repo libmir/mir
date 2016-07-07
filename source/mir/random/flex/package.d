@@ -474,7 +474,9 @@ body
     import mir.random.flex.internal.types: Interval;
     import mir.internal.math: pow, exp, copysign;
     import mir.sum: Summator, Summation;
-    import std.container.dlist : DList;
+    import std.algorithm.sorting : sort;
+    import std.container.array: Array;
+    import std.container.binaryheap: BinaryHeap;
     import std.math: nextDown;
     import std.range.primitives : front, empty, popFront;
 
@@ -485,7 +487,13 @@ body
 
     auto nrIntervals = cs.length;
 
-    auto ips = DList!(Interval!S)();
+    // binary heap can't be extended with normal arrays, see
+    // https://github.com/dlang/phobos/pull/4359
+    auto arr = Array!(Interval!S)();
+    auto ips = BinaryHeap!(typeof(arr), (Interval!S a, Interval!S b){
+        return a.hatArea - a.squeezeArea < b.hatArea - b.squeezeArea;
+    })(arr);
+
     S l = points[0];
     S l0 = f0(points[0]);
     S l1 = f1(points[0]);
@@ -511,17 +519,22 @@ body
         totalHatAreaSummator += iv.hatArea;
         totalSqueezeAreaSummator += iv.squeezeArea;
 
-        ips.insertBack(iv);
+        ips.insert(iv);
     }
 
     version(Flex_logging)
     {
         import std.algorithm;
-        import std.array;
+        auto tArr = new Interval!S[ips.length];
+        // binary heap is an one-way store
+        for (auto k = 0; !ips.empty; ips.removeFront)
+            tArr[k++] = ips.front;
+        foreach (el; tArr)
+            ips.insert(el);
         log("----");
-        log("Interval: ", ips.array.map!`a.lx`);
-        log("hatArea", ips.array.map!`a.hatArea`);
-        log("squeezeArea", ips.array.map!`a.squeezeArea`);
+        log("Interval: ", tArr.map!`a.lx`);
+        log("hatArea", tArr.map!`a.hatArea`);
+        log("squeezeArea", tArr.map!`a.squeezeArea`);
         log("----");
     }
 
@@ -542,78 +555,67 @@ body
         }
 
         immutable avgArea = nextDown(totalHatArea - totalSqueezeArea) / nrIntervals;
-        for (auto it = ips[]; !it.empty;)
+
+        // remove the first element and split it
+        auto curEl = ips.front;
+        ips.removeFront;
+
+        // prepare total areas for update
+        totalHatAreaSummator -= curEl.hatArea;
+        totalSqueezeAreaSummator -= curEl.squeezeArea;
+
+        // split the interval at the arcmean into two parts
+        auto mid = arcmean!S(curEl);
+
+        // cache
+        immutable c = curEl.c;
+
+        // calculate new values
+        S mx0 = f0(mid);
+        S mx1 = f1(mid);
+        S mx2 = f2(mid);
+
+        Interval!S midIP = Interval!S(mid, curEl.rx, c,
+                                      mx0, mx1, mx2,
+                                      curEl.rtx, curEl.rt1x, curEl.rt2x);
+
+        // apply transformation to right side (for c=0 no transformations are applied)
+        if (c)
+            mixin(transform!("midIP.ltx", "midIP.lt1x", "midIP.lt2x", "c"));
+
+        // left interval: update right values
+        curEl.rx = mid;
+        curEl.rtx = midIP.ltx;
+        curEl.rt1x = midIP.lt1x;
+        curEl.rt2x = midIP.lt2x;
+
+        // recalculate intervals
+        calcInterval(curEl);
+        calcInterval(midIP);
+
+        version(Flex_logging)
         {
-            immutable curArea = it.front.hatArea - it.front.squeezeArea;
-            if (curArea > avgArea)
-            {
-                // prepare total areas for update
-                totalHatAreaSummator -= it.front.hatArea;
-                totalSqueezeAreaSummator -= it.front.squeezeArea;
-
-                // split the interval at the arcmean into two parts
-                auto mid = arcmean!S(it.front);
-
-                // cache
-                immutable c = it.front.c;
-
-                // calculate new values
-                S mx0 = f0(mid);
-                S mx1 = f1(mid);
-                S mx2 = f2(mid);
-
-                Interval!S midIP = Interval!S(mid, it.front.rx, c,
-                                              mx0, mx1, mx2,
-                                              it.front.rtx, it.front.rt1x, it.front.rt2x);
-
-                // apply transformation to right side (for c=0 no transformations are applied)
-                if (c)
-                    mixin(transform!("midIP.ltx", "midIP.lt1x", "midIP.lt2x", "c"));
-
-                version(Flex_logging)
-                {
-                    log("--split ", nrIntervals, " between ", it.front.lx, " - ", it.front.rx);
-                    log("interval to be splitted: ", it.front);
-                    log("new middle interval created: ", midIP);
-                }
-
-                // left interval: update right values
-                it.front.rx = mid;
-                it.front.rtx = midIP.ltx;
-                it.front.rt1x = midIP.lt1x;
-                it.front.rt2x = midIP.lt2x;
-
-                // recalculate intervals
-                calcInterval(it.front);
-                calcInterval(midIP);
-
-                version(Flex_logging)
-                {
-                    log("update left: ", it.front);
-                    log("update mid: ", midIP);
-                }
-
-                // update total areas
-                totalHatAreaSummator += it.front.hatArea;
-                totalHatAreaSummator += midIP.hatArea;
-                totalSqueezeAreaSummator += it.front.squeezeArea;
-                totalSqueezeAreaSummator += midIP.squeezeArea;
-
-                // insert new middle part into linked list
-                it.popFront;
-                // @@@bug@@@ in DList, insertBefore with an empty list inserts
-                // at the front
-                if (it.empty)
-                    ips.insertBack(midIP);
-                else
-                    ips.insertBefore(it, midIP);
-                nrIntervals++;
-            }
-            else
-            {
-                it.popFront;
-            }
+            log("--split ", nrIntervals, " between ", curEl.lx, " - ", curEl.rx);
+            log("interval to be splitted: ", curEl);
+            log("new middle interval created: ", midIP);
         }
+
+        version(Flex_logging)
+        {
+            log("update left: ", curEl);
+            log("update mid: ", midIP);
+        }
+
+        // update total areas
+        totalHatAreaSummator += curEl.hatArea;
+        totalHatAreaSummator += midIP.hatArea;
+        totalSqueezeAreaSummator += curEl.squeezeArea;
+        totalSqueezeAreaSummator += midIP.squeezeArea;
+
+        // insert new middle part into linked list
+        ips.insert(curEl);
+        ips.insert(midIP);
+        nrIntervals++;
     }
 
     // for sampling only a subset of the attributes is needed
@@ -623,15 +625,17 @@ body
         intervals[i++] = FlexInterval!S(ip.lx, ip.rx, ip.c, ip.hat,
                                      ip.squeeze, ip.hatArea, ip.squeezeArea);
 
+    // intervals have been sorted after hatArea
+    intervals.sort!`a.lx < b.lx`();
     version(Flex_logging)
     {
         import std.algorithm;
         import std.array;
         log("----");
         log("Intervals generated: ", intervals.length);
-        log("Interval: ", ips.array.map!`a.lx`);
-        log("hatArea", ips.array.map!`a.hatArea`);
-        log("squeezeArea", ips.array.map!`a.squeezeArea`);
+        log("Interval: ", intervals.map!`a.lx`);
+        log("hatArea", intervals.map!`a.hatArea`);
+        log("squeezeArea", intervals.map!`a.squeezeArea`);
         log("----");
     }
 
@@ -645,23 +649,21 @@ unittest
     import std.math : approxEqual;
     import std.meta : AliasSeq;
 
-    static immutable hats = [1.79547e-05, 0.00271776, 0.00846808, 0.0333596, 0.0912821,
-                 0.18815, 0.310255, 0.428808, 0.523965, 0.566373, 0.558716,
-                 0.515606, 0.788248, 0.547819, 0.364081, 0.233837, 0.254661,
-                 0.105682, 0.0790885, 0.0212445, 0.0252439, 0.0252439,
-                 0.0212445, 0.0790885, 0.105682, 0.254661, 0.233837, 0.364081,
-                 0.547819, 0.788248, 0.515606, 0.558716, 0.566373, 0.523965,
-                 0.428808, 0.310255, 0.18815, 0.0912821, 0.0333596, 0.00846808,
-                 0.00271776, 1.79547e-05];
+    static immutable hats = [1.79547e-05, 0.00271776, 0.0629733, 0.0912821,
+                             0.18815, 0.754863, 1.13845, 1.10943, 0.788248,
+                             0.547819, 0.619752, 0.254661, 0.105682, 0.0790885,
+                             0.0212445, 0.0252439, 0.0252439, 0.0212445,
+                             0.0790885, 0.105682, 0.254661, 0.619752, 0.547819,
+                             0.788248, 1.10943, 0.566373, 0.523965, 0.754863,
+                             0.18815, 0.0912821, 0.0629733, 0.00271776, 1.79547e-05];
 
-    static immutable sqs = [2.36004e-18, 3.89553e-05, 0.00374907, 0.0207121, 0.0704188,
-                0.165753, 0.295133, 0.425063, 0.515533, 0.555479, 0.549469,
-                0.508729, 0.769742, 0.539798, 0.352656, 0.224357, 0.215078,
-                0.090285, 0.0522061, 0.0163806, 0.00980223, 0.00980223,
-                0.0163806, 0.0522061, 0.090285, 0.215078, 0.224357, 0.352656,
-                0.539798, 0.769742, 0.508729, 0.549469, 0.555479, 0.515533,
-                0.425063, 0.295133, 0.165753, 0.0704188, 0.0207121,
-                0.00374907, 3.89553e-05, 2.36004e-18];
+    static immutable sqs = [2.36004e-18, 3.89553e-05, 0.00970061, 0.0704188,
+                            0.165753, 0.674084, 1.05251, 1.04208, 0.769742,
+                            0.539798, 0.53902, 0.215078, 0.090285, 0.0522061,
+                            0.0163806, 0.00980223, 0.00980223, 0.0163806,
+                            0.0522061, 0.090285, 0.215078, 0.53902, 0.539798,
+                            0.769742, 1.04208, 0.555479, 0.515533, 0.674084,
+                            0.165753, 0.0704188, 0.00970061, 3.89553e-05, 2.36004e-18];
 
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -683,19 +685,20 @@ unittest
     import std.algorithm : equal, map;
     import std.math : approxEqual;
     import std.meta : AliasSeq;
-    static immutable hats = [1.49622e-05, 0.00227029, 0.0540631, 0.0880036, 0.184448,
-                 0.752102, 0.524874, 0.566459, 1.10993, 0.789818, 0.547504,
-                 0.606916, 0.249029, 0.103608, 0.119708, 0.0238081, 0.0238081,
-                 0.119708, 0.103608, 0.249029, 0.606916, 0.547504, 0.789818,
-                 1.10993, 0.566459, 0.524874, 0.752102, 0.184448, 0.0880036,
-                 0.0540631, 0.00227029, 1.49622e-05];
+    static immutable hats = [1.49622e-05, 0.00227029, 0.0540631, 0.0880036,
+                             0.184448, 0.752102, 1.13921, 1.10993, 1.40719,
+                             0.606916, 0.249029, 0.103608, 0.119708, 0.0238081,
+                             0.0238081, 0.119708, 0.103608, 0.249029, 0.606916,
+                             0.547504, 0.789818, 1.10993, 1.13921, 0.752102,
+                             0.184448, 0.0880036, 0.0540631, 0.00227029, 1.49622e-05];
 
-    static immutable sqs = [5.34911e-17, 5.37841e-05, 0.0118652, 0.0738576, 0.17077,
-                0.706057, 0.514791, 0.555317, 1.04196, 0.768265, 0.543916,
-                0.55554, 0.2213, 0.0925191, 0.0495667, 0.00980223, 0.00980223,
-                0.0495667, 0.0925191, 0.2213, 0.55554, 0.543916, 0.768265,
-                1.04196, 0.555317, 0.514791, 0.706057, 0.17077, 0.0738576,
-                0.0118652, 5.37841e-05, 5.34911e-17];
+    static immutable sqs = [5.34911e-17, 5.37841e-05, 0.0118652, 0.0738576,
+                            0.17077, 0.706057, 1.04936, 1.04196, 1.29868,
+                            0.55554, 0.2213, 0.0925191, 0.0495667, 0.00980223,
+                            0.00980223, 0.0495667, 0.0925191, 0.2213, 0.55554,
+                            0.543916, 0.768265, 1.04196, 1.04936, 0.706057,
+                            0.17077, 0.0738576, 0.0118652, 5.37841e-05,
+                            5.34911e-17];
 
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -718,24 +721,22 @@ unittest
     import std.math : approxEqual;
     import std.meta : AliasSeq;
 
-    static immutable hats = [1.69138e-05, 0.00256097, 0.00817838, 0.0325843, 0.0899883,
-                 0.186679, 0.309052, 0.429911, 0.524337, 0.566408, 0.55873,
-                 0.515621, 0.788573, 0.547394, 0.363702, 0.233562, 0.148294,
-                 0.0944699, 0.105271, 0.0783547, 0.0211237, 0.0249657, 0.0252439,
-                 0.0212445, 0.0790885, 0.105682, 0.0945806, 0.148474, 0.233837,
-                 0.364081, 0.547819, 0.788248, 0.515599, 0.558708, 0.566356,
-                 0.523775, 0.429166, 0.310854, 0.188879, 0.0919187, 0.0337363,
-                 0.00860631, 0.00278729, 1.84151e-05];
+    static immutable hats = [1.69137e-05, 0.00256095, 0.0597127, 0.0899876,
+                             0.186679, 0.747491, 0.524337, 0.566407, 1.10963,
+                             0.788573, 0.547394, 0.617211, 0.253546, 0.105271,
+                             0.130463, 0.0249657, 0.0252439, 0.13294, 0.105682,
+                             0.25466, 0.619752, 0.547819, 0.788249, 1.10933,
+                             1.13829, 0.429167, 0.310853, 0.188879, 0.0919179,
+                             0.0644612, 0.00278727, 1.84149e-05];
 
-    static immutable sqs = [2.36004e-18, 4.33822e-05, 0.0038876, 0.0212517, 0.0716527,
-                0.167594, 0.297054, 0.426515, 0.515237, 0.555414, 0.549468,
-                0.508702, 0.769447, 0.540575, 0.35325, 0.224754, 0.142126,
-                0.0904849, 0.0906882, 0.0526476, 0.0164662, 0.00980223,
-                0.00980223, 0.0163806, 0.0522061, 0.090285, 0.0903335,
-                0.141876, 0.224357, 0.352656, 0.539798, 0.769742,
-                0.508742, 0.549468, 0.555511, 0.515682, 0.424369,
-                0.294228, 0.164902, 0.0698584, 0.0204717, 0.00368856,
-                3.71914e-05, 2.36004e-18];
+    static immutable sqs = [2.36004e-18, 4.3382e-05, 0.0103914, 0.0716524,
+                            0.167594, 0.685574, 0.515237, 0.555414, 1.04203,
+                            0.769447, 0.540575, 0.541969, 0.216192, 0.0906883,
+                            0.0462627, 0.00980223, 0.00980223, 0.045605,
+                            0.0902851, 0.215078, 0.53902, 0.539798, 0.769742,
+                            1.0421, 1.05314, 0.42437, 0.294228, 0.164901,
+                            0.0698581, 0.00941278, 3.71912e-05, 2.36004e-18];
+
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
@@ -757,8 +758,8 @@ unittest
     import std.algorithm : equal, map;
     import std.meta : AliasSeq;
     import std.math : approxEqual, PI;
-    static immutable hats = [1.60809, 1.23761, 0.797556, 0.797556, 1.23761, 1.60809];
-    static immutable sqs = [1.52164, 1.19821, 0.776976, 0.776976, 1.19821, 1.52164];
+    static immutable hats = [1.60809, 1.23761, 0.797556, 2.23537, 1.60809];
+    static immutable sqs = [1.52164, 1.19821, 0.776976, 1.94559, 1.52164];
 
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -783,11 +784,11 @@ unittest
     import std.meta : AliasSeq;
     import std.range : repeat;
 
-    static immutable hats = [0.00648327, 0.0133705, 0.136019, 0.16167, 0.5, 0.5,
-                 0.16167, 0.136019, 0.0133705, 0.00648327];
+    static immutable hats = [0.00648327, 0.0133705, 0.33157, 0.5, 0.5, 0.16167,
+                             0.136019, 0.0133705, 0.00648327];
 
-    static immutable sqs = [0, 0.0125563, 0.12444, 0.156698, 0.484543,
-                0.484543, 0.156698, 0.12444, 0.0125563, 0];
+    static immutable sqs = [0, 0.0125563, 0.274612, 0.484543, 0.484543,
+                            0.156698, 0.12444, 0.0125563, 0];
 
     foreach (S; AliasSeq!(float, real))
     {
@@ -806,10 +807,8 @@ unittest
     {
         alias S = double;
 
-        S[] hatsD = [0.0229267, 0.136019, 0.16167, 0.5, 0.5,
-                     0.16167, 0.136019, 0.0229267];
-        S[] sqsD =  [0, 0.12444, 0.156698, 0.484543,
-                     0.484543, 0.156698, 0.12444, 0];
+        S[] hatsD = [0.0229267, 0.136019, 0.16167, 0.5, 0.5, 0.33157, 0.0229267];
+        S[] sqsD =  [0, 0.12444, 0.156698, 0.484543, 0.484543, 0.274612, 0];
 
         auto f0 = (S x) => log(1 - x^^4);
         auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
@@ -818,6 +817,7 @@ unittest
         S[] cs = S(2).repeat(points.length - 1).array;
 
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
+
         assert(ips.map!`a.hatArea`.equal!approxEqual(hatsD));
         assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqsD));
     }
