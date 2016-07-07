@@ -148,12 +148,12 @@ auto npPlotHatAndSqueezeArea(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
 Plots every interval as a separate line with a given stepsize.
 */
 auto plotWithIntervals(S)(in FlexInterval!S[] intervals, bool isHat = true,
-                          S stepSize = 0.01, bool isTransformed = false, S left = -3,
-                          S right = 3)
+                          S stepSize = 0.01, bool isTransformed = false, S leftStart = -3,
+                          S rightStart = 3)
 in
 {
-    assert(intervals[0].lx <= left);
-    assert(right <= intervals[$ - 1].rx);
+    assert(intervals[0].lx <= leftStart);
+    assert(rightStart <= intervals[$ - 1].rx);
 }
 body
 {
@@ -169,10 +169,12 @@ body
 
     foreach (i, iv; intervals)
     {
-        S x = max(iv.lx, left);
-        size_t nrIntervals = iv.rx < x ? 0 : cast(size_t) ((iv.rx - x) / stepSize).ceil;
-        xs[i] = new S[max(nrIntervals, 2)];
-        ys[i] = new S[max(nrIntervals, 2)];
+        S x = max(iv.lx, leftStart);
+        S right = min(iv.rx, rightStart);
+        size_t nrIntervals = right < x ? 0 : cast(size_t) ((right - x) / stepSize).ceil;
+        nrIntervals = max(2, nrIntervals);
+        xs[i] = new S[nrIntervals];
+        ys[i] = new S[nrIntervals];
 
         foreach (k; 0..nrIntervals)
         {
@@ -213,7 +215,7 @@ auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
                 plt.plot(xsHS[i], h, color='red')
         for i, s in enumerate(squeezes):
             plt.plot(xsHS[i], s, color='green')
-        plt.savefig(fileName, bbox_inches='tight')
+        plt.savefig(fileName, bbox_inches='tight', format="pdf")
         plt.close()
     `;
 
