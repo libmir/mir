@@ -1,6 +1,11 @@
-/**
-Simple plot
-*/
+#!/usr/bin/env dub
+/+ dub.sdl:
+name "flex_plot"
+dependency "mir" path=".."
+dependency "pyd" version="~>0.9.8"
+versions "Flex_logging"
+subConfigurations "pyd" "python35"
++/
 import mir.random.flex: FlexInterval;
 import std.array : array;
 import std.stdio : writeln, writefln, File;
