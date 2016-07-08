@@ -14,7 +14,7 @@ environment:
     DVersion: 2.070.2
     arch: x86
   - DC: ldc
-    DVersion: '1.0.0'
+    DVersion: 1.0.0
     arch: x64
   - DC: ldc
     DVersion: 0.17.0
@@ -67,7 +67,7 @@ install:
             }
         }
   - ps: SetUpDCompiler
-  - powershell -Command Invoke-WebRequest https://code.dlang.org/files/dub-1.0.0-beta.1-windows-x86.zip -OutFile dub.zip
+  - powershell -Command Invoke-WebRequest https://code.dlang.org/files/dub-1.0.0-windows-x86.zip -OutFile dub.zip
   - 7z x dub.zip -odub > nul
   - set PATH=%CD%\%binpath%;%CD%\dub;%PATH%
   - dub --version
@@ -102,8 +102,11 @@ test_script:
  - echo %PATH%
  - '%DC% --version'
  - dub test --arch=%Darch% --compiler=%DC%
- - dub build -c median-filter
- - dub build -c means-of-columns
+ - dub build --single examples/lda_hoffman_sparse.d
+ - dub fetch imageformats
+ - dub build imageformats
+ - dub build --single examples/median_filter.d
+ - dub build --single examples/means_of_columns.d
 
 notifications:
  - provider: Webhook

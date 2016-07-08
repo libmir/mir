@@ -23,12 +23,10 @@ test:
     - grep -nE "(for|foreach|foreach_reverse|if|while)\(" $(find source -name '*.d'); test $? -eq 1
     - rdmd ./checkwhitespace.d $(find source -name '*.d')
     - dub test
-    - dub build -c median-filter
-    - dub build --single examples/median_filter.d
-    - dub build -c means-of-columns
-    - dub build --single examples/means_of_columns.d
-    - dub build -c lda-hoffman-sparse
     - dub build --single examples/lda_hoffman_sparse.d
+    - dub fetch imageformats && dub build imageformats
+    - dub build --single examples/median_filter.d
+    - dub build --single examples/means_of_columns.d
     - make -f doc/Makefile html
 deployment:
   aws:

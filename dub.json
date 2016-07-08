@@ -16,31 +16,6 @@
         {
             "name": "dynamic-lib",
             "targetType": "dynamicLibrary",
-        },
-        {
-            "name": "median-filter",
-            "targetName": "median-filter",
-            "targetType": "executable",
-            "targetPath": "build",
-            "sourceFiles": ["examples/median_filter.d"],
-            "dependencies": {
-                "imageformats": "~>6.0.0"
-            },
-        },
-        {
-            "name": "means-of-columns",
-            "targetName": "means-of-columns",
-            "targetType": "executable",
-            "targetPath": "build",
-            "sourceFiles": ["examples/means_of_columns.d"]
-        },
-        {
-            "name": "lda-hoffman-sparse",
-            "targetName": "lda-hoffman-sparse",
-            "targetType": "executable",
-            "targetPath": "build",
-            "sourceFiles": ["examples/lda_hoffman_sparse.d"]
         }
-
     ]
 }

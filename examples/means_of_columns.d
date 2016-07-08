@@ -1,7 +1,7 @@
 #!/usr/bin/env dub
 /+ dub.sdl:
 name "means_of_columns"
-dependency "mir" version=">0.15.1"
+dependency "mir" path=".."
 +/
 
 /**
@@ -17,7 +17,7 @@ dependency "mir" version=">0.15.1"
 *     means = numpy.mean(data, axis=0)
 *
 * and we benchmark the numpy.mean line using the following Python command,
-* 
+*
 *    python -m timeit \
 *         -s 'import numpy; data = numpy.arange(100000).reshape((100, 1000))' \
 *         'means = numpy.mean(data, axis=0)'
@@ -25,7 +25,6 @@ dependency "mir" version=">0.15.1"
 * then we get a mean running time of 145 µs. That means the version D is 3.625x
 * faster than the numpy version.
 */
-
 
 import std.range : iota;
 import std.array : array;
