@@ -16,3 +16,13 @@ web
 __test__d_source_library__
 
 *.sublime-project
+
+__test__unittest__
+
+flex-plot
+
+source/micro_kernel.s
+
+source/__main.s
+
+source/micro_kernel

@@ -7,6 +7,8 @@ Authors: Ilya Yaroshenko
 */
 module mir.sum;
 
+import mir.internal.utility: isComplex;
+
 ///
 unittest
 {
@@ -2167,12 +2169,6 @@ unittest
 {
     import std.range: iota;
     static assert(isSummable!(typeof(iota(ulong.init, ulong.init, ulong.init)), double));
-}
-
-template isComplex(C)
-{
-    import std.complex : Complex;
-    enum bool isComplex = is(C : Complex!F, F);
 }
 
 private template SummationType(F)
