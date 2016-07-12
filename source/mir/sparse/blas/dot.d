@@ -8,6 +8,9 @@ module mir.sparse.blas.dot;
 import std.traits;
 import mir.ndslice.slice;
 import mir.sparse;
+import mir.internal.utility;
+
+@fastmath:
 
 /++
 Dot product of two vectors

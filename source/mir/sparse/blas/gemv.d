@@ -8,6 +8,9 @@ module mir.sparse.blas.gemv;
 import std.traits;
 import mir.ndslice.slice;
 import mir.sparse;
+import mir.internal.utility;
+
+@fastmath:
 
 /++
 General matrix-vector multiplication.

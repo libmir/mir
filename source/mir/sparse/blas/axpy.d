@@ -8,6 +8,9 @@ module mir.sparse.blas.axpy;
 import std.traits;
 import mir.ndslice.slice;
 import mir.sparse;
+import mir.internal.utility;
+
+@fastmath:
 
 /++
 Constant times a vector plus a vector.
