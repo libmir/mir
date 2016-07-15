@@ -178,6 +178,9 @@ nothrow @nogc unittest
 /// Moving mean
 unittest
 {
+    import std.range;
+    import mir.sum;
+
     class MovingAverage
     {
         Summator!(double, Summation.precise) summator;
@@ -209,8 +212,6 @@ unittest
     }
 
     /// ma always keeps precise average of last 1000 elements
-    import std.array: array;
-    import std.range: iota;
     auto ma = new MovingAverage(iota(0.0, 1000.0).array);
     assert(ma.avg == (1000*999/2) / 1000.0);
     /// move by 10 elements
