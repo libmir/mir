@@ -92,12 +92,12 @@ test_script:
  - echo %DC%
  - echo %PATH%
  - '%DC% --version'
- - dub test --arch=%Darch% --compiler=%DC%
- - dub build --single examples/lda_hoffman_sparse.d
- - dub fetch imageformats
- - dub build imageformats
- - dub build --single examples/median_filter.d
- - dub build --single examples/means_of_columns.d
+ - dub fetch cpuid && dub build --arch %Darch% cpuid
+ - dub test --arch %Darch% -b unittest-cov
+ - dub build --single --arch %Darch% examples/lda_hoffman_sparse.d
+ - dub fetch imageformats --version 6.0.0 && dub build --arch %Darch% imageformats
+ - dub build --single --arch %Darch% examples/median_filter.d
+ - dub build --single --arch %Darch% examples/means_of_columns.d
 
 notifications:
  - provider: Webhook

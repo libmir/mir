@@ -6,16 +6,19 @@
     "license": "BSL-1.0",
     "configurations": [
         {
-            "name": "d_source_library",
+            "name": "source",
             "targetType": "sourceLibrary",
         },
         {
-            "name": "static-lib",
+            "name": "static",
             "targetType": "staticLibrary",
         },
         {
-            "name": "dynamic-lib",
+            "name": "dynamic",
             "targetType": "dynamicLibrary",
         }
-    ]
+    ],
+    "dependencies": {
+        "cpuid": "~>0.2.6"
+    }
 }
