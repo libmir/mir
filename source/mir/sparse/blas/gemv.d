@@ -305,7 +305,7 @@ in
 body
 {
     import mir.ndslice.iteration: transposed;
-    import mir.blas.dot;
+    import mir.glas.dot;
 
     foreach (i, j; y.indexes)
     {

@@ -1,5 +1,11 @@
 module mir.ndslice.internal;
 
+static if(__VERSION__ >= 2072)
+    version = std_ndslice;
+
+version(std_ndslice) {
+} else:
+
 import std.traits;
 import std.meta; //: AliasSeq, anySatisfy, Filter, Reverse;
 

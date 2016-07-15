@@ -39,7 +39,7 @@ PACKAGE_mir_random = discrete
 PACKAGE_mir_sparse = package
 PACKAGE_mir_sparse_blas = package axpy dot gemm gemv
 
-MOD_EXCLUDES=$(addprefix --ex=, mir.ndslice.internal mir.internal. mir.blas)
+MOD_EXCLUDES=$(addprefix --ex=, mir.ndslice.internal mir.internal. mir.glas)
 
 ###########################################################
 # Setup macros + generate dynamic info needed

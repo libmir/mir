@@ -92,6 +92,13 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
 module mir.ndslice.iteration;
 
+static if(__VERSION__ >= 2072)
+    version = std_ndslice;
+version(std_ndslice) {
+    deprecated("starting from DMD front end 2.072 use std.experimental.ndslice instead")
+    public import mir.ndslice.iteration;
+} else:
+
 import std.traits;
 import std.meta;
 

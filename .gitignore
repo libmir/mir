@@ -26,3 +26,5 @@ source/micro_kernel.s
 source/__main.s
 
 source/micro_kernel
+
+*.sublime-workspace

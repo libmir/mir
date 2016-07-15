@@ -6,15 +6,15 @@
     "license": "BSL-1.0",
     "configurations": [
         {
-            "name": "d_source_library",
+            "name": "source",
             "targetType": "sourceLibrary",
         },
         {
-            "name": "static-lib",
+            "name": "static",
             "targetType": "staticLibrary",
         },
         {
-            "name": "dynamic-lib",
+            "name": "dynamic",
             "targetType": "dynamicLibrary",
         },
         {
@@ -41,5 +41,8 @@
             "targetPath": "build",
             "sourceFiles": ["examples/lda_hoffman_sparse.d"]
         }
-    ]
+    ],
+    "dependencies": {
+        "cpuid": "~>0.2.4"
+    }
 }
