@@ -28,7 +28,7 @@ script:
  - echo "$ARCH"
  - dub test --arch "$ARCH" -b unittest-cov
  - dub build --single examples/lda_hoffman_sparse.d
- - dub fetch imageformats && dub build imageformats
+ - dub fetch imageformats --version 6.0.0 && dub build imageformats
  - dub build --single examples/median_filter.d
  - dub build --single examples/means_of_columns.d
 after_success:
