@@ -16,12 +16,12 @@ Setup a _normal distribution sampler.
 
 Params:
     T = floating-point type that should be sampled
-    R = unsigned UIntType of the random generator
+    UIntType = unsigned UIntType of the random generator
 
 Returns:
     A $(LREF Ziggurat) sampler that can be called to sample from the distribution.
 */
-auto normal(T, R = uint)()
+auto normal(T, UIntType = uint)()
 {
     import mir.internal.math : exp, log, sqrt;
 
@@ -50,7 +50,7 @@ auto normal(T, R = uint)()
         }
     };
 
-    return Ziggurat!(T, fallback, R, true)(pdf, invPdf, 128, rightEnd, T(9.91256303526217e-3));
+    return Ziggurat!(T, fallback, UIntType, true)(pdf, invPdf, 128, rightEnd, T(9.91256303526217e-3));
 }
 
 /**
@@ -63,7 +63,7 @@ Params:
 Returns:
     A $(LREF Ziggurat) sampler that can be called to sample from the distribution.
 */
-auto exponential(T, R = uint)()
+auto exponential(T, UIntType = uint)()
 {
     import mir.internal.math : exp, log;
 
@@ -80,7 +80,7 @@ auto exponential(T, R = uint)()
         }
     };
 
-    return Ziggurat!(T, fallback, R, false)(pdf, invPdf, 256, T(7.697117470131487), T(3.949659822581572e-3));
+    return Ziggurat!(T, fallback, UIntType, false)(pdf, invPdf, 256, T(7.697117470131487), T(3.949659822581572e-3));
 }
 
 /**
@@ -92,7 +92,7 @@ References:
     Marsaglia, George, and Wai Wan Tsang. "The ziggurat method for generating random variables."
     Journal of statistical software 5.8 (2000): 1-7.
 */
-struct Ziggurat(T, string _fallback, R = uint, bool bothSides)
+struct Ziggurat(T, string _fallback, UIntType, bool bothSides)
     if (isNumeric!T)
 {
 
@@ -132,7 +132,7 @@ public:
         this.blockArea = blockArea;
 
         // scale factor to the range of UIntType
-        T maxT = bothSides ? R.max / 2 : R.max;
+        T maxT = bothSides ? UIntType.max / 2 : UIntType.max;
         kMask = k - 1;
 
         auto xn = rightEnd; // Next x_{i+1}
@@ -177,7 +177,7 @@ public:
         import std.random : uniform;
         import std.traits : Signed;
         import std.range : ElementType;
-        import std.mir.internal : fabs;
+        import std.math : abs;
 
         // TODO: option for inlining
         for (;;)
@@ -196,7 +196,7 @@ public:
             // U * x_i < x_{i+1}
             static if (bothSides)
             {
-                if (fabs(u) < xDiv[i])
+                if (abs(u) < xDiv[i])
                     return u * xScaled[i];
             }
             else
