@@ -6,9 +6,9 @@ License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors: Sebastian Wilzbach, Ilya Yaroshenko
 
 The Transformed Density Rejection with Inflection Points (Flex) algorithm
-can sample from arbitrary distributions given its density function f, its
-first two derivatives and a partitioning into intervals with at most one inflection
-point.
+can sample from arbitrary distributions given (1) its log-density function f,
+(2) its first two derivatives and (3) a partitioning into intervals
+with at most one inflection point.
 
 These can be easily found by plotting `f''`.
 $(B Inflection point) can be identified by observing at which points `f''` is 0
@@ -97,8 +97,9 @@ point. The partitioning needs to be mutually exclusive and sorted.
 
 Params:
     pdf = probability density function of the distribution
-    f1 = first derivative of pdf
-    f2 = second derivative of pdf
+    f0 = logarithmic pdf
+    f1 = first derivative of logarithmic pdf
+    f2 = second derivative of logarithmic pdf
     c = $(LINK2 #t_c_family, T_c family) value
     cs = $(LINK2 #t_c_family, T_c family) array
     points = non-overlapping partitioning with at most one inflection point per interval
@@ -107,9 +108,10 @@ Params:
 Returns:
     Flex Generator.
 */
-auto flex(F0, F1, F2, S)
+auto flex(S, F0, F1, F2)
                (in F0 f0, in F1 f1, in F2 f2,
                 S c, S[] points, S rho = 1.1)
+    if (isFloatingPoint!S)
 {
     S[] cs = new S[points.length - 1];
     foreach (ref d; cs)
@@ -118,26 +120,49 @@ auto flex(F0, F1, F2, S)
 }
 
 /// ditto
-auto flex(F0, F1, F2, S)
-               (in F0 f0, in F1 f1, in F2 f2,
-                S[] cs, S[] points, S rho = 1.1)
+auto flex(S, Pdf, F0, F1, F2)
+               (in Pdf pdf, in F0 f0, in F1 f1, in F2 f2,
+                S c, S[] points, S rho = 1.1)
+    if (isFloatingPoint!S)
 {
-    return flex(f0, flexIntervals(f0, f1, f2, cs, points, rho));
+    S[] cs = new S[points.length - 1];
+    foreach (ref d; cs)
+        d = c;
+    return flex(pdf, f0, f1, f2, cs, points, rho);
 }
 
 /// ditto
-auto flex(F0, S)(in F0 f0, in FlexInterval!S[] intervals)
+auto flex(S, F0, F1, F2)
+               (in F0 f0, in F1 f1, in F2 f2,
+                S[] cs, S[] points, S rho = 1.1)
+    if (isFloatingPoint!S)
 {
     import std.math: exp;
     auto pdf = (S x) => exp(f0(x));
-    return Flex!(typeof(pdf), S)(pdf, intervals);
+    return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho));
+}
+
+/// ditto
+auto flex(S, Pdf, F0, F1, F2)
+               (in Pdf pdf, in F0 f0, in F1 f1, in F2 f2,
+                S[] cs, S[] points, S rho = 1.1)
+    if (isFloatingPoint!S)
+{
+    return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho));
+}
+
+/// ditto
+auto flex(S, Pdf)(in Pdf pdf, in FlexInterval!S[] intervals)
+    if (isFloatingPoint!S)
+{
+    return Flex!(S, typeof(pdf))(pdf, intervals);
 }
 
 /**
 Data body of the Flex algorithm.
 Can be used to sample from the distribution.
 */
-struct Flex(Pdf, S)
+struct Flex(S, Pdf)
     if (isFloatingPoint!S)
 {
     // density function
@@ -212,46 +237,46 @@ unittest
 }
 
 
-// todo: FIX
-//unittest
-//{
-//    import std.meta : AliasSeq;
-//    import std.math : approxEqual, PI;
-//    import std.random : Mt19937;
-//    import mir.internal.math : exp, sqrt;
-//    import mir.utility.linearfun : LinearFun;
-//    foreach (S; AliasSeq!(float, double, real))
-//    {
-//        S sqrt2PI = sqrt(2 * PI);
-//        auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
-//        auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
-//        auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
-//        S[] points = [-3.0, 0, 3];
-//        alias TF = FlexInterval!S;
-//        alias LF = LinearFun!S;
+unittest
+{
+    import std.meta : AliasSeq;
+    import std.math : approxEqual, PI;
+    import std.random : Mt19937;
+    import mir.internal.math : exp, sqrt;
+    import mir.utility.linearfun : LinearFun;
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        S sqrt2PI = sqrt(2 * PI);
+        auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
+        auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
+        auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
+        auto pdf = (S x) => exp(f0(x));
+        S[] points = [-3.0, 0, 3];
+        alias TF = FlexInterval!S;
+        alias LF = LinearFun!S;
 
-//        auto intervals = [
-//            TF(-3, -1.36003, 1.5, LF(0.159263, -1.36003, 1.26786),
-//                                  LF(0.0200763, -3, 1.00667), 1.78593, 1.66515),
-//            TF(-1.36003, -0.720759, 1.5, LF(0.498434, -0.720759, 1.58649),
-//                                         LF(0.409229, -1.36003, 1.26786), 0.80997, 0.799256),
-//            TF(-0.720759, 0, 1.5, LF(-0, 0, 1.81923),
-//                                  LF(0.322909, 0, 1.81923), 1.07411, 1.02762),
-//            TF(0, 0.720759, 1.5, LF(-0, 0, 1.81923),
-//                                 LF(-0.322909, 0, 1.81923), 1.07411, 1.02762),
-//            TF(0.720759, 1.36003, 1.5, LF(-0.498434, 0.720759, 1.58649),
-//                                       LF(-0.409229, 1.36003, 1.26786), 0.80997, 0.799256),
-//            TF(1.36003, 3, 1.5, LF(-0.159263, 1.36003, 1.26786),
-//                                LF(-0.0200763, 3, 1.00667), 1.78593, 1.66515)
-//        ];
-//        auto tf = flex(f0, intervals);
-//        auto gen = Mt19937(42);
-//        auto value = tf(gen);
-//        import std.stdio;
-//        writeln(value);
-//        //assert(value.approxEqual(S(1.8488)));
-//    }
-//}
+        //auto intervals = flexIntervals(f0, f1, f2, [1.5, 1.5], points, S(1.1));
+
+        auto intervals = [
+            TF(-3, -1.36003, 1.5, LF(0.159263, -1.36003, 1.26786),
+                                  LF(0.0200763, -3, 1.00667), 1.78593, 1.66515),
+            TF(-1.36003, -0.720759, 1.5, LF(0.498434, -0.720759, 1.58649),
+                                         LF(0.409229, -1.36003, 1.26786), 0.80997, 0.799256),
+            TF(-0.720759, 0, 1.5, LF(-0, 0, 1.81923),
+                                  LF(0.322909, 0, 1.81923), 1.07411, 1.02762),
+            TF(0, 0.720759, 1.5, LF(-0, 0, 1.81923),
+                                 LF(-0.322909, 0, 1.81923), 1.07411, 1.02762),
+            TF(0.720759, 1.36003, 1.5, LF(-0.498434, 0.720759, 1.58649),
+                                       LF(-0.409229, 1.36003, 1.26786), 0.80997, 0.799256),
+            TF(1.36003, 3, 1.5, LF(-0.159263, 1.36003, 1.26786),
+                                LF(-0.0200763, 3, 1.00667), 1.78593, 1.66515)
+        ];
+        auto tf = flex(pdf, intervals);
+        auto gen = Mt19937(42);
+        auto value = tf(gen);
+        assert(value.approxEqual(S(-0.146644)));
+    }
+}
 
 unittest
 {
@@ -285,7 +310,7 @@ See_Also:
    $(LINK2 https://en.wikipedia.org/wiki/Rejection_sampling,
      Acceptance-rejection sampling)
 */
-private S flexImpl(Pdf, S, RNG)
+private S flexImpl(S, Pdf, RNG)
           (in Pdf pdf, in FlexInterval!S[] intervals,
            in Discrete!S ds, ref RNG rng)
     if (isUniformRNG!RNG)
@@ -438,7 +463,7 @@ Params:
 
 Returns: Array of IntervalPoints
 */
-FlexInterval!S[] flexIntervals(F0, F1, F2, S)
+FlexInterval!S[] flexIntervals(S, F0, F1, F2)
                             (in F0 f0, in F1 f1, in F2 f2,
                              in S[] cs, in S[] points, in S rho = 1.1,
                              in int apprMaxPoints = 1_000, in int maxIterations = 1_000)
@@ -792,9 +817,9 @@ unittest
 
     foreach (S; AliasSeq!(float, real))
     {
-        auto f0 = (S x) => log(1 - x^^4);
-        auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
-        auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
+        auto f0 = (S x) => cast(S) log(1 - x^^4);
+        auto f1 = (S x) => S(-4) * x^^3 / (1 - x^^4);
+        auto f2 = (S x) => -(S(4) * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
         S[] points = [S(-1), -0.9, -0.5, 0.5, 0.9, 1];
         S[] cs = S(2).repeat(points.length - 1).array;
 
@@ -810,9 +835,9 @@ unittest
         S[] hatsD = [0.0229267, 0.136019, 0.16167, 0.5, 0.5, 0.33157, 0.0229267];
         S[] sqsD =  [0, 0.12444, 0.156698, 0.484543, 0.484543, 0.274612, 0];
 
-        auto f0 = (S x) => log(1 - x^^4);
-        auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
-        auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
+        auto f0 = (S x) => cast(S) log(1 - x^^4);
+        auto f1 = (S x) => -S(4) * x^^3 / (1 - x^^4);
+        auto f2 = (S x) => -(S(4) * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
         S[] points = [S(-1), -0.9, -0.5, 0.5, 0.9, 1];
         S[] cs = S(2).repeat(points.length - 1).array;
 
