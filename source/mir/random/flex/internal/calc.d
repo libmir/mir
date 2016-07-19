@@ -102,8 +102,9 @@ unittest
 
 /**
 Calculate the parameters for an interval.
-Given an interval, determine it's type and hat and squeeze function.
-Given these functions, compute the area and overwrite the references data type
+Given an interval, determine its type (e.g. purely concave, or purely convex)
+and its hat and squeeze function.
+Given these functions, compute the area and overwrite the references data type.
 
 Params:
     iv = Interval
