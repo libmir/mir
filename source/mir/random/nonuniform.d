@@ -45,7 +45,7 @@ auto normal(T, UIntType = uint)()
                 u = uniform!("[]", T, T)(0, 1, gen);
                 y = -log(u);
             }
-            while(y + y < x * x);
+            while (y + y < x * x);
             return isPositive ? rightEnd + x : -rightEnd - x;
         }
     };
