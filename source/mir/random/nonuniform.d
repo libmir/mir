@@ -120,6 +120,13 @@ private:
     T blockArea;
 
 public:
+    /**
+    Params:
+        pdf = probability density function
+        invPdf = inverse probability density function
+        rightEnd = left point of the right-most block
+        blockArea =  area of every column
+    */
     this(T function(T x) pdf, T function(T x) invPdf, T rightEnd, T blockArea)
     {
         this.pdf = pdf;
