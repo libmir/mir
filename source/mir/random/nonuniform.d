@@ -50,7 +50,7 @@ auto normal(T, UIntType = uint)()
         }
     };
 
-    return Ziggurat!(T, fallback, UIntType, true)(pdf, invPdf, 128, rightEnd, T(9.91256303526217e-3));
+    return Ziggurat!(T, fallback, UIntType, 128, true)(pdf, invPdf, rightEnd, T(9.91256303526217e-3));
 }
 
 /**
@@ -80,7 +80,7 @@ auto exponential(T, UIntType = uint)()
         }
     };
 
-    return Ziggurat!(T, fallback, UIntType, false)(pdf, invPdf, 256, T(7.697117470131487), T(3.949659822581572e-3));
+    return Ziggurat!(T, fallback, UIntType, 256, false)(pdf, invPdf, T(7.697117470131487), T(3.949659822581572e-3));
 }
 
 /**
@@ -92,7 +92,7 @@ References:
     Marsaglia, George, and Wai Wan Tsang. "The ziggurat method for generating random variables."
     Journal of statistical software 5.8 (2000): 1-7.
 */
-struct Ziggurat(T, string _fallback, UIntType, bool bothSides)
+struct Ziggurat(T, string _fallback, UIntType, size_t numberOfBlocks, bool bothSides)
     if (isNumeric!T)
 {
 
@@ -104,16 +104,14 @@ private:
     T function(T x) invPdf;
 
     /// precalculate difference x_i / x_{i+1}
-    T[] xDiv;
+    T[numberOfBlocks] xDiv;
     /// precalculate scaling to R.max for x_i
-    T[] xScaled;
+    T[numberOfBlocks] xScaled;
     /// precalculate pdf value for x_i
-    T[] fs;
+    T[numberOfBlocks] fs;
 
-    /// number of blocks
-    size_t k;
     // mask to use to get the first log_2 k bits (=k - 1)
-    size_t kMask;
+    enum size_t kMask = numberOfBlocks - 1;
 
     /// left-point of the right-most block
     T rightEnd;
@@ -122,39 +120,33 @@ private:
     T blockArea;
 
 public:
-    this(T function(T x) pdf, T function(T x) invPdf, size_t k, T rightEnd,
-         T blockArea)
+    this(T function(T x) pdf, T function(T x) invPdf, T rightEnd, T blockArea)
     {
         this.pdf = pdf;
         this.invPdf = invPdf;
-        this.k = k;
         this.rightEnd = rightEnd;
         this.blockArea = blockArea;
 
         // scale factor to the range of UIntType
         T maxT = bothSides ? UIntType.max / 2 : UIntType.max;
-        kMask = k - 1;
 
         auto xn = rightEnd; // Next x_{i+1}
         auto xc = xn; // Current x_i
         auto fn = pdf(xn);
 
         // k_i = floor(2^32 (x_{i-1} / x_i))
-        xDiv    = new T[k];
         xDiv[0] = (xn * fn / blockArea) * maxT;
         xDiv[1] = 0;
 
         // w_i = 0.5^32 * x_i
-        xScaled        = new T[k];
         xScaled[0]     = (blockArea / fn) / maxT;
         xScaled[$ - 1] = xn / maxT;
 
         // f_i = f(x_i)
-        fs        = new T[k];
         fs[0]     = T(1);
         fs[$ - 1] = fn;
 
-        for (auto i = k - 2; i >= 1; i--)
+        for (auto i = xScaled.length - 2; i >= 1; i--)
         {
             xn = invPdf(blockArea / xn + fn);
             xDiv[i + 1] = (xn / xc) * maxT;
@@ -173,6 +165,7 @@ public:
 
     /// samples a value from the discrete distribution using a custom random generator
     T opCall(RNG)(ref RNG gen) const
+        if (typeof(gen.front).sizeof == UIntType.sizeof)
     {
         import std.random : uniform;
         import std.traits : Signed;
