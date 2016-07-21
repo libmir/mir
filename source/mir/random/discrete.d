@@ -71,7 +71,7 @@ struct Discrete(T)
     {
         debug
         {
-            import mir.sum : sum;
+            import mir.sum : sum, Summation;
             import std.math : approxEqual;
             assert(probs.sum!(Summation.fast).approxEqual(1.0), "Sum of the probabilities must be 1");
         }
@@ -94,19 +94,36 @@ struct Discrete(T)
     */
     private void initialize(const(T)[] probs)
     {
-        import std.container.slist : SList;
-
         size_t n = probs.length;
         arr = new AltPair[probs.length];
 
-        struct ProbsIndexed
+        static struct ProbsIndexed
         {
             T prob; // scaled probability
             size_t index; // original column index
         }
 
-        auto small = SList!ProbsIndexed(); // columns that need to be filled
-        auto large = SList!ProbsIndexed(); // used to fill columns
+        size_t smCounter, lgCounter;
+
+        static if (__VERSION__ > 2069)
+        {
+            import std.experimental.allocator.mallocator : Mallocator;
+            import std.experimental.allocator : dispose, makeArray;
+            auto alloc = Mallocator.instance;
+
+            auto small = alloc.makeArray!ProbsIndexed(n); // columns that need to be filled
+            auto large = alloc.makeArray!ProbsIndexed(n); // used to fill columns
+            scope(exit)
+            {
+                alloc.dispose(small);
+                alloc.dispose(large);
+            }
+        }
+        else
+        {
+            auto small = new ProbsIndexed[n]; // columns that need to be filled
+            auto large = new ProbsIndexed[n]; // used to fill columns
+        }
 
         foreach (i, p; probs)
         {
@@ -115,37 +132,40 @@ struct Discrete(T)
             // 1 is the average probability and depending on the ratio, we either
             // need to add values to a block or remove values
             if (sp < 1)
-                small.insert(ProbsIndexed(sp, i));
+                small[smCounter++] = ProbsIndexed(sp, i);
             else
-                large.insert(ProbsIndexed(sp, i));
+                large[lgCounter++] = ProbsIndexed(sp, i);
         }
 
-        while (!small.empty && !large.empty)
+        // as long as there are elements in both stacks
+        while (smCounter > 0 && lgCounter > 0)
         {
-            auto ls = small.front;
-            small.removeFront;
-            auto gs = large.front;
-            large.removeFront;
+            auto sm = small[--smCounter];
+            auto lg = large[--lgCounter];
 
             // fill the smaller, discrete value with the larger
-            arr[ls.index] = AltPair(ls.prob, gs.index);
+            arr[sm.index] = AltPair(sm.prob, lg.index);
 
             // update larger & reinsert
-            gs.prob += ls.prob - 1;
+            lg.prob += sm.prob - 1;
 
-            if (gs.prob < 1)
-                small.insert(gs);
+            if (lg.prob < 1)
+                small[smCounter++] = lg;
             else
-                large.insert(gs);
+                large[lgCounter++] = lg;
         }
 
         // do cleanup
-        foreach (gs; large)
-            arr[gs.index].prob = 1;
+        for (auto i = lgCounter; i > 0; i--)
+        {
+            arr[large[i - 1].index].prob = 1;
+        }
 
         // only possible with numerical errors
-        foreach (ls; small)
-            arr[ls.index].prob = 1;
+        for (auto i = smCounter; i > 0; i--)
+        {
+            arr[small[i - 1].index].prob = 1;
+        }
     }
 
     /// samples a value from the discrete distribution
