@@ -16,9 +16,6 @@ environment:
   - DC: ldc
     DVersion: 1.0.0
     arch: x64
-  - DC: ldc
-    DVersion: 0.17.0
-    arch: x64
 
 matrix:
   allow_failures:

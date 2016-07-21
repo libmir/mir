@@ -105,25 +105,12 @@ struct Discrete(T)
 
         size_t smCounter, lgCounter;
 
-        static if (__VERSION__ > 2069)
-        {
-            import std.experimental.allocator.mallocator : Mallocator;
-            import std.experimental.allocator : dispose, makeArray;
-            auto alloc = Mallocator.instance;
+        import std.experimental.allocator.mallocator : Mallocator;
+        import std.experimental.allocator : dispose, makeArray;
+        auto alloc = Mallocator.instance;
 
-            auto small = alloc.makeArray!ProbsIndexed(n); // columns that need to be filled
-            auto large = alloc.makeArray!ProbsIndexed(n); // used to fill columns
-            scope(exit)
-            {
-                alloc.dispose(small);
-                alloc.dispose(large);
-            }
-        }
-        else
-        {
-            auto small = new ProbsIndexed[n]; // columns that need to be filled
-            auto large = new ProbsIndexed[n]; // used to fill columns
-        }
+        auto small = alloc.makeArray!ProbsIndexed(n); // columns that need to be filled
+        auto large = alloc.makeArray!ProbsIndexed(n); // used to fill columns
 
         foreach (i, p; probs)
         {
@@ -166,6 +153,9 @@ struct Discrete(T)
         {
             arr[small[i - 1].index].prob = 1;
         }
+
+        alloc.dispose(small);
+        alloc.dispose(large);
     }
 
     /// samples a value from the discrete distribution
