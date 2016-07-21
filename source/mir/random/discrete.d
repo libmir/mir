@@ -52,7 +52,7 @@ struct Discrete(T)
 {
 
     /// array with the original column value for a discrete value an
-    struct AltPair
+    static struct AltPair
     {
         T prob; /// probability p to select it by a coin toss, if this column is randomly picked
         size_t alt; /// alternative value if coin toss at j fails
@@ -71,9 +71,9 @@ struct Discrete(T)
     {
         debug
         {
-            import std.algorithm.iteration : sum;
+            import mir.sum : sum;
             import std.math : approxEqual;
-            assert(probs.sum.approxEqual(1.0), "Sum of the probabilities must be 1");
+            assert(probs.sum!(Summation.fast).approxEqual(1.0), "Sum of the probabilities must be 1");
         }
         initialize(probs);
     }
@@ -163,8 +163,7 @@ struct Discrete(T)
 
         T u = uniform!("[)", T, T)(0, arr.length, gen);
         size_t j = cast(size_t) floor(u);
-        auto vp = arr[j];
-        return (u - j <= vp.prob) ? j : vp.alt;
+        return (u - j <= arr[j].prob) ? j : arr[j].alt;
     }
 }
 
