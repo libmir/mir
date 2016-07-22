@@ -20,6 +20,16 @@ SHELL=/bin/bash
 #
 # make all     (will run all targets)
 # make clean   (removes all binaries)
+#
+# Assembler
+# ---------
+#
+# You can view the assembler output for each test, e.g.:
+#
+#   make bin/ldc/alias/test_1.s
+#
+# However if your tests include templates,
+# the specializations will be included in the main file.
 ################################################################################
 
 ################################################################################
@@ -73,11 +83,11 @@ bin/ldc/%.o: %.d | bin/ldc/
 # Main object files (unoptimized)
 ################################################################################
 
-bin/ldc/%/main.o: %/main.d | bin/ldc/
-	$(LDC) $(GFLAGS) -I$(subst bin/ldc/,,$(@D)) -c $< -of$@
-
 bin/dmd/%/main.o: %/main.d | bin/dmd/
-	$(DMD) $(GFLAGS) -I$(subst bin/dmd/,,$(@D)) -c $< -of$@
+	$(DMD) $(DMD_FLAGS) $(GFLAGS) -I$(subst bin/dmd/,,$(@D)) -c $< -of$@
+
+bin/ldc/%/main.o: %/main.d | bin/ldc/
+	$(LDC) $(LDC_FLAGS) $(GFLAGS) -I$(subst bin/ldc/,,$(@D)) -c $< -of$@
 
 ################################################################################
 # Assembler files
