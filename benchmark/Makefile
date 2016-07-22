@@ -73,11 +73,11 @@ bin/ldc/%.o: %.d | bin/ldc/
 # Main object files (unoptimized)
 ################################################################################
 
-bin/ldc/%/main.o: %/main.d | bin/ldc/
-	$(LDC) $(GFLAGS) -I$(subst bin/ldc/,,$(@D)) -c $< -of$@
-
 bin/dmd/%/main.o: %/main.d | bin/dmd/
-	$(DMD) $(GFLAGS) -I$(subst bin/dmd/,,$(@D)) -c $< -of$@
+	$(DMD) $(DMD_FLAGS) $(GFLAGS) -I$(subst bin/dmd/,,$(@D)) -c $< -of$@
+
+bin/ldc/%/main.o: %/main.d | bin/ldc/
+	$(LDC) $(LDC_FLAGS) $(GFLAGS) -I$(subst bin/ldc/,,$(@D)) -c $< -of$@
 
 ################################################################################
 # Assembler files

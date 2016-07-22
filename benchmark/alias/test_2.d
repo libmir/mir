@@ -1,4 +1,4 @@
-extern(C) auto m(T)(T[] ps, size_t n)
+extern(D) auto m(T)(T[] ps, size_t n)
 {
     import mir.random.discrete : naiveDiscrete;
     import std.random : Mt19937;

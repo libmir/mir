@@ -1,4 +1,4 @@
-extern(C) auto m(T)(T[] ps, size_t n)
+extern(D) auto m(T)(T[] ps, size_t n)
 {
     import std.random : Mt19937, uniform;
     auto gen = Mt19937(42);
