@@ -51,11 +51,11 @@ struct Discrete(T)
     if (isNumeric!T)
 {
 
-    /// array with the original column value for a discrete value an
+    /// Array with the original column value for a discrete value and its alternative
     static struct AltPair
     {
-        T prob; /// probability p to select it by a coin toss, if this column is randomly picked
-        size_t alt; /// alternative value if coin toss at j fails
+        T prob; /// Probability p to select it by a coin toss, if this column is randomly picked
+        size_t alt; /// Alternative value if coin toss at j fails
     }
 
     private AltPair[] arr;
@@ -158,14 +158,14 @@ struct Discrete(T)
         alloc.dispose(stack);
     }
 
-    /// samples a value from the discrete distribution
+    /// Samples a value from the discrete distribution
     size_t opCall() const
     {
         import std.random : rndGen;
         return opCall(rndGen);
     }
 
-    /// samples a value from the discrete distribution using a custom random generator
+    /// Samples a value from the discrete distribution using a custom random generator
     size_t opCall(RNG)(ref RNG gen) const
     {
         import std.random : uniform;
@@ -282,14 +282,14 @@ struct NaiveDiscrete(T)
         this.cdPoints = cdPoints;
     }
 
-    /// samples a value from the discrete distribution
+    /// Samples a value from the discrete distribution
     size_t opCall() const
     {
         import std.random : rndGen;
         return opCall(rndGen);
     }
 
-    /// samples a value from the discrete distribution using a custom random generator
+    /// Samples a value from the discrete distribution using a custom random generator
     size_t opCall(RNG)(ref RNG gen) const
     {
         import std.random : uniform;
