@@ -20,6 +20,16 @@ SHELL=/bin/bash
 #
 # make all     (will run all targets)
 # make clean   (removes all binaries)
+#
+# Assembler
+# ---------
+#
+# You can view the assembler output for each test, e.g.:
+#
+#   make bin/ldc/alias/test_1.s
+#
+# However if your tests include templates,
+# the specializations will be included in the main file.
 ################################################################################
 
 ################################################################################
