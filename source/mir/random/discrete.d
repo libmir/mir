@@ -52,7 +52,7 @@ struct Discrete(T)
 {
 
     /// Array with the original column value for a discrete value and its alternative
-    static struct AltPair
+    private static struct AltPair
     {
         T prob; /// Probability p to select it by a coin toss, if this column is randomly picked
         size_t alt; /// Alternative value if coin toss at j fails
