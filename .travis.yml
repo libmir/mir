@@ -25,6 +25,7 @@ script:
  - dub fetch imageformats --version 6.0.0 && dub build imageformats
  - dub build --single examples/median_filter.d
  - dub build --single examples/means_of_columns.d
+ - (cd benchmark && make all)
 after_success:
  - bash <(curl -s https://codecov.io/bash)
 
