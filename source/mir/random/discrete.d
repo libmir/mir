@@ -51,11 +51,11 @@ struct Discrete(T)
     if (isNumeric!T)
 {
 
-    /// array with the original column value for a discrete value an
-    static struct AltPair
+    /// Array with the original column value for a discrete value and its alternative
+    private static struct AltPair
     {
-        T prob; /// probability p to select it by a coin toss, if this column is randomly picked
-        size_t alt; /// alternative value if coin toss at j fails
+        T prob; /// Probability p to select it by a coin toss, if this column is randomly picked
+        size_t alt; /// Alternative value if coin toss at j fails
     }
 
     private AltPair[] arr;
@@ -103,14 +103,15 @@ struct Discrete(T)
             size_t index; // original column index
         }
 
-        size_t smCounter, lgCounter;
-
         import std.experimental.allocator.mallocator : Mallocator;
         import std.experimental.allocator : dispose, makeArray;
         auto alloc = Mallocator.instance;
 
-        auto small = alloc.makeArray!ProbsIndexed(n); // columns that need to be filled
-        auto large = alloc.makeArray!ProbsIndexed(n); // used to fill columns
+        auto stack = alloc.makeArray!ProbsIndexed(n);
+        // front: columns that need to be filled
+        size_t smCounter;
+        // back: used to fill columns
+        size_t lgCounter = n - 1;
 
         foreach (i, p; probs)
         {
@@ -119,16 +120,16 @@ struct Discrete(T)
             // 1 is the average probability and depending on the ratio, we either
             // need to add values to a block or remove values
             if (sp < 1)
-                small[smCounter++] = ProbsIndexed(sp, i);
+                stack[smCounter++] = ProbsIndexed(sp, i);
             else
-                large[lgCounter++] = ProbsIndexed(sp, i);
+                stack[lgCounter--] = ProbsIndexed(sp, i);
         }
 
         // as long as there are elements in both stacks
-        while (smCounter > 0 && lgCounter > 0)
+        while (smCounter > 0 && lgCounter < n - 1)
         {
-            auto sm = small[--smCounter];
-            auto lg = large[--lgCounter];
+            auto sm = stack[--smCounter];
+            auto lg = stack[++lgCounter];
 
             // fill the smaller, discrete value with the larger
             arr[sm.index] = AltPair(sm.prob, lg.index);
@@ -137,35 +138,34 @@ struct Discrete(T)
             lg.prob += sm.prob - 1;
 
             if (lg.prob < 1)
-                small[smCounter++] = lg;
+                stack[smCounter++] = lg;
             else
-                large[lgCounter++] = lg;
+                stack[lgCounter--] = lg;
         }
 
         // do cleanup
-        for (auto i = lgCounter; i > 0; i--)
+        for (auto i = lgCounter + 1; i < n; i++)
         {
-            arr[large[i - 1].index].prob = 1;
+            arr[stack[i].index].prob = 1;
         }
 
         // only possible with numerical errors
-        for (auto i = smCounter; i > 0; i--)
+        for (sizediff_t i = smCounter - 1; i >= 0; i--)
         {
-            arr[small[i - 1].index].prob = 1;
+            arr[stack[i].index].prob = 1;
         }
 
-        alloc.dispose(small);
-        alloc.dispose(large);
+        alloc.dispose(stack);
     }
 
-    /// samples a value from the discrete distribution
+    /// Samples a value from the discrete distribution
     size_t opCall() const
     {
         import std.random : rndGen;
         return opCall(rndGen);
     }
 
-    /// samples a value from the discrete distribution using a custom random generator
+    /// Samples a value from the discrete distribution using a custom random generator
     size_t opCall(RNG)(ref RNG gen) const
     {
         import std.random : uniform;
@@ -282,14 +282,14 @@ struct NaiveDiscrete(T)
         this.cdPoints = cdPoints;
     }
 
-    /// samples a value from the discrete distribution
+    /// Samples a value from the discrete distribution
     size_t opCall() const
     {
         import std.random : rndGen;
         return opCall(rndGen);
     }
 
-    /// samples a value from the discrete distribution using a custom random generator
+    /// Samples a value from the discrete distribution using a custom random generator
     size_t opCall(RNG)(ref RNG gen) const
     {
         import std.random : uniform;
