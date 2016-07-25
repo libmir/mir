@@ -126,7 +126,7 @@ struct Discrete(T)
         }
 
         // as long as there are elements in both stacks
-        while (smCounter > 0 && lgCounter < n)
+        while (smCounter > 0 && lgCounter < n - 1)
         {
             auto sm = stack[--smCounter];
             auto lg = stack[++lgCounter];
