@@ -312,7 +312,9 @@ unittest
         assert(inverseAntiderivative!S(5.5, 0).approxEqual(1.70475));
 
         assert(inverseAntiderivative!S(1, -0.5) == -1);
-        assert(inverseAntiderivative!S(3, -0.5) == - S(1) / 3);
+        // @@@BUG 16327@@@@
+        S c = inverseAntiderivative!S(3, -0.5);
+        assert(c == S(-1) / 3);
         assert(inverseAntiderivative!S(5.5, -0.5).approxEqual(-0.181818));
 
         assert(inverseAntiderivative!S(1, -1).approxEqual(-1 / E));
