@@ -107,7 +107,7 @@ and its hat and squeeze function.
 Given these functions, compute the area and overwrite the references data type.
 
 Params:
-    iv = Interval
+    iv = Interval which should be calculated
 */
 void calcInterval(S)(ref Interval!S iv)
 in
@@ -120,22 +120,13 @@ body
     import mir.random.flex.internal.area: determineSqueezeAndHat, hatArea, squeezeArea;
     import std.math: isFinite;
 
-    // TODO: this is probably not needed anymore
-    if (iv.lx == iv.rx)
-    {
-        iv.hatArea = 0;
-        iv.squeezeArea = 0;
-    }
-    else
-    {
-        // calculate hat and squeeze functions
-        determineSqueezeAndHat(iv);
+    // calculate hat and squeeze functions
+    determineSqueezeAndHat(iv);
 
-        // update area
-        hatArea!S(iv);
-        squeezeArea!S(iv);
+    // update area
+    hatArea!S(iv);
+    squeezeArea!S(iv);
 
-        assert(iv.hatArea.isFinite, "hat area should be lower than infinity");
-        assert(iv.squeezeArea.isFinite, "squeezeArea area should be lower than infinity");
-    }
+    assert(iv.hatArea.isFinite, "hat area should be lower than infinity");
+    assert(iv.squeezeArea.isFinite, "squeezeArea area should be lower than infinity");
 }

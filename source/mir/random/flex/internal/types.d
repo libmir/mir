@@ -53,6 +53,54 @@ struct Interval(S)
 
     /// calculated area of the integrated squeeze function
     S squeezeArea;
+
+    // workaround against @@@BUG 16331@@@
+    // sets NaN's to be equal on comparison
+    version(Flex_logging)
+    bool opEquals(const Interval s2) const
+    {
+        import std.math : isNaN, isFloatingPoint;
+        import std.meta : AliasSeq;
+        string buildMixin()
+        {
+            enum symbols = AliasSeq!("lx", "rx", "c", "ltx", "lt1x", "lt2x",
+                                     "rtx", "rt1x", "rt2x", "hat", "squeeze", "hatArea", "squeezeArea");
+            enum linSymbols = AliasSeq!("slope", "y", "a");
+            string s = "return ";
+            foreach (i, attr; symbols)
+            {
+                if (i > 0)
+                    s ~= " && ";
+                s ~= "(";
+                auto attrName = symbols[i].stringof;
+                alias T = typeof(mixin("typeof(this).init." ~ attr));
+
+                if (isFloatingPoint!T)
+                {
+                    // allow NaNs
+                    s ~= "this." ~ attr ~ ".isNaN && s2." ~ attr ~ ".isNaN ||";
+                }
+                else if (is(T == const LinearFun!S))
+                {
+                    // allow NaNs
+                    s ~= "(";
+                    foreach (j, linSymbol; linSymbols)
+                    {
+                        if (j > 0)
+                            s ~= "||";
+                        s ~= attr ~ "." ~ linSymbol ~ ".isNaN";
+                        s ~= "&& s2." ~ attr ~ "." ~ linSymbol ~ ".isNaN";
+                    }
+                    s ~= ") ||";
+                }
+                s ~= attr ~ " == s2." ~ attr;
+                s ~= ")";
+            }
+            s ~= ";";
+            return s;
+        }
+        mixin(buildMixin());
+    }
 }
 
 /**

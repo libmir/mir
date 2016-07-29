@@ -549,17 +549,12 @@ body
 
     version(Flex_logging)
     {
-        import std.algorithm;
-        auto tArr = new Interval!S[ips.length];
-        // binary heap is an one-way store
-        for (auto k = 0; !ips.empty; ips.removeFront)
-            tArr[k++] = ips.front;
-        foreach (el; tArr)
-            ips.insert(el);
+        import std.algorithm.iteration : map;
+        auto ipsD = ips.dup;
         log("----");
-        log("Interval: ", tArr.map!`a.lx`);
-        log("hatArea", tArr.map!`a.hatArea`);
-        log("squeezeArea", tArr.map!`a.squeezeArea`);
+        log("Interval: ", ipsD.map!`a.lx`);
+        log("hatArea", ipsD.map!`a.hatArea`);
+        log("squeezeArea", ipsD.map!`a.squeezeArea`);
         log("----");
     }
 
@@ -621,7 +616,7 @@ body
         version(Flex_logging)
         {
             log("--split ", nrIntervals, " between ", curEl.lx, " - ", curEl.rx);
-            log("interval to be splitted: ", curEl);
+            log("interval to be split: ", curEl);
             log("new middle interval created: ", midIP);
         }
 
