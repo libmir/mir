@@ -30,8 +30,10 @@ template transform(string f0, string f1, string f2, string c)
 {
     import std.array : replace;
     enum raw = `_f0 = copysign(exp(_c * _f0), _c);
-                _f2 = _c * _f0 * (_c * _f1 * _f1 + _f2);
-                _f1 = _c * _f0 * _f1;`;
+                _f2 = _c * _f1 * _f1 + _f2;
+                _f2 *= _c * _f0;
+                _f1 *= c;
+                _f1 *= _f0;`;
     enum transform = raw.replace("_f0", f0).replace("_f1", f1).replace("_f2", f2).replace("_c", c);
 }
 
@@ -184,6 +186,33 @@ unittest
     }
 }
 
+// test with exact values
+unittest
+{
+    alias S = float;
+    S c = -0.9;
+
+    import mir.utility.linearfun : LinearFun;
+
+    const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+    const f1 = (S x) => 10 * x - 4 * x ^^ 3;
+    const f2 = (S x) => 10 - 12 * x ^^ 2;
+
+    S l = -3;
+    S r = -1.5;
+    auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+    transformInterval!S(iv);
+
+    Interval!S res = Interval!float(-0x1.8p+1, -0x1.8p+0, -0x1.ccccccp-1,
+         -0x1.ea215ap+51, 0x1.0cce4ap+58, -0x1.2c1f98p+64, -0x1.1df702p-3,
+         -0x1.820d74p-3, -0x1.3206eep+1, LinearFun!float(S.nan, S.nan, S.nan),
+        LinearFun!float(S.nan, S.nan, S.nan), S.nan, S.nan);
+
+    assert(iv == res);
+}
+
+
+
 /**
 Compute antiderivative FT of an inverse transformation: TF_C^-1
 Table 1, column 4 of Botts et al. (2013).
@@ -203,7 +232,11 @@ S antiderivative(bool common = false, S)(in S x, in S c)
             return -log(-x);
     }
     auto d = c + 1;
-    return fabs(c) / d * pow(fabs(x), d / c);
+    // surpress DMD's annoying FP magic
+    S v = fabs(c) / d;
+    S e = d / c;
+    S p = pow(fabs(x), e);
+    return v * p;
 }
 
 unittest

@@ -89,6 +89,11 @@ import mir.random.discrete : Discrete;
 import std.random : isUniformRNG;
 import std.traits : isCallable, isFloatingPoint, ReturnType;
 
+version(Flex_logging)
+{
+    import std.experimental.logger;
+}
+
 /**
 The Transformed Density Rejection with Inflection Points (Flex) algorithm
 can sample from arbitrary distributions given its density function f, its
@@ -232,10 +237,8 @@ unittest
     S[] points = [-3, -1.5, 0, 1.5, 3];
 
     auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
-
     auto value = tf(gen);
 }
-
 
 unittest
 {
@@ -292,7 +295,6 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
 
         auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
-
         auto value = tf(gen);
     }
 }
@@ -526,8 +528,12 @@ body
 
     version(Flex_logging)
     {
-        import std.experimental.logger;
         log("starting flex with p=", points, ", cs=", cs);
+        version(Flex_logging_hex)
+        {
+            logf("points= %(%a, %)", points);
+            logf("cs= %(%a, %)", points);
+        }
     }
 
     // initialize with user given splitting points
@@ -550,11 +556,22 @@ body
     version(Flex_logging)
     {
         import std.algorithm.iteration : map;
-        auto ipsD = ips.dup;
+        import std.array : array;
+        auto ipsD = ips.dup.array;
         log("----");
-        log("Interval: ", ipsD.map!`a.lx`);
-        log("hatArea", ipsD.map!`a.hatArea`);
-        log("squeezeArea", ipsD.map!`a.squeezeArea`);
+
+        logf("Interval: %(%f, %)", ipsD.map!`a.lx`);
+        version(Flex_logging_hex)
+            logf("Interval: %(%a, %)", ipsD.map!`a.lx`);
+
+        logf("hatArea: %(%f, %)", ipsD.map!`a.hatArea`);
+        version(Flex_logging_hex)
+            logf("hatArea: %(%a, %)", ipsD.map!`a.hatArea`);
+
+        logf("squeezeArea %(%f, %)", ipsD.map!`a.squeezeArea`);
+        version(Flex_logging_hex)
+            logf("squeezeArea %(%a, %)", ipsD.map!`a.squeezeArea`);
+
         log("----");
     }
 
@@ -572,6 +589,9 @@ body
         {
             tracef("iteration %d: totalHat: %.3f, totalSqueeze: %.3f, rho: %.3f",
                     i, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
+            version(Flex_logging_hex)
+                tracef("iteration %d: totalHat: %a, totalSqueeze: %a, rho: %a",
+                        i, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
         }
 
         immutable avgArea = nextDown(totalHatArea - totalSqueezeArea) / nrIntervals;
@@ -694,6 +714,10 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
+        import std.stdio;
+        writeln(ips.map!`a.hatArea`);
+        writeln(hats);
+        writeln(ips.map!`a.hatArea`.equal!approxEqual(hats));
         assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
         assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
     }
@@ -946,5 +970,3 @@ unittest
         }
     }
 }
-
-

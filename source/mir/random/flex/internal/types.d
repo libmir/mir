@@ -101,6 +101,15 @@ struct Interval(S)
         }
         mixin(buildMixin());
     }
+
+    ///
+    version(Flex_logging) string logHex()
+    {
+        import std.format : format;
+        return "Interval!%s(%a, %a, %a, %a, %a, %a, %a, %a, %a, %s, %s, %a, %a)"
+               .format(S.stringof, lx, rx, c, ltx, lt1x, lt2x, rtx, rt1x, rt2x,
+                       hat.logHex, squeeze.logHex, hatArea, squeezeArea);
+    }
 }
 
 /**
