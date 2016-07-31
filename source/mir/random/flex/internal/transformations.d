@@ -2,6 +2,11 @@ module mir.random.flex.internal.transformations;
 
 import mir.random.flex.internal.types : Interval;
 
+version(Flex_logging)
+{
+    import std.experimental.logger;
+}
+
 /**
 Create a c-transformation, based on a function and it's first two derivatives
 
@@ -208,6 +213,7 @@ unittest
          -0x1.820d74p-3, -0x1.3206eep+1, LinearFun!float(S.nan, S.nan, S.nan),
         LinearFun!float(S.nan, S.nan, S.nan), S.nan, S.nan);
 
+    version(Flex_logging_hex) scope(failure) logf("got: %s", iv);
     assert(iv == res);
 }
 
