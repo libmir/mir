@@ -22,6 +22,7 @@ test:
     - dscanResult=$(./dscanner --config .dscanner.ini --styleCheck source 2> /dev/null ) ; if [ -z "${dscanResult}" ] ; then echo "No warnings found" ; else echo $dscanResult && $(exit 1); fi
     - grep -E "(for|foreach|foreach_reverse|if|while)\(" $(find source -name '*.d'); test $? -eq 1
     - rdmd ./checkwhitespace.d $(find source -name '*.d')
+    - sed 's/"to_be_filled"/"Flex_logging", "Flex_logging_hex"/' -i dub.json
     - dub test
     - dub build --single examples/flex_plot.d
     - dub build -c median-filter

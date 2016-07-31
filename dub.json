@@ -18,6 +18,10 @@
             "targetType": "dynamicLibrary",
         },
         {
+            "name": "unittest",
+            "versions": ["to_be_filled"],
+        },
+        {
             "name": "median-filter",
             "targetName": "median-filter",
             "targetType": "executable",
