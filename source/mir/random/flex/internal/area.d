@@ -550,6 +550,15 @@ unittest
             {
                 scope(failure)
                 {
+                    version(Windows)
+                    {
+                        logf("got: %a", iv.squeezeArea);
+                        logf("exp: %a", sqs[i][j]);
+                        logf("%s", iv.squeezeArea == sqs[i][j]);
+                        import std.math : approxEqual;
+                        logf("%s", iv.squeezeArea.approxEqual(sqs[i][j]));
+                        logf("pos: %d,%d", i, j);
+                    }
                     logf("c=%g, p1=%g,p2=%g, hat=%g, squeeze=%f",
                                      c, p1, p2, iv.hatArea, iv.squeezeArea);
                     version(Flex_logging_hex) logf("hat: %a, squeeze: %a", iv.hatArea, iv.squeezeArea);
