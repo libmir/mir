@@ -44,8 +44,8 @@ version(unittest)
     version(Flex_fpEqual)
     {
         import std.math : approxEqual;
-        bool fpEqual(float a, float b) { return a.approxEqual(b, 1e-8, 1e-8); }
-        bool fpEqual(double a, double b) { return a.approxEqual(b, 1e-16, 1e-16); }
+        bool fpEqual(float a, float b) { return a.approxEqual(b, 1e-5, 1e-5); }
+        bool fpEqual(double a, double b) { return a.approxEqual(b, 1e-14, 1e-14); }
         bool fpEqual(real a, real b) { return a.approxEqual(b, 1e-18, 1e-18); }
     }
 }
