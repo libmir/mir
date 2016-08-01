@@ -552,8 +552,11 @@ unittest
                 {
                     version(Windows)
                     {
+                        import std.math : nextDown, nextUp;
                         logf("got: %a", iv.squeezeArea);
+                        logf("-- up: %a, down: %a", iv.squeezeArea.nextUp, iv.squeezeArea.nextDown);
                         logf("exp: %a", sqs[i][j]);
+                        logf("-- up: %a, down: %a", sqs[i][j].nextUp, sqs[i][j].nextDown);
                         logf("%s", iv.squeezeArea == sqs[i][j]);
                         import std.math : approxEqual;
                         logf("%s", iv.squeezeArea.approxEqual(sqs[i][j]));
