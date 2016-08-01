@@ -571,7 +571,7 @@ body
             logf("Interval: %(%a, %)", ipsD.map!`a.lx`);
 
         logf("hatArea: %(%f, %)", ipsD.map!`a.hatArea`);
-        version(Flex_logging_hex)
+        version(Windows) {} else version(Flex_logging_hex)
             logf("hatArea: %(%a, %)", ipsD.map!`a.hatArea`);
 
         logf("squeezeArea %(%f, %)", ipsD.map!`a.squeezeArea`);
