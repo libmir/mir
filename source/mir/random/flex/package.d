@@ -592,6 +592,7 @@ body
         if (totalHatArea / totalSqueezeArea <= rho)
             break;
 
+        version(Windows) {} else
         version(Flex_logging)
         {
             tracef("iteration %d: totalHat: %.3f, totalSqueeze: %.3f, rho: %.3f",
