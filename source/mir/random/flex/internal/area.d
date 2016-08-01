@@ -575,18 +575,17 @@ unittest
             determineSqueezeAndHat(iv);
 
             hatArea!S(iv);
+            assert(iv.hatArea == hats[i][j]);
+            squeezeArea!S(iv);
 
             /// workaround for @@@BUG 16344@@@ on windows
             version(Windows)
             {
                 import std.math : approxEqual;
-                assert(iv.hatArea.approxEqual(hats[i][j]));
+                assert(iv.squeezeArea.approxEqual(sqs[i][j]));
             }
             else
-                assert(iv.hatArea == hats[i][j]);
-
-            squeezeArea!S(iv);
-            assert(iv.squeezeArea == sqs[i][j]);
+                assert(iv.squeezeArea == sqs[i][j]);
         }
     }
 }
