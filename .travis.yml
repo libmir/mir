@@ -23,6 +23,7 @@ branches:
   only:
     - master
     - stable
+    - tinflex
 script:
  - echo "$ARCH"
  - dub test --arch "$ARCH" -b unittest-cov

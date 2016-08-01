@@ -29,6 +29,7 @@ branches:
   only:
     - master
     - stable
+    - tinflex
 
 install:
   - ps: function SetUpDCompiler
