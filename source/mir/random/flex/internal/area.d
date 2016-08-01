@@ -565,7 +565,7 @@ unittest
             hatArea!S(iv);
             // on Windows is S.max == inf
             if (iv.hatArea == S.max || iv.hatArea.isInfinity)
-                assert(hats[i][j].isInfinity);
+                assert(hats[i][j].isInfinity || hats[i][j] == S.max);
             else
                 assert(iv.hatArea == hats[i][j]);
 
