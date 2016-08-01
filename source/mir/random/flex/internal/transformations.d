@@ -4,7 +4,7 @@ import mir.random.flex.internal.types : Interval;
 
 version(Flex_logging)
 {
-    import std.experimental.logger;
+    import std.experimental.logger : logf;
 }
 
 /**
@@ -34,7 +34,8 @@ Returns: In-place code for the transformation
 template transform(string f0, string f1, string f2, string c)
 {
     import std.array : replace;
-    enum raw = `_f0 = copysign(exp(_c * _f0), _c);
+    enum raw = `_f0 *= _c;
+                _f0 = copysign(exp(_f0), _c);
                 _f2 = _c * _f1 * _f1 + _f2;
                 _f2 *= _c * _f0;
                 _f1 *= c;
@@ -61,7 +62,8 @@ in
 }
 body
 {
-    import mir.internal.math: pow, exp, copysign;
+    import mir.internal.math: pow, copysign;
+    import std.math : exp;
     with(iv)
     {
         // for c=0 no transformations are applied
@@ -213,8 +215,12 @@ unittest
          -0x1.820d74p-3, -0x1.3206eep+1, LinearFun!float(S.nan, S.nan, S.nan),
         LinearFun!float(S.nan, S.nan, S.nan), S.nan, S.nan);
 
-    version(Flex_logging_hex) scope(failure) logf("got: %s", iv);
-    assert(iv == res);
+    import std.meta : AliasSeq;
+    enum symbols = AliasSeq!("lx", "rx", "c", "ltx", "lt1x", "lt2x",
+                             "rtx", "rt1x", "rt2x");
+    import std.conv : to;
+    foreach (i, attr; symbols)
+        assert(mixin("iv." ~ attr ~ " == " ~ "res." ~ attr));
 }
 
 
@@ -225,7 +231,7 @@ Table 1, column 4 of Botts et al. (2013).
 */
 S antiderivative(bool common = false, S)(in S x, in S c)
 {
-    import mir.internal.math : exp, log, pow, copysign, fabs;
+    import mir.internal.math : exp, log, copysign, fabs;
     import std.math: sgn;
     assert(sgn(c) * x >= 0);
     static if (!common)
@@ -238,6 +244,8 @@ S antiderivative(bool common = false, S)(in S x, in S c)
             return -log(-x);
     }
     auto d = c + 1;
+    // std.math.pow and llvm_pow are different
+    import std.math : pow;
     // surpress DMD's annoying FP magic
     S v = fabs(c) / d;
     S e = d / c;

@@ -33,7 +33,7 @@ struct Interval(S)
     /// transformed value of the second derivate of the left lx value
     S lt2x;
 
-    /// transformed rght value of rx
+    /// transformed right value of rx
     S rtx;
 
     /// transformed value of the first derivate of the right rx value
@@ -103,7 +103,7 @@ struct Interval(S)
     }
 
     ///
-    version(Flex_logging) string logHex()
+    version(Flex_logging_hex) string logHex()
     {
         import std.format : format;
         return "Interval!%s(%a, %a, %a, %a, %a, %a, %a, %a, %a, %s, %s, %a, %a)"

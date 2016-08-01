@@ -202,7 +202,8 @@ body
     {
         if (fabs(z) < constants!S.smallExp)
         {
-            area = exp(sh.a);
+            import std.math : std_exp = exp;
+            area = std_exp(sh.a);
             S t = (z * z * z) * one_div_24;
             t += 1 + z * S(0.5) + (z * z) * one_div_6;
             area *= t;
@@ -210,7 +211,8 @@ body
         }
         else
         {
-            area = exp(shR) - exp(shL);
+            import std.math : std_exp = exp;
+            area = std_exp(shR) - std_exp(shL);
             area /= sh.slope;
         }
     }
@@ -245,15 +247,19 @@ body
         {
             if (fabs(z) < constants!S.smallLog)
             {
-                area = (1 - z * S(0.5) + z * z * one_div_3);
-                area *= S(-1) * ivLength;
+                area = 1 - z * S(0.5) + z * z * one_div_3;
+                area *=  -ivLength;
                 area /= sh.a;
             }
             else
             {
                 int lexp = void, rexp = void;
-                immutable rem = log2(frexp(-shL, lexp) / frexp(-shR, rexp));
-                area = (lexp - rexp + rem) / (S(LOG2E) * sh.slope);
+                S b = frexp(-shL, lexp);
+                b /= frexp(-shR, rexp);
+                immutable S rem = log2(b);
+                area = lexp - rexp + rem;
+                area /= sh.slope;
+                area /= S(LOG2E);
             }
         }
         else
@@ -270,7 +276,7 @@ body
                 // workaround for @@@BUG 16341 @@@
                 S r = antiderivative!true(shR, iv.c);
                 S l = antiderivative!true(shL, iv.c);
-                area = (r - l);
+                area = r - l;
                 area /= sh.slope;
             }
         }
@@ -403,7 +409,7 @@ unittest
     static immutable S[][] hats = [
         [0x1.fffffffffffffp+1023, 0x1.ff8f9396f50e2p+2, 0x1.ff8f9396f50e2p+2, 0x1.fffffffffffffp+1023],
         [0x1.fffffffffffffp+1023, 0x1.e35db2669856ep+2, 0x1.e35db2669856ep+2, 0x1.fffffffffffffp+1023],
-        [0x1.fffffffffffffp+1023, 0x1.c039357a17c93p+2, 0x1.c039357a17c93p+2, 0x1.fffffffffffffp+1023],
+        [0x1.fffffffffffffp+1023, 0x1.c039357a17c94p+2, 0x1.c039357a17c93p+2, 0x1.fffffffffffffp+1023],
         [0x1.fffffffffffffp+1023, 0x1.b817e89389152p+2, 0x1.b817e89389152p+2, 0x1.fffffffffffffp+1023],
         [0x1.fffffffffffffp+1023, 0x1.92a74bbc5a7adp+2, 0x1.92a74bbc5a7adp+2, 0x1.fffffffffffffp+1023],
         [0x1.26f6ccfd68206p+6, 0x1.6fd2200cf8904p+2, 0x1.6fd2200cf8904p+2, 0x1.26f6ccfd68206p+6],
@@ -491,7 +497,7 @@ unittest
     static immutable S[][] hats = [
         [S.max, 0xf.fc7c9cb7a87140cp-1, 0xf.fc7c9cb7a87140cp-1, S.max],
         [S.max, 0xf.1aed9334c2b6f0fp-1, 0xf.1aed9334c2b6f0fp-1, S.max],
-        [S.max, 0xe.01c9abd0be49afep-1, 0xe.01c9abd0be49affp-1, S.max],
+        [S.max, 0xe.01c9abd0be49affp-1, 0xe.01c9abd0be49affp-1, S.max],
         [S.max, 0xd.c0bf449c48aa21bp-1, 0xd.c0bf449c48aa21bp-1, S.max],
         [S.max, 0xc.953a5de2d3d6f01p-1, 0xc.953a5de2d3d6f01p-1, S.max],
         [0x9.37b667eb41023fcp+3, 0xb.7e910067c482675p-1, 0xb.7e910067c482675p-1, 0x9.37b667eb41023fcp+3],
@@ -561,9 +567,6 @@ unittest
             squeezeArea!S(iv);
 
             assert(iv.squeezeArea == sqs[i][j]);
-
-            //if (iv.lx == S(-1.5) && c == S(1))
-                //assert(0);
         }
     }
 }
