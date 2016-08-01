@@ -7,4 +7,8 @@ unittest
     import std.stdio;
     writeln("test windows");
     assert(f == f2);
+    writeln("test windows II");
+    S f3 = f2 + 0;
+    assert(f == f3);
+    writeln("test windows III");
 }
