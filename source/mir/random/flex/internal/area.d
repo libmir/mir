@@ -8,6 +8,48 @@ version(Flex_logging)
     import std.experimental.logger;
 }
 
+/*
+FP operations depend on
+ - the compiler (e.g. std.math.pow yields different results to llvm_pow)
+ - the architecture (DMD x86 without optimization is unpredictable)
+ - the OS (Windows has FP magic (e.g. bug 16344)
+
+=> we use DMD64 as "true" reference and approxEqual for other compilers
+*/
+version(unittest)
+{
+    // the difference is marginal, but measurable
+    version(Windows)
+    {
+        version = Flex_fpEqual;
+    }
+    else
+    {
+        version(DigitalMars)
+        {
+            version(X86_64)
+            {
+                alias fpEqual = (a, b) => a == b;
+            }
+            else
+            {
+                version = Flex_fpEqual;
+            }
+        }
+        else
+        {
+            version = Flex_fpEqual;
+        }
+    }
+    version(Flex_fpEqual)
+    {
+        import std.math : approxEqual;
+        enum maxRelDiff = 1e-15;
+        enum maxAbsDiff = 1e-15;
+        alias fpEqual = (a, b) => a.approxEqual(b, maxRelDiff, maxAbsDiff);
+    }
+}
+
 /**
 Determines the hat and squeeze function of an interval.
 Based on Theorem 1 of Botts et al. (2013).
@@ -202,8 +244,7 @@ body
     {
         if (fabs(z) < constants!S.smallExp)
         {
-            import std.math : std_exp = exp;
-            area = std_exp(sh.a);
+            area = exp(sh.a);
             S t = (z * z * z) * one_div_24;
             t += 1 + z * S(0.5) + (z * z) * one_div_6;
             area *= t;
@@ -211,8 +252,7 @@ body
         }
         else
         {
-            import std.math : std_exp = exp;
-            area = std_exp(shR) - std_exp(shL);
+            area = exp(shR) - exp(shL);
             area /= sh.slope;
         }
     }
@@ -385,10 +425,10 @@ unittest
             determineSqueezeAndHat(iv);
 
             hatArea!S(iv);
-            assert(iv.hatArea == hats[i][j]);
+            assert(iv.hatArea.fpEqual(hats[i][j]));
 
             squeezeArea!S(iv);
-            assert(iv.squeezeArea == sqs[i][j]);
+            assert(iv.squeezeArea.fpEqual(sqs[i][j]));
         }
     }
 }
@@ -473,10 +513,10 @@ unittest
             determineSqueezeAndHat(iv);
 
             hatArea!S(iv);
-            assert(iv.hatArea == hats[i][j]);
-            squeezeArea!S(iv);
+            assert(iv.hatArea.fpEqual(hats[i][j]));
 
-            assert(iv.squeezeArea == sqs[i][j]);
+            squeezeArea!S(iv);
+            assert(iv.squeezeArea.fpEqual(sqs[i][j]));
         }
     }
 }
@@ -576,18 +616,8 @@ unittest
             hatArea!S(iv);
             squeezeArea!S(iv);
 
-            /// workaround for @@@BUG 16344@@@ on windows
-            version(Windows)
-            {
-                import std.math : approxEqual;
-                assert(iv.hatArea.approxEqual(hats[i][j]));
-                assert(iv.squeezeArea.approxEqual(sqs[i][j]));
-            }
-            else
-            {
-                assert(iv.squeezeArea == sqs[i][j]);
-                assert(iv.hatArea == hats[i][j]);
-            }
+            assert(iv.hatArea.fpEqual(hats[i][j]));
+            assert(iv.squeezeArea.fpEqual(sqs[i][j]));
         }
     }
 }
@@ -733,7 +763,7 @@ unittest
     foreach (S; AliasSeq!(real))
     {
 
-        import std.math : log;
+        import mir.internal.math : log;
         auto f0 = (S x) => log(1 - x^^4);
         auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
         auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
@@ -773,9 +803,10 @@ unittest
 // distribution 4
 unittest
 {
+    import mir.internal.math : log;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual, isInfinity;
+    import std.math: abs, approxEqual, isInfinity;
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;
 
@@ -810,7 +841,7 @@ unittest
 
     foreach (S; AliasSeq!(float, double, real))
     {
-        import std.math : abs, log;
+
         auto f0 = (S x) => -log(abs(x))/2;
         auto f1 = (S x) => -1/(2*x);
         auto f2 = (S x) => 1/(2*x^^2);
@@ -846,9 +877,10 @@ unittest
 // distribution 4 with less points
 unittest
 {
+    import mir.internal.math : log;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual, isInfinity;
+    import std.math: abs, approxEqual, isInfinity;
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;
 
@@ -886,7 +918,6 @@ unittest
 
     foreach (S; AliasSeq!(float, double, real))
     {
-        import std.math : abs, log;
         auto f0 = (S x) => -log(abs(x))/2;
         auto f1 = (S x) => -1/(2*x);
         auto f2 = (S x) => 1/(2*x^^2);
@@ -923,6 +954,7 @@ unittest
 // distribution 3 with other boundaries
 unittest
 {
+    import mir.internal.math : log;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
@@ -968,7 +1000,6 @@ unittest
 
     foreach (S; AliasSeq!(float, double, real))
     {
-        import std.math : log;
         auto f0 = (double x) => -2 *  x^^4 + 4 * x^^2;
         auto f1 = (double x) => -8 *  x^^3 + 8 * x;
         auto f2 = (double x) => -24 * x^^2 + 8;

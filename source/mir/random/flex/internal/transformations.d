@@ -62,8 +62,7 @@ in
 }
 body
 {
-    import mir.internal.math: pow, copysign;
-    import std.math : exp;
+    import mir.internal.math: copysign, exp, copysign;
     with(iv)
     {
         // for c=0 no transformations are applied
@@ -231,7 +230,7 @@ Table 1, column 4 of Botts et al. (2013).
 */
 S antiderivative(bool common = false, S)(in S x, in S c)
 {
-    import mir.internal.math : exp, log, copysign, fabs;
+    import mir.internal.math : copysign, exp, fabs, log, pow;
     import std.math: sgn;
     assert(sgn(c) * x >= 0);
     static if (!common)
@@ -244,8 +243,6 @@ S antiderivative(bool common = false, S)(in S x, in S c)
             return -log(-x);
     }
     auto d = c + 1;
-    // std.math.pow and llvm_pow are different
-    import std.math : pow;
     // surpress DMD's annoying FP magic
     S v = fabs(c) / d;
     S e = d / c;

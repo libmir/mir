@@ -142,7 +142,7 @@ auto flex(S, F0, F1, F2)
                 S[] cs, S[] points, S rho = 1.1)
     if (isFloatingPoint!S)
 {
-    import std.math: exp;
+    import mir.internal.math: exp;
     auto pdf = (S x) => exp(f0(x));
     return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho));
 }
@@ -849,9 +849,10 @@ unittest
 {
     import std.algorithm : equal, map;
     import std.array : array;
-    import std.math : approxEqual, log;
+    import std.math : approxEqual;
     import std.meta : AliasSeq;
     import std.range : repeat;
+    import mir.internal.math : log;
 
     static immutable hats = [0.00648327, 0.0133705, 0.33157, 0.5, 0.5, 0.16167,
                              0.136019, 0.0133705, 0.00648327];
@@ -905,7 +906,7 @@ Returns: flex-inversed value of x
 */
 S flexInverse(bool common = false, S)(in S x, in S c)
 {
-    import mir.internal.math : fabs, exp, copysign;
+    import mir.internal.math : pow, fabs, exp, copysign;
     import std.math: sgn;
     assert(sgn(c) * x >= 0);
     static if (!common)
@@ -920,7 +921,6 @@ S flexInverse(bool common = false, S)(in S x, in S c)
             return x;
     }
     // LDC intrinsics compiles to the assembler powf which yields different results
-    import std.math : pow, fabs;
     return pow(fabs(x), 1 / c);
 }
 
