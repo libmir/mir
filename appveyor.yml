@@ -4,15 +4,15 @@ environment:
   - DC: dmd
     DVersion: 2.071.1
     arch: x64
-  - DC: dmd
-    DVersion: 2.071.1
-    arch: x86
-  - DC: ldc
-    DVersion: '1.0.0'
-    arch: x64
-  - DC: ldc
-    DVersion: 0.17.0
-    arch: x64
+  #- DC: dmd
+    #DVersion: 2.071.1
+    #arch: x86
+  #- DC: ldc
+    #DVersion: '1.0.0'
+    #arch: x64
+  #- DC: ldc
+    #DVersion: 0.17.0
+    #arch: x64
 
 matrix:
   allow_failures:
@@ -105,9 +105,9 @@ test_script:
 notifications:
  - provider: Webhook
    url: https://webhooks.gitter.im/e/56aae174f8cc81f4eda4
- - provider: Email
-   to:
-    - devteam@mir.rocks
-   on_build_success: false
-   on_build_failure: true
-   on_build_status_changed: true
+ #- provider: Email
+   #to:
+    #- devteam@mir.rocks
+   #on_build_success: false
+   #on_build_failure: true
+   #on_build_status_changed: true
