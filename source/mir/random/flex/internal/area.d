@@ -575,9 +575,13 @@ unittest
             determineSqueezeAndHat(iv);
 
             hatArea!S(iv);
-            // on Windows is S.max == inf
-            if (iv.hatArea == S.max || iv.hatArea.isInfinity)
-                assert(hats[i][j].isInfinity || hats[i][j] == S.max);
+
+            /// workaround for @@@BUG 16344@@@ on windows
+            version(Windows)
+            {
+                import std.math : approxEqual;
+                assert(iv.hatArea.approxEqual(hats[i][j]));
+            }
             else
                 assert(iv.hatArea == hats[i][j]);
 
