@@ -524,7 +524,7 @@ body
         if (!(aVal == bVal))
             return aVal < bVal;
         else
-            return a.lx < b.lx; // TODO: change tests to reverse
+            return a.lx < b.lx;
     })(arr);
 
     S l = points[0];
