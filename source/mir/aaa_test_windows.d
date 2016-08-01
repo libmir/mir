@@ -1,3 +1,4 @@
+module mir.aaa_test_windows;
 unittest
 {
     alias S = double;
