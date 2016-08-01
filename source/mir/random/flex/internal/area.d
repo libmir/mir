@@ -563,9 +563,13 @@ unittest
             determineSqueezeAndHat(iv);
 
             hatArea!S(iv);
-            assert(iv.hatArea == hats[i][j]);
-            squeezeArea!S(iv);
+            // on Windows is S.max == inf
+            if (iv.hatArea == S.max || iv.hatArea.isInfinity)
+                assert(hats[i][j].isInfinity);
+            else
+                assert(iv.hatArea == hats[i][j]);
 
+            squeezeArea!S(iv);
             assert(iv.squeezeArea == sqs[i][j]);
         }
     }
