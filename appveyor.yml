@@ -4,15 +4,12 @@ environment:
   - DC: dmd
     DVersion: 2.071.1
     arch: x64
-  #- DC: dmd
-    #DVersion: 2.071.1
-    #arch: x86
-  #- DC: ldc
-    #DVersion: '1.0.0'
-    #arch: x64
-  #- DC: ldc
-    #DVersion: 0.17.0
-    #arch: x64
+  - DC: dmd
+    DVersion: 2.071.1
+    arch: x86
+  - DC: ldc
+    DVersion: '1.0.0'
+    arch: x64
 
 matrix:
   allow_failures:
