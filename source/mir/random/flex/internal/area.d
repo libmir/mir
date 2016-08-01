@@ -50,11 +50,11 @@ version(unittest)
         // probably yet another LDC Windows bug
         version(LDC)
             version(Windows)
-                enum real maxError = 1e-15;
+                enum real maxError = 1e-14;
             else
                 enum real maxError = 1e-18;
         else
-            enum real maxError = 1e-15;
+            enum real maxError = 1e-18;
 
         bool fpEqual(real a, real b) { return a.approxEqual(b, 1e-18, 1e-18); }
     }
