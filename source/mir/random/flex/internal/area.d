@@ -46,6 +46,16 @@ version(unittest)
         import std.math : approxEqual;
         bool fpEqual(float a, float b) { return a.approxEqual(b, 1e-5, 1e-5); }
         bool fpEqual(double a, double b) { return a.approxEqual(b, 1e-14, 1e-14); }
+
+        // probably yet another LDC Windows bug
+        version(LDC)
+            version(Windows)
+                enum real maxError = 1e-15;
+            else
+                enum real maxError = 1e-18;
+        else
+            enum real maxError = 1e-15;
+
         bool fpEqual(real a, real b) { return a.approxEqual(b, 1e-18, 1e-18); }
     }
 }
