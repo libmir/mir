@@ -6,7 +6,7 @@ It contains basic multidimensional iteration algorithms.
 
 $(BOOKTABLE Iteration operators,
 $(TR $(TH Operator Name) $(TH Type) $(TH Functions / Seeds #)  $(TH Vectorization) $(TH Tensors #) $(TH Returns) $(TH First Argument))
-$(T7 ndMap, Lazy, `>=1`, `1`, N/A, Tensor, Tensor)
+$(T7 ndMap, Lazy, `1`, N/A, 1, Tensor, Tensor)
 $(T7 ndFold, Eagerly, `>=1`, No, `1`, Scalar, Tensor)
 $(T7 ndReduce, Eagerly, `1`, Optional, `>=1`, Scalar, Seed)
 $(T7 ndEach, Eagerly, `1`/`0`, Optional, `>=1`, `void`, Tensor)
