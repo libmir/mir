@@ -17,11 +17,19 @@ LDC - the LLVM D compiler (918073):
 
 $ dub run --build=release-nobounds --compiler=ldmd2 --single dot_product.d
 
+DOUBLE:
        ndReduce vectorized = 3 ms, 314 μs
                   ndReduce = 14 ms, 767 μs
 numeric.dotProduct, arrays = 7 ms, 260 μs
 numeric.dotProduct, slices = 14 ms, 782 μs
               zip & reduce = 44 ms, 57 μs
+
+FLOAT:
+       ndReduce vectorized = 2 ms, 200 μs
+                  ndReduce = 14 ms, 543 μs
+numeric.dotProduct, arrays = 7 ms, 208 μs
+numeric.dotProduct, slices = 14 ms, 414 μs
+              zip & reduce = 43 ms, 657 μs
 +/
 import std.numeric : dotProduct;
 import std.typecons;
