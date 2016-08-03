@@ -67,7 +67,7 @@ void main()
             { result = ndReduce!distKernel(F(0), asl, bsl).sqrt; },
             { result = euclideanDistance(a, b); },
             { result = euclideanDistance(a.sliced, b.sliced); },
-            { result = reduce!((a, b) => distKernel(a, b[0], b[1]))(0.0f, zip(a, b)).sqrt; },
+            { result = reduce!((a, b) => distKernel(a, b[0], b[1]))(F(0), zip(a, b)).sqrt; },
         )(2000);
         foreach(i, ref b; bestBench)
             b = min(bench[i].to!Duration, b);

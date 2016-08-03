@@ -65,7 +65,7 @@ void main()
             { result = ndReduce!(fmuladd)(F(0), asl, bsl); },
             { result = dotProduct(a, b); },
             { result = dotProduct(a.sliced, b.sliced); },
-            { result = reduce!"a + b[0] * b[1]"(0.0f, zip(a, b)); },
+            { result = reduce!"a + b[0] * b[1]"(F(0), zip(a, b)); },
         )(2000);
         foreach(i, ref b; bestBench)
             b = min(bench[i].to!Duration, b);
