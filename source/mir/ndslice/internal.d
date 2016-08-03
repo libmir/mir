@@ -15,7 +15,7 @@ else
 }
 
 enum FastmathDummy { init }
-FastmathDummy fastmathDummy() { return FastmathDummy.init; };
+FastmathDummy fastmathDummy() { return FastmathDummy.init; }
 
 alias RangeOf(T : Slice!(N, Range), size_t N, Range) = Range;
 
