@@ -1,7 +1,7 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
-This is a submodule of $(LINK2 mir_ndslice.html, mir.ndslice).
+This is a submodule of $(MREF std, experimental, ndslice).
 
 Selectors create new views and iteration patterns over the same data, without copying.
 
@@ -27,12 +27,12 @@ $(T2 evertPack, reverses dimension packs)
 $(BOOKTABLE $(H2 Selectors),
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 byElement, a random access range of all elements with `index` property)
+$(T2 byElement, flat, random access range of all elements with `index` property)
 $(T2 byElementInStandardSimplex, an input range of all elements in standard simplex of hypercube with `index` property.
     If the slice has two dimensions, it is a range of all elements of upper left triangular matrix.)
-$(T2 indexSlice, returns a lazy slice with elements equal to the initial multidimensional index)
-$(T2 iotaSlice, returns a lazy slice with elements equal to the initial flattened (continuous) index)
-$(T2 reshape, returns a new slice for the same data)
+$(T2 indexSlice, lazy slice with initial multidimensional index)
+$(T2 iotaSlice, lazy slice with initial flattened (continuous) index)
+$(T2 reshape, new slice with changed dimensions for the same data)
 $(T2 diagonal, 1-dimensional slice composed of diagonal elements)
 $(T2 blocks, n-dimensional slice composed of n-dimensional non-overlapping blocks.
     If the slice has two dimensions, it is a block matrix.)
@@ -40,15 +40,14 @@ $(T2 windows, n-dimensional slice of n-dimensional overlapping windows.
     If the slice has two dimensions, it is a sliding window.)
 )
 
-License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
 Source:    $(PHOBOSSRC std/_experimental/_ndslice/_selection.d)
 
 Macros:
-SUBMODULE = $(LINK2 mir_ndslice_$1.html, mir.ndslice.$1)
-SUBREF = $(LINK2 mir_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, std,experimental, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
@@ -69,7 +68,7 @@ Params:
     K = sizes of dimension packs
 Returns:
     `pack!K` returns `Slice!(N-K, Slice!(K+1, Range))`;
-    `slice.pack!(K1, K2, ..., Kn)` is the same as `slice.pacKed!K1.pacKed!K2. ... pacKed!Kn`.
+    `slice.pack!(K1, K2, ..., Kn)` is the same as `slice.pack!K1.pack!K2. ... pack!Kn`.
 +/
 template pack(K...)
 {
@@ -99,9 +98,27 @@ template pack(K...)
 ///
 @safe @nogc pure nothrow unittest
 {
+    import mir.ndslice : sliced, Slice, pack;
+    import std.range : iota;
+
+    auto r = (3 * 4 * 5 * 6).iota;
+    auto a = r.sliced(3, 4, 5, 6);
+    auto b = a.pack!2;
+
+    static immutable res1 = [3, 4];
+    static immutable res2 = [5, 6];
+    assert(b.shape == res1);
+    assert(b[0, 0].shape == res2);
+    assert(a == b);
+    static assert(is(typeof(b) == typeof(a.pack!2)));
+    static assert(is(typeof(b) == Slice!(2, Slice!(3, typeof(r)))));
+}
+
+@safe @nogc pure nothrow unittest
+{
     import mir.ndslice.slice;
-    import std.range.primitives: ElementType;
-    import std.range: iota;
+    import std.range.primitives : ElementType;
+    import std.range : iota;
     auto r = (3 * 4 * 5 * 6 * 7 * 8 * 9 * 10 * 11).iota;
     auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
     auto b = a.pack!(2, 3); // same as `a.pack!2.pack!3`
@@ -204,7 +221,7 @@ evertPack(size_t N, Range)(auto ref Slice!(N, Range) slice)
 ///
 @safe @nogc pure nothrow unittest
 {
-    import mir.ndslice.iteration: transposed;
+    import mir.ndslice.iteration : transposed;
     auto slice = iotaSlice(3, 4, 5, 6, 7, 8, 9, 10, 11);
     assert(slice
         .pack!2
@@ -219,10 +236,10 @@ evertPack(size_t N, Range)(auto ref Slice!(N, Range) slice)
 pure nothrow unittest
 {
     import mir.ndslice.slice;
-    import mir.ndslice.iteration: transposed;
-    import std.range.primitives: ElementType;
-    import std.range: iota;
-    import std.algorithm.comparison: equal;
+    import mir.ndslice.iteration : transposed;
+    import std.range.primitives : ElementType;
+    import std.range : iota;
+    import std.algorithm.comparison : equal;
     auto r = (3 * 4 * 5 * 6 * 7 * 8 * 9 * 10 * 11).iota;
     auto a = r.sliced(3, 4, 5, 6, 7, 8, 9, 10, 11);
     auto b = a
@@ -308,11 +325,11 @@ Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
     assert(iotaSlice(2, 3).diagonal == d);
 }
 
+/// Non-square matrix
 @safe @nogc pure nothrow unittest
 {
-    import mir.ndslice.slice;
-    import std.algorithm.comparison: equal;
-    import std.range: iota, only;
+    import std.algorithm.comparison : equal;
+    import std.range : only;
 
     //  -------
     // | 0 1 |
@@ -327,7 +344,7 @@ Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
         .equal(only(0, 3)));
 }
 
-/// ditto
+/// Loop through diagonal
 pure nothrow unittest
 {
     import mir.ndslice.slice;
@@ -345,7 +362,7 @@ pure nothrow unittest
 /// Matrix, subdiagonal
 @safe @nogc pure nothrow unittest
 {
-    import mir.ndslice.iteration: dropOne;
+    import mir.ndslice.iteration : dropOne;
     //  -------
     // | 0 1 2 |
     // | 3 4 5 |
@@ -359,7 +376,7 @@ pure nothrow unittest
 /// Matrix, antidiagonal
 @safe @nogc pure nothrow unittest
 {
-    import mir.ndslice.iteration: dropToHypercube, reversed;
+    import mir.ndslice.iteration : dropToHypercube, reversed;
     //  -------
     // | 0 1 2 |
     // | 3 4 5 |
@@ -389,7 +406,7 @@ pure nothrow unittest
 /// 3D, subdiagonal
 @safe @nogc pure nothrow unittest
 {
-    import mir.ndslice.iteration: dropOne;
+    import mir.ndslice.iteration : dropOne;
     //  -----------
     // |  0   1  2 |
     // |  3   4  5 |
@@ -406,7 +423,6 @@ pure nothrow unittest
 /// 3D, diagonal plain
 @nogc @safe pure nothrow unittest
 {
-    import mir.ndslice.iteration: dropOne;
     //  -----------
     // |  0   1  2 |
     // |  3   4  5 |
@@ -691,7 +707,7 @@ pure nothrow unittest
 }
 
 /++
-Returns a new slice for the same data.
+Returns a new slice for the same data with different dimensions.
 
 Params:
     slice = slice to be reshaped
@@ -784,7 +800,7 @@ Slice!(Lengths.length, Range)
 ///
 @safe pure unittest
 {
-    import mir.ndslice.iteration: allReversed;
+    import mir.ndslice.iteration : allReversed;
     auto slice = iotaSlice(3, 4)
         .allReversed
         .reshape(-1, 3);
@@ -799,14 +815,14 @@ Slice!(Lengths.length, Range)
 pure unittest
 {
     import mir.ndslice.slice;
-    import mir.ndslice.iteration: reversed;
-    import std.array: array;
+    import mir.ndslice.iteration : reversed;
+    import std.array : array;
 
     auto reshape2(S, L...)(S slice, L lengths)
     {
         // Tries to reshape without allocation
         try return slice.reshape(lengths);
-        catch(ReshapeException e)
+        catch (ReshapeException e)
             //allocates the elements and creates a slice
             //Note: -1 length is not supported by reshape2
             return slice.byElement.array.sliced(lengths);
@@ -828,7 +844,7 @@ pure unittest
 
 @safe pure unittest
 {
-    import mir.ndslice.iteration: allReversed;
+    import mir.ndslice.iteration : allReversed;
     auto slice = iotaSlice(1, 1, 3, 2, 1, 2, 1).allReversed;
     assert(slice.reshape(1, -1, 1, 1, 3, 1) ==
         [[[[[[11], [10], [9]]]],
@@ -843,12 +859,11 @@ unittest
     assert(iotaSlice(3, 4, 5, 6, 7).pack!2.reshape(4, 3, 5)[0, 0, 0].shape == cast(size_t[2])[6, 7]);
 }
 
-
 @safe pure unittest
 {
     import mir.ndslice.slice;
-    import std.range: iota;
-    import std.exception: assertThrown;
+    import std.range : iota;
+    import std.exception : assertThrown;
 
     auto e = 1.iotaSlice(1);
     // resize to the wrong dimension
@@ -856,6 +871,15 @@ unittest
     e.popFront;
     // test with an empty slice
     assertThrown!ReshapeException(e.reshape(1));
+}
+
+unittest
+{
+    auto pElements = iotaSlice(3, 4, 5, 6, 7)
+        .pack!2
+        .byElement();
+    assert(pElements[0][0] == iotaSlice(7));
+    assert(pElements[$-1][$-1] == iotaSlice([7], 2513));
 }
 
 /// See_also: $(LREF reshape)
@@ -909,10 +933,9 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
             size_t _length;
             size_t[N] _indexes;
 
-            static if (canSave!PureRange)
-            auto save()
+            auto save() @property
             {
-                return typeof(this)(_slice.save, _length, _indexes);
+                return this;
             }
 
             bool empty() const @property
@@ -1145,7 +1168,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
                 return typeof(return)(i, j);
             }
 
-            size_t[N] index() @property const
+            size_t[N] index() @property
             {
                 pragma(inline, true);
                 return _indexes;
@@ -1155,11 +1178,17 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
     }
 }
 
+/// ditto
+Slice!(1, Range) byElement(size_t N : 1, Range)(auto ref Slice!(N, Range) slice)
+{
+    return slice;
+}
+
 /// Regular slice
 @safe @nogc pure nothrow unittest
 {
-    import std.algorithm.comparison: equal;
-    import std.range: iota;
+    import std.algorithm.comparison : equal;
+    import std.range : iota;
     assert(iotaSlice(4, 5)
         .byElement
         .equal(20.iota));
@@ -1168,7 +1197,9 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
 /// Packed slice
 @safe @nogc pure nothrow unittest
 {
-    import std.range: drop;
+    import mir.ndslice.slice;
+    import mir.ndslice.iteration;
+    import std.range : drop;
     assert(iotaSlice(3, 4, 5, 6, 7)
         .pack!2
         .byElement()
@@ -1213,8 +1244,8 @@ pure nothrow unittest
 pure nothrow unittest
 {
     // test save
-    import std.range: dropOne;
-    import std.range: iota;
+    import std.range : dropOne;
+    import std.range : iota;
 
     auto elems = 12.iota.sliced(3, 4).byElement;
     assert(elems.front == 0);
@@ -1228,9 +1259,9 @@ Random access and slicing
 @nogc nothrow unittest
 {
     import mir.ndslice.slice;
-    import std.algorithm.comparison: equal;
-    import std.array: array;
-    import std.range: iota, repeat;
+    import std.algorithm.comparison : equal;
+    import std.array : array;
+    import std.range : iota, repeat;
     static data = 20.iota.array;
     auto elems = data.sliced(4, 5).byElement;
 
@@ -1266,8 +1297,8 @@ Use $(SUBREF iteration, allReversed) in pipeline before
 +/
 @safe @nogc pure nothrow unittest
 {
-    import std.range: retro;
-    import mir.ndslice.iteration: allReversed;
+    import std.range : retro;
+    import mir.ndslice.iteration : allReversed;
 
     auto slice = iotaSlice(3, 4, 5);
 
@@ -1290,9 +1321,18 @@ Use $(SUBREF iteration, allReversed) in pipeline before
     }
 }
 
+/++
+`byElement` just return the slice for 1-dimensional case.
++/
+unittest
+{
+    import mir.ndslice.slice : slice;
+    static assert(is(typeof(slice!int(100)) == Slice!(1, int*)));
+}
+
 @safe @nogc pure nothrow unittest
 {
-    import std.range.primitives: isRandomAccessRange, hasSlicing;
+    import std.range.primitives : isRandomAccessRange, hasSlicing;
     auto elems = iotaSlice(4, 5).byElement;
     static assert(isRandomAccessRange!(typeof(elems)));
     static assert(hasSlicing!(typeof(elems)));
@@ -1302,7 +1342,7 @@ Use $(SUBREF iteration, allReversed) in pipeline before
 @safe @nogc pure nothrow unittest
 {
     import mir.ndslice.iteration;
-    import std.range: isRandomAccessRange;
+    import std.range : isRandomAccessRange;
     auto elems = iotaSlice(4, 5).everted.byElement;
     static assert(isRandomAccessRange!(typeof(elems)));
 
@@ -1319,8 +1359,8 @@ Use $(SUBREF iteration, allReversed) in pipeline before
 {
     import mir.ndslice.slice;
     import mir.ndslice.iteration;
-    import std.range: iota, isForwardRange, hasLength;
-    import std.algorithm.comparison: equal;
+    import std.range : iota, isForwardRange, hasLength;
+    import std.algorithm.comparison : equal;
 
     auto range = (3 * 4 * 5 * 6 * 7).iota;
     auto slice0 = range.sliced(3, 4, 5, 6, 7);
@@ -1371,15 +1411,6 @@ unittest
     static assert(hasSlicing!B);
 }
 
-unittest
-{
-    auto pElements = iotaSlice(3, 4, 5, 6, 7)
-        .pack!2
-        .byElement();
-    assert(pElements[0][0] == iotaSlice(7));
-    assert(pElements[$-1][$-1] == iotaSlice([7], 2513));
-}
-
 // Issue 16010
 unittest
 {
@@ -1397,10 +1428,11 @@ The order of elements is preserved.
 Params:
     N = dimension count
     slice = slice to be iterated
+    maxHypercubeLength = maximal length of simplex hypercube.
 Returns:
     forward range composed of all elements of standard simplex of the `slice`
 +/
-auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t maxCobeLength = size_t.max)
+auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t maxHypercubeLength = size_t.max)
 {
     with (Slice!(N, Range))
     {
@@ -1411,14 +1443,13 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
         {
             This _slice;
             size_t _length;
-            size_t maxCobeLength;
+            size_t maxHypercubeLength;
             size_t sum;
             size_t[N] _indexes;
 
-            static if (canSave!PureRange)
-            auto save()
+            auto save() @property
             {
-                return typeof(this)(_slice.save, _length, maxCobeLength, sum, _indexes);
+                return this;
             }
 
             bool empty() const @property
@@ -1469,27 +1500,35 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
                     _indexes[i]++;
                     debug (ndslice) assert(_indexes[i] <= _lengths[i]);
                     sum++;
-                    if (sum < maxCobeLength)
+                    if (sum < maxHypercubeLength)
                         return;
-                    debug (ndslice) assert(sum == maxCobeLength);
+                    debug (ndslice) assert(sum == maxHypercubeLength);
                     _ptr -= _indexes[i] * _strides[i];
                     sum -= _indexes[i];
                     _indexes[i] = 0;
                 }
             }
 
-            size_t[N] index() @property const
+            size_t[N] index() @property
             {
                 pragma(inline, true);
                 return _indexes;
             }
         }
         foreach (i; Iota!(0, N))
-            if (maxCobeLength > slice._lengths[i])
-                maxCobeLength = slice._lengths[i];
-        immutable size_t elementsCount = ((maxCobeLength + 1) * maxCobeLength ^^ (N - 1)) / 2;
-        return ByElementInTopSimplex(slice, elementsCount, maxCobeLength);
+            if (maxHypercubeLength > slice._lengths[i])
+                maxHypercubeLength = slice._lengths[i];
+        immutable size_t elementsCount = ((maxHypercubeLength + 1) * maxHypercubeLength ^^ (N - 1)) / 2;
+        return ByElementInTopSimplex(slice, elementsCount, maxHypercubeLength);
     }
+}
+
+/// ditto
+Slice!(1, Range) byElementInStandardSimplex(size_t N : 1, Range)(auto ref Slice!(N, Range) slice, size_t maxHypercubeLength = size_t.max)
+{
+    if (maxHypercubeLength > slice._lengths[0])
+        maxHypercubeLength = slice._lengths[0];
+    return slice[0 .. maxHypercubeLength];
 }
 
 ///
@@ -1532,7 +1571,7 @@ pure nothrow unittest
 /// Properties
 @safe @nogc pure nothrow unittest
 {
-    import std.range.primitives: popFrontN;
+    import std.range.primitives : popFrontN;
 
     auto elems = iotaSlice(3, 4).byElementInStandardSimplex;
 
@@ -1548,7 +1587,7 @@ pure nothrow unittest
 @safe @nogc pure nothrow unittest
 {
     auto elems = iotaSlice(3, 4).byElementInStandardSimplex;
-    import std.range: dropOne, popFrontN;
+    import std.range : dropOne, popFrontN;
     elems.popFrontN(4);
 
     assert(elems.save.dropOne.front == 8);
@@ -1558,8 +1597,23 @@ pure nothrow unittest
 }
 
 /++
+`byElementInStandardSimplex` returns a corresponding part of the slice for 1-dimensional case.
++/
+@safe pure nothrow unittest
+{
+    auto sl = iotaSlice(7);
+    auto simplex = sl.byElementInStandardSimplex;
+
+    assert(simplex == [0, 1, 2, 3, 4, 5, 6]);
+
+    static assert(is(typeof(simplex) == typeof(sl)));
+
+    assert(sl.byElementInStandardSimplex(3) == [0, 1, 2]);
+}
+
+/++
 Returns a slice, the elements of which are equal to the initial multidimensional index value.
-This is multidimensional analog of $(LINK2 std_range.html#iota, std.range.iota).
+This is multidimensional analog of $(REF iota, std, range).
 For a flattened (continuous) index, see $(LREF iotaSlice).
 
 Params:
@@ -1567,7 +1621,7 @@ Params:
     lengths = list of dimension lengths
 Returns:
     `N`-dimensional slice composed of indexes
-See_also: $(LREF IndexSlice)
+See_also: $(LREF IndexSlice), $(LREF iotaSlice)
 +/
 IndexSlice!(Lengths.length) indexSlice(Lengths...)(Lengths lengths)
     if (allSatisfy!(isIndex, Lengths))
@@ -1578,7 +1632,7 @@ IndexSlice!(Lengths.length) indexSlice(Lengths...)(Lengths lengths)
 ///ditto
 IndexSlice!N indexSlice(size_t N)(auto ref size_t[N] lengths)
 {
-    import mir.ndslice.slice: sliced;
+    import mir.ndslice.slice : sliced;
     with (typeof(return)) return Range(lengths[1 .. $]).sliced(lengths);
 }
 
@@ -1612,7 +1666,7 @@ IndexSlice!N indexSlice(size_t N)(auto ref size_t[N] lengths)
 @safe pure nothrow unittest
 {
     // test save
-    import std.range: dropOne;
+    import std.range : dropOne;
 
     auto im = indexSlice(7, 9);
     auto imByElement = im.byElement;
@@ -1631,12 +1685,6 @@ template IndexSlice(size_t N)
     struct IndexMap
     {
         private size_t[N-1] _lengths;
-
-        IndexMap save() @property const
-        {
-            pragma(inline, true);
-            return this;
-        }
 
         size_t[N] opIndex(size_t index) const
         {
@@ -1657,7 +1705,7 @@ template IndexSlice(size_t N)
 unittest
 {
     auto r = indexSlice(1);
-    import std.range.primitives: isRandomAccessRange;
+    import std.range.primitives : isRandomAccessRange;
     static assert(isRandomAccessRange!(typeof(r)));
 }
 
@@ -1671,7 +1719,7 @@ Params:
     shift = value of the first element in a slice
 Returns:
     `N`-dimensional slice composed of indexes
-See_also: $(LREF IotaSlice)
+See_also: $(LREF IotaSlice), $(LREF indexSlice)
 +/
 IotaSlice!(Lengths.length) iotaSlice(Lengths...)(Lengths lengths)
     if (allSatisfy!(isIndex, Lengths))
@@ -1682,8 +1730,8 @@ IotaSlice!(Lengths.length) iotaSlice(Lengths...)(Lengths lengths)
 ///ditto
 IotaSlice!N iotaSlice(size_t N)(auto ref size_t[N] lengths, size_t shift = 0)
 {
-    import mir.ndslice.slice: sliced;
-    with (typeof(return)) return Range.init.sliced(lengths, shift);
+    import mir.ndslice.slice : sliced;
+    return IotaMap!().init.sliced(lengths, shift);
 }
 
 ///
@@ -1696,7 +1744,7 @@ IotaSlice!N iotaSlice(size_t N)(auto ref size_t[N] lengths, size_t shift = 0)
 
     assert(slice == array);
 
-    import std.range.primitives: isRandomAccessRange;
+    import std.range.primitives : isRandomAccessRange;
     static assert(isRandomAccessRange!(IotaSlice!2));
     static assert(is(IotaSlice!2 : Slice!(2, Range), Range));
     static assert(is(DeepElementType!(IotaSlice!2) == size_t));
@@ -1724,16 +1772,11 @@ template IotaSlice(size_t N)
     alias IotaSlice = Slice!(N, IotaMap!());
 }
 
-/++
-Zero cost variant of `$(REF_ALTTEXT std.range.iota, iota, std, range)` for iotaSlice.
-See_also: $(LREF iotaSlice)
-+/
+// undocumented
+// zero cost variant of `std.range.iota`
 struct IotaMap()
 {
-    ///
     enum bool empty = false;
-    ///
-    enum IotaMap save = IotaMap.init;
 
     static size_t opIndex()(size_t index) @safe pure nothrow @nogc @property
     {

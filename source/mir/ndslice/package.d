@@ -54,8 +54,9 @@ Quick_Start:
 $(SUBREF slice, sliced) is a function designed to create
 a multidimensional view over a range.
 Multidimensional view is presented by $(SUBREF slice, Slice) type.
+
 ------
-auto matrix = new double[12].sliced(3, 4);
+auto matrix = slice!double(3, 4);
 matrix[] = 0;
 matrix.diagonal[] = 1;
 
@@ -66,7 +67,7 @@ assert(matrix(3, 2) == 6); // Math & Fortran index order
 ------
 
 Note:
-In many examples $(LINK2 mir_ndslice_selection.html#iotaSlice, iotaSlice) is used
+In many examples $(LINK2 std_experimental_ndslice_selection.html#iotaSlice, iotaSlice) is used
 instead of a regular array, which makes it
 possible to carry out tests without memory allocation.
 
@@ -74,11 +75,11 @@ $(SCRIPT inhibitQuickIndex = 1;)
 
 $(DIVC quickindex,
 $(BOOKTABLE ,
-$(TR $(TH Category) $(TH Submodule) $(TH Declarations)
-)
-$(TR $(TDNW Basic Level
+
+$(TR $(TH Submodule) $(TH Declarations))
+
+$(TR $(TDNW $(SUBMODULE slice)
         $(BR) $(SMALL $(SUBREF slice, Slice), its properties, operator overloading))
-     $(TDNW $(SUBMODULE slice))
      $(TD
         $(SUBREF slice, sliced)
         $(SUBREF slice, Slice)
@@ -94,9 +95,8 @@ $(TR $(TDNW Basic Level
         $(SUBREF slice, SliceException)
     )
 )
-$(TR $(TDNW Middle Level
-        $(BR) $(SMALL Various iteration operators))
-     $(TDNW $(SUBMODULE iteration))
+$(TR $(TDNW $(SUBMODULE iteration)
+        $(BR) $(SMALL Basic iteration operators))
      $(TD
         $(SUBREF iteration, transposed)
         $(SUBREF iteration, strided)
@@ -108,10 +108,9 @@ $(TR $(TDNW Middle Level
         $(SUBREF iteration, dropToHypercube) and other `drop` primitives
     )
 )
-$(TR $(TDNW Advanced Level $(BR)
-        $(SMALL Abstract operators for loop free programming
-            $(BR) Take `movingWindowByChannel` as an example))
-     $(TDNW $(SUBMODULE selection))
+
+$(TR $(TDNW $(SUBMODULE selection)
+        $(BR) $(SMALL Subspace manipulations $(BR) Operators for loop free programming))
      $(TD
         $(SUBREF selection, blocks)
         $(SUBREF selection, windows)
@@ -128,15 +127,21 @@ $(TR $(TDNW Advanced Level $(BR)
     )
 )
 
-$(TR $(TDNW Sparse Tensors $(BR)
-     $(SMALL Multidimensional compressed analog of Dictionary of Keys (DOK) matrix format $(BR)
-     Generalization of Compressed Sparse Row (CSR) matrix format))
-     $(TDNW $(SUBMODULE sparse))
+$(TR $(TDNW $(SUBMODULE algorithm)
+        $(BR) $(SMALL Computation algorithms $(BR) Operators for loop free programming))
      $(TD
-        $(SUBREF sparse, sparse)
-        $(SUBREF sparse, compress)
+        $(SUBREF algorithm, ndMap)
+        $(SUBREF algorithm, ndFold)
+        $(SUBREF algorithm, ndReduce)
+        $(SUBREF algorithm, ndEach)
+        $(SUBREF algorithm, ndFind)
+        $(SUBREF algorithm, ndAny)
+        $(SUBREF algorithm, ndAll)
+        $(SUBREF algorithm, ndEqual)
+        $(SUBREF algorithm, ndCmp)
     )
 )
+
 ))
 
 $(H2 Example: Image Processing)
@@ -157,7 +162,7 @@ reflected from the original image, and then applying the given function to the
 new file.
 
 Note: You can find the example at
-$(LINK2 https://github.com/DlangScience/examples/tree/master/image_processing/median-filter, GitHub).
+$(LINK2 https://github.com/libmir.ndslice/mir.ndslice/blob/master/examples/median_filter.d, GitHub).
 
 -------
 /++
@@ -177,12 +182,9 @@ Returns:
 Slice!(3, C*) movingWindowByChannel(alias filter, C)
 (Slice!(3, C*) image, size_t nr, size_t nc)
 {
-    import std.algorithm.iteration: map;
-    import std.array: array;
-
         // 0. 3D
         // The last dimension represents the color channel.
-    auto wnds = image
+    return image
         // 1. 2D composed of 1D
         // Packs the last dimension.
         .pack!1
@@ -197,21 +199,11 @@ Slice!(3, C*) movingWindowByChannel(alias filter, C)
         .transposed!(0, 1, 4)
         // 5. 3D Composed of 2D
         // Packs the last two dimensions.
-        .pack!2;
-
-    return wnds
-        // 6. Range composed of 2D
-        // Gathers all windows in the range.
-        .byElement
-        // 7. Range composed of pixels
+        .pack!2
         // 2D to pixel lazy conversion.
-        .map!filter
-        // 8. `C[]`
-        // The only memory allocation in this function.
-        .array
-        // 9. 3D
-        // Returns slice with corresponding shape.
-        .sliced(wnds.shape);
+        .ndMap!filter
+        // Creates the new image. The only memory allocation in this function.
+        .slice;
 }
 -------
 
@@ -226,15 +218,16 @@ Params:
 Returns:
     median value over the range `r`
 +/
-T median(Range, T)(Range r, T[] buf)
+T median(Range, T)(Slice!(2, Range) sl, T[] buf)
 {
-    import std.algorithm.sorting: topN;
-    size_t n;
-    foreach (e; r)
-        buf[n++] = e;
-    auto m = n >> 1;
-    buf[0 .. n].topN(m);
-    return buf[m];
+    import std.algorithm.sorting : topN;
+    import mir.ndslice.algorithm : ndFold;
+    // copy sl to the buffer
+    auto retPtr = sl.ndFold!((ptr, elem)
+        { *ptr = elem; return ptr + 1; })(buf.ptr);
+    auto n = retPtr - buf.ptr;
+    buf[0 .. n].topN(n / 2);
+    return buf[n / 2];
 }
 -------
 
@@ -243,9 +236,9 @@ The `main` function:
 -------
 void main(string[] args)
 {
-    import std.conv: to;
-    import std.getopt: getopt, defaultGetoptPrinter;
-    import std.path: stripExtension;
+    import std.conv : to;
+    import std.getopt : getopt, defaultGetoptPrinter;
+    import std.path : stripExtension;
 
     uint nr, nc, def = 3;
     auto helpInformation = args.getopt(
@@ -272,7 +265,7 @@ void main(string[] args)
         auto ret = image.pixels
             .sliced(cast(size_t)image.h, cast(size_t)image.w, cast(size_t)image.c)
             .movingWindowByChannel
-                !(window => median(window.byElement, buf))
+                !(window => median(window, buf))
                  (nr, nc);
 
         write_image(
@@ -310,7 +303,7 @@ At the same time, while working with `ndslice`, an engineer has access to the
 whole set of standard D library, so the functions he creates will be as
 efficient as if they were written in C.
 
-License:   $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
+License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
@@ -319,17 +312,17 @@ Acknowledgements:   John Loughran Colvin
 Source:    $(PHOBOSSRC std/_experimental/_ndslice/_package.d)
 
 Macros:
-SUBMODULE = $(LINK2 mir_ndslice_$1.html, mir.ndslice.$1)
-SUBREF = $(LINK2 mir_ndslice_$1.html#.$2, $(TT $2))$(NBSP)
+SUBMODULE = $(MREF_ALTTEXT $1, std, experimental, ndslice, $1)
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, std,experimental, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
-T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
+TDNW2 = <td class="donthyphenate nobr" rowspan="2">$0</td>
 */
 module mir.ndslice;
 
 public import mir.ndslice.slice;
 public import mir.ndslice.iteration;
 public import mir.ndslice.selection;
-public import mir.sparse;
+public import mir.ndslice.algorithm;
 
 unittest
 {
@@ -343,10 +336,70 @@ unittest
     assert(matrix(3, 2) == 6); // Math & Fortran index order
 }
 
+// relaxed example
+unittest
+{
+    static Slice!(3, ubyte*) movingWindowByChannel
+    (Slice!(3, ubyte*) image, size_t nr, size_t nc, ubyte delegate(Slice!(2, ubyte*)) filter)
+    {
+        return image
+            .pack!1
+            .windows(nr, nc)
+            .unpack
+            .transposed!(0, 1, 4)
+            .pack!2
+            .ndMap!filter
+            .slice;
+    }
+
+    static T median(Range, T)(Slice!(2, Range) sl, T[] buf)
+    {
+        import std.algorithm.sorting : topN;
+        import mir.ndslice.algorithm : ndFold;
+        // copy sl to the buffer
+        auto retPtr = sl.ndFold!(
+            (ptr, elem) {
+                *ptr = elem;
+                return ptr + 1;
+            } )(buf.ptr);
+        auto n = retPtr - buf.ptr;
+        buf[0 .. n].topN(n / 2);
+        return buf[n / 2];
+    }
+
+    import std.conv : to;
+    import std.getopt : getopt, defaultGetoptPrinter;
+    import std.path : stripExtension;
+
+    auto args = ["std"];
+    uint nr, nc, def = 3;
+    auto helpInformation = args.getopt(
+        "nr", "number of rows in window, default value is " ~ def.to!string, &nr,
+        "nc", "number of columns in window default value equals to nr", &nc);
+    if (helpInformation.helpWanted)
+    {
+        defaultGetoptPrinter(
+            "Usage: median-filter [<options...>] [<file_names...>]\noptions:",
+            helpInformation.options);
+        return;
+    }
+    if (!nr) nr = def;
+    if (!nc) nc = nr;
+
+    auto buf = new ubyte[nr * nc];
+
+    foreach (name; args[1 .. $])
+    {
+        auto ret =
+            movingWindowByChannel
+                 (new ubyte[300].sliced(10, 10, 3), nr, nc, window => median(window, buf));
+    }
+}
+
 @safe @nogc pure nothrow unittest
 {
-    import std.algorithm.comparison: equal;
-    import std.range: iota;
+    import std.algorithm.comparison : equal;
+    import std.range : iota;
     immutable r = 1000.iota;
 
     auto t0 = r.sliced(1000);
@@ -374,9 +427,9 @@ unittest
 
 pure nothrow unittest
 {
-    import std.algorithm.comparison: equal;
-    import std.array: array;
-    import std.range: iota;
+    import std.algorithm.comparison : equal;
+    import std.array : array;
+    import std.range : iota;
     auto r = 1000.iota.array;
 
     auto t0 = r.sliced(1000);
@@ -457,8 +510,8 @@ pure nothrow unittest
     assert(t1[4] == 200);
 
     t1[] *= t1[];
-    assert(t1[3] == 40_000);
-    assert(t1[4] == 40_000);
+    assert(t1[3] == 40000);
+    assert(t1[4] == 40000);
 
 
     assert(&t1[$ - 1] is &(t1.back()));
@@ -466,7 +519,7 @@ pure nothrow unittest
 
 @safe @nogc pure nothrow unittest
 {
-    import std.range: iota;
+    import std.range : iota;
     auto r = (10_000L * 2 * 3 * 4).iota;
 
     auto t0 = r.sliced(10, 20, 30, 40);
@@ -479,10 +532,10 @@ pure nothrow unittest
 
 pure nothrow unittest
 {
-    import mir.ndslice.internal: Iota;
-    import std.meta: AliasSeq;
+    import mir.ndslice.internal : Iota;
+    import std.meta : AliasSeq;
     import std.range;
-    import std.typecons: Tuple;
+    import std.typecons : Tuple;
     foreach (R; AliasSeq!(
         int*, int[], typeof(1.iota),
         const(int)*, const(int)[],
@@ -510,7 +563,7 @@ pure nothrow unittest
 
 pure nothrow unittest
 {
-    import mir.ndslice.selection: pack;
+    import mir.ndslice.selection : pack;
     auto slice = new int[24].sliced(2, 3, 4);
     auto r0 = slice.pack!1[1, 2];
     slice.pack!1[1, 2][] = 4;

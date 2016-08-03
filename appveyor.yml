@@ -7,14 +7,8 @@ environment:
   - DC: dmd
     DVersion: 2.071.1
     arch: x86
-  - DC: dmd
-    DVersion: 2.070.2
-    arch: x64
-  - DC: dmd
-    DVersion: 2.070.2
-    arch: x86
   - DC: ldc
-    DVersion: 1.0.0
+    DVersion: 1.1.0-alpha1
     arch: x64
 
 matrix:

@@ -2,34 +2,51 @@ module mir.ndslice.internal;
 
 import std.traits;
 import std.meta; //: AliasSeq, anySatisfy, Filter, Reverse;
+import mir.ndslice : Slice;
 
-package:
-
-static if (__VERSION__ < 2071)
+version(LDC)
 {
-    template Repeat(size_t n, TList...) if (n > 0)
-    {
-        static if (n == 1)
-        {
-            alias Repeat = AliasSeq!TList;
-        }
-        else static if (n == 2)
-        {
-            alias Repeat = AliasSeq!(TList, TList);
-        }
+    static import ldc.attributes;
+    alias fastmath = ldc.attributes.fastmath;
+}
+else
+{
+    alias fastmath = fastmathDummy;
+}
+
+enum FastmathDummy { init }
+FastmathDummy fastmathDummy() { return FastmathDummy.init; }
+
+alias RangeOf(T : Slice!(N, Range), size_t N, Range) = Range;
+
+template isMemory(T)
+{
+    import mir.ndslice.slice : PtrTuple;
+    import mir.ndslice.algorithm : Map, Pack;
+    static if (isPointer!T)
+        enum isMemory = true;
+    else
+    static if (is(T : Map!(Range, fun), Range, alias fun))
+        enum isMemory = .isMemory!Range;
+    else
+    static if (__traits(compiles, __traits(isSame, PtrTuple, TemplateOf!(TemplateOf!T))))
+        static if (__traits(isSame, PtrTuple, TemplateOf!(TemplateOf!T)))
+            enum isMemory = allSatisfy!(.isMemory, TemplateArgsOf!T);
         else
-        {
-            alias R = Repeat!((n - 1) / 2, TList);
-            static if ((n - 1) % 2 == 0)
-            {
-                alias Repeat = AliasSeq!(TList, R, R);
-            }
-            else
-            {
-                alias Repeat = AliasSeq!(TList, TList, R, R);
-            }
-        }
-    }
+            enum isMemory = false;
+    else
+        enum isMemory = false;
+}
+
+unittest
+{
+    import mir.ndslice.slice : PtrTuple;
+    import mir.ndslice.algorithm : Map;
+    static assert(isMemory!(int*));
+    alias R = PtrTuple!("a", "b");
+    alias F = R!(double*, double*);
+    static assert(isMemory!F);
+    static assert(isMemory!(Map!(F, a => a)));
 }
 
 enum indexError(size_t pos, size_t N) =
@@ -162,7 +179,7 @@ template SliceFromSeq(Range, Seq...)
         alias SliceFromSeq = Range;
     else
     {
-        import mir.ndslice.slice: Slice;
+        import mir.ndslice.slice : Slice;
         alias SliceFromSeq = SliceFromSeq!(Slice!(Seq[$ - 1], Range), Seq[0 .. $ - 1]);
     }
 }
@@ -252,13 +269,5 @@ pure nothrow unittest
     assert(lengthsProduct(lengths) == 60);
     assert(lengthsProduct([3, 4, 5]) == 60);
 }
-
-enum canSave(T) = isPointer!T || isDynamicArray!T ||
-    __traits(compiles,
-    {
-        T r1 = T.init;
-        auto s1 = r1.save;
-        static assert (is(typeof(s1) == T));
-    });
 
 struct _Slice { size_t i, j; }

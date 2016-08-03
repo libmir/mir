@@ -5,15 +5,13 @@ os:
 language: d
 d:
  - dmd-2.071.1
- - dmd-2.070.2
- - ldc-1.0.0
+ - ldc-1.1.0-alpha1
 env:
  - ARCH="x86_64"
 matrix:
   include:
     - {os: linux, d: dmd-2.071.1, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-    - {os: linux, d: dmd-2.070.2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-    - {os: linux, d: ldc-1.0.0, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: ldc-1.1.0-alpha1, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
 branches:
   only:
     - master
