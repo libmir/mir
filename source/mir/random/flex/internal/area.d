@@ -3,6 +3,63 @@ module mir.random.flex.internal.area;
 import mir.random.flex.internal.types : Interval;
 import std.traits : ReturnType;
 
+version(Flex_logging)
+{
+    import std.experimental.logger;
+}
+
+/*
+FP operations depend on
+ - the compiler (e.g. std.math.pow yields different results to llvm_pow)
+ - the architecture (DMD x86 without optimization is unpredictable)
+ - the OS (Windows has FP magic (e.g. bug 16344)
+
+=> we use DMD64 as "true" reference and approxEqual for other compilers
+*/
+version(unittest)
+{
+    // the difference is marginal, but measurable
+    version(Windows)
+    {
+        version = Flex_fpEqual;
+    }
+    else
+    {
+        version(DigitalMars)
+        {
+            version(X86_64)
+            {
+                alias fpEqual = (a, b) => a == b;
+            }
+            else
+            {
+                version = Flex_fpEqual;
+            }
+        }
+        else
+        {
+            version = Flex_fpEqual;
+        }
+    }
+    version(Flex_fpEqual)
+    {
+        import std.math : approxEqual;
+        bool fpEqual(float a, float b) { return a.approxEqual(b, 1e-5, 1e-5); }
+        bool fpEqual(double a, double b) { return a.approxEqual(b, 1e-14, 1e-14); }
+
+        // probably yet another LDC Windows bug
+        version(LDC)
+            version(Windows)
+                enum real maxError = 1e-14;
+            else
+                enum real maxError = 1e-18;
+        else
+            enum real maxError = 1e-18;
+
+        bool fpEqual(real a, real b) { return a.approxEqual(b, 1e-18, 1e-18); }
+    }
+}
+
 /**
 Determines the hat and squeeze function of an interval.
 Based on Theorem 1 of Botts et al. (2013).
@@ -181,9 +238,9 @@ body
     // check difference to left and right starting point
     // sigma in the paper (1: left side, -1, right side
     immutable S leftOrRight = (iv.rx - sh.y) > (sh.y - iv.lx) ? 1 : -1;
-    immutable shL = sh(iv.lx);
-    immutable shR = sh(iv.rx);
-    immutable ivLength = iv.rx - iv.lx;
+    immutable S shL = sh(iv.lx);
+    immutable S shR = sh(iv.rx);
+    immutable S ivLength = iv.rx - iv.lx;
     auto z = leftOrRight * sh.slope * ivLength;
 
     // sh.y is the boundary point where f obtains its maximum
@@ -193,12 +250,16 @@ body
     {
         if (fabs(z) < constants!S.smallExp)
         {
-            area = exp(sh.a) * (ivLength) * (1 + z * S(0.5) + (z * z) * one_div_6
-                                               + (z * z * z) * one_div_24);
+            area = exp(sh.a);
+            S t = (z * z * z) * one_div_24;
+            t += 1 + z * S(0.5) + (z * z) * one_div_6;
+            area *= t;
+            area *= ivLength;
         }
         else
         {
-            area = (exp(shR) - exp(shL)) / sh.slope;
+            area = exp(shR) - exp(shL);
+            area /= sh.slope;
         }
     }
     else
@@ -211,7 +272,9 @@ body
         }
         else if (iv.c == 1)
         {
-            area = S(0.5) * sh.a * ivLength * (z + 2);
+            area = S(0.5) * sh.a * ivLength;
+            S t = z + 2;
+            area *= t;
         }
         else if (iv.c == S(-0.5))
         {
@@ -221,20 +284,28 @@ body
             }
             else
             {
-                area = (1 / shL - 1 / shR) / sh.slope;
+                S _l = 1 / shL;
+                S _r = 1 / shR;
+                area = (_l - _r) / sh.slope;
             }
         }
         else if (iv.c == -1)
         {
             if (fabs(z) < constants!S.smallLog)
             {
-                area = S(-1) / sh.a * ivLength * (1 - z * S(0.5) + z * z * one_div_3);
+                area = 1 - z * S(0.5) + z * z * one_div_3;
+                area *=  -ivLength;
+                area /= sh.a;
             }
             else
             {
                 int lexp = void, rexp = void;
-                immutable rem = log2(frexp(-shL, lexp) / frexp(-shR, rexp));
-                area = (lexp - rexp + rem) / (S(LOG2E) * sh.slope);
+                S b = frexp(-shL, lexp);
+                b /= frexp(-shR, rexp);
+                immutable S rem = log2(b);
+                area = lexp - rexp + rem;
+                area /= sh.slope;
+                area /= S(LOG2E);
             }
         }
         else
@@ -243,11 +314,16 @@ body
             {
                 import std.math: sgn;
                 assert(sh.a * sgn(iv.c) >= 0);
-                area = flexInverse!true(sh.a, iv.c) * ivLength;
+                area = flexInverse!true(sh.a, iv.c);
+                area *= ivLength;
             }
             else
             {
-                area = (antiderivative!true(shR, iv.c) - antiderivative!true(shL, iv.c)) / sh.slope;
+                // workaround for @@@BUG 16341 @@@
+                S r = antiderivative!true(shR, iv.c);
+                S l = antiderivative!true(shL, iv.c);
+                area = r - l;
+                area /= sh.slope;
             }
         }
     }
@@ -274,6 +350,7 @@ body
 }
 
 // example from Botts et al. (2013) (distribution 1)
+// split up into all three floating-point types
 unittest
 {
     import mir.random.flex.internal.transformations : transformInterval;
@@ -282,76 +359,271 @@ unittest
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;
 
+    alias S = float;
+
     // inflection points: -1.7620, -1.4012, 1.4012, 1.7620
-    static immutable points = [-3.0, -1.5, 0.0, 1.5, 3];
-    static immutable cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.2, 0.5, 0.9, 1, 1.5, 2];
-    alias T = double;
-    static immutable hats = [
-        [T.infinity, 7.9931382154647697, 7.9931382154647697, T.infinity],
-        [T.infinity, 7.5525938035874400, 7.5525938035874400, T.infinity],
-        [T.infinity, 7.0034917537988290, 7.0034917537988290, T.infinity],
-        [T.infinity, 6.8764592591072242, 6.8764592591072242, T.infinity],
-        [T.infinity, 6.2914609279049900, 6.2914609279049900, T.infinity],
-        [7.37410163492969e+01, 5.7472000242871708, 5.7472000242871708, 7.37410163492969e+01],
-        [50.433577359671510, 5.3156599455901743, 5.3156599455901743, 50.433577359671510],
-        [4.10692427103361e+01, 4.8145489538059349, 4.8145489538059349, 4.10692427103361e+01],
-        [3.40500746703608e+01, 4.6676275718754061, 4.6676275718754061, 3.40500746703608e+01],
-        [2.92349379474674e+01, 6.3570562040858194, 6.3570562040858194, 2.92349379474674e+01],
-        [2.84098782525710e+01, 6.6984139650656038, 6.6984139650656038, 2.84098782525710e+01],
-        [2.5438585137354e+01, 8.0223584671647483, 8.0223584671647483, 2.5438585137354e+01],
-        [2.35669897095508e+01, 8.9129405418768659, 8.9129405418768659, 2.35669897095508e+01],
+    static immutable S[] points = [-3.0, -1.5, 0.0, 1.5, 3];
+    static immutable S[] cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.2, 0.5, 0.9, 1, 1.5, 2];
+    static immutable S[][] hats = [
+        [0x1.fffffep+127, 0x1.ff8f94p+2, 0x1.ff8f94p+2, 0x1.fffffep+127],
+        [0x1.fffffep+127, 0x1.e35dbap+2, 0x1.e35dbap+2, 0x1.fffffep+127],
+        [0x1.fffffep+127, 0x1.c03936p+2, 0x1.c03936p+2, 0x1.fffffep+127],
+        [0x1.fffffep+127, 0x1.b817f4p+2, 0x1.b817f4p+2, 0x1.fffffep+127],
+        [0x1.fffffep+127, 0x1.92a74cp+2, 0x1.92a74cp+2, 0x1.fffffep+127],
+        [0x1.26f6cep+6, 0x1.6fd21ep+2, 0x1.6fd21ep+2, 0x1.26f6cep+6], /* - 0.2 */
+        [0x1.9377f8p+5, 0x1.5433c6p+2, 0x1.5433c6p+2, 0x1.9377f8p+5],
+        [0x1.488dc6p+5, 0x1.34218cp+2, 0x1.34218cp+2, 0x1.488dc6p+5],
+        [0x1.10668ep+5, 0x1.2aba6ap+2, 0x1.2aba6ap+2, 0x1.10668ep+5],
+        [0x1.d3c25p+4, 0x1.96da06p+2, 0x1.96da06p+2, 0x1.d3c25p+4],
+        [0x1.c68edcp+4, 0x1.acb2dp+2, 0x1.acb2dp+2, 0x1.c68edcp+4],
+        [0x1.97046ep+4, 0x1.00b728p+3, 0x1.00b728p+3, 0x1.97046ep+4],
+        [0x1.791264p+4, 0x1.1d36dp+3, 0x1.1d36dp+3, 0x1.791264p+4]
     ];
 
-    static immutable sqs = [
-        [1.27450627658748e-17, 0.0274734583331013, 0.0274734583331013, 1.27450627658748e-17],
-        [1.91175941356133e-17, 0.0274734583331013, 0.0274734583331013, 1.91175941356133e-17],
-        [2.68841167717671e-16, 0.0274734583331013, 0.0274734583331013, 2.68841167717671e-16],
-        [3.83968250114544e-15, 0.0274734583331013, 0.0274734583331013, 3.83968250114544e-15],
-        [9.23020210727521e-09, 0.0274734583331013, 0.0274734583331013, 9.23020210727521e-09],
-        [7.24077129639768e-04, 0.0274734583331013, 0.0274734583331013, 7.24077129639768e-04],
-        [0.316903217109288, 0.0274734583331013, 0.0274734583331013, 0.316903217109288],
-        [9.57819845420090e-12, 0.0274734583331013, 0.0274734583331013, 9.57819845420090e-12],
-        [7.64863079237059e-15, 0.0274734583331013, 0.0274734583331013, 7.64863079237059e-15],
-        [6.37253138293737e-18, 0.0274734583331013, 0.0274734583331013, 6.37253138293737e-18],
-        [3.79165617284774e-16, 0.0274734583331013, 0.0274734583331013, 3.79165617284774e-16],
-        [6.3725313829374e-18, 0.0274734583331013, 0.0274734583331013, 6.3725313829374e-18],
-        [6.37253138293738e-18, 0.0274734583331013, 0.0274734583331013, 6.37253138293738e-18],
+    static immutable S[][] sqs = [
+        [0x1.d635b6p-57, 0x1.c2200ap-6, 0x1.c2200ap-6, 0x1.d635b6p-57],
+        [0x1.60a856p-56, 0x1.c22004p-6, 0x1.c22004p-6, 0x1.60a856p-56],
+        [0x1.35f3e8p-52, 0x1.c2200ap-6, 0x1.c2200ap-6, 0x1.35f3e8p-52],
+        [0x1.14ada2p-48, 0x1.c22008p-6, 0x1.c22008p-6, 0x1.14ada2p-48],
+        [0x1.3d25b8p-27, 0x1.c22008p-6, 0x1.c22008p-6, 0x1.3d25b8p-27],
+        [0x1.7b9ffcp-11, 0x1.c2200cp-6, 0x1.c2200cp-6, 0x1.7b9ffcp-11],
+        [0x1.448246p-2, 0x1.c2200ap-6, 0x1.c2200ap-6, 0x1.448246p-2],
+        [0x1.5100bap-37, 0x1.c22008p-6, 0x1.c22008p-6, 0x1.5100bap-37],
+        [0x1.13922ap-47, 0x1.c2200ap-6, 0x1.c2200ap-6, 0x1.13922ap-47],
+        [0x1.d6357ap-58, 0x1.c22008p-6, 0x1.c22008p-6, 0x1.d6357ap-58],
+        [0x1.b525f2p-52, 0x1.c2200ap-6, 0x1.c2200ap-6, 0x1.b525f2p-52],
+        [0x1.d63592p-58, 0x1.c22008p-6, 0x1.c22008p-6, 0x1.d63592p-58],
+        [0x1.d635b6p-58, 0x1.c2200ap-6, 0x1.c2200ap-6, 0x1.d635b6p-58]
     ];
 
-    foreach (S; AliasSeq!(float, double, real))
+    const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+    const f1 = (S x) => 10 * x - 4 * x ^^ 3;
+    const f2 = (S x) => 10 - 12 * x ^^ 2;
+
+    auto it = (S l, S r, S c)
     {
-        const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        const f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        const f2 = (S x) => 10 - 12 * x ^^ 2;
+        auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+        transformInterval(iv);
+        return iv;
+    };
 
-        auto it = (S l, S r, S c)
+    import std.math : isInfinity;
+    import std.conv;
+
+    // calculate the area of all intervals
+    foreach (i, c; cs)
+    {
+        foreach (j, p1, p2; points.lockstep(points.save.dropOne))
         {
-            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
-            transformInterval(iv);
-            return iv;
-        };
-
-        import std.math : isInfinity;
-        import std.conv;
-
-        // calculate the area of all intervals
-        foreach (i, c; cs)
-        {
-            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+            auto iv = it(p1, p2, c);
+            version(Flex_logging)
             {
-                auto iv = it(p1, p2, c);
-
-                determineSqueezeAndHat(iv);
-
-                hatArea!S(iv);
-                if (iv.hatArea == S.max)
-                    assert(hats[i][j].isInfinity);
-                else
-                    assert(iv.hatArea.approxEqual(hats[i][j]), text(c, " ", iv.hatArea, " ", hats[i][j]));
-
-                squeezeArea!S(iv);
-                assert(iv.squeezeArea.approxEqual(sqs[i][j]));
+                scope(failure)
+                {
+                    logf("c=%g, p1=%g,p2=%g, hat=%g, squeeze=%f",
+                                     c, p1, p2, iv.hatArea, iv.squeezeArea);
+                    version(Flex_logging_hex) logf("hat: %a, squeeze: %a", iv.hatArea, iv.squeezeArea);
+                    version(Flex_logging_hex) logf("exp. hat: %a, squeeze: %a", hats[i][j], sqs[i][j]);
+                    version(Flex_logging_hex) logf("iv: %s", iv.logHex);
+                }
             }
+
+            determineSqueezeAndHat(iv);
+
+            hatArea!S(iv);
+            assert(iv.hatArea.fpEqual(hats[i][j]));
+
+            squeezeArea!S(iv);
+            assert(iv.squeezeArea.fpEqual(sqs[i][j]));
+        }
+    }
+}
+
+unittest
+{
+    import mir.random.flex.internal.transformations : transformInterval;
+    import mir.random.flex.internal.types : determineType;
+    import std.math: approxEqual;
+    import std.meta : AliasSeq;
+    import std.range: dropOne, lockstep, save;
+
+    alias S = double;
+
+    // inflection points: -1.7620, -1.4012, 1.4012, 1.7620
+    static immutable S[] points = [-3.0, -1.5, 0.0, 1.5, 3];
+    static immutable S[] cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.2, 0.5, 0.9, 1, 1.5, 2];
+    static immutable S[][] hats = [
+        [0x1.fffffffffffffp+1023, 0x1.ff8f9396f50e2p+2, 0x1.ff8f9396f50e2p+2, 0x1.fffffffffffffp+1023],
+        [0x1.fffffffffffffp+1023, 0x1.e35db2669856ep+2, 0x1.e35db2669856ep+2, 0x1.fffffffffffffp+1023],
+        [0x1.fffffffffffffp+1023, 0x1.c039357a17c94p+2, 0x1.c039357a17c93p+2, 0x1.fffffffffffffp+1023],
+        [0x1.fffffffffffffp+1023, 0x1.b817e89389152p+2, 0x1.b817e89389152p+2, 0x1.fffffffffffffp+1023],
+        [0x1.fffffffffffffp+1023, 0x1.92a74bbc5a7adp+2, 0x1.92a74bbc5a7adp+2, 0x1.fffffffffffffp+1023],
+        [0x1.26f6ccfd68206p+6, 0x1.6fd2200cf8904p+2, 0x1.6fd2200cf8904p+2, 0x1.26f6ccfd68206p+6],
+        [0x1.9377f7682099fp+5, 0x1.5433c5c5bde25p+2, 0x1.5433c5c5bde25p+2, 0x1.9377f7682099fp+5],
+        [0x1.488dcf1f4309dp+5, 0x1.342191ef6599bp+2, 0x1.342191ef6599bp+2, 0x1.488dcf1f4309dp+5],
+        [0x1.10668d8c7c75fp+5, 0x1.2aba68fec7377p+2, 0x1.2aba68fec7377p+2, 0x1.10668d8c7c75fp+5],
+        [0x1.d3c24e4b0f649p+4, 0x1.96da0243d87adp+2, 0x1.96da0243d87adp+2, 0x1.d3c24e4b0f649p+4],
+        [0x1.c68edc7fa224cp+4, 0x1.acb2d07cc1b15p+2, 0x1.acb2d07cc1b15p+2, 0x1.c68edc7fa224cp+4],
+        [0x1.970471d957273p+4, 0x1.00b7291aa85c7p+3, 0x1.00b7291aa85c7p+3, 0x1.970471d957273p+4],
+        [0x1.791263cd3b075p+4, 0x1.1d36cf1551b79p+3, 0x1.1d36cf1551b79p+3, 0x1.791263cd3b075p+4]
+    ];
+
+    static immutable S[][] sqs = [
+        [0x1.d635b6e68a736p-57, 0x1.c22009431db6ep-6, 0x1.c22009431db6ep-6, 0x1.d635b6e68a736p-57],
+        [0x1.60a84928d21eep-56, 0x1.c22009431db71p-6, 0x1.c22009431db71p-6, 0x1.60a84928d21eep-56],
+        [0x1.35f3e85077c39p-52, 0x1.c22009431db6fp-6, 0x1.c22009431db6fp-6, 0x1.35f3e85077c39p-52],
+        [0x1.14ada3f2c1d78p-48, 0x1.c22009431db6cp-6, 0x1.c22009431db6cp-6, 0x1.14ada3f2c1d78p-48],
+        [0x1.3d25b762ac29ap-27, 0x1.c22009431db6ep-6, 0x1.c22009431db6ep-6, 0x1.3d25b762ac29ap-27],
+        [0x1.7b9ffcbb90945p-11, 0x1.c22009431db6ap-6, 0x1.c22009431db6ap-6, 0x1.7b9ffcbb90945p-11],
+        [0x1.448246e5ed23bp-2, 0x1.c22009431db6ep-6, 0x1.c22009431db6ep-6, 0x1.448246e5ed23bp-2],
+        [0x1.5100bdf24c8cap-37, 0x1.c22009431db6cp-6, 0x1.c22009431db6cp-6, 0x1.5100bdf24c8cap-37],
+        [0x1.13922ad8cc53fp-47, 0x1.c22009431db7p-6, 0x1.c22009431db7p-6, 0x1.13922ad8cc53fp-47],
+        [0x1.d635b6e68a727p-58, 0x1.c22009431db6cp-6, 0x1.c22009431db6cp-6, 0x1.d635b6e68a727p-58],
+        [0x1.b525f00a54b74p-52, 0x1.c22009431db6ep-6, 0x1.c22009431db6ep-6, 0x1.b525f00a54b74p-52],
+        [0x1.d635b6e68a748p-58, 0x1.c22009431db71p-6, 0x1.c22009431db71p-6, 0x1.d635b6e68a748p-58],
+        [0x1.d635b6e68a736p-58, 0x1.c22009431db7p-6, 0x1.c22009431db7p-6, 0x1.d635b6e68a736p-58]
+    ];
+
+    const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+    const f1 = (S x) => 10 * x - 4 * x ^^ 3;
+    const f2 = (S x) => 10 - 12 * x ^^ 2;
+
+    auto it = (S l, S r, S c)
+    {
+        auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+        transformInterval(iv);
+        return iv;
+    };
+
+    import std.math : isInfinity;
+    import std.conv;
+
+    // calculate the area of all intervals
+    foreach (i, c; cs)
+    {
+        foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+        {
+            auto iv = it(p1, p2, c);
+            version(Flex_logging)
+            {
+                scope(failure)
+                {
+                    logf("c=%g, p1=%g,p2=%g, hat=%g, squeeze=%f",
+                                     c, p1, p2, iv.hatArea, iv.squeezeArea);
+                    version(Flex_logging_hex) logf("hat: %a, squeeze: %a", iv.hatArea, iv.squeezeArea);
+                    version(Flex_logging_hex) logf("exp. hat: %a, squeeze: %a", hats[i][j], sqs[i][j]);
+                    version(Flex_logging_hex) logf("iv: %s", iv.logHex);
+                }
+            }
+
+            determineSqueezeAndHat(iv);
+
+            hatArea!S(iv);
+            assert(iv.hatArea.fpEqual(hats[i][j]));
+
+            squeezeArea!S(iv);
+            assert(iv.squeezeArea.fpEqual(sqs[i][j]));
+        }
+    }
+}
+
+unittest
+{
+    import mir.random.flex.internal.transformations : transformInterval;
+    import mir.random.flex.internal.types : determineType;
+    import std.math: approxEqual;
+    import std.meta : AliasSeq;
+    import std.range: dropOne, lockstep, save;
+
+    alias S = real;
+
+    // inflection points: -1.7620, -1.4012, 1.4012, 1.7620
+    static immutable S[] points = [-3.0, -1.5, 0.0, 1.5, 3];
+    static immutable S[] cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.2, 0.5, 0.9, 1, 1.5, 2];
+    static immutable S[][] hats = [
+        [S.max, 0xf.fc7c9cb7a87140cp-1, 0xf.fc7c9cb7a87140cp-1, S.max],
+        [S.max, 0xf.1aed9334c2b6f0fp-1, 0xf.1aed9334c2b6f0fp-1, S.max],
+        [S.max, 0xe.01c9abd0be49affp-1, 0xe.01c9abd0be49affp-1, S.max],
+        [S.max, 0xd.c0bf449c48aa21bp-1, 0xd.c0bf449c48aa21bp-1, S.max],
+        [S.max, 0xc.953a5de2d3d6f01p-1, 0xc.953a5de2d3d6f01p-1, S.max],
+        [0x9.37b667eb41023fcp+3, 0xb.7e910067c482675p-1, 0xb.7e910067c482675p-1, 0x9.37b667eb41023fcp+3],
+        [0xc.9bbfbb4104cf353p+2, 0xa.a19e2e2def1264cp-1, 0xa.a19e2e2def1264cp-1, 0xc.9bbfbb4104cf353p+2],
+        [0xa.446e78fa184e4b1p+2, 0x9.a10c8f7b2ccdb53p-1, 0x9.a10c8f7b2ccdb53p-1, 0xa.446e78fa184e4b1p+2],
+        [0x8.83346c63e3aff87p+2, 0x9.55d347f639bbc7fp-1, 0x9.55d347f639bbc7fp-1, 0x8.83346c63e3aff87p+2],
+        [0xe.9e1272587b22107p+1, 0xc.b6d0121ec3d5d6ep-1, 0xc.b6d0121ec3d5d6ep-1, 0xe.9e1272587b22107p+1],
+        [0xe.3476e3fd1125a4fp+1, 0xd.659683e60d8b3acp-1, 0xd.659683e60d8b3acp-1, 0xe.3476e3fd1125a4fp+1],
+        [0xc.b8238ecab9389e8p+1, 0x8.05b948d542e2c47p+0, 0x8.05b948d542e2c47p+0, 0xc.b8238ecab9389e8p+1],
+        [0xb.c8931e69d83ab2dp+1, 0x8.e9b678aa8dbcf0ep+0, 0x8.e9b678aa8dbcf0ep+0, 0xb.c8931e69d83ab2dp+1]
+    ];
+
+    static immutable S[][] sqs = [
+        [0xe.b1adb734539b1dcp-60, 0xe.11004a18edb759dp-9, 0xe.11004a18edb759dp-9, 0xe.b1adb734539b1dcp-60],
+        [0xb.0542494690fac27p-59, 0xe.11004a18edb759dp-9, 0xe.11004a18edb759dp-9, 0xb.0542494690fac27p-59],
+        [0x9.af9f4283be1c807p-55, 0xe.11004a18edb759dp-9, 0xe.11004a18edb759dp-9, 0x9.af9f4283be1c807p-55],
+        [0x8.a56d1f960ebb8aep-51, 0xe.11004a18edb759dp-9, 0xe.11004a18edb759dp-9, 0x8.a56d1f960ebb8aep-51],
+        [0x9.e92dbb15614d431p-30, 0xe.11004a18edb759ep-9, 0xe.11004a18edb759ep-9, 0x9.e92dbb15614d431p-30],
+        [0xb.dcffe5dc84a2a02p-14, 0xe.11004a18edb7598p-9, 0xe.11004a18edb7598p-9, 0xb.dcffe5dc84a2a02p-14],
+        [0xa.2412372f691d7bbp-5, 0xe.11004a18edb759dp-9, 0xe.11004a18edb759dp-9, 0xa.2412372f691d7bbp-5],
+        [0xa.8805ef926456f8dp-40, 0xe.11004a18edb7598p-9, 0xe.11004a18edb7598p-9, 0xa.8805ef926456f8dp-40],
+        [0x8.9c9156c6629f808p-50, 0xe.11004a18edb759cp-9, 0xe.11004a18edb759cp-9, 0x8.9c9156c6629f808p-50],
+        [0xe.b1adb734539b1bap-61, 0xe.11004a18edb759dp-9, 0xe.11004a18edb759dp-9, 0xe.b1adb734539b1bap-61],
+        [0xd.a92f8052a5ba36p-55, 0xe.11004a18edb759dp-9, 0xe.11004a18edb759dp-9, 0xd.a92f8052a5ba36p-55],
+        [0xe.b1adb734539b1e3p-61, 0xe.11004a18edb759dp-9, 0xe.11004a18edb759dp-9, 0xe.b1adb734539b1e3p-61],
+        [0xe.b1adb734539b1e3p-61, 0xe.11004a18edb759dp-9, 0xe.11004a18edb759dp-9, 0xe.b1adb734539b1e3p-61]
+    ];
+
+    const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+    const f1 = (S x) => 10 * x - 4 * x ^^ 3;
+    const f2 = (S x) => 10 - 12 * x ^^ 2;
+
+    auto it = (S l, S r, S c)
+    {
+        auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+        transformInterval(iv);
+        return iv;
+    };
+
+    import std.math : isInfinity;
+    import std.conv;
+
+    // calculate the area of all intervals
+    foreach (i, c; cs)
+    {
+        foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+        {
+            auto iv = it(p1, p2, c);
+            version(Flex_logging)
+            {
+                scope(failure)
+                {
+                    version(Windows)
+                    {
+                        import std.math : nextDown, nextUp;
+                        logf("got: %a", iv.squeezeArea);
+                        logf("-- up: %a, down: %a", iv.squeezeArea.nextUp, iv.squeezeArea.nextDown);
+                        logf("exp: %a", sqs[i][j]);
+                        logf("-- up: %a, down: %a", sqs[i][j].nextUp, sqs[i][j].nextDown);
+                        logf("%s", iv.squeezeArea == sqs[i][j]);
+                        import std.math : approxEqual;
+                        logf("%s", iv.squeezeArea.approxEqual(sqs[i][j]));
+                        logf("pos: %d,%d", i, j);
+                    }
+                    logf("c=%g, p1=%g,p2=%g, hat=%g, squeeze=%f",
+                                     c, p1, p2, iv.hatArea, iv.squeezeArea);
+                    version(Flex_logging_hex) logf("hat: %a, squeeze: %a", iv.hatArea, iv.squeezeArea);
+                    version(Flex_logging_hex) logf("exp. hat: %a, squeeze: %a", hats[i][j], sqs[i][j]);
+                    version(Flex_logging_hex) logf("iv: %s", iv.logHex);
+                }
+            }
+
+            import mir.random.flex.internal.transformations : antiderivative;
+
+            determineSqueezeAndHat(iv);
+            hatArea!S(iv);
+            squeezeArea!S(iv);
+
+            assert(iv.hatArea.fpEqual(hats[i][j]));
+            assert(iv.squeezeArea.fpEqual(sqs[i][j]));
         }
     }
 }
@@ -497,7 +769,7 @@ unittest
     foreach (S; AliasSeq!(real))
     {
 
-        import std.math : log;
+        import mir.internal.math : log;
         auto f0 = (S x) => log(1 - x^^4);
         auto f1 = (S x) => -4 * x^^3 / (1 - x^^4);
         auto f2 = (S x) => -(4 * x^^6 + 12 * x^^2) / (x^^8 - 2 * x^^4 + 1);
@@ -537,9 +809,10 @@ unittest
 // distribution 4
 unittest
 {
+    import mir.internal.math : log;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual, isInfinity;
+    import std.math: abs, approxEqual, isInfinity;
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;
 
@@ -574,7 +847,7 @@ unittest
 
     foreach (S; AliasSeq!(float, double, real))
     {
-        import std.math : abs, log;
+
         auto f0 = (S x) => -log(abs(x))/2;
         auto f1 = (S x) => -1/(2*x);
         auto f2 = (S x) => 1/(2*x^^2);
@@ -610,9 +883,10 @@ unittest
 // distribution 4 with less points
 unittest
 {
+    import mir.internal.math : log;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual, isInfinity;
+    import std.math: abs, approxEqual, isInfinity;
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;
 
@@ -650,7 +924,6 @@ unittest
 
     foreach (S; AliasSeq!(float, double, real))
     {
-        import std.math : abs, log;
         auto f0 = (S x) => -log(abs(x))/2;
         auto f1 = (S x) => -1/(2*x);
         auto f2 = (S x) => 1/(2*x^^2);
@@ -687,6 +960,7 @@ unittest
 // distribution 3 with other boundaries
 unittest
 {
+    import mir.internal.math : log;
     import mir.random.flex.internal.transformations : transformInterval;
     import mir.random.flex.internal.types : determineType;
     import std.math: approxEqual, isInfinity;
@@ -732,7 +1006,6 @@ unittest
 
     foreach (S; AliasSeq!(float, double, real))
     {
-        import std.math : log;
         auto f0 = (double x) => -2 *  x^^4 + 4 * x^^2;
         auto f1 = (double x) => -8 *  x^^3 + 8 * x;
         auto f2 = (double x) => -24 * x^^2 + 8;
@@ -764,3 +1037,68 @@ unittest
         }
     }
 }
+
+/+
+// used to dump data tumples
+unittest
+{
+    import mir.random.flex.internal.transformations : transformInterval;
+    import mir.random.flex.internal.types : determineType;
+    import std.math: approxEqual;
+    import std.meta : AliasSeq;
+    import std.range: dropOne, lockstep, save;
+
+    // inflection points: -1.7620, -1.4012, 1.4012, 1.7620
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        S[] points = [-3.0, -1.5, 0.0, 1.5, 3];
+        S[] cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.2, 0.5, 0.9, 1, 1.5, 2];
+        S[][] hats;
+        S[][] sqs;
+        hats.length = cs.length;
+        sqs.length = cs.length;
+
+        const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
+        const f1 = (S x) => 10 * x - 4 * x ^^ 3;
+        const f2 = (S x) => 10 - 12 * x ^^ 2;
+
+        auto it = (S l, S r, S c)
+        {
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            transformInterval(iv);
+            return iv;
+        };
+
+        import std.math : isInfinity;
+        import std.conv;
+
+        // calculate the area of all intervals
+        foreach (i, c; cs)
+        {
+            hats[i].length = points.length - 1;
+            sqs[i].length = points.length - 1;
+
+            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
+            {
+                auto iv = it(p1, p2, c);
+
+                version(Flex_logging)
+                scope(failure) logf("c=%f,p1=%f,p2=%f %(%a, %)", c, p1, p2, iv.hatArea);
+
+                determineSqueezeAndHat(iv);
+
+                hatArea!S(iv);
+                squeezeArea!S(iv);
+
+                hats[i][j] = iv.hatArea;
+                sqs[i][j] = iv.squeezeArea;
+            }
+        }
+        import std.stdio;
+        writef("%([%(%a, %)]%|,\n%)", hats);
+        write("\n\n");
+        writef("%([%(%a, %)]%|,\n%)", sqs);
+        write("\n\n");
+    }
+}
++/

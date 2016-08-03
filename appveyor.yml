@@ -2,22 +2,13 @@ platform: x64
 environment:
  matrix:
   - DC: dmd
-    DVersion: 2.071.0
+    DVersion: 2.071.1
     arch: x64
   - DC: dmd
-    DVersion: 2.071.0
-    arch: x86
-  - DC: dmd
-    DVersion: 2.070.0
-    arch: x64
-  - DC: dmd
-    DVersion: 2.070.0
+    DVersion: 2.071.1
     arch: x86
   - DC: ldc
     DVersion: '1.0.0'
-    arch: x64
-  - DC: ldc
-    DVersion: 0.17.0
     arch: x64
 
 matrix:
@@ -29,6 +20,7 @@ branches:
   only:
     - master
     - stable
+    - tinflex
 
 install:
   - ps: function SetUpDCompiler
@@ -94,6 +86,7 @@ before_build:
 
 build_script:
  - echo dummy build script - dont remove me
+ - sed 's/"to_be_filled"/"Flex_logging", "Flex_logging_hex"/' -i dub.json
 
 test_script:
  - echo %PLATFORM%
@@ -109,9 +102,9 @@ test_script:
 notifications:
  - provider: Webhook
    url: https://webhooks.gitter.im/e/56aae174f8cc81f4eda4
- - provider: Email
-   to:
-    - devteam@mir.rocks
-   on_build_success: false
-   on_build_failure: true
-   on_build_status_changed: true
+ #- provider: Email
+   #to:
+    #- devteam@mir.rocks
+   #on_build_success: false
+   #on_build_failure: true
+   #on_build_status_changed: true

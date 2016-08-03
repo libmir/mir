@@ -49,7 +49,9 @@ struct LinearFun(S)
     /// call the linear function with x
     S opCall(in S x) const
     {
-        return a + slope * (x - y);
+        S val = slope * (x - y);
+        val += a;
+        return val;
     }
 
     /// calculate inverse of x
@@ -62,6 +64,13 @@ struct LinearFun(S)
     S intercept() @property const
     {
         return slope * -y + a;
+    }
+
+    ///
+    version(Flex_logging) string logHex()
+    {
+        import std.format : format;
+        return "LinearFun!%s(%a, %a, %a)".format(S.stringof, slope, y, a);
     }
 }
 

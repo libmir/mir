@@ -89,6 +89,11 @@ import mir.random.discrete : Discrete;
 import std.random : isUniformRNG;
 import std.traits : isCallable, isFloatingPoint, ReturnType;
 
+version(Flex_logging)
+{
+    import std.experimental.logger;
+}
+
 /**
 The Transformed Density Rejection with Inflection Points (Flex) algorithm
 can sample from arbitrary distributions given its density function f, its
@@ -137,7 +142,7 @@ auto flex(S, F0, F1, F2)
                 S[] cs, S[] points, S rho = 1.1)
     if (isFloatingPoint!S)
 {
-    import std.math: exp;
+    import mir.internal.math: exp;
     auto pdf = (S x) => exp(f0(x));
     return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho));
 }
@@ -232,10 +237,8 @@ unittest
     S[] points = [-3, -1.5, 0, 1.5, 3];
 
     auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
-
     auto value = tf(gen);
 }
-
 
 unittest
 {
@@ -292,7 +295,6 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
 
         auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
-
         auto value = tf(gen);
     }
 }
@@ -497,7 +499,7 @@ body
     import mir.random.flex.internal.calc: arcmean, calcInterval;
     import mir.random.flex.internal.transformations : transform, transformInterval;
     import mir.random.flex.internal.types: Interval;
-    import mir.internal.math: pow, exp, copysign;
+    import mir.internal.math: copysign, exp, pow;
     import mir.sum: Summator, Summation;
     import std.algorithm.sorting : sort;
     import std.container.array: Array;
@@ -516,7 +518,13 @@ body
     // https://github.com/dlang/phobos/pull/4359
     auto arr = Array!(Interval!S)();
     auto ips = BinaryHeap!(typeof(arr), (Interval!S a, Interval!S b){
-        return a.hatArea - a.squeezeArea < b.hatArea - b.squeezeArea;
+        S aVal = a.hatArea - a.squeezeArea;
+        S bVal = b.hatArea - b.squeezeArea;
+        // Explicit order is needed for LDC (undefined otherwise)
+        if (!(aVal == bVal))
+            return aVal < bVal;
+        else
+            return a.lx < b.lx;
     })(arr);
 
     S l = points[0];
@@ -526,8 +534,12 @@ body
 
     version(Flex_logging)
     {
-        import std.experimental.logger;
         log("starting flex with p=", points, ", cs=", cs);
+        version(Flex_logging_hex)
+        {
+            logf("points= %(%a, %)", points);
+            logf("cs= %(%a, %)", points);
+        }
     }
 
     // initialize with user given splitting points
@@ -547,19 +559,26 @@ body
         ips.insert(iv);
     }
 
+    version(Windows) {} else
     version(Flex_logging)
     {
-        import std.algorithm;
-        auto tArr = new Interval!S[ips.length];
-        // binary heap is an one-way store
-        for (auto k = 0; !ips.empty; ips.removeFront)
-            tArr[k++] = ips.front;
-        foreach (el; tArr)
-            ips.insert(el);
+        import std.algorithm.iteration : map;
+        import std.array : array;
+        auto ipsD = ips.dup.array;
         log("----");
-        log("Interval: ", tArr.map!`a.lx`);
-        log("hatArea", tArr.map!`a.hatArea`);
-        log("squeezeArea", tArr.map!`a.squeezeArea`);
+
+        logf("Interval: %(%f, %)", ipsD.map!`a.lx`);
+        version(Flex_logging_hex)
+            logf("Interval: %(%a, %)", ipsD.map!`a.lx`);
+
+        logf("hatArea: %(%f, %)", ipsD.map!`a.hatArea`);
+        version(Flex_logging_hex)
+            logf("hatArea: %(%a, %)", ipsD.map!`a.hatArea`);
+
+        logf("squeezeArea %(%f, %)", ipsD.map!`a.squeezeArea`);
+        version(Flex_logging_hex)
+            logf("squeezeArea %(%a, %)", ipsD.map!`a.squeezeArea`);
+
         log("----");
     }
 
@@ -573,10 +592,16 @@ body
         if (totalHatArea / totalSqueezeArea <= rho)
             break;
 
+        version(Windows) {} else
         version(Flex_logging)
         {
             tracef("iteration %d: totalHat: %.3f, totalSqueeze: %.3f, rho: %.3f",
                     i, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
+            version(Flex_logging_hex)
+                tracef("iteration %d: totalHat: %a, totalSqueeze: %a, rho: %a",
+                        i, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
+            version(Flex_logging_hex)
+                logf("to be split: %s", ips.front.logHex);
         }
 
         immutable avgArea = nextDown(totalHatArea - totalSqueezeArea) / nrIntervals;
@@ -621,12 +646,14 @@ body
         version(Flex_logging)
         {
             log("--split ", nrIntervals, " between ", curEl.lx, " - ", curEl.rx);
-            log("interval to be splitted: ", curEl);
+            log("interval to be split: ", curEl);
             log("new middle interval created: ", midIP);
-        }
+            version(Flex_logging_hex)
+            {
+                logf("left: %s", curEl.logHex);
+                logf("right: %s", midIP.logHex);
+            }
 
-        version(Flex_logging)
-        {
             log("update left: ", curEl);
             log("update mid: ", midIP);
         }
@@ -640,6 +667,7 @@ body
         // insert new middle part into linked list
         ips.insert(curEl);
         ips.insert(midIP);
+
         nrIntervals++;
     }
 
@@ -699,8 +727,17 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
-        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
+        foreach (i, el; ips)
+        {
+            version(Flex_logging) scope(failure)
+            {
+                logf("at %d got %a, expected %a (%2$f)", i, el.hatArea, hats[i]);
+                logf("at %d got %a, expected %a (%2$f)", i, el.squeezeArea, sqs[i]);
+                logf("iv %s", el);
+            }
+            assert(el.hatArea.approxEqual(hats[i]));
+            assert(el.squeezeArea.approxEqual(sqs[i]));
+        }
     }
 }
 
@@ -734,8 +771,17 @@ unittest
         S[] cs = [1.0, 1.0, 1.0, 1.0];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
 
-        assert(ips.map!`a.hatArea`.equal!approxEqual(hats));
-        assert(ips.map!`a.squeezeArea`.equal!approxEqual(sqs));
+        foreach (i, el; ips)
+        {
+            version(Flex_logging) scope(failure)
+            {
+                logf("got %a, expected %a", el.hatArea, hats[i]);
+                logf("got %a, expected %a", el.squeezeArea, sqs[i]);
+                logf("iv %s", el);
+            }
+            assert(el.hatArea.approxEqual(hats[i]));
+            assert(el.squeezeArea.approxEqual(sqs[i]));
+        }
     }
 }
 
@@ -783,8 +829,8 @@ unittest
     import std.algorithm : equal, map;
     import std.meta : AliasSeq;
     import std.math : approxEqual, PI;
-    static immutable hats = [1.60809, 1.23761, 0.797556, 2.23537, 1.60809];
-    static immutable sqs = [1.52164, 1.19821, 0.776976, 1.94559, 1.52164];
+    static immutable hats = [1.60809, 2.23537, 0.797556, 1.23761, 1.60809];
+    static immutable sqs = [1.52164, 1.94559, 0.776976, 1.19821, 1.52164];
 
     foreach (S; AliasSeq!(float, double, real))
     {
@@ -805,9 +851,10 @@ unittest
 {
     import std.algorithm : equal, map;
     import std.array : array;
-    import std.math : approxEqual, log;
+    import std.math : approxEqual;
     import std.meta : AliasSeq;
     import std.range : repeat;
+    import mir.internal.math : log;
 
     static immutable hats = [0.00648327, 0.0133705, 0.33157, 0.5, 0.5, 0.16167,
                              0.136019, 0.0133705, 0.00648327];
@@ -832,8 +879,8 @@ unittest
     {
         alias S = double;
 
-        S[] hatsD = [0.0229267, 0.136019, 0.16167, 0.5, 0.5, 0.33157, 0.0229267];
-        S[] sqsD =  [0, 0.12444, 0.156698, 0.484543, 0.484543, 0.274612, 0];
+        S[] hatsD = [0.0229267, 0.33157, 0.5, 0.5, 0.16167, 0.136019, 0.0229267];
+        S[] sqsD =  [0, 0.274612, 0.484543, 0.484543, 0.156698, 0.12444, 0];
 
         auto f0 = (S x) => cast(S) log(1 - x^^4);
         auto f1 = (S x) => -S(4) * x^^3 / (1 - x^^4);
@@ -861,7 +908,7 @@ Returns: flex-inversed value of x
 */
 S flexInverse(bool common = false, S)(in S x, in S c)
 {
-    import mir.internal.math : fabs, exp, pow, copysign;
+    import mir.internal.math : pow, fabs, exp, copysign;
     import std.math: sgn;
     assert(sgn(c) * x >= 0);
     static if (!common)
@@ -875,6 +922,7 @@ S flexInverse(bool common = false, S)(in S x, in S c)
         if (c == 1)
             return x;
     }
+    // LDC intrinsics compiles to the assembler powf which yields different results
     return pow(fabs(x), 1 / c);
 }
 
@@ -951,5 +999,3 @@ unittest
         }
     }
 }
-
-

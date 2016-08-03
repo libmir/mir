@@ -4,25 +4,21 @@ os:
  - osx
 language: d
 d:
- - dmd-2.071.0
+ - dmd-2.071.1
  - dmd-2.070.2
- - dmd-2.069.2
- - dmd-2.068.2
  - ldc-1.0.0
 env:
  - ARCH="x86_64"
 matrix:
   include:
-    - {os: linux, d: dmd-2.071.0, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: dmd-2.071.1, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
     - {os: linux, d: dmd-2.070.2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-    - {os: linux, d: dmd-2.069.2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-    - {os: linux, d: dmd-2.068.2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
     - {os: linux, d: ldc-1.0.0, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-    - {os: linux, d: ldc-0.17.0, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
 branches:
   only:
     - master
     - stable
+    - tinflex
 script:
  - echo "$ARCH"
  - dub test --arch "$ARCH" -b unittest-cov
