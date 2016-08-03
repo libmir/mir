@@ -1,7 +1,7 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
-This is a submodule of $(MREF std, experimental, ndslice).
+This is a submodule of $(MREF mir, ndslice).
 
 Selectors create new views and iteration patterns over the same data, without copying.
 

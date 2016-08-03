@@ -1,7 +1,7 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
-This is a submodule of $(MREF std, experimental, ndslice).
+This is a submodule of $(MREF mir, ndslice).
 
 Operators only change strides and lengths of a slice.
 The range of a slice remains unmodified.
