@@ -11,7 +11,7 @@ Generic Numerical Library for Science and Machine Learning.
 Contents
 --------
 
-- `mir.ndslice` [Multidimensional Random Access Ranges and Arrays](http://dlang.org/phobos-prerelease/std_experimental_ndslice.html)
+- `mir.ndslice` [Multidimensional Random Access Ranges and Arrays](http://docs.mir.dlang.io/latest/mir_ndslice.html)
 - `mir.sparse` Sparse Tensors
  - `Sparse` - DOK format
  - Different ranges for COO format
