@@ -1,7 +1,7 @@
 /**
 $(SCRIPT inhibitQuickIndex = 1;)
 
-This is a submodule of $(MREF mir, ndslice).
+This is a submodule of $(MREF mir,ndslice).
 It contains basic multidimensional iteration algorithms.
 
 $(BOOKTABLE Iteration operators,
@@ -326,7 +326,6 @@ private mixin template PropagatePtr()
     void opOpAssign(string op)(sizediff_t shift)
         if (op == `+` || op == `-`)
     {
-        pragma(inline, true);
         mixin (`_ptr ` ~ op ~ `= shift;`);
     }
 
@@ -418,7 +417,7 @@ template ndFold(fun...)
                 seed = ndFoldImpl!(N - 1, Range, S)(tensor.front, seed).expand;
             tensor.popFront;
         }
-        while (tensor.length);
+        while (tensor._lengths[0]);
 
         static if (S.length == 1)
             return seed[0];
@@ -608,8 +607,6 @@ template ndReduce(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastma
 
     private @attr auto ndReduceImpl(bool dense, size_t N, bool first = false, S, Args...)(S seed, Args tensors)
     {
-        static if (dense && first)
-            pragma(inline, false);
         do
         {
             static if (N == 1)
@@ -629,7 +626,7 @@ template ndReduce(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastma
                     tensor.popFront;
             }
         }
-        while (tensors[0].length);
+        while (tensors[0]._lengths[0]);
         return seed;
     }
 }
@@ -655,6 +652,12 @@ unittest
     import std.typecons : Yes;
     import std.conv : to;
     import mir.ndslice.selection : iotaSlice;
+    import mir.ndslice.internal : fastmath;
+
+    static @fastmath T fmuladd(T)(const T a, const T b, const T c)
+    {
+        return a + b * c;
+    }
 
     //| 0 1 2 |
     //| 3 4 5 |
@@ -663,7 +666,7 @@ unittest
     //| 4 5 6 |
     auto b = iotaSlice([2, 3], 1).ndMap!(to!double).slice;
 
-    alias dot = ndReduce!((seed, a, b) => seed + a * b, Yes.vectorized);
+    alias dot = ndReduce!(fmuladd, Yes.vectorized);
     auto res = dot(0.0, a, b);
 
     // check the result:
@@ -681,6 +684,12 @@ pure unittest
     import std.numeric : dotProduct;
     import mir.ndslice.slice : assumeSameStructure;
     import mir.ndslice.selection : iotaSlice;
+    import mir.ndslice.internal : fastmath;
+
+    static @fastmath T fmuladd(T, Z)(const T a, Z z)
+    {
+        return a + z.a * z.b;
+    }
 
     // 0 1 2
     // 3 4 5
@@ -694,7 +703,7 @@ pure unittest
 
     auto zip = assumeSameStructure!("a", "b")(sl1, sl2);
 
-    auto dot = ndReduce!((seed, z) => seed + z.a * z.b, Yes.vectorized)(0.0, zip);
+    auto dot = ndReduce!(fmuladd, Yes.vectorized)(0.0, zip);
 
     assert(dot == dotProduct(iota(0, 6), iota(1, 7)));
 }
@@ -706,14 +715,18 @@ unittest
     import std.conv : to;
     import mir.ndslice.slice : slice;
     import mir.ndslice.selection : iotaSlice;
+    import mir.ndslice.internal : fastmath;
+
+    static @fastmath T fun(T)(const T a, ref T b)
+    {
+        return a + b++;
+    }
 
     //| 0 1 2 |
     //| 3 4 5 |
     auto sl = iotaSlice(2, 3).ndMap!(to!double).slice;
 
-    alias fun = (seed, ref elem) => seed + elem++;
-
-    auto res = 0.0.ndReduce!(fun, Yes.vectorized)(sl);
+    auto res = ndReduce!(fun, Yes.vectorized)(double(0), sl);
 
     assert(res == 15);
 
@@ -820,8 +833,6 @@ template ndEach(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath
 
     private @attr void ndEachImpl(bool dense, size_t N, bool first = false, Args...)(Args tensors)
     {
-        static if (dense && first)
-            pragma(inline, false);
         do
         {
             static if (Args[0].N == 1)
@@ -841,7 +852,7 @@ template ndEach(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath
                     tensor.popFront;
             }
         }
-        while (tensors[0].length);
+        while (tensors[0]._lengths[0]);
     }
 }
 
@@ -941,7 +952,7 @@ private void ndFindImpl(alias pred, size_t N, Args...)(ref size_t[N] backwardInd
         foreach_reverse (ref tensor; tensors)
             tensor.popFront;
     }
-    while (tensors[0].length);
+    while (tensors[0]._lengths[0]);
 }
 
 /++
@@ -1226,7 +1237,7 @@ template ndAll(alias pred)
             foreach_reverse (ref tensor; tensors)
                 tensor.popFront;
         }
-        while (tensors[0].length);
+        while (tensors[0]._lengths[0]);
         return true;
     }
 }
