@@ -5,11 +5,11 @@ This is a submodule of $(MREF std, experimental, ndslice).
 It contains basic multidimensional iteration algorithms.
 
 $(BOOKTABLE Iteration operators,
-$(TR $(TH Operator Name) $(TH Type) $(TH Functions / Seeds #) $(TH Tensors #) $(TH Returns) $(TH First Argument))
-$(T6 ndMap, Lazy, `>=1`, `1`, Tensor, Tensor)
-$(T6 ndFold, Eagerly, `>=1`, `1`, Scalar, Tensor)
-$(T6 ndReduce, Eagerly, `1`, `>=1`, Scalar, Seed)
-$(T6 ndEach, Eagerly, `0`, `>=1`, `void`, Tensor)
+$(TR $(TH Operator Name) $(TH Type) $(TH Functions / Seeds #)  $(TH Vectorization) $(TH Tensors #) $(TH Returns) $(TH First Argument))
+$(T7 ndMap, Lazy, `>=1`, `1`, N/A, Tensor, Tensor)
+$(T7 ndFold, Eagerly, `>=1`, No, `1`, Scalar, Tensor)
+$(T7 ndReduce, Eagerly, `1`, Optional, `>=1`, Scalar, Seed)
+$(T7 ndEach, Eagerly, `1`/`0`, Optional, `>=1`, `void`, Tensor)
 )
 
 $(BOOKTABLE Eagerly iteration operators with stop condition,
@@ -50,6 +50,7 @@ Macros:
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T6=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4) $(TD $5) $(TD $6))
+T7=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4) $(TD $5) $(TD $6), $(TD $7))
 */
 module mir.ndslice.algorithm;
 
