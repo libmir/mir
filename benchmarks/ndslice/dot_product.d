@@ -21,7 +21,7 @@ $ dub run --build=release-nobounds --compiler=ldmd2 --single dot_product.d
                   ndReduce = 14 ms, 767 μs
 numeric.dotProduct, arrays = 7 ms, 260 μs
 numeric.dotProduct, slices = 14 ms, 782 μs
-              zip & reduce = 74 ms, 280 μs
+              zip & reduce = 44 ms, 57 μs
 +/
 import std.numeric : dotProduct;
 import std.typecons;

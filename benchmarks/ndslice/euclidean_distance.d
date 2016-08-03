@@ -17,11 +17,11 @@ LDC - the LLVM D compiler (918073):
 
 $ dub run --build=release-nobounds --compiler=ldmd2 --single dot_product.d
 
-                ndReduce vectorized = 3 ms, 668 μs, and 3 hnsecs
-                           ndReduce = 14 ms, 595 μs, and 3 hnsecs
-  numeric.euclideanDistance, arrays = 14 ms, 463 μs, and 1 hnsec
-  numeric.euclideanDistance, slices = 14 ms, 465 μs, and 5 hnsecs
-                       zip & reduce = 73 ms, 678 μs, and 2 hnsecs
+                ndReduce vectorized = 3 ms, 668 μs
+                           ndReduce = 14 ms, 595 μs
+  numeric.euclideanDistance, arrays = 14 ms, 463 μs
+  numeric.euclideanDistance, slices = 14 ms, 465 μs
+                       zip & reduce = 44 ms, 646 μs
 +/
 import std.numeric : euclideanDistance;
 import std.typecons;
