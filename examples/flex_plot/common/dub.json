@@ -1,0 +1,15 @@
+{
+	"name": "flex_common",
+    "sourcePaths": ["."],
+    "importPaths": ["."],
+    "license": "BSL-1.0",
+    "dependencies": {
+        "pyd": "~>0.9.8",
+        "mir": {
+            "path": "../../.."
+        }
+    },
+    "subConfigurations": {
+        "pyd": "python35"
+    }
+}
