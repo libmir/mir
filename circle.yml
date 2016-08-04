@@ -13,7 +13,7 @@ checkout:
 dependencies:
   pre:
     - sudo apt-get update
-    - sudo apt-get install build-essential python-dev
+    - sudo apt-get install libpython3.5-dev
   override:
     - curl -fsSL --retry 3 "http://downloads.dlang.org/releases/2.x/$DMD/dmd.$DMD.linux.tar.xz" | tar -C ~ -Jxf -
     - curl -fsSL --retry 3 http://code.dlang.org/files/dub-${DUB}-linux-x86_64.tar.gz | tar -C ~/dmd2/linux/bin64 -zxf -
