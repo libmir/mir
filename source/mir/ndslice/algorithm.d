@@ -404,17 +404,30 @@ enum Select
     +/
     half,
     /++
-    `upper` can be used to iterate on upper triangular matrix.
+    `upper` can be used to iterate on upper or lower triangular matrix.
 
     1D Example:
     -----
     1 2 3
     -----
-    2D Example:
+    2D Example #1:
     -----
     | 1 2 3 |
     | x 4 5 |
     | x x 6 |
+    -----
+    2D Example #2:
+    -----
+    | 1 2 3 4 |
+    | x 5 6 7 |
+    | x x 8 9 |
+    -----
+    2D Example #3:
+    -----
+    | 1 2 3 |
+    | x 4 5 |
+    | x x 6 |
+    | x x x |
     -----
     3D Example:
     -----
