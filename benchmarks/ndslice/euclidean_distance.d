@@ -26,11 +26,11 @@ DOUBLE:
 
 
 FLOAT:
-                ndReduce vectorized = 2 ms, 226 μs, and 9 hnsecs
-                           ndReduce = 14 ms, 661 μs, and 3 hnsecs
-  numeric.euclideanDistance, arrays = 14 ms, 597 μs, and 8 hnsecs
-  numeric.euclideanDistance, slices = 14 ms, 581 μs, and 2 hnsecs
-                       zip & reduce = 46 ms, 759 μs, and 5 hnsecs
+                ndReduce vectorized = 2 ms, 226 μs
+                           ndReduce = 14 ms, 661 μs
+  numeric.euclideanDistance, arrays = 14 ms, 597 μs
+  numeric.euclideanDistance, slices = 14 ms, 581 μs
+                       zip & reduce = 46 ms, 759 μs
 +/
 import std.numeric : euclideanDistance;
 import std.typecons;
