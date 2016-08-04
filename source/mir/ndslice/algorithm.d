@@ -346,6 +346,148 @@ private mixin template PropagatePtr()
 }
 
 /++
+Selection type,
+`Select` can be used with
+$(MREF ndReduce),
+$(MREF ndEach),
+$(MREF ndFind),
+$(MREF ndAny),
+$(MREF ndAll),
+$(MREF ndEqual),
+$(MREF ndCmp).
+
+Any dimension count is supported.
+Each type has example for 1D, 2D, and 3D cases.
++/
+enum Select
+{
+    /++
+    `full` is the default selection type.
+
+    1D Example:
+    -----
+    1 2 3
+    -----
+    2D Example:
+    -----
+    | 1 2 3 |
+    | 4 5 6 |
+    | 7 8 9 |
+    -----
+    3D Example:
+    -----
+    | 1  2  3 | | 10 11 12 | | 19 20 21 |
+    | 4  5  6 | | 13 14 15 | | 22 23 24 |
+    | 7  8  9 | | 16 17 18 | | 25 26 27 |
+    -----
+    +/
+    full,
+    /++
+    `half` can be used to reverse elements in a tensor.
+
+    1D Example:
+    -----
+    1 x x
+    -----
+    2D Example:
+    -----
+    | 1 2 3 |
+    | 4 x x |
+    | x x x |
+    -----
+    3D Example:
+    -----
+    | 1  2  3 | | 10 11 12 | |  x  x  x |
+    | 4  5  6 | | 13  x  x | |  x  x  x |
+    | 7  8  9 | |  x  x  x | |  x  x  x |
+    -----
+    +/
+    half,
+    /++
+    `upper` can be used to iterate on upper triangular matrix.
+
+    1D Example:
+    -----
+    1 2 3
+    -----
+    2D Example:
+    -----
+    | 1 2 3 |
+    | x 4 5 |
+    | x x 6 |
+    -----
+    3D Example:
+    -----
+    |  1  2  3 | |  x  7  8 | |  x  x 10 |
+    |  x  4  5 | |  x  x  9 | |  x  x  x |
+    |  x  x  6 | |  x  x  x | |  x  x  x |
+    -----
+    +/
+    upper,
+    /++
+    `lower` can be used to iterate on lower triangular matrix.
+
+    -----
+    1 2 3
+    -----
+    2D Example:
+    -----
+    | 1 x x |
+    | 2 3 x |
+    | 4 5 6 |
+    -----
+    3D Example:
+    -----
+    |  1  x  x | |  x  x  x | |  x  x  x |
+    |  2  3  x | |  7  x  x | |  x  x  x |
+    |  4  5  6 | |  8  9  x | | 10  x  x |
+    -----
+    +/
+    lower,
+    /++
+    `simplex` can be used to iterate on standart simplex.
+
+    1D Example:
+    -----
+    1 2 3
+    -----
+    2D Example:
+    -----
+    | 1 2 3 |
+    | 4 5 x |
+    | 6 x x |
+    -----
+    3D Example:
+    -----
+    |  1  2  3 | |  7  8  x | | 10  x  x |
+    |  4  5  x | |  9  x  x | |  x  x  x |
+    |  6  x  x | |  x  x  x | |  x  x  x |
+    -----
+    +/
+    simplex,
+    /++
+    `opposite` can be used to iterate opposite of standart simplex.
+
+    -----
+    1 2 3
+    -----
+    2D Example:
+    -----
+    | x x 1 |
+    | x 2 3 |
+    | 4 5 6 |
+    -----
+    3D Example:
+    -----
+    |  x  x  1 | |  x  x  x | |  x  x  x |
+    |  x  2  3 | |  x  x  7 | |  x  x  x |
+    |  4  5  6 | |  x  8  9 | |  x  x 10 |
+    -----
+    +/
+    opposite,
+}
+
+/++
 Implements the homonym function (also known as `accumulate`,
 `compress`, `inject`, or `foldl`) present in various programming
 languages of functional flavor. The call `fold!(fun)(tensor, seed)`
