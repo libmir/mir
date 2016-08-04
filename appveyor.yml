@@ -8,13 +8,11 @@ environment:
     arch: x64
     PYTHON: "C:\\Python35-x64"
     PYTHON_VERSION: "3.4.0"
-    PYTHON_ARCH: "64"
   - DC: dmd
     DVersion: 2.071.1
     arch: x86
     PYTHON: "C:\\Python35"
     PYTHON_VERSION: "3.4.0"
-    PYTHON_ARCH: "32"
   - DC: ldc
     DVersion: '1.0.0'
     arch: x64
