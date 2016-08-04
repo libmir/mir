@@ -10,6 +10,6 @@
         }
     },
     "subConfigurations": {
-        "pyd": "python35"
+        "pyd": "python34"
     }
 }
