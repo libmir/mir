@@ -16,22 +16,23 @@ import std.conv: to;
 import std.math : exp;
 
 import pyd.pyd;
-import pyd.embedded;
+import pyd.embedded : InterpContext;
 import pyd.extra;
 
 alias toNumpyArray = d_to_python_numpy_ndarray;
 
 shared static this() {
-    //initializes PyD package.
+    import pyd.pyd : py_init;
     py_init();
 }
 
 // plot histogram with matplotlib
 void npPlotHistogram(S)(S[] values, string fileName, string title)
 {
-    import std.math : isNaN;
+    import std.math : isFinite;
     static immutable script = `
         import matplotlib.pyplot as plt
+        import numpy as np
         n, bins, patches = plt.hist(sample, num_bins, normed=1)
         plt.title(title)
         plt.savefig(fileName, bbox_inches='tight')
@@ -44,11 +45,11 @@ void npPlotHistogram(S)(S[] values, string fileName, string title)
     // apply filtering due to weird output errors
     foreach (v; values)
     {
-        if (!v.isNaN)
+        if (v.isFinite)
             npValues ~= v;
     }
     pythonContext.sample = npValues.toNumpyArray;
-    pythonContext.num_bins = 50;
+    pythonContext.num_bins = 100;
     pythonContext.fileName = fileName;
     pythonContext.title = title;
     pythonContext.py_stmts(script);
@@ -57,7 +58,7 @@ void npPlotHistogram(S)(S[] values, string fileName, string title)
 /**
 Plots every interval as a separate line with a given stepsize.
 */
-auto plotWithIntervals(S)(in FlexInterval!S[] intervals, bool isHat = true,
+auto plotWithIntervals(S)(const(FlexInterval!S)[] intervals, bool isHat = true,
                           S stepSize = 0.01, bool isTransformed = false, S leftStart = -3,
                           S rightStart = 3)
 in
@@ -67,46 +68,66 @@ in
 }
 body
 {
-    import mir.random.flex : flexInverse;
-    import std.algorithm.comparison : max, min;
-    import std.math : ceil;
-
-    auto len = intervals.length;
-
-    // TODO: do something smart to avoid many allocations here
-    S[][] xs = new S[][len];
-    S[][] ys = new S[][xs.length];
-
-    foreach (i, iv; intervals)
+    static struct PlotRange
     {
-        S x = max(iv.lx, leftStart);
-        S right = min(iv.rx, rightStart);
-        size_t nrIntervals = right < x ? 0 : cast(size_t) ((right - x) / stepSize).ceil;
-        nrIntervals = max(2, nrIntervals);
-        xs[i] = new S[nrIntervals];
-        ys[i] = new S[nrIntervals];
+        import mir.random.flex : flexInverse;
+        import std.algorithm.comparison : max, min;
+        import std.math : ceil;
 
-        foreach (k; 0..nrIntervals)
+        const(FlexInterval!S)[] r;
+        bool isHat;
+        S stepSize;
+        bool isTransformed;
+        S leftStart;
+        S rightStart;
+
+        bool empty()
         {
-            xs[i][k] = x;
-            ys[i][k] = (isHat) ? iv.hat(x) : iv.squeeze(x);
-            if (!isTransformed)
-                ys[i][k] = (ys[i][k] * iv.c >= 0) ? flexInverse(ys[i][k], iv.c) : 0;
-
-            x += stepSize;
+            return r.length == 0;
         }
-        if (x < iv.rx || nrIntervals == 1)
+
+        auto front()
         {
-            // plot last value too
-            S r = min(iv.rx, right);
-            xs[i][$ - 1] = r;
-            ys[i][$ - 1] = (isHat) ? iv.hat(r) : iv.squeeze(r);
-            if (!isTransformed)
-                ys[i][$ - 1] = (ys[i][$ - 1] * iv.c >= 0) ? flexInverse(ys[i][$ - 1], iv.c) : 0;
+            FlexInterval!S iv = r[0];
+
+            S x = max(iv.lx, leftStart);
+            S right = min(iv.rx, rightStart);
+            size_t nrIntervals = right < x ? 0 : cast(size_t) ((right - x) / stepSize).ceil;
+            nrIntervals = max(2, nrIntervals);
+
+            auto xs = new S[nrIntervals];
+            auto ys = new S[nrIntervals];
+
+            foreach (k; 0..nrIntervals)
+            {
+                xs[k] = x;
+                ys[k] = (isHat) ? iv.hat(x) : iv.squeeze(x);
+                if (!isTransformed)
+                    ys[k] = (ys[k] * iv.c >= 0) ? flexInverse(ys[k], iv.c) : 0;
+
+                x += stepSize;
+            }
+            if (x < iv.rx || nrIntervals == 1)
+            {
+                // plot last value too
+                S r = min(iv.rx, right);
+                xs[$ - 1] = r;
+                ys[$ - 1] = (isHat) ? iv.hat(r) : iv.squeeze(r);
+                if (!isTransformed)
+                    ys[$ - 1] = (ys[$ - 1] * iv.c >= 0) ? flexInverse(ys[$ - 1], iv.c) : 0;
+            }
+
+            import std.typecons : tuple;
+            return tuple!("xs", "ys")(xs, ys);
+        }
+
+        void popFront()
+        {
+            assert(r.length > 0, "range can't be empty");
+            r = r[1..$];
         }
     }
-    import std.typecons : tuple;
-    return tuple!("xs", "ys")(xs, ys);
+    return PlotRange(intervals, isHat, stepSize, isTransformed, leftStart, rightStart);
 }
 
 auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
@@ -116,22 +137,8 @@ auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
     import std.algorithm.comparison : max, min;
     import std.array : array;
 
-    static immutable script = `
-        import matplotlib.pyplot as plt
-        import numpy as np
-        plt.plot(xs, ys, color='black')
-        for i, h in enumerate(hats[0: len(hats) - 1]):
-            if not np.isnan(h).any():
-                plt.plot(xsHS[i], h, color='red')
-        for i, s in enumerate(squeezes):
-            plt.plot(xsHS[i], s, color='green')
-        plt.title(title)
-        plt.savefig(fileName, bbox_inches='tight', format="pdf")
-        plt.close()
-    `;
-
     auto pythonContext = new InterpContext();
-    alias T = double;
+    alias T = double; // numpy only uses double
 
     S l = max(left, intervals[0].lx);
     S r = min(right, intervals[$ - 1].rx);
@@ -145,18 +152,31 @@ auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
     pythonContext.xs = xs.toNumpyArray;
     pythonContext.ys = ys.toNumpyArray;
 
-    auto hats = plotWithIntervals(intervals, true, stepSize, false, l, r);
-    // TODO: this allocates the xs array twice
-    auto squeezes = plotWithIntervals(intervals, false, stepSize, false, l, r);
-
-    // TODO: do something smart to convert hat.xs to list of numpy arrays
-    pythonContext.xsHS = hats.xs.d_to_python;
-    pythonContext.hats = hats.ys.d_to_python;
-    pythonContext.squeezes = squeezes.ys.d_to_python;
-
     pythonContext.fileName = fileName;
     pythonContext.title = title;
-    pythonContext.py_stmts(script);
+    pythonContext.py_stmts(`
+        import matplotlib.pyplot as plt
+        import numpy as np
+        plt.plot(xs, ys, color='black')
+    `);
+    scope(exit) pythonContext.py_stmts(`
+        plt.title(title)
+        plt.savefig(fileName, bbox_inches='tight', format="pdf")
+        plt.close()
+    `);
+
+    // Hat & Squeeze
+    import std.meta : AliasSeq;
+    import std.typecons : Tuple;
+    alias fnType = Tuple!(bool, "type", string, "color");
+    foreach (fn; AliasSeq!(fnType(true, "red"), fnType(false, "green")))
+        foreach (hatXs, hatYs; plotWithIntervals(intervals, fn.type, stepSize, false, l, r))
+        {
+            pythonContext.xs = hatXs.toNumpyArray;
+            pythonContext.ys = hatYs.toNumpyArray;
+            pythonContext.fn_color = fn.color;
+            pythonContext.py_stmts(`plt.plot(xs, ys, color=fn_color)`);
+        }
 }
 
 /// Plotting helper
