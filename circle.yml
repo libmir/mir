@@ -5,7 +5,7 @@ machine:
     PATH: "${HOME}/dmd2/linux/bin64:${PATH}"
     LD_LIBRARY_PATH: "${HOME}/dmd2/linux/lib64:${LD_LIBRARY_PATH}"
   python:
-      version: 3.4.0
+      version: 3.5.0
 checkout:
   post:
     - git submodule sync . && git submodule update --recursive --init || true
