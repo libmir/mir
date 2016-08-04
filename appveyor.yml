@@ -1,3 +1,5 @@
+# On Windows PyD only supports Python3.4
+# @See https://github.com/ariovistus/pyd/issues/50
 platform: x64
 environment:
  matrix:
@@ -5,18 +7,17 @@ environment:
     DVersion: 2.071.1
     arch: x64
     PYTHON: "C:\\Python35-x64"
-    PYTHON_VERSION: "3.5.0"
+    PYTHON_VERSION: "3.4.0"
     PYTHON_ARCH: "64"
   - DC: dmd
     DVersion: 2.071.1
     arch: x86
     PYTHON: "C:\\Python35"
-    PYTHON_VERSION: "3.5.0"
+    PYTHON_VERSION: "3.4.0"
     PYTHON_ARCH: "32"
   - DC: ldc
     DVersion: '1.0.0'
     arch: x64
-
 
 matrix:
   allow_failures:
@@ -70,11 +71,9 @@ install:
   - 7z x dub.zip -odub > nul
   - set PATH=%CD%\%binpath%;%CD%\dub;%PATH%
   - dub --version
-  # Prepend newly installed Python to the PATH of this build (this cannot be
-  # done from inside the powershell script as it would require to restart
-  # the parent CMD process).
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 
+  # Prepend newly installed Python to the PATH of this build
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   # Check that we have the expected version and architecture for Python
   - "python --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
@@ -102,6 +101,9 @@ before_build:
 build_script:
  - echo dummy build script - dont remove me
  - sed 's/"to_be_filled"/"Flex_logging", "Flex_logging_hex"/' -i dub.json
+ # For now only python 3.4 is supported with pyd
+ - sed 's/python35/python34/' -i examples/flex_plot.d
+ - sed 's/python35/python34/' -i examples/flex_plot/common/dub.json
 
 test_script:
  - echo %PLATFORM%
