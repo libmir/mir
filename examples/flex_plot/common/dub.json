@@ -3,6 +3,7 @@
     "sourcePaths": ["."],
     "importPaths": ["."],
     "license": "BSL-1.0",
+    "libs": ["dl","util"],
     "dependencies": {
         "pyd": "~>0.9.8",
         "mir": {
