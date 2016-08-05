@@ -4,6 +4,7 @@ machine:
     DUB: 1.0.0-beta.1
     PATH: "${HOME}/dmd2/linux/bin64:${PATH}"
     LD_LIBRARY_PATH: "${HOME}/dmd2/linux/lib64:${LD_LIBRARY_PATH}"
+    PYTHON_VERSION: 3.5.0
   python:
       version: 3.5.0
 checkout:
@@ -12,9 +13,12 @@ checkout:
     - git submodule sync . && git submodule update --recursive --init || true # duplication needed due to circleci bug, don't remove
 dependencies:
   pre:
-    - sudo add-apt-repository ppa:fkrull/deadsnakes
-    - sudo apt-get update
-    - sudo apt-get install python3.5-dev
+    - wget https://www.python.org/ftp/python/$(PYTHON_VERSION)/Python-$(PYTHON_VERSION).tgz
+    - tar xzvf Python-$(PYTHON_VERSION).tgz
+    - cd Python-$(PYTHON_VERSION)
+    - ./configure
+    - make
+    - sudo make install
   override:
     - curl -fsSL --retry 3 "http://downloads.dlang.org/releases/2.x/$DMD/dmd.$DMD.linux.tar.xz" | tar -C ~ -Jxf -
     - curl -fsSL --retry 3 http://code.dlang.org/files/dub-${DUB}-linux-x86_64.tar.gz | tar -C ~/dmd2/linux/bin64 -zxf -
