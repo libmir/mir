@@ -12,15 +12,16 @@ shared static this() {
 }
 
 // plot histogram with matplotlib
-void histogram(S, Pdf)(S[] values, string fileName, string title, Pdf pdf)
+void histogram(S, Pdf)(S[] values, string fileName, string title, Pdf pdf, bool cumulative = false)
 {
     import pyd.embedded : InterpContext;
     import pyd.extra : d_to_python_numpy_ndarray;
+    import std.algorithm.iteration : sum;
 
     static immutable script = `
         import matplotlib.pyplot as plt
         import numpy as np
-        n, bins, patches = plt.hist(sample, num_bins, normed=1)
+        n, bins, patches = plt.hist(sample, num_bins, normed=1, cumulative=cumulative)
         xmin, xmax = plt.xlim()
         plt.plot(xs, ys, color='black')
         plt.title(title)
@@ -36,16 +37,24 @@ void histogram(S, Pdf)(S[] values, string fileName, string title, Pdf pdf)
     foreach (i, x; xs)
         ys[i] = pdf(x);
 
+    auto total = ys.sum();
+    foreach (ref y; ys)
+        y /= total;
+
+    if (cumulative)
+        foreach (i, ref y; ys[1..$])
+            y += ys[i];
+
     auto pythonContext = new InterpContext();
     pythonContext.sample = values.d_to_python_numpy_ndarray;
-    pythonContext.num_bins = 100;
+    pythonContext.num_bins = 200;
     pythonContext.fileName = fileName;
     pythonContext.title = title;
     pythonContext.xs = xs.d_to_python_numpy_ndarray;
     pythonContext.ys = ys.d_to_python_numpy_ndarray;
+    pythonContext.cumulative = cumulative;
     pythonContext.py_stmts(script);
 }
-
 
 void pnormal()
 {
@@ -68,6 +77,7 @@ void pnormal()
     double s = sqrt(2 * PI);
     auto pdf = (double x) => exp(double(-0.5) * x * x) / s;
     values.histogram(fileName ~ "_hist.pdf", title, pdf);
+    values.histogram(fileName ~ "_hist_cum.pdf", title, pdf, true);
 }
 
 void pexponential()
@@ -90,6 +100,7 @@ void pexponential()
 
     auto pdf = (double x) => exp(-x);
     values.histogram(fileName ~ "_hist.pdf", title, pdf);
+    values.histogram(fileName ~ "_hist_cum.pdf", title, pdf, true);
 }
 
 void main()
