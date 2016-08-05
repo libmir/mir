@@ -4,11 +4,21 @@ machine:
     DUB: 1.0.0-beta.1
     PATH: "${HOME}/dmd2/linux/bin64:${PATH}"
     LD_LIBRARY_PATH: "${HOME}/dmd2/linux/lib64:${LD_LIBRARY_PATH}"
+    PYTHON_VERSION: 3.5.2
+  python:
+      version: 3.5.0
 checkout:
   post:
     - git submodule sync . && git submodule update --recursive --init || true
     - git submodule sync . && git submodule update --recursive --init || true # duplication needed due to circleci bug, don't remove
 dependencies:
+  cache_directories:
+    # env variables can't be used here :/
+    - Python-3.5.2
+  pre:
+    - if [ ! -d "Python-${PYTHON_VERSION}"] ; then curl -fsSL --retry 3 https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz | tar -zxf -; fi
+    - cd Python-${PYTHON_VERSION} && ./configure && make && sudo make install
+    - pip install matplotlib
   override:
     - curl -fsSL --retry 3 "http://downloads.dlang.org/releases/2.x/$DMD/dmd.$DMD.linux.tar.xz" | tar -C ~ -Jxf -
     - curl -fsSL --retry 3 http://code.dlang.org/files/dub-${DUB}-linux-x86_64.tar.gz | tar -C ~/dmd2/linux/bin64 -zxf -
