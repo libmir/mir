@@ -5,7 +5,7 @@ dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
 
-// inflection point at boundary
+/// Test inflection point at boundary
 void test(S, F)(in ref F test)
 {
     import std.math : pow;

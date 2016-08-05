@@ -5,7 +5,7 @@ dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
 
-// density with pole
+/// Test density with pole
 void test(S, F)(in ref F test)
 {
     import std.math : abs, log;

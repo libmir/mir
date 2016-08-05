@@ -7,7 +7,11 @@ shared static this() {
     py_init();
 }
 
-/// Plotting helper
+/**
+CFlex glues the Flex algorithm to plotting code and allows to visualize
+the resulting distribution and its hat and squeeze plots.
+This is only intended for testing and visualizing the Flex algorithm.
+*/
 struct CFlex(S)
 {
     int n;
@@ -16,6 +20,16 @@ struct CFlex(S)
     bool plotHistogram;
     S stepSize = 0.005;
 
+    /**
+    Params:
+        n = number of samples
+        plotDir = root directory for the all plots
+        rho = efficiency of the Flex algorithm
+        plotHistogram = whether a histogram should be plotted too. If false no
+                        values will be sampled and only the hat and squeeze function
+                        will be plotted
+        stepSize = step size of the points in the plot
+    */
     this(int n, string plotDir = "plots", S rho = 1.1, bool plotHistogram = true, S stepSize = 0.005)
     {
         import std.file : exists, mkdir;
@@ -29,7 +43,22 @@ struct CFlex(S)
         this.stepSize = stepSize;
     }
 
-    /// @@@BUG@@@ template injection doesn't work with opCall
+    // @@@BUG@@@ template injection doesn't work with opCall
+    /**
+    Creates a Flex instance given the input parameter and plots it.
+    Refer to the Flex documentation for the parameters.
+
+    Params:
+        name = name of the plot
+        f0 = log-density distribution
+        f1 = first derivative of f0
+        f1 = first derivative of f1
+        c = T_c family to use for the transformation
+        cs = T_c families to use for the transformation
+        points = non-overlapping partitioning with at most one inflection point per interval
+        left = left plotting border
+        right = right plotting border
+    */
     auto plot(string name, in S function(S) f0, in S function(S) f1, in S function(S) f2,
          S c, S[] points, S left = -3, S right = 3) const
     {
@@ -39,6 +68,7 @@ struct CFlex(S)
         return plot(name, f0, f1, f2, cs, points, left, right);
     }
 
+    /// ditto
     auto plot(string name, in S function(S) f0, in S function(S) f1, in S function(S) f2,
          S[] cs, S[] points, S left = -3, S right = 3) const
     {
@@ -78,6 +108,11 @@ struct CFlex(S)
 
 /**
 Plot distribution histogram
+
+Params:
+    values = sampled values from a distribution
+    fileName = path where the file should be saved
+    title = title of the plot
 */
 void npPlotHistogram(S)(S[] values, string fileName, string title)
 {
@@ -112,8 +147,16 @@ void npPlotHistogram(S)(S[] values, string fileName, string title)
 
 /**
 Plots every interval as a separate line with a given stepsize.
+
+Params:
+    intervals = Calculated Flex intervals
+    isHat = whether hat or squeeze should be plotted
+    stepSize = step size of the points in the plot
+    isTransformed = whether the transformed distribution should be plotted
+    left = left plotting border
+    right = right plotting border
 */
-auto plotWithIntervals(S)(const(FlexInterval!S)[] intervals, bool isHat = true,
+private auto plotWithIntervals(S)(const(FlexInterval!S)[] intervals, bool isHat = true,
                           S stepSize = 0.01, bool isTransformed = false, S leftStart = -3,
                           S rightStart = 3)
 in
@@ -191,7 +234,16 @@ body
 
 /**
 Plot PDF with hat and squeeze segments
-**/
+
+Params:
+    intervals = Calculated Flex intervals
+    pdf = probability density function
+    fileName = file path to which the plot should be saved
+    title =  name of the plot
+    stepSize = step size of the points in the plot
+    left = left plotting border
+    right = right plotting border
+*/
 auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
                                  string fileName, string title, S stepSize = 0.01,
                                  S left = -3, S right = 3)

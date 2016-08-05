@@ -5,7 +5,7 @@ dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
 
-// default flex testing distribution
+/// Default flex testing distribution
 void test(S, F)(in ref F test)
 {
     import std.math : pow;
