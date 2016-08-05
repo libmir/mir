@@ -10,6 +10,7 @@ versions "Flex_logging" "Flex_single"
 void test(S, F)(in ref F test)
 {
     import std.math : log, pow;
+    import std.conv : to;
     auto f0 = (S x) => cast(S) log(1 - pow(x, 4));
     auto f1 = (S x) => -4 * pow(x, 3) / (1 - pow(x, 4));
     auto f2 = (S x) => -(4 * pow(x, 6) + 12 * x * x) / (pow(x, 8) - 2 * pow(x, 4) + 1);

@@ -9,6 +9,7 @@ versions "Flex_logging" "Flex_single"
 void test(S, F)(in ref F test)
 {
     import std.math : pow;
+    import std.conv : to;
     auto f0 = (S x) => -2 * pow(x, 4) + 4 * x * x;
     auto f1 = (S x) => -8 * pow(x, 3) + 8 * x;
     auto f2 = (S x) => -24 * x * x + 8;

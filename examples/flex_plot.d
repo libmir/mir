@@ -35,16 +35,20 @@ void main(string[] args)
     import std.traits : fullyQualifiedName;
     import std.algorithm.searching : canFind;
 
-    // TODO: proper introspection
-    alias mods = AliasSeq!("test1", "test2", "test3", "test4", "test5", "test6",
-                          "test_normal", "test_arcsine", "test_gamma");
-    foreach (mod; mods)
-        mixin("import " ~ mod ~ " : " ~ mod ~ " = test;");
+    // @@@BUG 16354@@@
+    // static foreach doesn't work with mixins
+    import test1 : test1               = test;
+    import test2 : test2               = test;
+    import test3 : test3               = test;
+    import test4 : test4               = test;
+    import test5 : test5               = test;
+    import test6 : test6               = test;
+    import test_normal : test_normal   = test;
+    import test_arcsine : test_arcsine = test;
+    import test_gamma : test_gamma     = test;
 
-    import test_normal : test_normal = test;
-    //alias funs = AliasSeq!(test1, test2, test3, test4, test5, test6,
-                          //test_normal, test_arcsine, test_gamma);
-    alias funs = AliasSeq!(test_normal);
+    alias funs = AliasSeq!(test1, test2, test3, test4, test5, test6,
+                          test_normal, test_arcsine, test_gamma);
 
     bool runAll = args.length <= 1;
 
@@ -55,7 +59,7 @@ void main(string[] args)
         enum funName = fullyQualifiedName!(funs[i]);
         if (!runAll)
         {
-            // not very elegant, will be rewritten soon
+            // not very elegant
             foreach (arg; args[1..$])
             {
                 if (funName.canFind(arg))
