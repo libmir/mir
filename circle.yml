@@ -13,9 +13,9 @@ checkout:
     - git submodule sync . && git submodule update --recursive --init || true # duplication needed due to circleci bug, don't remove
 dependencies:
   pre:
-    - wget https://www.python.org/ftp/python/$(PYTHON_VERSION)/Python-$(PYTHON_VERSION).tgz
-    - tar xzvf Python-$(PYTHON_VERSION).tgz
-    - cd Python-$(PYTHON_VERSION)
+    - wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz
+    - tar xzvf Python-${PYTHON_VERSION}.tgz
+    - cd Python-${PYTHON_VERSION}
     - ./configure
     - make
     - sudo make install
