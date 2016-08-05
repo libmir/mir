@@ -24,6 +24,8 @@ dependencies:
     - wget -q -O dscanner "http://releases.dlang.io/dscanner/0.3.0-git/dscanner"
     - chmod +x dscanner
     - wget "https://raw.githubusercontent.com/dlang/dmd/master/src/checkwhitespace.d"
+  cache_directories:
+    - Python-${PYTHON_VERSION}
 test:
   override:
     - dscanResult=$(./dscanner --config .dscanner.ini --styleCheck source 2> /dev/null ) ; if [ -z "${dscanResult}" ] ; then echo "No warnings found" ; else echo $dscanResult && $(exit 1); fi
