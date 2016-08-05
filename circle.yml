@@ -16,8 +16,7 @@ dependencies:
     # env variables can't be used here :/
     - Python-3.5.2
   pre:
-    - wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz
-    - tar xzvf Python-${PYTHON_VERSION}.tgz
+    - if [ ! -d "Python-${PYTHON_VERSION}"] ; then curl -fsSL --retry 3 https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz | tar -zxf -; fi
     - cd Python-${PYTHON_VERSION} && ./configure && make && sudo make install
     - pip install matplotlib
   override:
