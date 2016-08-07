@@ -345,6 +345,160 @@ private mixin template PropagatePtr()
     }
 }
 
+private enum Iteration
+{
+    reduce,
+    each,
+    find,
+    all,
+}
+
+// one ring to rule them all
+private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec, Flag!"fastmath" fm)
+{
+    static if (fm)
+        alias attr = fastmath;
+    else
+        alias attr = fastmathDummy;
+
+    static if(iteration == Iteration.reduce)
+        enum argStr = "S, Tensors...)(S seed, Tensors tensors)";
+    else
+    static if(iteration == Iteration.find)
+        enum argStr = "Tensors...)(ref size_t[N] backwardIndex, Tensors tensors)";
+    else
+        enum argStr = "Tensors...)(Tensors tensors)";
+
+    //pragma(msg, "@attr auto implement(size_t N, Select select, " ~ argStr ~ "{" ~ bodyStr ~ "}");
+
+    mixin("@attr auto implement(size_t N, Select select, " ~ argStr ~ "{" ~ bodyStr ~ "}");
+    enum bodyStr = q{
+        static if (select == Select.half)
+        {
+            immutable middle = tensors[0]._lengths[0] & 1;
+            tensors[0]._lengths[0] >>= 1;
+            if (tensors[0]._lengths[0] == 0)
+                goto End;
+        }
+        static if (select == Select.halfPacked)
+            static if (N == 1)
+                enum nextSelect = half;
+            else
+                enum nextSelect = halfPacked;
+        else    
+        static if (select == Select.triangularPacked)
+            static if (N == 1)
+                enum nextSelect = triangular;
+            else
+                enum nextSelect = triangularPacked;
+        else
+        static if (N == 1)
+            enum nextSelect = -1;
+        else
+        static if (select == Select.half)
+            enum nextSelect = Select.full;
+        else
+            enum nextSelect = select;
+        static if (select == Select.triangular)
+            alias popSeq = Iota!(0, N);
+        else
+            alias popSeq = AliasSeq!(size_t(0));
+        static if (iteration == Iteration.reduce)
+            static if (nextSelect == -1)
+                enum compute = `seed = naryFun!(true, Tensors.length, fun)(seed, ` ~ TensorFronts!(Tensors.length) ~ `);`;
+            else
+                enum compute = `seed = implement!(N - 1, nextSelect)(seed, ` ~ TensorFronts!(Tensors.length) ~ `);`;
+        else
+        static if (iteration == Iteration.each)
+            static if (nextSelect == -1)
+                enum compute = `naryFun!(false, Tensors.length, fun)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+            else
+                enum compute = `implement!(N - 1, nextSelect)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+        else
+        static if (iteration == Iteration.find)
+            static if (nextSelect == -1)
+                enum compute = `auto val = naryFun!(false, Tensors.length, fun)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+            else
+                enum compute = `implement!(N - 1, nextSelect)(backwardIndex[1 .. $] , ` ~ TensorFronts!(Tensors.length) ~ `);`;
+        else
+        static if (iteration == Iteration.all)
+            static if (nextSelect == -1)
+                enum compute = `auto val = naryFun!(false, Tensors.length, fun)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+            else
+                enum compute = `auto val = implement!(N - 1, nextSelect)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+        else
+        static assert(0);
+        enum breakStr = q{
+            static if (iteration == Iteration.find)
+            {
+                static if (N > 1)
+                    auto val = backwardIndex[$ - 1];
+                if (val)
+                {
+                    backwardIndex[0] = tensors[0].length;
+                    return;
+                }
+            }
+            else
+            static if (iteration == Iteration.all)
+            {
+                if (!val)
+                    return false;
+            }
+        };
+        do
+        {
+            mixin(compute);
+            mixin(breakStr);
+            foreach_reverse (t, ref tensor; tensors)
+            {
+                foreach (d; popSeq)
+                {
+                    static if (d == N - 1 && vec)
+                    {
+                        ++tensor._ptr;
+                        static if (t == 0)
+                            --tensors[0]._lengths[0];
+                    }
+                    else
+                    {
+                        tensor.popFront!d;
+                    }
+                }
+            }
+        }
+        while(tensors[0]._lengths[0]);
+        End:
+        static if (select == Select.half && N > 1)
+        {
+            static if (iteration == Iteraiton.reduce)
+                enum computeHalf = `seed = implement!(N - 1, half)(seed, ` ~ TensorFronts!(Tensors.length) ~ `);`;
+            else
+            static if (iteration == Iteraiton.each)
+                enum computeHalf = `implement!(N - 1, half)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+            else
+            static if (iteration == Iteraiton.find)
+                enum computeHalf = `implement!(N - 1, half)(backwardIndex[1 .. $] , ` ~ TensorFronts!(Tensors.length) ~ `);`;
+            else
+            static if (iteration == Iteraiton.all)
+                enum computeHalf = `auto val = implement!(N - 1, half)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+            else
+            static assert(0);
+            if(middle)
+            {
+                tensors._lengths[0] = middle;
+                mixin(computeHalf);
+                mixin(breakStr);
+            }
+        }
+        static if (iteration == Iteration.reduce)
+            return seed;
+        else
+        static if (iteration == Iteration.all)
+            return true;
+    };
+}
+
 /++
 Selection type,
 `Select` can be used with
@@ -403,6 +557,8 @@ enum Select
     -----
     +/
     half,
+    ///
+    halfPacked,
     /++
     `upper` can be used to iterate on upper or lower triangular matrix.
 
@@ -436,7 +592,9 @@ enum Select
     |  x  x  6 | |  x  x  x | |  x  x  x |
     -----
     +/
-    upper,
+    triangular,
+    ///
+    triangularPacked,
 }
 
 /++
@@ -639,7 +797,6 @@ unittest
     assert(b[1] == 8);
 }
 
-
 /++
 Implements the homonym function (also known as `accumulate`,
 `compress`, `inject`, or `foldl`) present in various programming
@@ -674,54 +831,31 @@ See_Also:
 
     $(HTTP en.wikipedia.org/wiki/Fold_(higher-order_function), Fold (higher-order function))
 +/
-template ndReduce(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath" fm = cast(Flag!"fastmath")vec)
+alias ndReduce(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath" fm = cast(Flag!"fastmath")vec) =
+    .ndReduce!(fun, Select.full, vec, fm);
+
+/// ditto
+template ndReduce(alias fun, Select select, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath" fm = cast(Flag!"fastmath")vec)
 {
     ///
     auto ndReduce(S, Args...)(S seed, auto ref Args tensors)
         if (Args.length)
     {
         tensors.checkShapesMatch!true;
-        if (tensors[0].anyEmpty)
-            return cast(Unqual!S) seed;
+        static if (select != Select.half)
+            if (tensors[0].anyEmpty)
+                return cast(Unqual!S) seed;
+        alias impl = implement!(Iteration.reduce, fun, No.vectorized, fm);
         static if (vec && allSatisfy!(isMemory, staticMap!(RangeOf, Args)))
         {
             foreach (ref tensor; tensors)
                 if (tensor._strides[$-1] != 1)
                     goto CommonL;
-            return ndReduceImpl!(true, Args[0].N, true, staticMap!(Unqual, S))(seed, tensors);
+            alias implVec = implement!(Iteration.reduce, fun, Yes.vectorized, fm);
+            return implVec!(Args[0].N, select, staticMap!(Unqual, S))(seed, tensors);
             CommonL:
         }
-        return ndReduceImpl!(false, Args[0].N, false, staticMap!(Unqual, S))(seed, tensors);
-    }
-
-    static if (fm)
-        alias attr = fastmath;
-    else
-        alias attr = fastmathDummy;
-
-    private @attr auto ndReduceImpl(bool dense, size_t N, bool first = false, S, Args...)(S seed, Args tensors)
-    {
-        do
-        {
-            static if (N == 1)
-                enum _fun = `naryFun!(true, Args.length, fun)`;
-            else
-                enum _fun = `ndReduceImpl!(dense, N - 1)`;
-            seed = mixin(_fun ~  `(seed, ` ~ TensorFronts!(Args.length) ~ `)`);
-            static if (N == 1 && dense)
-            {
-                foreach_reverse (ref tensor; tensors)
-                    ++tensor._ptr;
-                --tensors[0]._lengths[0];
-            }
-            else
-            {
-                foreach_reverse (ref tensor; tensors)
-                    tensor.popFront;
-            }
-        }
-        while (tensors[0]._lengths[0]);
-        return seed;
+        return impl!(Args[0].N, select, staticMap!(Unqual, S))(seed, tensors);
     }
 }
 
@@ -900,7 +1034,11 @@ See_Also:
 
     $(REF each, std,algorithm,iteration)
 +/
-template ndEach(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath" fm = cast(Flag!"fastmath")vec)
+alias ndEach(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath" fm = cast(Flag!"fastmath")vec) =
+    .ndEach!(fun, Select.full, vec, fm);
+
+/// ditto
+template ndEach(alias fun, Select select, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath" fm = cast(Flag!"fastmath")vec)
 {
     ///
     void ndEach(Args...)(auto ref Args tensors)
@@ -909,44 +1047,19 @@ template ndEach(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath
         tensors.checkShapesMatch!false;
         if (tensors[0].anyEmpty)
             return;
+        alias impl = implement!(Iteration.each, fun, No.vectorized, fm);
         static if (vec && allSatisfy!(isMemory, staticMap!(RangeOf, Args)))
         {
             foreach (ref tensor; tensors)
                 if (tensor._strides[$-1] != 1)
                     goto CommonL;
-            return ndEachImpl!(true, Args[0].N, true)(tensors);
+            alias implVec = implement!(Iteration.each, fun, Yes.vectorized, fm);
+            implVec!(Args[0].N, select)(tensors);
+            return;
+
             CommonL:
         }
-        return ndEachImpl!(false, Args[0].N, false)(tensors);
-    }
-
-    static if (fm)
-        alias attr = fastmath;
-    else
-        alias attr = fastmathDummy;
-
-    private @attr void ndEachImpl(bool dense, size_t N, bool first = false, Args...)(Args tensors)
-    {
-        do
-        {
-            static if (Args[0].N == 1)
-                enum _fun = `naryFun!(false, Args.length, fun)`;
-            else
-                enum _fun = `ndEachImpl!(dense, N - 1)`;
-            mixin(_fun ~ `(` ~ TensorFronts!(Args.length) ~ `);`);
-            static if (N == 1 && dense)
-            {
-                foreach_reverse (ref tensor; tensors)
-                    ++tensor._ptr;
-                --tensors[0]._lengths[0];
-            }
-            else
-            {
-                foreach_reverse (ref tensor; tensors)
-                    tensor.popFront;
-            }
-        }
-        while (tensors[0]._lengths[0]);
+        impl!(Args[0].N, select)(tensors);
     }
 }
 
@@ -963,6 +1076,7 @@ unittest
 
     sl.ndEach!((ref a) { a = a * 10 + 5; }, Yes.vectorized);
 
+    import std.stdio;
     assert(sl ==
         [[ 5, 15, 25],
          [35, 45, 55]]);
@@ -1022,33 +1136,6 @@ unittest
     assert(i == 0);
 }
 
-private void ndFindImpl(alias pred, size_t N, Args...)(ref size_t[N] backwardIndex, Args tensors)
-{
-    do
-    {
-        static if (Args[0].N == 1)
-        {
-            if (mixin(`naryFun!(false, Args.length, pred)(` ~ TensorFronts!(Args.length) ~ `)`))
-            {
-                backwardIndex[0] = tensors[0].length;
-                return;
-            }
-        }
-        else
-        {
-            mixin(`ndFindImpl!pred(backwardIndex[1 .. $], ` ~ TensorFronts!(Args.length) ~ `);`);
-            if (backwardIndex[$ - 1])
-            {
-                backwardIndex[0] = tensors[0].length;
-                return;
-            }
-        }
-        foreach_reverse (ref tensor; tensors)
-            tensor.popFront;
-    }
-    while (tensors[0]._lengths[0]);
-}
-
 /++
 Finds a backward index for which
 `pred(tensors[0].backward(index), ..., tensors[$-1].backward(index))` equals `true`.
@@ -1085,7 +1172,7 @@ See_also:
 
     $(REF Slice.backward, mir,ndslice,slice)
 +/
-template ndFind(alias pred)
+template ndFind(alias pred, Select select = Select.full)
 {
     ///
     void ndFind(size_t N, Args...)(out size_t[N] backwardIndex, auto ref Args tensors)
@@ -1093,7 +1180,10 @@ template ndFind(alias pred)
     {
         tensors.checkShapesMatch!false;
         if (!tensors[0].anyEmpty)
-            ndFindImpl!pred(backwardIndex, tensors);
+        {
+            alias impl = implement!(Iteration.find, pred, No.vectorized, No.fastmath);
+            impl!(Args[0].N, select)(backwardIndex, tensors);
+        }
     }
 }
 
@@ -1211,7 +1301,7 @@ Returns:
 Constraints:
     All tensors must have the same shape.
 +/
-template ndAny(alias pred)
+template ndAny(alias pred, Select select = Select.full)
 {
     ///
     bool ndAny(Args...)(auto ref Args tensors)
@@ -1222,7 +1312,8 @@ template ndAny(alias pred)
             return false;
         size_t[Args[0].N] backwardIndex = void;
         backwardIndex[$-1] = 0;
-        ndFindImpl!pred(backwardIndex, tensors);
+        alias impl = implement!(Iteration.find, pred, No.vectorized, No.fastmath);
+        impl!(Args[0].N, select)(backwardIndex, tensors);
         return cast(bool) backwardIndex[$-1];
     }
 }
@@ -1308,31 +1399,15 @@ Returns:
 Constraints:
     All tensors must have the same shape.
 +/
-template ndAll(alias pred)
+template ndAll(alias pred, Select select = Select.full)
 {
     ///
     bool ndAll(Args...)(auto ref Args tensors)
         if (Args.length)
     {
         tensors.checkShapesMatch!false;
-        return tensors[0].anyEmpty || ndAllImpl(tensors);
-    }
-
-    private bool ndAllImpl(Args...)(Args tensors)
-    {
-        do
-        {
-            static if (Args[0].N == 1)
-                enum _pred = `naryFun!(false, Args.length, pred)`;
-            else
-                enum _pred = `ndAllImpl`;
-            if (!mixin(_pred ~ `(` ~ TensorFronts!(Args.length) ~ `)`))
-                return false;
-            foreach_reverse (ref tensor; tensors)
-                tensor.popFront;
-        }
-        while (tensors[0]._lengths[0]);
-        return true;
+        alias impl = implement!(Iteration.all, pred, No.vectorized, No.fastmath);
+        return tensors[0].anyEmpty || impl!(Args[0].N, select)(tensors);
     }
 }
 
@@ -1424,7 +1499,7 @@ Params:
 Returns:
     `true` any of the elements verify `pred` and `false` otherwise.
 +/
-template ndEqual(alias pred)
+template ndEqual(alias pred, Select select = Select.full)
 {
     ///
     bool ndEqual(Args...)(Args tensors)
@@ -1443,7 +1518,7 @@ template ndEqual(alias pred)
                         goto False;
             }
         }
-        return ndAll!pred(tensors);
+        return ndAll!(pred, select)(tensors);
         False: return false;
     }
 }
