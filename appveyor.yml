@@ -28,7 +28,7 @@ branches:
   only:
     - master
     - stable
-    - tinflex
+    - tinflex2
 cache:
   - 'C:\Miniconda3 -> appveyor.yml'
 install:
