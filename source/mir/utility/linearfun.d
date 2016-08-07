@@ -1,3 +1,10 @@
+/**
+Utilities for linear functions.
+
+Authors: Sebastian Wilzbach, Ilya Yaroshenko
+
+License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
+*/
 module mir.utility.linearfun;
 
 import std.traits : isCallable;
@@ -5,28 +12,30 @@ import std.traits : isCallable;
 /**
 Representation of linear function of the form:
 
-    y = slope * x + intercept
-
-_IMPORTANT_: we can't store the intercept directly as it will lead to
-numerical errors if x and y are similar or equal.
-Hence the representation of a function from the Tinflex paper is used:
-
     y = slope * (x - y) + a
 
-For a detailed explanation, see https://github.com/libmir/mir/wiki/Numerical-failures
+This representation allows a bit higher precision than the
+typical representation `y = slope * x + a`.
 */
 struct LinearFun(S)
 {
-    /// direction and steepness
-    S slope; // aka beta
+    import std.format : FormatSpec;
+
+    /// direction and steepness (aka beta)
+    S slope;
 
     /// boundary point where f obtains it's maximum
     S y;
 
-    ///
+    /// constant intercept
     S a;
 
-    ///
+    /**
+    Params:
+        slope = direction and steepness
+        y = boundary point, often f(x)
+        a = constant intercept
+    */
     this(S slope, S y, S a)
     {
         this.slope = slope;
@@ -35,15 +44,44 @@ struct LinearFun(S)
     }
 
     /// textual representation of the function
-    string toString() const
+    void toString(scope void delegate(const(char)[]) sink,
+                  FormatSpec!char fmt) const
     {
-        import std.format: format;
-        import std.math: abs, isNaN;
-        char sgn = intercept > 0 ? '+' : '-';
-        if (slope.isNaN)
-            return "#NaN#";
-        else
-            return format("%.2fx %c %.2f", slope, sgn, abs(intercept));
+        import std.range : put;
+        switch(fmt.spec)
+        {
+            case 'l':
+                import std.format: formatValue, singleSpec;
+                import std.math: abs, approxEqual, isNaN;
+                if (slope.isNaN)
+                    sink.put("#NaN#");
+                else
+                {
+                    auto spec2g = singleSpec("%.2g");
+                    if (!slope.approxEqual(0))
+                    {
+                        sink.formatValue(slope, spec2g);
+                        sink.put("x");
+                        if (!intercept.approxEqual(0))
+                        {
+                            sink.put(" ");
+                            char sgn = intercept > 0 ? '+' : '-';
+                            sink.put(sgn);
+                            sink.put(" ");
+                            sink.formatValue(abs(intercept), spec2g);
+                        }
+                    }
+                    else
+                    {
+                        sink.formatValue(intercept, spec2g);
+                    }
+            }
+                break;
+            case 's':
+            default:
+                put(sink, "a");
+                break;
+        }
     }
 
     /// call the linear function with x
@@ -74,10 +112,69 @@ struct LinearFun(S)
     }
 }
 
-///
+/**
+Constructs a linear function of the form `y = slope * (x - y) + a`.
+
+Params:
+    slope = direction and steepness
+    y = boundary point, often f(x)
+    a = constant intercept
+Returns:
+    A linear function constructed with the given parameters.
+*/
 LinearFun!S linearFun(S)(S slope, S y, S a)
 {
     return LinearFun!S(slope, y, a);
+}
+
+/// tangent of a point
+unittest
+{
+    import std.format : format;
+    auto f = (double x) => x * x + 1;
+    auto df = (double x) => 2 * x;
+    auto buildTan = (double x) => linearFun(df(x), x, f(x));
+
+    auto t0 = buildTan(0);
+    assert("%l".format(t0)== "1");
+    assert(t0(0) == 1);
+    assert(t0(42) == 1);
+
+    auto t1 = buildTan(1);
+    assert("%l".format(t1) == "2x");
+    assert(t1(1) == 2);
+    assert(t1(2) == 4);
+
+    auto t2 = buildTan(2);
+    assert("%l".format(t2) == "4x - 3");
+    assert(t2(1) == 1);
+    assert(t2(2) == 5);
+}
+
+/// secant of two points
+unittest
+{
+    import std.format : format;
+    auto f = (double x) => x * x + 1;
+    auto lx = 1, rx = 3;
+    // compute the slope between lx and rx
+    auto lf = linearFun((f(rx) - f(lx)) / (rx - lx), lx, f(lx));
+
+    assert("%l".format(lf) == "4x - 2");
+    assert(lf(1) == 2); // f(1)
+    assert(lf(3) == 10); // f(3)
+}
+
+/// construct an arbitrary linear function
+unittest
+{
+    import std.format : format;
+
+    // 2 * x + 1
+    auto t = linearFun!double(2, 0, 1);
+    assert("%l".format(t) == "2x + 1");
+    assert(t(1) == 3);
+    assert(t(-2) == -3);
 }
 
 unittest
