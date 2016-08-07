@@ -153,7 +153,6 @@ void determineSqueezeAndHat(S)(ref Interval!S iv)
     }
 }
 
-// TODO: add more tests
 unittest
 {
     import std.meta : AliasSeq;
@@ -732,9 +731,6 @@ unittest
     import std.meta : AliasSeq;
     import std.range: dropOne, lockstep, save;
 
-    // weird numerical bug prevents us from enabling 1.5
-    // test values suffer from the imprecision as well
-    //static immutable cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.2, 0.5, 0.9, 1, 1.5, 2];
     alias T = double;
 
     static immutable hats = [
@@ -765,8 +761,7 @@ unittest
         [0.017195, 0.25628, 0.9375, 0.25628, 0.017195],
     ];
 
-    //foreach (S; AliasSeq!(float, double, real))
-    foreach (S; AliasSeq!(real))
+    foreach (S; AliasSeq!(float, double, real))
     {
 
         import mir.internal.math : log;
@@ -782,6 +777,8 @@ unittest
         };
 
         S[] points = [-1, -0.9, -0.5, 0.5, 0.9, 1];
+        // weird numerical bug prevents us from enabling 1.5
+        // test values suffer from the imprecision as well
         S[] cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.2, 0.5, 0.9, 1];
 
         // calculate the area of all intervals
@@ -973,7 +970,6 @@ unittest
     static immutable points = [-T.infinity, -2, -1, 0, 1, 2, T.infinity];
 
     // without boundaries needs to be > -1
-    //static immutable cs = [-0.9, -0.5, 0, 0.5, 0.9, 1, 2];
     static immutable cs = [-0.9, -0.5, 0];
     // >= 0.5 yields "undefined" type
 
@@ -984,24 +980,12 @@ unittest
          7.38905609893065, 7.389056098930649519, 4.68896561330246e-09],
         [2.34448280665123e-09, 7.389056098930650, 7.38905609893065,
          7.38905609893065, 7.389056098930650, 2.34448280665123e-09],
-        //[T.infinity, 7.38905609893065e+00, 7.38905609893065,
-         //7.38905609893065, 7.38905609893065e+00, T.infinity],
-        //[T.infinity, 7.38905609893065e+00, 7.38905609893065,
-         //7.38905609893065, 7.38905609893065e+00, T.infinity],
-        //[T.infinity, 7.38905609893065e+00, 7.38905609893065,
-         //7.38905609893065, 7.38905609893065e+00, T.infinity],
-        //[T.infinity, 7.38905609893065e+00, 7.38905609893065,
-         //7.38905609893065, 7.38905609893065e+00, T.infinity],
     ];
 
     static immutable sqs = [
         [0, 5.11436710832274e-06, 1, 1, 5.11436710832274e-06, 0],
         [0, 0.000911881965554516, 1, 1, 0.000911881965554516, 0],
         [0, 0.410503110355304, 1, 1, 0.410503110355304, 0],
-        //[0, 2.44201329140792e-05, 1, 1, 2.44201329140792e-05, 0],
-        //[0, 3.67127352051629e-06, 1, 1, 3.67127352051629e-06, 0],
-        //[0, 2.81337936798148e-06, 1, 1, 2.81337936798148e-06, 0],
-        //[0, 1.12535174719259e-07, 1, 1, 1.12535174719259e-07, 0],
     ];
 
     foreach (S; AliasSeq!(float, double, real))
@@ -1037,68 +1021,3 @@ unittest
         }
     }
 }
-
-/+
-// used to dump data tumples
-unittest
-{
-    import mir.random.flex.internal.transformations : transformInterval;
-    import mir.random.flex.internal.types : determineType;
-    import std.math: approxEqual;
-    import std.meta : AliasSeq;
-    import std.range: dropOne, lockstep, save;
-
-    // inflection points: -1.7620, -1.4012, 1.4012, 1.7620
-    foreach (S; AliasSeq!(float, double, real))
-    {
-        S[] points = [-3.0, -1.5, 0.0, 1.5, 3];
-        S[] cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.2, 0.5, 0.9, 1, 1.5, 2];
-        S[][] hats;
-        S[][] sqs;
-        hats.length = cs.length;
-        sqs.length = cs.length;
-
-        const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        const f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        const f2 = (S x) => 10 - 12 * x ^^ 2;
-
-        auto it = (S l, S r, S c)
-        {
-            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
-            transformInterval(iv);
-            return iv;
-        };
-
-        import std.math : isInfinity;
-        import std.conv;
-
-        // calculate the area of all intervals
-        foreach (i, c; cs)
-        {
-            hats[i].length = points.length - 1;
-            sqs[i].length = points.length - 1;
-
-            foreach (j, p1, p2; points.lockstep(points.save.dropOne))
-            {
-                auto iv = it(p1, p2, c);
-
-                version(Flex_logging)
-                scope(failure) logf("c=%f,p1=%f,p2=%f %(%a, %)", c, p1, p2, iv.hatArea);
-
-                determineSqueezeAndHat(iv);
-
-                hatArea!S(iv);
-                squeezeArea!S(iv);
-
-                hats[i][j] = iv.hatArea;
-                sqs[i][j] = iv.squeezeArea;
-            }
-        }
-        import std.stdio;
-        writef("%([%(%a, %)]%|,\n%)", hats);
-        write("\n\n");
-        writef("%([%(%a, %)]%|,\n%)", sqs);
-        write("\n\n");
-    }
-}
-+/
