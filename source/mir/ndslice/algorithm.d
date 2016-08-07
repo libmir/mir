@@ -369,8 +369,6 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
     else
         enum argStr = "Tensors...)(Tensors tensors)";
 
-    //pragma(msg, "@attr auto implement(size_t N, Select select, " ~ argStr ~ "{" ~ bodyStr ~ "}");
-
     mixin("@attr auto implement(size_t N, Select select, " ~ argStr ~ "{" ~ bodyStr ~ "}");
     enum bodyStr = q{
         static if (select == Select.half)
@@ -382,15 +380,15 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
         }
         static if (select == Select.halfPacked)
             static if (N == 1)
-                enum nextSelect = half;
+                enum nextSelect = Select.half;
             else
-                enum nextSelect = halfPacked;
+                enum nextSelect = Select.halfPacked;
         else    
         static if (select == Select.triangularPacked)
             static if (N == 1)
-                enum nextSelect = triangular;
+                enum nextSelect = Select.triangular;
             else
-                enum nextSelect = triangularPacked;
+                enum nextSelect = Select.triangularPacked;
         else
         static if (N == 1)
             enum nextSelect = -1;
@@ -403,29 +401,33 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
             alias popSeq = Iota!(0, N);
         else
             alias popSeq = AliasSeq!(size_t(0));
+        static if (N == 1 && (select == Select.halfPacked || select == Select.triangularPacked))
+            enum M = tensors[0].front.N;
+        else
+            enum M = N - 1;
         static if (iteration == Iteration.reduce)
             static if (nextSelect == -1)
                 enum compute = `seed = naryFun!(true, Tensors.length, fun)(seed, ` ~ TensorFronts!(Tensors.length) ~ `);`;
             else
-                enum compute = `seed = implement!(N - 1, nextSelect)(seed, ` ~ TensorFronts!(Tensors.length) ~ `);`;
+                enum compute = `seed = implement!(M, nextSelect)(seed, ` ~ TensorFronts!(Tensors.length) ~ `);`;
         else
         static if (iteration == Iteration.each)
             static if (nextSelect == -1)
                 enum compute = `naryFun!(false, Tensors.length, fun)(` ~ TensorFronts!(Tensors.length) ~ `);`;
             else
-                enum compute = `implement!(N - 1, nextSelect)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+                enum compute = `implement!(M, nextSelect)(` ~ TensorFronts!(Tensors.length) ~ `);`;
         else
         static if (iteration == Iteration.find)
             static if (nextSelect == -1)
                 enum compute = `auto val = naryFun!(false, Tensors.length, fun)(` ~ TensorFronts!(Tensors.length) ~ `);`;
             else
-                enum compute = `implement!(N - 1, nextSelect)(backwardIndex[1 .. $] , ` ~ TensorFronts!(Tensors.length) ~ `);`;
+                enum compute = `implement!(M, nextSelect)(backwardIndex[1 .. $] , ` ~ TensorFronts!(Tensors.length) ~ `);`;
         else
         static if (iteration == Iteration.all)
             static if (nextSelect == -1)
                 enum compute = `auto val = naryFun!(false, Tensors.length, fun)(` ~ TensorFronts!(Tensors.length) ~ `);`;
             else
-                enum compute = `auto val = implement!(N - 1, nextSelect)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+                enum compute = `auto val = implement!(M, nextSelect)(` ~ TensorFronts!(Tensors.length) ~ `);`;
         else
         static assert(0);
         enum breakStr = q{
@@ -454,7 +456,7 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
             {
                 foreach (d; popSeq)
                 {
-                    static if (d == N - 1 && vec)
+                    static if (d == M && vec)
                     {
                         ++tensor._ptr;
                         static if (t == 0)
@@ -471,22 +473,22 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
         End:
         static if (select == Select.half && N > 1)
         {
-            static if (iteration == Iteraiton.reduce)
-                enum computeHalf = `seed = implement!(N - 1, half)(seed, ` ~ TensorFronts!(Tensors.length) ~ `);`;
+            static if (iteration == Iteration.reduce)
+                enum computeHalf = `seed = implement!(N - 1, Select.half)(seed, ` ~ TensorFronts!(Tensors.length) ~ `);`;
             else
-            static if (iteration == Iteraiton.each)
-                enum computeHalf = `implement!(N - 1, half)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+            static if (iteration == Iteration.each)
+                enum computeHalf = `implement!(N - 1, Select.half)(` ~ TensorFronts!(Tensors.length) ~ `);`;
             else
-            static if (iteration == Iteraiton.find)
-                enum computeHalf = `implement!(N - 1, half)(backwardIndex[1 .. $] , ` ~ TensorFronts!(Tensors.length) ~ `);`;
+            static if (iteration == Iteration.find)
+                enum computeHalf = `implement!(N - 1, Select.half)(backwardIndex[1 .. $] , ` ~ TensorFronts!(Tensors.length) ~ `);`;
             else
-            static if (iteration == Iteraiton.all)
-                enum computeHalf = `auto val = implement!(N - 1, half)(` ~ TensorFronts!(Tensors.length) ~ `);`;
+            static if (iteration == Iteration.all)
+                enum computeHalf = `auto val = implement!(N - 1, Select.half)(` ~ TensorFronts!(Tensors.length) ~ `);`;
             else
             static assert(0);
             if(middle)
             {
-                tensors._lengths[0] = middle;
+                tensors[0]._lengths[0] = middle;
                 mixin(computeHalf);
                 mixin(breakStr);
             }
@@ -1125,6 +1127,51 @@ unittest
 
     assert(a == iotaSlice([2, 3], 10));
     assert(b == iotaSlice([2, 3], 0));
+}
+
+/// Reverse rows and columns
+pure nothrow unittest
+{
+    import std.typecons : Yes;
+    import std.conv : to;
+    import std.algorithm.mutation : swap;
+    import mir.ndslice.slice : assumeSameStructure;
+    import mir.ndslice.selection : iotaSlice;
+    import mir.ndslice.iteration : allReversed;
+
+    //| 0 1 2 |
+    //| 3 4 5 |
+    auto a = iotaSlice(2, 3).ndMap!(to!double).slice;
+
+    ndEach!(swap, Select.half)(a, a.allReversed);
+
+    assert(a == iotaSlice(2, 3).allReversed);
+}
+
+/// Reverse rows or columns
+pure nothrow unittest
+{
+    import std.typecons : Yes;
+    import std.conv : to;
+    import std.algorithm.mutation : swap;
+    import mir.ndslice.slice : assumeSameStructure;
+    import mir.ndslice.selection : iotaSlice, pack;
+    import mir.ndslice.iteration : reversed, transposed;
+
+    //| 0 1 2 |
+    //| 3 4 5 |
+    auto a = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto b = a.slice;
+
+    alias reverseRows = a => ndEach!(swap, Select.halfPacked)(a.pack!1, a.reversed!1.pack!1);
+
+    // reverse rows
+    reverseRows(a);
+    assert(a == iotaSlice(2, 3).reversed!1);
+
+    // reverse columns
+    reverseRows(b.transposed);
+    assert(b == iotaSlice(2, 3).reversed!0);
 }
 
 @safe pure nothrow unittest
