@@ -404,7 +404,7 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
         }
         static if (select == Select.half)
         {
-            immutable middle = tensors[0]._lengths[0] & 1;
+            immutable lengthSave = tensors[0]._lengths[0];
             tensors[0]._lengths[0] >>= 1;
             if (tensors[0]._lengths[0] == 0)
                 goto End;
@@ -464,16 +464,13 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
         enum breakStr = q{
             static if (iteration == Iteration.find)
             {
-                static if (N > 1)
+                static if (nextSelect != -1)
                     auto val = backwardIndex[$ - 1];
                 if (val)
                 {
                     backwardIndex[0] = tensors[0]._lengths[0];
                     static if (select == Select.half)
-                    {
-                        backwardIndex[0] <<= 1;
-                        backwardIndex[0] &= middle;
-                    }
+                        backwardIndex[0] += lengthSave - (lengthSave >> 1);
                     return;
                 }
             }
@@ -522,9 +519,9 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
                 enum computeHalf = `auto val = implement!(N - 1, Select.half)(` ~ TensorFronts!(Tensors.length) ~ `);`;
             else
             static assert(0);
-            if(middle)
+            if (lengthSave & 1)
             {
-                tensors[0]._lengths[0] = middle;
+                tensors[0]._lengths[0] = 1;
                 mixin(computeHalf);
                 mixin(breakStr);
             }
@@ -1378,6 +1375,41 @@ pure nothrow unittest
                   [8, 8, 5]]);
 }
 
+/// Search in triangular matrix
+pure nothrow unittest
+{
+    import std.conv : to;
+    import mir.ndslice.slice : slice;
+    import mir.ndslice.selection : iotaSlice;
+
+    // |_0 1 2
+    // 3 |_4 5
+    // 6 7 |_8
+    auto sl = iotaSlice(3, 3).ndMap!(to!double).slice;
+    size_t[2] bi;
+    ndFind!("a > 5", Select.triangular)(bi, sl);
+    assert(sl.backward(bi) == 8);
+}
+
+/// Search of first non-palindrome row
+pure nothrow unittest
+{
+    import mir.ndslice.slice : slice;
+    import mir.ndslice.iteration : reversed;
+    import mir.ndslice.selection : iotaSlice, pack;
+
+    auto sl = slice!double(4, 5);
+    sl[] = 
+        [[0, 1, 2, 1, 0],
+         [2, 3, 4, 3, 2],
+         [6, 9, 8, 5, 6],
+         [6, 5, 8, 5, 6]];
+
+    size_t[2] bi;
+    ndFind!("a != b", Select.halfPacked)(bi, sl.pack!1, sl.reversed!1.pack!1);
+    assert(sl.backward(bi) == 9);
+}
+
 @safe pure nothrow unittest
 {
     import mir.ndslice.iteration : dropOne;
@@ -1629,6 +1661,7 @@ template ndEqual(alias pred, Select select = Select.full)
 ///
 @safe pure nothrow @nogc unittest
 {
+    import mir.ndslice.slice : slice;
     import mir.ndslice.iteration : dropBackOne;
     import mir.ndslice.selection : iotaSlice;
 
@@ -1644,7 +1677,33 @@ template ndEqual(alias pred, Select select = Select.full)
 
     assert(!ndEqual!"a == b"(sl1.dropBackOne!0, sl1));
     assert(!ndEqual!"a == b"(sl1.dropBackOne!1, sl1));
+}
 
+/// check if matrix is symmetric
+pure nothrow unittest
+{
+    import mir.ndslice.slice : slice;
+    import mir.ndslice.iteration : transposed;
+
+    auto a = slice!double(3, 3);
+    a[] = [[1, 3, 4],
+           [3, 5, 8],
+           [4, 8, 2]];
+
+    alias isSymmetric = matrix => ndEqual!("a == b", Select.triangular)(matrix, matrix.transposed);
+
+    assert(isSymmetric(a));
+
+    a[0, 0] = double.nan;
+    assert(!isSymmetric(a)); // nan != nan
+    a[0, 0] = 1;
+
+    a[1, 0] = 2;
+    assert(!isSymmetric(a)); // 2 != 3
+    a[1, 0] = 3;
+
+    a.popFront;
+    assert(!isSymmetric(a)); // a is not square
 }
 
 /++
