@@ -79,7 +79,7 @@ void main(string[] args)
         if (isSelected)
         {
             writefln("=== Running: %s", funName);
-            f!(T, typeof(cf))(cf);
+            f!T(cf);
         }
     }
 }

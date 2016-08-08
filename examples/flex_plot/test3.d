@@ -25,9 +25,6 @@ version(Flex_single) void main()
 {
     import flex_common;
     alias T = double;
-    int n = 5_000;
-    string plotDir = "plots";
-    T rho = 1.1;
-    auto cf = CFlex!T(5_000, plotDir, rho);
-    test!(T, typeof(cf))(cf);
+    auto cf = CFlex!T(5_000, "plots", 1.1);
+    test!T(cf);
 }
