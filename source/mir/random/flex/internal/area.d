@@ -148,6 +148,7 @@ void determineSqueezeAndHat(S)(ref Interval!S iv)
             hat = mixin(sec);
             break;
         default:
+            // this case shouldn't occur in production, but if we don't want to SEGFAULT or HALT
             squeeze = linearFun!S(0, 0, 0);
             hat = linearFun!S(0, 0, 0);
     }
