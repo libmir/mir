@@ -48,10 +48,10 @@ struct LinearFun(S)
                   FormatSpec!char fmt) const
     {
         import std.range : put;
+        import std.format: formatValue, singleSpec;
         switch(fmt.spec)
         {
             case 'l':
-                import std.format: formatValue, singleSpec;
                 import std.math: abs, approxEqual, isNaN;
                 if (slope.isNaN)
                     sink.put("#NaN#");
@@ -79,7 +79,16 @@ struct LinearFun(S)
                 break;
             case 's':
             default:
-                put(sink, "a");
+                import std.traits : Unqual;
+                sink.put(Unqual!(typeof(this)).stringof);
+                auto spec2g = singleSpec("%.6g");
+                sink.put("(");
+                sink.formatValue(slope, spec2g);
+                sink.put(", ");
+                sink.formatValue(y, spec2g);
+                sink.put(", ");
+                sink.formatValue(a, spec2g);
+                sink.put(")");
                 break;
         }
     }
@@ -211,4 +220,12 @@ unittest
         assert(t2.slope.approxEqual(0));
         assert(t2.intercept.approxEqual(1));
     }
+}
+
+// test default toString
+unittest
+{
+    import std.format : format;
+    auto t = linearFun!double(2, 0, 1);
+    assert("%s".format(t) == "LinearFun!double(2, 0, 1)");
 }
