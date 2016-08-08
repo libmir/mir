@@ -43,34 +43,3 @@ auto arcmean(S)(in ref Interval!S iv)
         return tan(S(0.5) * (d + b));
     }
 }
-
-/**
-Calculate the parameters for an interval.
-Given an interval, determine its type (e.g. purely concave, or purely convex)
-and its hat and squeeze function.
-Given these functions, compute the area and overwrite the references data type.
-
-Params:
-    iv = Interval which should be calculated
-*/
-void calcInterval(S)(ref Interval!S iv)
-in
-{
-    assert(iv.lx < iv.rx, "invalid interval");
-}
-body
-{
-    import mir.random.flex.internal.types : determineType;
-    import mir.random.flex.internal.area: determineSqueezeAndHat, hatArea, squeezeArea;
-    import std.math: isFinite;
-
-    // calculate hat and squeeze functions
-    determineSqueezeAndHat(iv);
-
-    // update area
-    hatArea!S(iv);
-    squeezeArea!S(iv);
-
-    assert(iv.hatArea.isFinite, "hat area should be lower than infinity");
-    assert(iv.squeezeArea.isFinite, "squeezeArea area should be lower than infinity");
-}
