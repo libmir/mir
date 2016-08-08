@@ -1041,10 +1041,7 @@ unittest
                 determineSqueezeAndHat(iv);
 
                 hatArea!S(iv);
-                if (iv.hatArea == S.max)
-                    assert(hats[i][j].isInfinity);
-                else
-                    assert(iv.hatArea.approxEqual(hats[i][j]));
+                assert(iv.hatArea.approxEqual(hats[i][j]));
 
                 squeezeArea!S(iv);
                 assert(iv.squeezeArea.approxEqual(sqs[i][j]));
