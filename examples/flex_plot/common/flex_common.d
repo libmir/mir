@@ -121,9 +121,6 @@ void npPlotHistogram(S)(S[] values, string fileName, string title)
     import pyd.extra : d_to_python_numpy_ndarray;
 
     static immutable script = `
-        import sys
-        print(sys.path)
-        print(sys.version_info)
         import matplotlib.pyplot as plt
         import numpy as np
         n, bins, patches = plt.hist(sample, num_bins, normed=1)
