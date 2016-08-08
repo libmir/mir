@@ -253,31 +253,37 @@ unittest
         auto f2 = (S x) => (-1 + x * x) / (exp(x * x / 2) * sqrt2PI);
         auto pdf = (S x) => exp(f0(x));
         S[] points = [-3.0, 0, 3];
-        alias TF = FlexInterval!S;
+        alias F = FlexInterval!S;
         alias LF = LinearFun!S;
 
         // generated from
-        // auto intervals = flexIntervals(f0, f1, f2, [1.5, 1.5], points, S(1.1));
+        auto intervalsGen = flexIntervals(f0, f1, f2, [1.5, 1.5], points, S(1.1));
 
-        auto intervals = [
-            TF(-3, -1.36003, 1.5, LF(0.159263, -1.36003, 1.26786),
-                                  LF(0.0200763, -3, 1.00667), 1.78593, 1.66515),
-            TF(-1.36003, -0.720759, 1.5, LF(0.498434, -0.720759, 1.58649),
-                                         LF(0.409229, -1.36003, 1.26786), 0.80997, 0.799256),
-            TF(-0.720759, 0, 1.5, LF(-0, 0, 1.81923),
-                                  LF(0.322909, 0, 1.81923), 1.07411, 1.02762),
-            TF(0, 0.720759, 1.5, LF(-0, 0, 1.81923),
-                                 LF(-0.322909, 0, 1.81923), 1.07411, 1.02762),
-            TF(0.720759, 1.36003, 1.5, LF(-0.498434, 0.720759, 1.58649),
-                                       LF(-0.409229, 1.36003, 1.26786), 0.80997, 0.799256),
-            TF(1.36003, 3, 1.5, LF(-0.159263, 1.36003, 1.26786),
-                                LF(-0.0200763, 3, 1.00667), 1.78593, 1.66515)
+        auto intervals = [F(-3, -0.720759, 1.5, LF(0.254392, -0.720759, 1.58649),
+                                                  LF(0.0200763, -3, 1.00667), 2.70507, 2.32388),
+                          F(-0.720759, 0, 1.5, LF(-0, 0, 1.81923),
+                                                 LF(0.322909, 0, 1.81923), 1.07411, 1.02762),
+                          F(0, 0.720759, 1.5, LF(-0, 0, 1.81923),
+                                                LF(-0.322909, 0, 1.81923), 1.07411, 1.02762),
+                          F(0.720759, 1.36003, 1.5, LF(-0.498434, 0.720759, 1.58649),
+                                                      LF(-0.409229, 1.36003, 1.26786), 0.80997, 0.799256),
+                          F(1.36003, 3, 1.5, LF(-0.159263, 1.36003, 1.26786),
+                                               LF(-0.0200763, 3, 1.00667), 1.78593, 1.66515)
         ];
+
+        foreach (i; 0..intervals.length)
+        {
+            assert(intervals[i].lx.approxEqual(intervalsGen[i].lx));
+            assert(intervals[i].rx.approxEqual(intervalsGen[i].rx));
+            assert(intervals[i].hatArea.approxEqual(intervalsGen[i].hatArea));
+            assert(intervals[i].squeezeArea.approxEqual(intervalsGen[i].squeezeArea));
+        }
+
         auto tf = flex(pdf, intervals);
         auto gen = Mt19937(42);
 
-        S[] res = [-0.146644, -0.883119, 0.430185, -0.608325, -2.21547, -0.2875,
-                   1.12576, -1.40599, 2.89136, -0.954287];
+        S[] res = [-1.27001, -1.56078, 0.112434, -1.86799, -0.2875, 1.12576,
+                   -0.78079, 2.89136, -1.51572, 1.04432];
 
         foreach (i; 0..res.length)
             assert(tf(gen).approxEqual(res[i]));
