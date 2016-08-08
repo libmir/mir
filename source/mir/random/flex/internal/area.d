@@ -952,9 +952,9 @@ unittest
 
     foreach (S; AliasSeq!(float, double, real))
     {
-        auto f0 = (S x) => -log(abs(x))/2;
-        auto f1 = (S x) => -1/(2*x);
-        auto f2 = (S x) => 1/(2*x^^2);
+        auto f0 = (S x) => -log(abs(x)) / 2;
+        auto f1 = (S x) => -1 / (2 * x);
+        auto f2 = (S x) => 1 / (2 * x * x);
 
         auto it = (S l, S r, S c)
         {
