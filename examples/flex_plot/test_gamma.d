@@ -5,9 +5,14 @@ dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
 
-// https://en.wikipedia.org/wiki/Gamma_distribution
-// http://www.wolframalpha.com/input/?i=PDF%5BGammaDistribution%5B4,+3%5D%5D
-// a = 4, b = 3
+/**
+Gamma distribution for `a = 4` and `b = 3`.
+
+See_Also:
+    $(LINK2 https://en.wikipedia.org/wiki/Gamma_distribution, Wikipedia),
+    $(LINK2 http://www.wolframalpha.com/input/?i=PDF%5BGammaDistribution%5B4,+3%5D%5D,
+    Wolfram Alpha)
+*/
 void test(S, F)(in ref F test)
 {
     import std.math : log, pow, PI, sqrt;

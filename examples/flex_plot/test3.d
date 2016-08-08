@@ -5,7 +5,9 @@ dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
 
-// Test whether density vanishes at boundaries
+/**
+Test whether density vanishes at boundaries.
+*/
 void test(S, F)(in ref F test)
 {
     import std.math : log, pow;

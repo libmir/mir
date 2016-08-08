@@ -5,7 +5,12 @@ dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
 
-// https://en.wikipedia.org/wiki/Normal_distribution
+/**
+Normal distribution.
+
+See_Also:
+    $(LINK2 https://en.wikipedia.org/wiki/Normal_distribution, Wikipedia)
+*/
 void test(S, F)(in ref F test)
 {
     import std.math : exp, log, PI, sqrt;
