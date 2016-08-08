@@ -376,6 +376,21 @@ private enum Iteration
     all,
 }
 
+void prepareTensors(Select select, Args...)(ref Args tensors)
+{
+    static if (select == Select.triangular || select == Select.triangularPacked)
+    {
+        static if (select == Select.triangularPacked)
+            enum I = Iota!(tensors[0].N, tensors[0].N + tensors[0].front.N - 1);
+        else
+            enum I = Iota!(0, tensors[0].N - 1);
+        foreach_reverse (i; I)
+            if (tensors[0]._lengths[i] > tensors[0]._lengths[i + 1])
+                foreach (ref tensor; tensors)
+                    tensor._lengths[i] = tensors[0]._lengths[i + 1];
+    }
+}
+
 // one ring to rule them all
 private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec, Flag!"fastmath" fm)
 {
@@ -873,12 +888,13 @@ alias ndReduce(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath"
 template ndReduce(alias fun, Select select, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath" fm = cast(Flag!"fastmath")vec)
 {
     ///
-    auto ndReduce(S, Args...)(S seed, auto ref Args tensors)
+    auto ndReduce(S, Args...)(S seed, Args tensors)
         if (Args.length)
     {
         tensors.checkShapesMatch!(true, select);
         if (anyEmpty!select(tensors[0]))
             return cast(Unqual!S) seed;
+        prepareTensors!select(tensors);
         alias impl = implement!(Iteration.reduce, fun, No.vectorized, fm);
         static if (vec && allSatisfy!(isMemory, staticMap!(RangeOf, Args)))
         {
@@ -1075,12 +1091,13 @@ alias ndEach(alias fun, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath" f
 template ndEach(alias fun, Select select, Flag!"vectorized" vec = No.vectorized, Flag!"fastmath" fm = cast(Flag!"fastmath")vec)
 {
     ///
-    void ndEach(Args...)(auto ref Args tensors)
+    void ndEach(Args...)(Args tensors)
         if (Args.length)
     {
         tensors.checkShapesMatch!(false, select);
         if (anyEmpty!select(tensors[0]))
             return;
+        prepareTensors!select(tensors);
         alias impl = implement!(Iteration.each, fun, No.vectorized, fm);
         static if (vec && allSatisfy!(isMemory, staticMap!(RangeOf, Args)))
         {
@@ -1275,12 +1292,13 @@ See_also:
 template ndFind(alias pred, Select select = Select.full)
 {
     ///
-    void ndFind(size_t N, Args...)(out size_t[N] backwardIndex, auto ref Args tensors)
+    void ndFind(size_t N, Args...)(out size_t[N] backwardIndex, Args tensors)
         if (Args.length)
     {
         tensors.checkShapesMatch!(false, select);
         if (!anyEmpty!select(tensors[0]))
         {
+            prepareTensors!select(tensors);
             alias impl = implement!(Iteration.find, pred, No.vectorized, No.fastmath);
             impl!(Args[0].N, select)(backwardIndex, tensors);
         }
@@ -1439,7 +1457,7 @@ Constraints:
 template ndAny(alias pred, Select select = Select.full)
 {
     ///
-    bool ndAny(Args...)(auto ref Args tensors)
+    bool ndAny(Args...)(Args tensors)
         if (Args.length)
     {
         tensors.checkShapesMatch!(false, select);
@@ -1447,6 +1465,7 @@ template ndAny(alias pred, Select select = Select.full)
             return false;
         size_t[Args[0].N] backwardIndex = void;
         backwardIndex[$-1] = 0;
+        prepareTensors!select(tensors);
         alias impl = implement!(Iteration.find, pred, No.vectorized, No.fastmath);
         impl!(Args[0].N, select)(backwardIndex, tensors);
         return cast(bool) backwardIndex[$-1];
@@ -1537,10 +1556,11 @@ Constraints:
 template ndAll(alias pred, Select select = Select.full)
 {
     ///
-    bool ndAll(Args...)(auto ref Args tensors)
+    bool ndAll(Args...)(Args tensors)
         if (Args.length)
     {
         tensors.checkShapesMatch!(false, select);
+        prepareTensors!select(tensors);
         alias impl = implement!(Iteration.all, pred, No.vectorized, No.fastmath);
         return anyEmpty!select(tensors[0]) || impl!(Args[0].N, select)(tensors);
     }
@@ -1642,6 +1662,7 @@ template ndEqual(alias pred, Select select = Select.full)
     {
         enum msg = "all arguments must be tensors" ~ tailErrorMessage!();
         enum msgShape = "all tensors must have the same dimension count"  ~ tailErrorMessage!();
+        prepareTensors!select(tensors);
         foreach (i, Arg; Args)
         {
             static assert (is(Arg == Slice!(N, Range), size_t N, Range), msg);
