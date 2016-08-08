@@ -142,6 +142,7 @@ in
 }
 out(type)
 {
+    version(Flex_logging)
     if (!type)
         warningf("Interval has an undefined type: %s", iv);
 }
