@@ -11,7 +11,7 @@ can sample from arbitrary distributions given (1) its log-density function f,
 with at most one inflection point.
 
 These can be easily found by plotting `f''`.
-$(B Inflection point) can be identified by observing at which points `f''` is 0
+$(B Inflection points) can be identified by observing at which points `f''` is 0
 and an inflection interval which is defined by two inflection points can either be:
 
 $(UL
@@ -41,9 +41,8 @@ $(H3 Efficiency `rho`)
 In further steps the algorithm splits those intervals until a chosen efficiency
 `rho` between the ratio of the sum of all hat areas to the sum of
 all squeeze areas is reached.
-For example an efficiency of 1.1 means
-that `10 / 110` of all drawn uniform numbers don't match the target distribution
-and need be resampled.
+For example an efficiency of 1.1 means that `10 / 110` of all
+drawn uniform numbers don't match the target distribution and need be resampled.
 A higher efficiency constructs more intervals, and thus requires more iterations
 and a longer setup phase, but increases the speed of sampling.
 
@@ -276,8 +275,12 @@ unittest
         ];
         auto tf = flex(pdf, intervals);
         auto gen = Mt19937(42);
-        auto value = tf(gen);
-        assert(value.approxEqual(S(-0.146644)));
+
+        S[] res = [-0.104096, -0.883119, 0.462066, -0.599992, -2.21547, -0.255391,
+                   1.12576, -1.40599, 2.89136, -0.954287];
+
+        foreach (i; 0..res.length)
+            assert(tf(gen).approxEqual(res[i]));
     }
 }
 
@@ -295,7 +298,11 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
 
         auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
-        auto value = tf(gen);
+        S[] res = [-1.64677, 1.56697, -1.48606, -1.68103, -1.09229, 1.46837,
+                   -1.61755, 1.73641, -1.66105, 1.10856];
+
+        foreach (i; 0..10)
+            assert(tf(gen).approxEqual(res[i]));
     }
 }
 
@@ -376,6 +383,9 @@ private S flexImpl(S, Pdf, RNG)
                 {
                     if (fabs(hat.slope) < S(1e-10))
                     {
+                        // reset to uniform number
+                        u /= hatArea;
+                        // pick a point on the straight line between lx and rx
                         X = (1 - u) * lx + u * rx;
                         goto finish;
                     }
@@ -534,7 +544,7 @@ body
 
     version(Flex_logging)
     {
-        log("starting flex with p=", points, ", cs=", cs);
+        log("starting flex with p=", points, ", cs=", cs, " rho=", rho);
         version(Flex_logging_hex)
         {
             logf("points= %(%a, %)", points);
@@ -689,6 +699,7 @@ body
         log("Interval: ", intervals.map!`a.lx`);
         log("hatArea", intervals.map!`a.hatArea`);
         log("squeezeArea", intervals.map!`a.squeezeArea`);
+        log("rho: ", totalHatAreaSummator.sum / totalSqueezeAreaSummator.sum);
         log("----");
     }
 
