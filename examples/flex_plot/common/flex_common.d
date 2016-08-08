@@ -14,16 +14,28 @@ This is only intended for testing and visualizing the Flex algorithm.
 */
 struct CFlex(S)
 {
+    /// number of samples
     int n;
+
+    /// root directory for all plots
     string plotDir;
-    S rho = 1.1;
+
+    /// efficiency of the Flex algorithm
+    S rho;
+
+    /// whether a histogram should be plotted
     bool plotHistogram;
+
+    /// step size of the points in the plot
     S stepSize = 0.005;
+
+    /// whether the CSV should be saved
+    bool saveCSV = false;
 
     /**
     Params:
         n = number of samples
-        plotDir = root directory for the all plots
+        plotDir = root directory for all plots
         rho = efficiency of the Flex algorithm
         plotHistogram = whether a histogram should be plotted too. If false no
                         values will be sampled and only the hat and squeeze function
@@ -97,11 +109,14 @@ struct CFlex(S)
 
             values.npPlotHistogram(fileName ~ "_hist.pdf", title);
 
-            import std.stdio : File;
-            import std.algorithm : map, joiner;
-            // save values to file for further processing
-            auto f = File(fileName ~ "_values.csv", "w");
-            f.writeln(values.map!`a.to!string`.joiner(","));
+            if (saveCSV)
+            {
+                import std.stdio : File;
+                import std.algorithm : map, joiner;
+                // save values to file for further processing
+                auto f = File(fileName ~ "_values.csv", "w");
+                f.writeln(values.map!`a.to!string`.joiner(","));
+            }
         }
     }
 }
@@ -121,9 +136,6 @@ void npPlotHistogram(S)(S[] values, string fileName, string title)
     import pyd.extra : d_to_python_numpy_ndarray;
 
     static immutable script = `
-        import sys
-        print(sys.path)
-        print(sys.version_info)
         import matplotlib.pyplot as plt
         import numpy as np
         n, bins, patches = plt.hist(sample, num_bins, normed=1)

@@ -11,7 +11,7 @@ can sample from arbitrary distributions given (1) its log-density function f,
 with at most one inflection point.
 
 These can be easily found by plotting `f''`.
-$(B Inflection point) can be identified by observing at which points `f''` is 0
+$(B Inflection points) can be identified by observing at which points `f''` is 0
 and an inflection interval which is defined by two inflection points can either be:
 
 $(UL
@@ -41,9 +41,8 @@ $(H3 Efficiency `rho`)
 In further steps the algorithm splits those intervals until a chosen efficiency
 `rho` between the ratio of the sum of all hat areas to the sum of
 all squeeze areas is reached.
-For example an efficiency of 1.1 means
-that `10 / 110` of all drawn uniform numbers don't match the target distribution
-and need be resampled.
+For example an efficiency of 1.1 means that `10 / 110` of all
+drawn uniform numbers don't match the target distribution and need be resampled.
 A higher efficiency constructs more intervals, and thus requires more iterations
 and a longer setup phase, but increases the speed of sampling.
 
@@ -250,14 +249,15 @@ unittest
     {
         S sqrt2PI = sqrt(2 * PI);
         auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
-        auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
-        auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
+        auto f1 = (S x) => -(x/(exp(x * x / 2) * sqrt2PI));
+        auto f2 = (S x) => (-1 + x * x) / (exp(x * x / 2) * sqrt2PI);
         auto pdf = (S x) => exp(f0(x));
         S[] points = [-3.0, 0, 3];
         alias TF = FlexInterval!S;
         alias LF = LinearFun!S;
 
-        //auto intervals = flexIntervals(f0, f1, f2, [1.5, 1.5], points, S(1.1));
+        // generated from
+        // auto intervals = flexIntervals(f0, f1, f2, [1.5, 1.5], points, S(1.1));
 
         auto intervals = [
             TF(-3, -1.36003, 1.5, LF(0.159263, -1.36003, 1.26786),
@@ -275,8 +275,12 @@ unittest
         ];
         auto tf = flex(pdf, intervals);
         auto gen = Mt19937(42);
-        auto value = tf(gen);
-        assert(value.approxEqual(S(-0.146644)));
+
+        S[] res = [-0.146644, -0.883119, 0.430185, -0.608325, -2.21547, -0.2875,
+                   1.12576, -1.40599, 2.89136, -0.954287];
+
+        foreach (i; 0..res.length)
+            assert(tf(gen).approxEqual(res[i]));
     }
 }
 
@@ -294,7 +298,11 @@ unittest
         S[] points = [-3, -1.5, 0, 1.5, 3];
 
         auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
-        auto value = tf(gen);
+        S[] res = [-1.64677, 1.56697, -1.48606, -1.68103, -1.09229, 1.46837,
+                   -1.61755, 1.73641, -1.66105, 1.10856];
+
+        foreach (i; 0..10)
+            assert(tf(gen).approxEqual(res[i]));
     }
 }
 
@@ -331,7 +339,7 @@ private S flexImpl(S, Pdf, RNG)
         assert(index < intervals.length);
         immutable interval = intervals[index];
 
-        S u = uniform!("[)", S, S)(0, 1, rng);
+        S u = uniform!("[)", S, S)(0, interval.hatArea, rng);
 
         // generate X with density proportional to the selected interval
         with(interval)
@@ -354,11 +362,10 @@ private S flexImpl(S, Pdf, RNG)
             {
                 if (c == S(-0.5))
                 {
-                    auto eX = exp(hatLx);
-                    auto z = u * hat.slope * eX;
+                    auto z = u * hat.slope * hatLx;
                     if (fabs(z) < S(1e-6))
                     {
-                        X = lx + u * eX * (1 - z * S(0.5) + z * z);
+                        X = lx + u * hatLx * hatLx * (1 + z + z * z);
                         goto finish;
                     }
                 }
@@ -376,6 +383,9 @@ private S flexImpl(S, Pdf, RNG)
                 {
                     if (fabs(hat.slope) < S(1e-10))
                     {
+                        // reset to uniform number
+                        u /= hatArea;
+                        // pick a point on the straight line between lx and rx
                         X = (1 - u) * lx + u * rx;
                         goto finish;
                     }
@@ -391,7 +401,8 @@ private S flexImpl(S, Pdf, RNG)
             auto invHatX = flexInverse(hatX, c);
             auto invSqueezeX = squeezeArea > 0 ? flexInverse(squeezeX, c) : 0;
 
-            immutable t = u * invHatX;
+            S u2 = uniform!("[)", S, S)(0, 1, rng);
+            immutable t = u2 * invHatX;
 
             // u * h(c) < s(X)  "squeeze evaluation"
             if (t <= invSqueezeX)
@@ -533,7 +544,7 @@ body
 
     version(Flex_logging)
     {
-        log("starting flex with p=", points, ", cs=", cs);
+        log("starting flex with p=", points, ", cs=", cs, " rho=", rho);
         version(Flex_logging_hex)
         {
             logf("points= %(%a, %)", points);
@@ -688,6 +699,7 @@ body
         log("Interval: ", intervals.map!`a.lx`);
         log("hatArea", intervals.map!`a.hatArea`);
         log("squeezeArea", intervals.map!`a.squeezeArea`);
+        log("rho: ", totalHatAreaSummator.sum / totalSqueezeAreaSummator.sum);
         log("----");
     }
 
@@ -909,7 +921,6 @@ S flexInverse(bool common = false, S)(in S x, in S c)
 {
     import mir.internal.math : pow, fabs, exp, copysign;
     import std.math: sgn;
-    assert(sgn(c) * x >= 0);
     static if (!common)
     {
         if (c == 0)
@@ -921,6 +932,7 @@ S flexInverse(bool common = false, S)(in S x, in S c)
         if (c == 1)
             return x;
     }
+    assert(sgn(c) * x >= 0 || x >= 0);
     // LDC intrinsics compiles to the assembler powf which yields different results
     return pow(fabs(x), 1 / c);
 }

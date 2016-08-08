@@ -5,9 +5,14 @@ dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
 
-// a=2, b=5
-// https://en.wikipedia.org/wiki/Beta_distribution
-// http://www.wolframalpha.com/input/?i=PDF%5BGammaDistribution%5B2,+5%5D%5D
+/**
+Beta distribution for `a=2` and `b=5`.
+
+See_Also:
+    $(LINK2 https://en.wikipedia.org/wiki/Beta_distribution, Wikipedia)
+    $(LINK2 http://www.wolframalpha.com/input/?i=PDF%5BGammaDistribution%5B2,+5%5D%5D,
+    Wolfram Alpha)
+*/
 void test(S, F)(in ref F test)
 {
     import std.math : log, pow;
@@ -22,9 +27,6 @@ version(Flex_single) void main()
 {
     import flex_common;
     alias T = double;
-    int n = 5_000;
-    string plotDir = "plots";
-    T rho = 1.1;
-    auto cf = CFlex!T(5_000, plotDir, rho);
-    test!(T, typeof(cf))(cf);
+    auto cf = CFlex!T(5_000, "plots", 1.1);
+    test!T(cf);
 }

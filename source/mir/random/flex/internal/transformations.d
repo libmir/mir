@@ -222,8 +222,6 @@ unittest
         assert(mixin("iv." ~ attr ~ " == " ~ "res." ~ attr));
 }
 
-
-
 /**
 Compute antiderivative FT of an inverse transformation: TF_C^-1
 Table 1, column 4 of Botts et al. (2013).
@@ -334,13 +332,13 @@ S inverseAntiderivative(S)(in S x, in S c)
 {
     import mir.internal.math : exp, log, pow, copysign, fabs;
     import std.math: sgn;
-    assert(x * sgn(c + 1) >= 0);
     if (c == 0)
         return log(x);
     if (c == S(-0.5))
         return -1 / x;
     if (c == -1)
         return -exp(-x);
+    assert(x * sgn(c + 1) >= 0);
     immutable d = c + 1;
     return pow(d / fabs(c) * x, c / d).copysign(c);
 }

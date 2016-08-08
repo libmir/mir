@@ -5,7 +5,9 @@ dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
 
-/// Test different values for c
+/**
+Test different values for c.
+*/
 void test(S, F)(in ref F test)
 {
     import std.math : pow;
@@ -23,9 +25,6 @@ version(Flex_single) void main()
 {
     import flex_common;
     alias T = double;
-    int n = 5_000;
-    string plotDir = "plots";
-    T rho = 1.1;
-    auto cf = CFlex!T(5_000, plotDir, rho);
-    test!(T, typeof(cf))(cf);
+    auto cf = CFlex!T(5_000, "plots", 1.1);
+    test!T(cf);
 }
