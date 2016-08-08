@@ -20,13 +20,15 @@ void main(string[] args)
     int n = 5_000;
     T rho = 1.1;
     bool plotHistogram = false;
+    bool saveCSV;
 
     auto flags = getopt(
         args,
         "plotDir",  "Plot directory", &plotDir,
         "n|num_samples", "Number of samples", &n,
         "p|plot_histogram", "Plot histogram", &plotHistogram,
-        "r|rho", "Efficiency rho", &rho);
+        "r|rho", "Efficiency rho", &rho,
+        "c|csv", "Save csv", &saveCSV);
 
     if (flags.helpWanted)
     {
@@ -57,6 +59,7 @@ void main(string[] args)
     bool runAll = args.length <= 1;
 
     auto cf = CFlex!T(n, plotDir, rho, plotHistogram);
+    cf.saveCSV = saveCSV;
     foreach (i, f; funs)
     {
         bool isSelected = runAll;
