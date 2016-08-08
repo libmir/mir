@@ -250,8 +250,8 @@ unittest
     {
         S sqrt2PI = sqrt(2 * PI);
         auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
-        auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
-        auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
+        auto f1 = (S x) => -(x/(exp(x * x / 2) * sqrt2PI));
+        auto f2 = (S x) => (-1 + x * x) / (exp(x * x / 2) * sqrt2PI);
         auto pdf = (S x) => exp(f0(x));
         S[] points = [-3.0, 0, 3];
         alias TF = FlexInterval!S;
@@ -332,7 +332,7 @@ private S flexImpl(S, Pdf, RNG)
         assert(index < intervals.length);
         immutable interval = intervals[index];
 
-        S u = uniform!("[)", S, S)(0, 1, rng);
+        S u = uniform!("[)", S, S)(0, interval.hatArea, rng);
 
         // generate X with density proportional to the selected interval
         with(interval)
@@ -355,11 +355,10 @@ private S flexImpl(S, Pdf, RNG)
             {
                 if (c == S(-0.5))
                 {
-                    auto eX = exp(hatLx);
-                    auto z = u * hat.slope * eX;
+                    auto z = u * hat.slope * hatLx;
                     if (fabs(z) < S(1e-6))
                     {
-                        X = lx + u * eX * (1 - z * S(0.5) + z * z);
+                        X = lx + u * hatLx * hatLx * (1 + z + z * z);
                         goto finish;
                     }
                 }
@@ -392,7 +391,8 @@ private S flexImpl(S, Pdf, RNG)
             auto invHatX = flexInverse(hatX, c);
             auto invSqueezeX = squeezeArea > 0 ? flexInverse(squeezeX, c) : 0;
 
-            immutable t = u * invHatX;
+            S u2 = uniform!("[)", S, S)(0, 1, rng);
+            immutable t = u2 * invHatX;
 
             // u * h(c) < s(X)  "squeeze evaluation"
             if (t <= invSqueezeX)
@@ -910,18 +910,24 @@ S flexInverse(bool common = false, S)(in S x, in S c)
 {
     import mir.internal.math : pow, fabs, exp, copysign;
     import std.math: sgn;
-    assert(sgn(c) * x >= 0);
     static if (!common)
     {
         if (c == 0)
             return exp(x);
         if (c == S(-0.5))
+        {
+            assert(x != 0);
             return 1 / (x * x);
+        }
         if (c == -1)
+        {
+            assert(x != 0);
             return -1 / x;
+        }
         if (c == 1)
             return x;
     }
+    assert(sgn(c) * x >= 0 || x >= 0);
     // LDC intrinsics compiles to the assembler powf which yields different results
     return pow(fabs(x), 1 / c);
 }

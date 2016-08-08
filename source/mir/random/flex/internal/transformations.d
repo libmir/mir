@@ -334,15 +334,24 @@ S inverseAntiderivative(S)(in S x, in S c)
 {
     import mir.internal.math : exp, log, pow, copysign, fabs;
     import std.math: sgn;
-    assert(x * sgn(c + 1) >= 0);
     if (c == 0)
+    {
+        assert(x > 0);
         return log(x);
+    }
     if (c == S(-0.5))
+    {
+        assert(x != 0);
         return -1 / x;
+    }
     if (c == -1)
+    {
         return -exp(-x);
+    }
+    assert(x * sgn(c + 1) >= 0);
     immutable d = c + 1;
-    return pow(d / fabs(c) * x, c / d).copysign(c);
+    auto k = pow(d / fabs(c) * x, c / d).copysign(c);
+    return k;
 }
 
 unittest
