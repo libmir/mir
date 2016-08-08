@@ -95,7 +95,7 @@ struct LinearFun(S)
     /// calculate inverse of x
     S inverse(S x) const
     {
-        return y + (x- a) / slope;
+        return y + (x - a) / slope;
     }
 
     // calculate intercept (for debugging)
