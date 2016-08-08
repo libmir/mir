@@ -449,17 +449,6 @@ struct FlexInterval(S)
 
     ///
     S squeezeArea;
-
-    // disallow NaN points
-    invariant {
-        import std.math : isNaN;
-        import std.meta : AliasSeq;
-        alias seq =  AliasSeq!(lx, rx, c, hatArea, squeezeArea);
-        foreach (i, v; seq)
-            assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
-
-        assert(lx < rx, "invalid interval - right side must be larger than the left side");
-    }
 }
 
 /**
