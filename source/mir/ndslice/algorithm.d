@@ -399,10 +399,10 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
     else
         alias attr = fastmathDummy;
 
-    static if(iteration == Iteration.reduce)
+    static if (iteration == Iteration.reduce)
         enum argStr = "S, Tensors...)(S seed, Tensors tensors)";
     else
-    static if(iteration == Iteration.find)
+    static if (iteration == Iteration.find)
         enum argStr = "size_t M, Tensors...)(ref size_t[M] backwardIndex, Tensors tensors)";
     else
         enum argStr = "Tensors...)(Tensors tensors)";
@@ -429,7 +429,7 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
                 enum nextSelect = Select.half;
             else
                 enum nextSelect = Select.halfPacked;
-        else    
+        else
         static if (select == Select.triangularPacked)
             static if (N == 1)
                 enum nextSelect = Select.triangular;
@@ -1245,7 +1245,7 @@ pure nothrow unittest
     // matrix should be square
     assert(a.length!0 == a.length!1);
 
-    if(a.length)
+    if (a.length)
         // dropOne is used because we do not need to transpose the diagonal
         ndEach!(swap, Select.triangular)(a.dropOne, a.transposed.dropOne);
 
@@ -1425,7 +1425,7 @@ pure nothrow unittest
     import mir.ndslice.selection : iotaSlice, pack;
 
     auto sl = slice!double(4, 5);
-    sl[] = 
+    sl[] =
         [[0, 1, 2, 1, 0],
          [2, 3, 4, 3, 2],
          [6, 9, 8, 5, 6],
