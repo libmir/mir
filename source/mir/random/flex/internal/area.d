@@ -1070,7 +1070,6 @@ in
 body
 {
     import mir.random.flex.internal.types : determineType;
-    import mir.random.flex.internal.area: determineSqueezeAndHat, hatArea, squeezeArea;
     import std.math: isFinite;
 
     // calculate hat and squeeze functions
