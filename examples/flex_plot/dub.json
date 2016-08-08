@@ -1,5 +1,5 @@
 {
-	"name": "flex_plots",
+    "name": "flex_plots",
     "sourcePaths": ["."],
     "importPaths": ["."],
     "license": "BSL-1.0",
