@@ -502,11 +502,11 @@ in
 
     // check first c
     if (points[0].isInfinity)
-        assert(cs.front > - 1,"c must be > -1 for unbounded domains");
+        assert(cs.front > - 1, "c must be > -1 for unbounded domains");
 
     // check last c
     if (points[$ - 1].isInfinity)
-        assert(cs[$ - 1] > - 1,"cs must be > -1 for unbounded domains");
+        assert(cs[$ - 1] > - 1, "cs must be > -1 for unbounded domains");
 }
 body
 {
