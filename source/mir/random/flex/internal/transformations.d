@@ -340,8 +340,7 @@ S inverseAntiderivative(S)(in S x, in S c)
         return -exp(-x);
     assert(x * sgn(c + 1) >= 0);
     immutable d = c + 1;
-    auto k = pow(d / fabs(c) * x, c / d).copysign(c);
-    return k;
+    return pow(d / fabs(c) * x, c / d).copysign(c);
 }
 
 unittest
