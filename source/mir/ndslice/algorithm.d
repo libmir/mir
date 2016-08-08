@@ -561,7 +561,7 @@ $(MREF ndEqual),
 $(MREF ndCmp).
 
 Any dimension count is supported.
-Each type has example for 1D, 2D, and 3D cases.
+Types has examples for 1D, 2D, and 3D cases.
 +/
 enum Select
 {
@@ -607,7 +607,11 @@ enum Select
     -----
     +/
     half,
-    ///
+    /++
+    `halfPacked` requires packed tensors.
+    For the first pack of dimensions elements are selected using `full` selection.
+    For the second pack of dimensions elements are selected using `half` selection.
+    +/
     halfPacked,
     /++
     `upper` can be used to iterate on upper or lower triangular matrix.
@@ -643,7 +647,11 @@ enum Select
     -----
     +/
     triangular,
-    ///
+    /++
+    `triangularPacked` requires packed tensors.
+    For the first pack of dimensions elements are selected using `full` selection.
+    For the second pack of dimensions elements are selected using `triangular` selection.
+    +/
     triangularPacked,
 }
 
