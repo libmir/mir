@@ -2,6 +2,11 @@ module mir.random.flex.internal.types;
 
 import std.traits: ReturnType, isFloatingPoint;
 
+version(Flex_logging)
+{
+    import std.experimental.logger;
+}
+
 /**
 Major data unit of the Flex algorithm.
 It is used to store
@@ -137,8 +142,8 @@ in
 }
 out(type)
 {
-    import std.conv : to;
-    assert(type, iv.to!string);
+    if (!type)
+        warningf("Interval has an undefined type: %s", iv);
 }
 body
 {
