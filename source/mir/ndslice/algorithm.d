@@ -517,7 +517,7 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
                 }
             }
         }
-        while(tensors[0]._lengths[0]);
+        while (tensors[0]._lengths[0]);
         End:
         static if (select == Select.half && N > 1)
         {
