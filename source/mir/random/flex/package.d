@@ -848,8 +848,8 @@ unittest
     {
         S sqrt2PI = sqrt(2 * PI);
         auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
-        auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
-        auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
+        auto f1 = (S x) => -(x / (exp(x * x / 2) * sqrt2PI));
+        auto f2 = (S x) => (-1 + x * x) / (exp(x * x / 2) * sqrt2PI);
         S[] cs = [1.5, 1.5, 1.5, 1.5];
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
