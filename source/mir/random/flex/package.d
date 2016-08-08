@@ -506,7 +506,8 @@ in
 }
 body
 {
-    import mir.random.flex.internal.calc: arcmean, calcInterval;
+    import mir.random.flex.internal.area: calcInterval;
+    import mir.random.flex.internal.calc: arcmean;
     import mir.random.flex.internal.transformations : transform, transformInterval;
     import mir.random.flex.internal.types: Interval;
     import mir.internal.math: copysign, exp, pow;
