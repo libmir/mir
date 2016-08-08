@@ -74,7 +74,7 @@ private template TensorFronts(size_t length)
     }
 }
 
-private void checkShapesMatch(bool seed, Args...)(auto ref Args tensors)
+private void checkShapesMatch(bool seed, Select select, Args...)(auto ref Args tensors)
 {
     enum msg = seed ?
         "all arguments except the first (seed) must be tensors" :
@@ -84,12 +84,35 @@ private void checkShapesMatch(bool seed, Args...)(auto ref Args tensors)
     foreach (i, Arg; Args)
     {
         static assert (is(Arg == Slice!(N, Range), size_t N, Range), msg);
-        static if (i)
+        static if (select == Select.halfPacked || select == Select.triangularPacked)
         {
-            static assert (tensors[i].N == tensors[0].N, msgShape);
-            assert(tensors[i].shape == tensors[0].shape, msgShape);
+            static assert (tensors[i].NSeq.length > 1, "halfPacked and triangularPacked selections require packed slices");
+            static if (i)
+            {
+                static assert (tensors[i].NSeq[0 .. 2] == tensors[0].NSeq[0 .. 2], msgShape);
+                enum M = tensors[0].NSeq[0] + tensors[0].NSeq[1] - 1;
+                assert(tensors[i]._lengths[0 .. M] == tensors[0]._lengths[0 .. M], msgShape);
+            }
+        }
+        else
+        {
+            static if (i)
+            {
+                static assert (tensors[i].N == tensors[0].N, msgShape);
+                assert(tensors[i].shape == tensors[0].shape, msgShape);
+            }
         }
     }
+}
+
+private bool anyEmpty(Select select, size_t N, Range)(ref Slice!(N, Range) slice)
+{
+    static if (select == Select.halfPacked || select == Select.triangularPacked)
+        static if (is(Range : Slice!(M, IRange), size_t M, IRange))
+            return Slice!(N + M - 1, IRange)(slice._lengths, slice._strides, slice._ptr).anyEmpty;
+        else static assert(0);
+    else
+        return slice.anyEmpty;
 }
 
 private template naryFun(bool hasSeed, size_t argCount, alias fun)
@@ -365,12 +388,20 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
         enum argStr = "S, Tensors...)(S seed, Tensors tensors)";
     else
     static if(iteration == Iteration.find)
-        enum argStr = "Tensors...)(ref size_t[N] backwardIndex, Tensors tensors)";
+        enum argStr = "size_t M, Tensors...)(ref size_t[M] backwardIndex, Tensors tensors)";
     else
         enum argStr = "Tensors...)(Tensors tensors)";
 
     mixin("@attr auto implement(size_t N, Select select, " ~ argStr ~ "{" ~ bodyStr ~ "}");
     enum bodyStr = q{
+        static if (iteration == Iteration.find)
+        {
+            static if (select == Select.halfPacked || select == Select.triangularPacked)
+                enum S = N + tensors[0].front.N;
+            else
+                enum S = N;
+            static assert (M == S, "backwardIndex length should be equal to " ~ S.stringof);
+        }
         static if (select == Select.half)
         {
             immutable middle = tensors[0]._lengths[0] & 1;
@@ -437,7 +468,12 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
                     auto val = backwardIndex[$ - 1];
                 if (val)
                 {
-                    backwardIndex[0] = tensors[0].length;
+                    backwardIndex[0] = tensors[0]._lengths[0];
+                    static if (select == Select.half)
+                    {
+                        backwardIndex[0] <<= 1;
+                        backwardIndex[0] &= middle;
+                    }
                     return;
                 }
             }
@@ -843,10 +879,9 @@ template ndReduce(alias fun, Select select, Flag!"vectorized" vec = No.vectorize
     auto ndReduce(S, Args...)(S seed, auto ref Args tensors)
         if (Args.length)
     {
-        tensors.checkShapesMatch!true;
-        static if (select != Select.half)
-            if (tensors[0].anyEmpty)
-                return cast(Unqual!S) seed;
+        tensors.checkShapesMatch!(true, select);
+        if (anyEmpty!select(tensors[0]))
+            return cast(Unqual!S) seed;
         alias impl = implement!(Iteration.reduce, fun, No.vectorized, fm);
         static if (vec && allSatisfy!(isMemory, staticMap!(RangeOf, Args)))
         {
@@ -1046,8 +1081,8 @@ template ndEach(alias fun, Select select, Flag!"vectorized" vec = No.vectorized,
     void ndEach(Args...)(auto ref Args tensors)
         if (Args.length)
     {
-        tensors.checkShapesMatch!false;
-        if (tensors[0].anyEmpty)
+        tensors.checkShapesMatch!(false, select);
+        if (anyEmpty!select(tensors[0]))
             return;
         alias impl = implement!(Iteration.each, fun, No.vectorized, fm);
         static if (vec && allSatisfy!(isMemory, staticMap!(RangeOf, Args)))
@@ -1151,10 +1186,8 @@ pure nothrow unittest
 /// Reverse rows or columns
 pure nothrow unittest
 {
-    import std.typecons : Yes;
     import std.conv : to;
     import std.algorithm.mutation : swap;
-    import mir.ndslice.slice : assumeSameStructure;
     import mir.ndslice.selection : iotaSlice, pack;
     import mir.ndslice.iteration : reversed, transposed;
 
@@ -1172,6 +1205,29 @@ pure nothrow unittest
     // reverse columns
     reverseRows(b.transposed);
     assert(b == iotaSlice(2, 3).reversed!0);
+}
+
+/// Transpose matrix
+pure nothrow unittest
+{
+    import std.conv : to;
+    import std.algorithm.mutation : swap;
+    import mir.ndslice.selection : iotaSlice;
+    import mir.ndslice.iteration : dropOne, transposed;
+
+    // | 0 1 2 |
+    // | 3 4 5 |
+    // | 6 7 8 |
+    auto a = iotaSlice(3, 3).ndMap!(to!double).slice;
+
+    // matrix should be square
+    assert(a.length!0 == a.length!1);
+
+    if(a.length)
+        // dropOne is used because we do not need to transpose the diagonal
+        ndEach!(swap, Select.triangular)(a.dropOne, a.transposed.dropOne);
+
+    assert(a == iotaSlice(3, 3).transposed);
 }
 
 @safe pure nothrow unittest
@@ -1225,8 +1281,8 @@ template ndFind(alias pred, Select select = Select.full)
     void ndFind(size_t N, Args...)(out size_t[N] backwardIndex, auto ref Args tensors)
         if (Args.length)
     {
-        tensors.checkShapesMatch!false;
-        if (!tensors[0].anyEmpty)
+        tensors.checkShapesMatch!(false, select);
+        if (!anyEmpty!select(tensors[0]))
         {
             alias impl = implement!(Iteration.find, pred, No.vectorized, No.fastmath);
             impl!(Args[0].N, select)(backwardIndex, tensors);
@@ -1354,8 +1410,8 @@ template ndAny(alias pred, Select select = Select.full)
     bool ndAny(Args...)(auto ref Args tensors)
         if (Args.length)
     {
-        tensors.checkShapesMatch!false;
-        if (tensors[0].anyEmpty)
+        tensors.checkShapesMatch!(false, select);
+        if (anyEmpty!select(tensors[0]))
             return false;
         size_t[Args[0].N] backwardIndex = void;
         backwardIndex[$-1] = 0;
@@ -1452,9 +1508,9 @@ template ndAll(alias pred, Select select = Select.full)
     bool ndAll(Args...)(auto ref Args tensors)
         if (Args.length)
     {
-        tensors.checkShapesMatch!false;
+        tensors.checkShapesMatch!(false, select);
         alias impl = implement!(Iteration.all, pred, No.vectorized, No.fastmath);
-        return tensors[0].anyEmpty || impl!(Args[0].N, select)(tensors);
+        return anyEmpty!select(tensors[0]) || impl!(Args[0].N, select)(tensors);
     }
 }
 
