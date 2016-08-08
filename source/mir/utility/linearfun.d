@@ -229,3 +229,12 @@ unittest
     auto t = linearFun!double(2, 0, 1);
     assert("%s".format(t) == "LinearFun!double(2, 0, 1)");
 }
+
+// test NaN behavior
+unittest
+{
+    import std.format : format;
+    auto t = linearFun!double(double.nan, 0, 1);
+    assert("%s".format(t) == "LinearFun!double(nan, 0, 1)");
+    assert("%l".format(t) == "#NaN#");
+}
