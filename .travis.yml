@@ -16,6 +16,7 @@ branches:
   only:
     - master
     - stable
+    - tinflex2
 cache:
   directories:
     - $HOME/.cache/matplotlib
@@ -40,7 +41,8 @@ script:
  - conda config --set always_yes yes --set changeps1 no
  - conda update -q conda
  - conda info -a
- - conda create --yes -n condaenv python=3.5 matplotlib || true
+ - conda create --yes -n condaenv python=3.5 || true
+ - conda install --yes -n condaenv matplotlib
  - source activate condaenv
  - python -c 'import matplotlib as mpl; print(mpl.get_cachedir());print(mpl._version)'
  # conda and macOS is messed up, but we can manually set all required paths
