@@ -16,7 +16,7 @@ struct CFlex(S)
 {
     int n;
     string plotDir;
-    S rho = 1.1;
+    S rho;
     bool plotHistogram;
     S stepSize = 0.005;
 
