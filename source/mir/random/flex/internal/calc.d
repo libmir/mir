@@ -11,8 +11,7 @@ In contrast to the normal mean (`0.5 * (l + r)`) being a geometric plane,
 the arcmean favors the mean region more.
 
 Params:
-    l = Left point
-    r = Right point
+    iv = Interval with left point and right point
 
 Returns:
     Splitting point within the interval
