@@ -187,6 +187,38 @@ unittest
     }
 }
 
+// test undefined type
+unittest
+{
+    import mir.internal.math : fabs, log;
+    import mir.random.flex.internal.transformations : transformInterval;
+    import mir.random.flex.internal.types : determineType, FunType;
+    import mir.utility.linearfun : linearFun;
+    import std.meta : AliasSeq;
+    static immutable ps = [-0.5, 0, 0.5];
+    foreach (S; AliasSeq!(float, double, real))
+    {
+        auto f0 = (S x) => -log(fabs(x)) / 2;
+        auto f1 = (S x) => -1 / (2 * x);
+        auto f2 = (S x) => 1 / (2 * x * x);
+
+        foreach (i; 0..ps.length - 1)
+        {
+            S l = ps[i], r = ps[i + 1];
+            S c = -2;
+            auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+            transformInterval(iv);
+
+            FunType t = determineType(iv);
+            assert(t == FunType.undefined);
+
+            determineSqueezeAndHat(iv);
+            assert(iv.squeeze == linearFun!S(0, 0, 0));
+            assert(iv.hat == linearFun!S(0, 0, 0));
+        }
+    }
+}
+
 /**
 Flex-specific constants cutoffs for numeric errors.
 */
@@ -820,7 +852,6 @@ unittest
     alias T = double;
 
     static immutable hats = [
-        //[0.585786437626905, T.infinity, T.infinity, 0.585786437626905],
         [0.591638126147109, T.infinity, T.infinity, 0.591638126147109],
         [0.592229601209145, T.infinity, T.infinity, 0.592229601209145],
         [0.594603557501361, T.infinity, T.infinity, 0.594603557501361],
@@ -832,7 +863,6 @@ unittest
     ];
 
     static immutable sqs = [
-        //[0.585786437626905, 0, 0, 0.585786437626905],
         [0.575364144903562, 0.980258143468547, 0.980258143468547, 0.575364144903562],
         [0.574524477344522, 0.971313482411421, 0.971313482411421, 0.574524477344522],
         [0.571428571428571, 0.942809041582063, 0.942809041582063, 0.571428571428571],
@@ -846,9 +876,9 @@ unittest
     foreach (S; AliasSeq!(float, double, real))
     {
 
-        auto f0 = (S x) => -log(abs(x))/2;
-        auto f1 = (S x) => -1/(2*x);
-        auto f2 = (S x) => 1/(2*x^^2);
+        auto f0 = (S x) => -log(abs(x)) / 2;
+        auto f1 = (S x) => -1 / (2 * x);
+        auto f2 = (S x) => 1 / (2 * x * x);
 
         auto it = (S l, S r, S c)
         {
