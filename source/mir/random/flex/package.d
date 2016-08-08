@@ -915,15 +915,9 @@ S flexInverse(bool common = false, S)(in S x, in S c)
         if (c == 0)
             return exp(x);
         if (c == S(-0.5))
-        {
-            assert(x != 0);
             return 1 / (x * x);
-        }
         if (c == -1)
-        {
-            assert(x != 0);
             return -1 / x;
-        }
         if (c == 1)
             return x;
     }
