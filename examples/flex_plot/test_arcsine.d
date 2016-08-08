@@ -5,8 +5,14 @@ dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
 
-// https://en.wikipedia.org/wiki/Arcsine_distribution
-// http://www.wolframalpha.com/input/?i=PDF%5BArcsineDistribution%5B0,+1%5D%5D
+/**
+Arcsine distribution.
+
+See_Also:
+    $(LINK2 https://en.wikipedia.org/wiki/Arcsine_distribution, Wikipedia),
+    $(LINK2 http://www.wolframalpha.com/input/?i=PDF%5BArcsineDistribution%5B0,+1%5D%5D,
+    Wolfram Alpha)
+*/
 void test(S, F)(in ref F test)
 {
     import std.math : log, pow, PI, sqrt;

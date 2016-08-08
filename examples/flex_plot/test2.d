@@ -5,7 +5,9 @@ dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
 
-/// Test at and near extrema
+/**
+Test at and near extrema.
+*/
 void test(S, F)(in ref F test)
 {
     import std.math : pow;
