@@ -234,8 +234,8 @@ unittest
     import std.meta : AliasSeq;
     alias S = double;
     auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-    auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-    auto f2 = (S x) => 10 - 12 * x ^^ 2;
+    auto f1 = (S x) => 10 * x - 4 * x^^3;
+    auto f2 = (S x) => 10 - 12 * x^^2;
     S[] points = [-3, -1.5, 0, 1.5, 3];
 
     auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
@@ -810,8 +810,8 @@ unittest
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        auto f1 = (S x) => 10 * x - 4 * x^^3;
+        auto f2 = (S x) => 10 - 12 * x^^2;
         S[] cs = [1.5, 1.5, 1.5, 1.5];
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
@@ -854,8 +854,8 @@ unittest
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        auto f1 = (S x) => 10 * x - 4 * x^^3;
+        auto f2 = (S x) => 10 - 12 * x^^2;
         S[] points = [-3, -1.5, 0, 1.5, 3];
         S[] cs = [1.0, 1.0, 1.0, 1.0];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
@@ -900,8 +900,8 @@ unittest
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        auto f1 = (S x) => 10 * x - 4 * x^^3;
+        auto f2 = (S x) => 10 - 12 * x^^2;
         S[] cs = [1.3, 1.4, 1.5, 1.6];
         S[] points = [-3, -1.5, 0, 1.5, 3];
         auto ips = flexIntervals(f0, f1, f2, cs, points, S(1.1));
