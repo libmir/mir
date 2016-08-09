@@ -227,10 +227,16 @@ Compute antiderivative FT of an inverse transformation: TF_C^-1
 Table 1, column 4 of Botts et al. (2013).
 */
 S antiderivative(bool common = false, S)(in S x, in S c)
+in
+{
+    import std.math: sgn;
+    // only check for the general case, for the other ones NaNs can be recovered
+    if (c != -1 && c != S(-0.5) && c != 0)
+        assert(sgn(c) * x >= 0);
+}
+body
 {
     import mir.internal.math : copysign, exp, fabs, log, pow;
-    import std.math: sgn;
-    assert(sgn(c) * x >= 0);
     static if (!common)
     {
         if (c == 0)
