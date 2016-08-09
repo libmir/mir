@@ -1,6 +1,6 @@
 #!/usr/bin/env dub
 /+ dub.sdl:
-name "flex_plot5"
+name "flex_plot_test_different_c_values"
 dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
@@ -15,10 +15,12 @@ void test(S, F)(in ref F test)
     auto f1 = (S x) => -8 * pow(x, 3) + 8 * x;
     auto f2 = (S x) => -24 * x * x + 8;
 
-    test.plot("dist5_a", f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0],
+    enum name = "diff_c_values";
+
+    test.plot(name ~ "_a", f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0],
         [-S.infinity, -2, -1, 0, 1, 2, S.infinity]);
 
-    test.plot("dist5_b", f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0], [-3, -2, -1, 0, 1, 2, 3]);
+    test.plot(name ~ "_b", f0, f1, f2, [-0.5, 2, -2, 0.5, -1, 0], [-3, -2, -1, 0, 1, 2, 3]);
 }
 
 version(Flex_single) void main()

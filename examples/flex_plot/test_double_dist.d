@@ -1,6 +1,6 @@
 #!/usr/bin/env dub
 /+ dub.sdl:
-name "flex_plot1"
+name "flex_plot_test_double_dist"
 dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
@@ -17,19 +17,21 @@ void test(S, F)(in ref F test)
     auto f1 = (S x) => 10 * x - 4 * pow(x, 3);
     auto f2 = (S x) => 10 - 12 * x * x;
 
+    enum name = "dist_double_dist";
+
     foreach (c; [0.1, 0.5, 1])
-        test.plot("dist1_a" ~ c.to!string, f0, f1, f2, c, [-3.0, -1.5, 0.0, 1.5, 3]);
+        test.plot(name ~ "_a_" ~ c.to!string, f0, f1, f2, c, [-3.0, -1.5, 0.0, 1.5, 3]);
 
     foreach (c; [-0.9, -0.5, -0.2, 0])
     {
-        test.plot("dist1_b" ~ c.to!string, f0, f1, f2, c,
+        test.plot(name ~ "_b_" ~ c.to!string, f0, f1, f2, c,
             [-S.infinity, -2.1, -1.05, 0.1, 1.2, 2, S.infinity]);
-        test.plot("dist1_c" ~ c.to!string, f0, f1, f2, c, [-S.infinity, -1, 0, 1, S.infinity]);
-        test.plot("dist1_d" ~ c.to!string, f0, f1, f2, c, [-2, 0, 1.5], -4, 6);
+        test.plot(name ~ "_c_" ~ c.to!string, f0, f1, f2, c, [-S.infinity, -1, 0, 1, S.infinity]);
+        test.plot(name ~ "_d_" ~ c.to!string, f0, f1, f2, c, [-2, 0, 1.5], -4, 6);
     }
 
     foreach (c; [-2, -1.5, -1])
-        test.plot("dist1_e" ~ c.to!string, f0, f1, f2, c, [-3.0, -2.1, -1.05, 0.1, 1.2, 3]);
+        test.plot(name ~ "_e_" ~ c.to!string, f0, f1, f2, c, [-3.0, -2.1, -1.05, 0.1, 1.2, 3]);
 }
 
 version(Flex_single) void main()
