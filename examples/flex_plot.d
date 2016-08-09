@@ -29,6 +29,7 @@ void main(string[] args)
         "b|bins", "Number of bins (default: 100)", &cf.numBins,
         "c|csv", "Save csv", &cf.saveCSV,
         "cumulative", "Plot cumulative histogram", &cf.plotCumulativeHistogram,
+        "histtype", "Histogram type (bar, step, stepfilled)", &cf.histType,
         "n|num_samples", "Number of samples (default: 5000)", &cf.numSamples,
         "p|plot_histogram", "Plot histogram", &cf.plotHistogram,
         "plotDir",  `Plot directory (default: "plots")`, &cf.plotDir,

@@ -1,7 +1,7 @@
 #!/usr/bin/env dub
 /+ dub.sdl:
 name "flex_plot_test_near_extrema"
-dependency "flex_common" path="./common"
+dependency "flex_common" path="./flex_common"
 versions "Flex_logging" "Flex_single"
 +/
 

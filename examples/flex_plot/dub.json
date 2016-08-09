@@ -5,7 +5,7 @@
     "license": "BSL-1.0",
     "dependencies": {
         "flex_common": {
-            "path": "./common"
+            "path": "./flex_common"
         }
     }
 }

@@ -25,3 +25,5 @@ __test__source__
 *.s
 
 *.out
+
+flex_plot_test_*
