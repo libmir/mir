@@ -26,13 +26,14 @@ void main(string[] args)
 
     auto flags = getopt(
         args,
-        "b|bins", "Number of bins", &cf.numBins,
+        "b|bins", "Number of bins (default: 100)", &cf.numBins,
         "c|csv", "Save csv", &cf.saveCSV,
         "cumulative", "Plot cumulative histogram", &cf.plotCumulativeHistogram,
-        "n|num_samples", "Number of samples", &cf.numSamples,
+        "n|num_samples", "Number of samples (default: 5000)", &cf.numSamples,
         "p|plot_histogram", "Plot histogram", &cf.plotHistogram,
-        "plotDir",  "Plot directory", &cf.plotDir,
-        "r|rho", "Efficiency rho", &cf.rho,
+        "plotDir",  `Plot directory (default: "plots")`, &cf.plotDir,
+        "r|rho", "Efficiency rho (default: 1.1)", &cf.rho,
+        "reference", "Plot reference (enabled by default)", &cf.plotReference,
         "suffix",  "Suffix names to append", &cf.suffixName);
 
     if (flags.helpWanted)

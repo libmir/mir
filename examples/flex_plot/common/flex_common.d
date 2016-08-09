@@ -41,6 +41,9 @@ struct CFlex(S)
     // optional suffix that should be appended to all files
     string suffixName = "";
 
+    /// whether the reference PDF should be plotted
+    bool plotReference = true;
+
     // @@@BUG@@@ template injection doesn't work with opCall
     /**
     Creates a Flex instance given the input parameter and plots it.
@@ -110,11 +113,11 @@ struct CFlex(S)
 
             if (plotHistogram)
                 pdf.npPlotHistogram(values, fileName ~ "_hist.pdf", title,
-                                       numBins, stepSize);
+                                       numBins, stepSize, false, plotReference);
 
             if (plotCumulativeHistogram)
                 pdf.npPlotHistogram(values, fileName ~ "_hist_cum.pdf", title,
-                                       numBins, stepSize, true);
+                                       numBins, stepSize, true, plotReference);
 
             if (saveCSV)
             {
@@ -138,10 +141,12 @@ Params:
     title = title of the plot
     numBins = number of bins
     cumulative = whether the histogram should be plotted with cumulative probabilities
+    plotReference = whether the reference pdf should be plotted
 */
 
 void npPlotHistogram(S, Pdf)(Pdf pdf, S[] values, string fileName, string title,
-                             int numBins = 100, S stepSize = 0.005, bool cumulative = false)
+                             int numBins = 100, S stepSize = 0.005, bool cumulative = false,
+                             bool plotReference = true)
 {
     import pyd.embedded : InterpContext;
     import pyd.extra : d_to_python_numpy_ndarray;
@@ -173,8 +178,10 @@ void npPlotHistogram(S, Pdf)(Pdf pdf, S[] values, string fileName, string title,
     }
     pythonContext.sample = npValues.d_to_python_numpy_ndarray;
     pythonContext.cumulative = cumulative;
+    pythonContext.nMax = 0;
     pythonContext.py_stmts(`
         n, bins, patches = plt.hist(sample, num_bins, normed=1, cumulative=cumulative)
+        nMax = np.max(n)
     `);
 
     // plot actual density function
@@ -183,19 +190,31 @@ void npPlotHistogram(S, Pdf)(Pdf pdf, S[] values, string fileName, string title,
     foreach (i, x; xs)
         ys[i] = pdf(x);
 
-    if (cumulative)
+    if (plotReference || pdf is null)
     {
-        // normalize
-        auto total = ys.sum();
-        foreach (ref y; ys)
-            y /= total;
-        foreach (i, ref y; ys[1..$])
-            y += ys[i];
-    }
+        if (cumulative)
+        {
+            // normalize
+            auto total = ys.sum();
+            foreach (ref y; ys)
+                y /= total;
+            foreach (i, ref y; ys[1..$])
+                y += ys[i];
+        }
+        else
+        {
+            // we try to scale the pdf according to highest bar of the histogram
+            // this is not a 100% perfect solution
+            auto nMax = pythonContext.nMax.to_d!double;
+            auto factor = nMax / ys.maxPos.front;
+            foreach (ref y; ys)
+                y *= factor;
+        }
 
-    pythonContext.xs = xs.d_to_python_numpy_ndarray;
-    pythonContext.ys = ys.d_to_python_numpy_ndarray;
-    pythonContext.py_stmts(`plt.plot(xs, ys, color='black')`);
+        pythonContext.xs = xs.d_to_python_numpy_ndarray;
+        pythonContext.ys = ys.d_to_python_numpy_ndarray;
+        pythonContext.py_stmts(`plt.plot(xs, ys, color='black')`);
+    }
 
     // save file
     pythonContext.py_stmts(`
