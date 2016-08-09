@@ -162,7 +162,7 @@ reflected from the original image, and then applying the given function to the
 new file.
 
 Note: You can find the example at
-$(LINK2 https://github.com/libmir.ndslice/mir.ndslice/blob/master/examples/median_filter.d, GitHub).
+$(LINK2 https://github.com/libmir/mir/blob/master/examples/median_filter.d, GitHub).
 
 -------
 /++
