@@ -54,7 +54,7 @@ script:
 
  # workaround against dub bugs
  - dub build --root=examples/flex_plot
- - dub build --root=examples/flex_plot/common
+ - dub build --root=examples/flex_plot/flex_common
  # dub needs to find libpython3.5m.so
  - MPLBACKEND="agg" LD_LIBRARY_PATH=$HOME/miniconda/lib LIBRARY_PATH=$HOME/miniconda/lib/ dub --single examples/flex_plot.d -- normal
  - ls ~/.matplotlib

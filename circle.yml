@@ -46,7 +46,7 @@ test:
     - dub build --single examples/means_of_columns.d
     # Build Flex plots
     - dub build --root=examples/flex_plot
-    - dub build --root=examples/flex_plot/common
+    - dub build --root=examples/flex_plot/flex_common
     # dub needs to find libpython3.5m.so
     - source ~/miniconda/bin/activate condaenv && LD_LIBRARY_PATH=$HOME/miniconda/lib LIBRARY_PATH=$HOME/miniconda/lib/ dub --single examples/flex_plot.d -- normal
     - if [ $(wc -c plots/dist_normal_hs.pdf | cut -f1 -d' ') -le 20000 ] ; then exit 1; fi

@@ -124,7 +124,7 @@ test_script:
  # ---- PYTHON setup -----
  # workaround against dub bugs
  - dub build --root=examples/flex_plot
- - dub build --root=examples/flex_plot/common
+ - dub build --root=examples/flex_plot/flex_common
  # weird hack
  - "set PYTHONPATH=%MINICONDA%\\lib;%MINICONDA%\\lib\\lib-dynload;%MINICONDA%\\envs\\condaenv\\lib;%MINICONDA%\\envs\\condaenv\\lib\\site-packages"
  - echo %PYTHONPATH%
