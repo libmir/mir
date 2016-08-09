@@ -387,7 +387,7 @@ body
         {
             if (fabs(sh.slope) < S(1e-10))
             {
-                import std.math: sgn;
+                import std.math : sgn;
                 assert(sh.a * sgn(iv.c) >= 0);
                 area = flexInverse!true(sh.a, iv.c);
                 area *= ivLength;
@@ -472,8 +472,8 @@ unittest
     ];
 
     const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-    const f1 = (S x) => 10 * x - 4 * x ^^ 3;
-    const f2 = (S x) => 10 - 12 * x ^^ 2;
+    const f1 = (S x) => 10 * x - 4 * x^^3;
+    const f2 = (S x) => 10 - 12 * x^^2;
 
     auto it = (S l, S r, S c)
     {
@@ -560,8 +560,8 @@ unittest
     ];
 
     const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-    const f1 = (S x) => 10 * x - 4 * x ^^ 3;
-    const f2 = (S x) => 10 - 12 * x ^^ 2;
+    const f1 = (S x) => 10 * x - 4 * x^^3;
+    const f2 = (S x) => 10 - 12 * x^^2;
 
     auto it = (S l, S r, S c)
     {
@@ -648,8 +648,8 @@ unittest
     ];
 
     const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-    const f1 = (S x) => 10 * x - 4 * x ^^ 3;
-    const f2 = (S x) => 10 - 12 * x ^^ 2;
+    const f1 = (S x) => 10 * x - 4 * x^^3;
+    const f2 = (S x) => 10 - 12 * x^^2;
 
     auto it = (S l, S r, S c)
     {
@@ -770,8 +770,8 @@ unittest
 
         S sqrt2PI = sqrt(2 * PI);
         auto f0 = (S x) => 1 / (exp(x * x / 2) * sqrt2PI);
-        auto f1 = (S x) => -(x/(exp(x * x/2) * sqrt2PI));
-        auto f2 = (S x) => (-1 + x * x) / (exp(x * x/2) * sqrt2PI);
+        auto f1 = (S x) => -(x / (exp(x * x / 2) * sqrt2PI));
+        auto f2 = (S x) => (-1 + x * x) / (exp(x * x / 2) * sqrt2PI);
 
         auto it = (S l, S r, S c)
         {

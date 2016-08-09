@@ -83,8 +83,8 @@ unittest
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        auto f1 = (S x) => 10 * x - 4 * x^^3;
+        auto f2 = (S x) => 10 - 12 * x^^2;
         S l = -3, r = -1.5, c = 1.5;
 
         auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
@@ -106,8 +106,8 @@ unittest
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        auto f1 = (S x) => 10 * x - 4 * x^^3;
+        auto f2 = (S x) => 10 - 12 * x^^2;
 
         S[] points = [-3, -1.5, 0, 1.5, 3];
         S c = 1;
@@ -138,8 +138,8 @@ unittest
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        auto f1 = (S x) => 10 * x - 4 * x^^3;
+        auto f2 = (S x) => 10 - 12 * x^^2;
 
         S[] points = [-3, -1.5, 0, 1.5, 3];
         S c = -1;
@@ -172,8 +172,8 @@ unittest
     foreach (S; AliasSeq!(float, double, real))
     {
         auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-        auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
-        auto f2 = (S x) => 10 - 12 * x ^^ 2;
+        auto f1 = (S x) => 10 * x - 4 * x^^3;
+        auto f2 = (S x) => 10 - 12 * x^^2;
 
         S[] points = [-3, -1.5, 0, 1.5, 3];
         S c = 0;
@@ -201,8 +201,8 @@ unittest
     import mir.utility.linearfun : LinearFun;
 
     const f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
-    const f1 = (S x) => 10 * x - 4 * x ^^ 3;
-    const f2 = (S x) => 10 - 12 * x ^^ 2;
+    const f1 = (S x) => 10 * x - 4 * x^^3;
+    const f2 = (S x) => 10 - 12 * x^^2;
 
     S l = -3;
     S r = -1.5;
