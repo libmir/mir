@@ -1,5 +1,5 @@
 /**
-Flex module.
+Flex module that allows to sample from arbitrary random distributions.
 
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
@@ -108,51 +108,52 @@ Params:
     cs = $(LINK2 #t_c_family, T_c family) array
     points = non-overlapping partitioning with at most one inflection point per interval
     rho = efficiency of the Flex algorithm
+    maxApproxPoints = maximal number of points to use for the hat/squeeze approximation
 
 Returns:
     Flex Generator.
 */
 auto flex(S, F0, F1, F2)
                (in F0 f0, in F1 f1, in F2 f2,
-                S c, S[] points, S rho = 1.1)
+                S c, S[] points, S rho = 1.1, int maxApproxPoints = 1_000)
     if (isFloatingPoint!S)
 {
     S[] cs = new S[points.length - 1];
     foreach (ref d; cs)
         d = c;
-    return flex(f0, f1, f2, cs, points, rho);
+    return flex(f0, f1, f2, cs, points, rho, maxApproxPoints);
 }
 
 /// ditto
 auto flex(S, Pdf, F0, F1, F2)
                (in Pdf pdf, in F0 f0, in F1 f1, in F2 f2,
-                S c, S[] points, S rho = 1.1)
+                S c, S[] points, S rho = 1.1, int maxApproxPoints = 1_000)
     if (isFloatingPoint!S)
 {
     S[] cs = new S[points.length - 1];
     foreach (ref d; cs)
         d = c;
-    return flex(pdf, f0, f1, f2, cs, points, rho);
+    return flex(pdf, f0, f1, f2, cs, points, rho, maxApproxPoints);
 }
 
 /// ditto
 auto flex(S, F0, F1, F2)
                (in F0 f0, in F1 f1, in F2 f2,
-                S[] cs, S[] points, S rho = 1.1)
+                S[] cs, S[] points, S rho = 1.1, int maxApproxPoints = 1_000)
     if (isFloatingPoint!S)
 {
     import mir.internal.math: exp;
     auto pdf = (S x) => exp(f0(x));
-    return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho));
+    return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho, maxApproxPoints));
 }
 
 /// ditto
 auto flex(S, Pdf, F0, F1, F2)
                (in Pdf pdf, in F0 f0, in F1 f1, in F2 f2,
-                S[] cs, S[] points, S rho = 1.1)
+                S[] cs, S[] points, S rho = 1.1, int maxApproxPoints = 1_000)
     if (isFloatingPoint!S)
 {
-    return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho));
+    return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho, maxApproxPoints));
 }
 
 /// ditto
@@ -464,14 +465,14 @@ Params:
     cs = T_c family (single value or array)
     points = non-overlapping partitioning with at most one inflection point per interval
     rho = efficiency of the Flex algorithm
-    apprMaxPoints = maximal number of splitting points before Flex is aborted
+    maxApproxPoints = maximal number of splitting points before Flex is aborted
 
 Returns: Array of IntervalPoints
 */
 FlexInterval!S[] flexIntervals(S, F0, F1, F2)
                             (in F0 f0, in F1 f1, in F2 f2,
                              in S[] cs, in S[] points, in S rho = 1.1,
-                             in int apprMaxPoints = 1_000, in int maxIterations = 1_000)
+                             in int maxApproxPoints = 1_000)
 in
 {
     import std.algorithm.searching : all;
@@ -587,7 +588,7 @@ body
     }
 
     // Flex is not guaranteed to converge
-    for (auto i = 0; i < maxIterations && nrIntervals < apprMaxPoints; i++)
+    for (; nrIntervals < maxApproxPoints; nrIntervals++)
     {
         immutable totalHatArea = totalHatAreaSummator.sum;
         immutable totalSqueezeArea = totalSqueezeAreaSummator.sum;
@@ -671,8 +672,6 @@ body
         // insert new middle part into linked list
         ips.insert(curEl);
         ips.insert(midIP);
-
-        nrIntervals++;
     }
 
     // for sampling only a subset of the attributes is needed
