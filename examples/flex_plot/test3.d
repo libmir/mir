@@ -19,7 +19,7 @@ void test(S, F)(in ref F test)
     foreach (c; [1.5, 2])
         test.plot("dist3_a_" ~ c.to!string, f0, f1, f2, c, [-1, -0.9, -0.5, 0.5, 0.9, 1], -1, 1);
 
-    foreach (c; [-2, -1.5, -1, -0.9,  -0.5, -0.2, 0, 0.1, 0.5, 1])
+    foreach (c; [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.1, 0.5, 1])
         test.plot("dist3_b_" ~ c.to!string, f0, f1, f2, c, [-1, -0.5, 0.5, 1]);
 }
 
