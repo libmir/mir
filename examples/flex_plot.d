@@ -16,19 +16,24 @@ void main(string[] args)
     import flex_common : CFlex;
 
     alias T = double;
-    string plotDir = "plots";
-    int n = 5_000;
-    T rho = 1.1;
-    bool plotHistogram = false;
-    bool saveCSV;
+
+    CFlex!T cf;
+    cf.numSamples = 5_000;
+    cf.plotDir = "plots";
+    cf.plotHistogram = false;
+    cf.saveCSV = false;
+    cf.rho = 1.1;
 
     auto flags = getopt(
         args,
-        "plotDir",  "Plot directory", &plotDir,
-        "n|num_samples", "Number of samples", &n,
-        "p|plot_histogram", "Plot histogram", &plotHistogram,
-        "r|rho", "Efficiency rho", &rho,
-        "c|csv", "Save csv", &saveCSV);
+        "b|bins", "Number of bins", &cf.numBins,
+        "c|csv", "Save csv", &cf.saveCSV,
+        "cumulative", "Plot cumulative histogram", &cf.plotCumulativeHistogram,
+        "n|num_samples", "Number of samples", &cf.numSamples,
+        "p|plot_histogram", "Plot histogram", &cf.plotHistogram,
+        "plotDir",  "Plot directory", &cf.plotDir,
+        "r|rho", "Efficiency rho", &cf.rho,
+        "suffix",  "Suffix names to append", &cf.suffixName);
 
     if (flags.helpWanted)
     {
@@ -60,8 +65,6 @@ void main(string[] args)
 
     bool runAll = args.length <= 1;
 
-    auto cf = CFlex!T(n, plotDir, rho, plotHistogram);
-    cf.saveCSV = saveCSV;
     foreach (i, f; funs)
     {
         bool isSelected = runAll;

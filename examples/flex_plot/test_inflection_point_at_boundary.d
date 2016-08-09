@@ -1,6 +1,6 @@
 #!/usr/bin/env dub
 /+ dub.sdl:
-name "flex_plot6"
+name "flex_plot_test_inflection_point_at_boundary"
 dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/
@@ -15,7 +15,7 @@ void test(S, F)(in ref F test)
     auto f1 = (S x) => 12 * x - 4 * pow(x, 3);
     auto f2 = (S x) => 12 - 12 * x * x;
 
-    test.plot("dist6", f0, f1, f2, 0, [-S.infinity, -2, -1, 0, 1, 2, S.infinity], -5, 5);
+    test.plot("dist_if_at_boundary", f0, f1, f2, 0, [-S.infinity, -2, -1, 0, 1, 2, S.infinity], -5, 5);
 }
 
 version(Flex_single) void main()
