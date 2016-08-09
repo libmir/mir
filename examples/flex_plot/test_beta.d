@@ -1,6 +1,6 @@
 #!/usr/bin/env dub
 /+ dub.sdl:
-name "flex_plot_beta"
+name "flex_plot_test_beta"
 dependency "flex_common" path="./common"
 versions "Flex_logging" "Flex_single"
 +/

@@ -15,45 +15,34 @@ This is only intended for testing and visualizing the Flex algorithm.
 struct CFlex(S)
 {
     /// number of samples
-    int n;
+    int numSamples = 5_000;
 
     /// root directory for all plots
-    string plotDir;
+    string plotDir = "plots";
 
     /// efficiency of the Flex algorithm
-    S rho;
+    S rho = 1.1;
 
     /// whether a histogram should be plotted
-    bool plotHistogram;
+    bool plotHistogram = false;
+
+    /// whether a cumulative histogram should be plotted
+    bool plotCumulativeHistogram = false;
 
     /// step size of the points in the plot
     S stepSize = 0.005;
 
-    /// whether the CSV should be saved
+    /// how many bins should be used
+    int numBins = 100;
+
+    /// whether a CSV of the sampled values should be saved
     bool saveCSV = false;
 
-    /**
-    Params:
-        n = number of samples
-        plotDir = root directory for all plots
-        rho = efficiency of the Flex algorithm
-        plotHistogram = whether a histogram should be plotted too. If false no
-                        values will be sampled and only the hat and squeeze function
-                        will be plotted
-        stepSize = step size of the points in the plot
-    */
-    this(int n, string plotDir = "plots", S rho = 1.1, bool plotHistogram = true, S stepSize = 0.005)
-    {
-        import std.file : exists, mkdir;
-        if (!plotDir.exists)
-            plotDir.mkdir;
+    // optional suffix that should be appended to all files
+    string suffixName = "";
 
-        this.n = n;
-        this.plotDir = plotDir;
-        this.rho = rho;
-        this.plotHistogram = plotHistogram;
-        this.stepSize = stepSize;
-    }
+    /// whether the reference PDF should be plotted
+    bool plotReference = true;
 
     // @@@BUG@@@ template injection doesn't work with opCall
     /**
@@ -85,29 +74,50 @@ struct CFlex(S)
          S[] cs, S[] points, S left = -3, S right = 3) const
     {
         import mir.random.flex : flex;
+        import std.algorithm.iteration : map;
         import std.format : format;
         import std.math : exp;
         import std.path : buildPath;
         import std.random : Mt19937;
+        import std.file : exists, mkdir;
+
+        if (!plotDir.exists)
+            plotDir.mkdir;
 
         auto tf = flex(f0, f1, f2, cs, points, rho);
         auto pdf = (S x) => exp(f0(x));
 
-        string fileName = plotDir.buildPath(name);
-        string title = "%s, c=%g, rho=%g".format(name, tf.intervals[0].c, rho);
+        string fileName = plotDir.buildPath(name) ~ suffixName;
+
+        // the title should contain all relevant information
+        string title = name ~ ", ";
+        if (tf.intervals[0].c == tf.intervals[1].c)
+          title ~= "c = %g".format(tf.intervals[0].c);
+        else
+          title ~= "c = %(%g %)".format(tf.intervals.map!`a.c`);
+
+        title ~= ", rho=%g, points=[%(%g, %)]".format(rho, points);
 
         // first plot hat/squeeze in case we crash during sampling
         tf.intervals.npPlotHatAndSqueeze(pdf, fileName ~ "_hs.pdf", title,
             stepSize, left, right);
 
-        if (plotHistogram)
+        bool needsSamples = plotHistogram || plotCumulativeHistogram || saveCSV;
+
+        if (needsSamples)
         {
             auto gen = Mt19937(42);
-            S[] values = new S[n];
+            S[] values = new S[numSamples];
             foreach (ref v; values)
                 v = tf(gen);
 
-            values.npPlotHistogram(fileName ~ "_hist.pdf", title);
+            if (plotHistogram)
+                pdf.npPlotHistogram(values, fileName ~ "_hist.pdf", title,
+                                       numBins, stepSize, false, plotReference);
+
+            if (plotCumulativeHistogram)
+                pdf.npPlotHistogram(values, fileName ~ "_hist_cum.pdf", title,
+                                       numBins, stepSize, true, plotReference);
 
             if (saveCSV)
             {
@@ -125,26 +135,39 @@ struct CFlex(S)
 Plot distribution histogram
 
 Params:
+    pdf = probability density function
     values = sampled values from a distribution
     fileName = path where the file should be saved
     title = title of the plot
+    numBins = number of bins
+    cumulative = whether the histogram should be plotted with cumulative probabilities
+    plotReference = whether the reference pdf should be plotted
 */
-void npPlotHistogram(S)(S[] values, string fileName, string title)
+
+void npPlotHistogram(S, Pdf)(Pdf pdf, S[] values, string fileName, string title,
+                             int numBins = 100, S stepSize = 0.005, bool cumulative = false,
+                             bool plotReference = true)
 {
-    import std.math : isFinite;
     import pyd.embedded : InterpContext;
     import pyd.extra : d_to_python_numpy_ndarray;
+    import std.algorithm.searching : maxPos, minPos;
+    import std.algorithm.iteration : sum;
+    import std.array : array;
+    import std.math : isFinite;
+    import std.range : front, iota;
 
-    static immutable script = `
-        import matplotlib.pyplot as plt
-        import numpy as np
-        n, bins, patches = plt.hist(sample, num_bins, normed=1)
-        plt.title(title)
-        plt.savefig(fileName, bbox_inches='tight')
-        plt.close()
-    `;
+    import std.stdio;
+    writeln("starting python hist plot");
 
     auto pythonContext = new InterpContext();
+    pythonContext.num_bins = numBins;
+    pythonContext.fileName = fileName;
+    pythonContext.title = title;
+    pythonContext.py_stmts(`
+        import matplotlib.pyplot as plt
+        import numpy as np
+    `);
+
     // double is needed for NumPy
     double[] npValues;
     // apply filtering due to weird output errors
@@ -154,10 +177,51 @@ void npPlotHistogram(S)(S[] values, string fileName, string title)
             npValues ~= v;
     }
     pythonContext.sample = npValues.d_to_python_numpy_ndarray;
-    pythonContext.num_bins = 100;
-    pythonContext.fileName = fileName;
-    pythonContext.title = title;
-    pythonContext.py_stmts(script);
+    pythonContext.cumulative = cumulative;
+    pythonContext.nMax = 0;
+    pythonContext.py_stmts(`
+        n, bins, patches = plt.hist(sample, num_bins, normed=1, cumulative=cumulative)
+        nMax = np.max(n)
+    `);
+
+    // plot actual density function
+    double[] xs = iota(values.minPos.front, values.maxPos.front, stepSize).array;
+    double[] ys = new double[xs.length];
+    foreach (i, x; xs)
+        ys[i] = pdf(x);
+
+    if (plotReference || pdf is null)
+    {
+        if (cumulative)
+        {
+            // normalize
+            auto total = ys.sum();
+            foreach (ref y; ys)
+                y /= total;
+            foreach (i, ref y; ys[1..$])
+                y += ys[i];
+        }
+        else
+        {
+            // we try to scale the pdf according to highest bar of the histogram
+            // this is not a 100% perfect solution
+            auto nMax = pythonContext.nMax.to_d!double;
+            auto factor = nMax / ys.maxPos.front;
+            foreach (ref y; ys)
+                y *= factor;
+        }
+
+        pythonContext.xs = xs.d_to_python_numpy_ndarray;
+        pythonContext.ys = ys.d_to_python_numpy_ndarray;
+        pythonContext.py_stmts(`plt.plot(xs, ys, color='black')`);
+    }
+
+    // save file
+    pythonContext.py_stmts(`
+        plt.title(title)
+        plt.savefig(fileName, bbox_inches='tight')
+        plt.close()
+    `);
 }
 
 /**
