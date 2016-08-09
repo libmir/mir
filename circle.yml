@@ -15,7 +15,7 @@ dependencies:
     - dmd --version
     - dub --version
     # - wget -q -O dscanner "http://releases.dlang.io/dscanner/0.3.0-git/dscanner"
-    - chmod +x dscanner
+    # - chmod +x dscanner
     - wget "https://raw.githubusercontent.com/dlang/dmd/master/src/checkwhitespace.d"
 test:
   override:
