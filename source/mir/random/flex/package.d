@@ -256,7 +256,7 @@ unittest
         alias LF = LinearFun!S;
 
         // generated from
-        auto intervalsGen = flexIntervals(f0, f1, f2, [1.5, 1.5], points, S(1.1));
+        auto intervalsGen = flex(f0, f1, f2, [1.5, 1.5], points, S(1.1)).intervals;
 
         auto intervals = [F(-3, -0.720759, 1.5, LF(0.254392, -0.720759, 1.58649),
                                                   LF(0.0200763, -3, 1.00667), 2.70507, 2.32388),
