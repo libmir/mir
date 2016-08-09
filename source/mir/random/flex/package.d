@@ -430,25 +430,25 @@ struct FlexInterval(S)
 {
     import mir.utility.linearfun : LinearFun;
 
-    /// left position of the interval
+    /// Left position of the interval
     S lx;
 
-    /// right position of the interval
+    /// Right position of the interval
     S rx;
 
     /// T_c family of the interval
     S c;
 
-    ///
+    /// The majorizing linear hat function
     LinearFun!S hat;
 
-    ///
+    /// The linear squeeze function which is majorized by log(f(x))
     LinearFun!S squeeze;
 
-    ///
+    /// The total area that is spanned by the hat function in this interval
     S hatArea;
 
-    ///
+    /// The total area that is spanned by the squeeze function in this interval
     S squeezeArea;
 }
 
@@ -467,7 +467,7 @@ Params:
     rho = efficiency of the Flex algorithm
     maxApproxPoints = maximal number of splitting points before Flex is aborted
 
-Returns: Array of IntervalPoints
+Returns: Array of $(LREF FlexInterval)'s.
 */
 FlexInterval!S[] flexIntervals(S, F0, F1, F2)
                             (in F0 f0, in F1 f1, in F2 f2,
@@ -904,11 +904,11 @@ Compute inverse transformation of a T_c family given point x.
 Based on Table 1, column 3 of Botts et al. (2013).
 
 Params:
-    common = can c be 0, -0.5, -1 or 1
+    common = whether c be 0, -0.5, -1 or 1
     x = value to transform
     c = T_c family to use for the transformation
 
-Returns: flex-inversed value of x
+Returns: Flex-inversed value of x
 */
 S flexInverse(bool common = false, S)(in S x, in S c)
 {
