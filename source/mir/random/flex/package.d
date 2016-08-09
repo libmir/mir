@@ -1,5 +1,5 @@
 /**
-Flex module.
+Flex module that allows to sample from arbitrary random distributions.
 
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
@@ -20,7 +20,7 @@ $(UL
     $(LI $(F_TILDE) contains one inflection point (`f''` intersects the x-axis once))
 )
 
-It is not important to identity the exact inflection points, but the user input requires:
+It is not important to identify the exact inflection points, but the user input requires:
 
 $(UL
     $(LI Continuous density function $(F_TILDE).)
@@ -108,51 +108,52 @@ Params:
     cs = $(LINK2 #t_c_family, T_c family) array
     points = non-overlapping partitioning with at most one inflection point per interval
     rho = efficiency of the Flex algorithm
+    maxApproxPoints = maximal number of points to use for the hat/squeeze approximation
 
 Returns:
     Flex Generator.
 */
 auto flex(S, F0, F1, F2)
                (in F0 f0, in F1 f1, in F2 f2,
-                S c, S[] points, S rho = 1.1)
+                S c, S[] points, S rho = 1.1, int maxApproxPoints = 1_000)
     if (isFloatingPoint!S)
 {
     S[] cs = new S[points.length - 1];
     foreach (ref d; cs)
         d = c;
-    return flex(f0, f1, f2, cs, points, rho);
+    return flex(f0, f1, f2, cs, points, rho, maxApproxPoints);
 }
 
 /// ditto
 auto flex(S, Pdf, F0, F1, F2)
                (in Pdf pdf, in F0 f0, in F1 f1, in F2 f2,
-                S c, S[] points, S rho = 1.1)
+                S c, S[] points, S rho = 1.1, int maxApproxPoints = 1_000)
     if (isFloatingPoint!S)
 {
     S[] cs = new S[points.length - 1];
     foreach (ref d; cs)
         d = c;
-    return flex(pdf, f0, f1, f2, cs, points, rho);
+    return flex(pdf, f0, f1, f2, cs, points, rho, maxApproxPoints);
 }
 
 /// ditto
 auto flex(S, F0, F1, F2)
                (in F0 f0, in F1 f1, in F2 f2,
-                S[] cs, S[] points, S rho = 1.1)
+                S[] cs, S[] points, S rho = 1.1, int maxApproxPoints = 1_000)
     if (isFloatingPoint!S)
 {
     import mir.internal.math: exp;
     auto pdf = (S x) => exp(f0(x));
-    return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho));
+    return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho, maxApproxPoints));
 }
 
 /// ditto
 auto flex(S, Pdf, F0, F1, F2)
                (in Pdf pdf, in F0 f0, in F1 f1, in F2 f2,
-                S[] cs, S[] points, S rho = 1.1)
+                S[] cs, S[] points, S rho = 1.1, int maxApproxPoints = 1_000)
     if (isFloatingPoint!S)
 {
-    return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho));
+    return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho, maxApproxPoints));
 }
 
 /// ditto
@@ -180,16 +181,21 @@ struct Flex(S, Pdf)
 
     package this(in Pdf pdf, in FlexInterval!S[] intervals)
     {
-        import std.algorithm.iteration : map, sum;
-        _pdf = pdf;
+        import mir.sum: Summator, Summation;
+        import std.algorithm.iteration : map;
 
+        _pdf = pdf;
         _intervals = intervals;
 
-        // pre-calculate cumulative density points
+        // pre-calculate normalized probs
         auto cdPoints = new S[intervals.length];
-        auto total = intervals.map!`a.hatArea`.sum;
+        Summator!(S, Summation.precise) total = 0;
+
+        foreach (el; intervals.map!`a.hatArea`)
+            total += el;
+
         foreach (i, ref cd; cdPoints)
-            cd = intervals[i].hatArea / total;
+            cd = intervals[i].hatArea / total.sum;
 
         this.ds = Discrete!S(cdPoints);
     }
@@ -205,7 +211,7 @@ struct Flex(S, Pdf)
     Params:
         rng = random number generator to use
     Returns:
-        Array of length n with the samples
+        Array of length `n` with the samples
     */
     S opCall() const
     {
@@ -226,16 +232,14 @@ unittest
 {
     import std.math : approxEqual;
     import std.meta : AliasSeq;
-    import std.random : Mt19937;
     alias S = double;
-    auto gen = Mt19937(42);
     auto f0 = (S x) => -x^^4 + 5 * x^^2 - 4;
     auto f1 = (S x) => 10 * x - 4 * x ^^ 3;
     auto f2 = (S x) => 10 - 12 * x ^^ 2;
     S[] points = [-3, -1.5, 0, 1.5, 3];
 
     auto tf = flex(f0, f1, f2, 1.5, points, 1.1);
-    auto value = tf(gen);
+    auto value = tf();
 }
 
 unittest
@@ -253,31 +257,37 @@ unittest
         auto f2 = (S x) => (-1 + x * x) / (exp(x * x / 2) * sqrt2PI);
         auto pdf = (S x) => exp(f0(x));
         S[] points = [-3.0, 0, 3];
-        alias TF = FlexInterval!S;
+        alias F = FlexInterval!S;
         alias LF = LinearFun!S;
 
         // generated from
-        // auto intervals = flexIntervals(f0, f1, f2, [1.5, 1.5], points, S(1.1));
+        auto intervalsGen = flex(f0, f1, f2, [1.5, 1.5], points, S(1.1)).intervals;
 
-        auto intervals = [
-            TF(-3, -1.36003, 1.5, LF(0.159263, -1.36003, 1.26786),
-                                  LF(0.0200763, -3, 1.00667), 1.78593, 1.66515),
-            TF(-1.36003, -0.720759, 1.5, LF(0.498434, -0.720759, 1.58649),
-                                         LF(0.409229, -1.36003, 1.26786), 0.80997, 0.799256),
-            TF(-0.720759, 0, 1.5, LF(-0, 0, 1.81923),
-                                  LF(0.322909, 0, 1.81923), 1.07411, 1.02762),
-            TF(0, 0.720759, 1.5, LF(-0, 0, 1.81923),
-                                 LF(-0.322909, 0, 1.81923), 1.07411, 1.02762),
-            TF(0.720759, 1.36003, 1.5, LF(-0.498434, 0.720759, 1.58649),
-                                       LF(-0.409229, 1.36003, 1.26786), 0.80997, 0.799256),
-            TF(1.36003, 3, 1.5, LF(-0.159263, 1.36003, 1.26786),
-                                LF(-0.0200763, 3, 1.00667), 1.78593, 1.66515)
+        auto intervals = [F(-3, -0.720759, 1.5, LF(0.254392, -0.720759, 1.58649),
+                                                  LF(0.0200763, -3, 1.00667), 2.70507, 2.32388),
+                          F(-0.720759, 0, 1.5, LF(-0, 0, 1.81923),
+                                                 LF(0.322909, 0, 1.81923), 1.07411, 1.02762),
+                          F(0, 0.720759, 1.5, LF(-0, 0, 1.81923),
+                                                LF(-0.322909, 0, 1.81923), 1.07411, 1.02762),
+                          F(0.720759, 1.36003, 1.5, LF(-0.498434, 0.720759, 1.58649),
+                                                      LF(-0.409229, 1.36003, 1.26786), 0.80997, 0.799256),
+                          F(1.36003, 3, 1.5, LF(-0.159263, 1.36003, 1.26786),
+                                               LF(-0.0200763, 3, 1.00667), 1.78593, 1.66515)
         ];
+
+        foreach (i; 0..intervals.length)
+        {
+            assert(intervals[i].lx.approxEqual(intervalsGen[i].lx));
+            assert(intervals[i].rx.approxEqual(intervalsGen[i].rx));
+            assert(intervals[i].hatArea.approxEqual(intervalsGen[i].hatArea));
+            assert(intervals[i].squeezeArea.approxEqual(intervalsGen[i].squeezeArea));
+        }
+
         auto tf = flex(pdf, intervals);
         auto gen = Mt19937(42);
 
-        S[] res = [-0.146644, -0.883119, 0.430185, -0.608325, -2.21547, -0.2875,
-                   1.12576, -1.40599, 2.89136, -0.954287];
+        S[] res = [-1.27001, -1.56078, 0.112434, -1.86799, -0.2875, 1.12576,
+                   -0.78079, 2.89136, -1.51572, 1.04432];
 
         foreach (i; 0..res.length)
             assert(tf(gen).approxEqual(res[i]));
@@ -353,10 +363,6 @@ private S flexImpl(S, Pdf, RNG)
                 {
                     X = lx + u * eXInv * (1 - z * S(0.5) + z * z * one_div_3);
                 }
-                else
-                {
-                    X = hat.inverse(log(hat.slope * u + exp(hatLx)));
-                }
             }
             else
             {
@@ -390,8 +396,9 @@ private S flexImpl(S, Pdf, RNG)
                         goto finish;
                     }
                 }
-                X = hat.inverse(inverseAntiderivative(u * hat.slope + antiderivative(hatLx, c), c));
             }
+            // general reverse operation
+            X = hat.inverse(inverseAntiderivative(u * hat.slope + antiderivative(hatLx, c), c));
 
         finish:
 
@@ -416,6 +423,88 @@ private S flexImpl(S, Pdf, RNG)
     return X;
 }
 
+unittest
+{
+    import std.math : approxEqual, pow, log;
+    import std.meta : AliasSeq;
+    import std.random : Mt19937;
+    foreach (S; AliasSeq!(double, real))
+    {
+        auto f0 = (S x) => cast(S) log(1 - pow(x, 4));
+        auto f1 = (S x) => -4 * pow(x, 3) / (1 - pow(x, 4));
+        auto f2 = (S x) => -(4 * pow(x, 6) + 12 * x * x) / (pow(x, 8) - 2 * pow(x, 4) + 1);
+
+        S[][] res = [
+[-0.543025, -0.134003, 0.298425, -0.422003, -0.270376, -0.585262, 0.802257, -0.0150451, 0.469276, -0.191259],  // -2
+[-0.542987, -0.134003, 0.298425, -0.422003, -0.270376, -0.585195, 0.802077, -0.0150451, 0.469276, -0.191259],  // -1.5
+[-0.101729, -0.134003, 0.298425, 0.0779973, -0.270376, -0.199442, 0.801872, -0.0150451, 0.469276, -0.191259],  // -1
+[-0.101729, -0.134003, 0.298425, 0.0779973, -0.270376, -0.199442, 0.801828, -0.0150451, 0.469276, -0.191259],  // -0.9
+[-0.101729, -0.134003, 0.298425, 0.0779973, -0.270376, -0.199442, 0.801638, -0.0150451, 0.469276, -0.191259],  // -0.5
+[-0.101729, -0.134003, 0.298425, 0.0779973, -0.270376, -0.199442, 0.80148, -0.0150451, 0.469276, -0.191259],   // -0.2
+[0.801366, -0.843898, 0.577894, 0.676399, -0.717022, -0.566942, -0.567151, -0.700141, 0.569007, -0.808534],    // 0
+[-0.101729, -0.134003, 0.298425, 0.0779973, -0.270376, -0.199442, 0.801306, -0.0150451, 0.469276, -0.191259],  // 0.1
+[-0.101729, -0.134003, 0.298425, -0.422003, -0.270376, -0.584882, 0.640603, -0.0150451, 0.469276, -0.191259],  // 0.5
+[-0.101729, -0.556534, 0.298425, -0.422003, -0.84412, -0.199442, 0.640494, -0.726792, 0.469276, -0.581233],    // 1
+[-0.101729, -0.556464, 0.298425, -0.422003, -0.836564, -0.199442, 0.640377, -0.726436, 0.469276, -0.581138]    // 1.5
+        ];
+
+        foreach (i, c; [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.1, 0.5, 1, 1.5])
+        {
+            auto tf = flex(f0, f1, f2, c, [-1, -0.5, 0.5, 1], 1.1);
+            auto gen = Mt19937(42);
+            foreach (j; 0..10)
+            {
+                S val = tf(gen);
+                version(Flex_logging)
+                scope(failure) logf("%d, %d: %5g vs. %g", i, j, res[i][j], val);
+                assert(res[i][j].approxEqual(val));
+            }
+        }
+    }
+}
+
+unittest
+{
+    import std.math : approxEqual, pow;
+    import std.meta : AliasSeq;
+    import std.random : Mt19937;
+
+    foreach (S; AliasSeq!(double, real))
+    {
+        auto f0 = (S x) => -2 * pow(x, 4) + 4 * x * x;
+        auto f1 = (S x) => -8 * pow(x, 3) + 8 * x;
+        auto f2 = (S x) => -24 * x * x + 8;
+
+        S[][] res = [
+[0.887424, -0.284572, -0.871759, -0.832144, 0.653578, 0.982841, -0.827574, 0.626698, -0.466767, 0.219059],   // -2
+[0.887424, -0.268444, -0.871759, -0.832144, 0.654373, 0.982841, -0.827574, 0.627678, -0.463709, 0.237372],   // -1.5
+[0.887424, -0.240707, -0.871759, -0.832144, 0.655323, 0.982841, -0.827574, 0.628869, -0.458046, 0.262425],   // -1
+[0.887424, -0.232643, -0.871759, -0.832144, 0.655536, 0.982841, -0.827574, 0.629139, -0.456287, 0.268522],   // -0.9
+[0.407301, 0.645498, -0.922003, 0.290245, 0.902514, 0.982841, -0.691259, 0.867293, -0.988469, 0.648578],     // -0.5
+[-0.890789, 0.939852, -0.693757, -0.931482, -0.362747, 0.657317, -0.855293, 0.843654, -0.972872, -0.907874],  // -0.2
+[-0.694033, -0.362742, 0.657945, 0.843667, 0.39563, -0.231162, 0.150406, -0.845392, -0.705478, 0.30446],        // 0
+[-0.890789, 0.939852, -0.694181, -0.931482, -0.362729, 0.658285, -0.855293, 0.843674, -0.972872, -0.907874],  // 0.1
+[-0.890789, 0.939852, -0.694238, -0.931482, -0.362598, 0.658584, -0.855293, 0.843702, -0.972872, -0.907874], // 0.5
+[5.71265, -0.693876, -0.362273, 0.658054, 0.843743, 0.39468, -0.231144, 0.150332, -0.84545, 3.83513],         // 1
+[-0.0524661, -0.574867, 0.411518, -0.976726, -0.931482, -0.36179, 0.947914, -0.855293, 0.843789, -0.972872]  // 1.5
+    ];
+
+        S[] cs = [-2, -1.5, -1, -0.9, -0.5, -0.2, 0, 0.1, 0.5, 1, 1.5];
+        foreach (i, c; cs)
+        {
+            auto tf = flex(f0, f1, f2, c, [-1, -0.5, 0.5, 1], 1.1);
+            auto gen = Mt19937(42);
+            foreach (j; 0..10)
+            {
+                S val = tf(gen);
+                version(Flex_logging)
+                scope(failure) logf("%d, %d: %5g vs. %g, type: %s", i, j, res[i][j], val, S.stringof);
+                assert(res[i][j].approxEqual(val));
+            }
+        }
+    }
+}
+
 /**
 Reduced version of $(LREF Interval). Contains only the necessary information
 needed in the generation phase.
@@ -425,37 +514,26 @@ struct FlexInterval(S)
 {
     import mir.utility.linearfun : LinearFun;
 
-    /// left position of the interval
+    /// Left position of the interval
     S lx;
 
-    /// right position of the interval
+    /// Right position of the interval
     S rx;
 
     /// T_c family of the interval
     S c;
 
-    ///
+    /// The majorizing linear hat function
     LinearFun!S hat;
 
-    ///
+    /// The linear squeeze function which is majorized by log(f(x))
     LinearFun!S squeeze;
 
-    ///
+    /// The total area that is spanned by the hat function in this interval
     S hatArea;
 
-    ///
+    /// The total area that is spanned by the squeeze function in this interval
     S squeezeArea;
-
-    // disallow NaN points
-    invariant {
-        import std.math : isNaN;
-        import std.meta : AliasSeq;
-        alias seq =  AliasSeq!(lx, rx, c, hatArea, squeezeArea);
-        foreach (i, v; seq)
-            assert(!v.isNaN, "variable " ~ seq[i].stringof ~ " isn't allowed to be NaN");
-
-        assert(lx < rx, "invalid interval - right side must be larger than the left side");
-    }
 }
 
 /**
@@ -471,14 +549,14 @@ Params:
     cs = T_c family (single value or array)
     points = non-overlapping partitioning with at most one inflection point per interval
     rho = efficiency of the Flex algorithm
-    apprMaxPoints = maximal number of splitting points before Flex is aborted
+    maxApproxPoints = maximal number of splitting points before Flex is aborted
 
-Returns: Array of IntervalPoints
+Returns: Array of $(LREF FlexInterval)'s.
 */
 FlexInterval!S[] flexIntervals(S, F0, F1, F2)
                             (in F0 f0, in F1 f1, in F2 f2,
                              in S[] cs, in S[] points, in S rho = 1.1,
-                             in int apprMaxPoints = 1_000, in int maxIterations = 1_000)
+                             in int maxApproxPoints = 1_000)
 in
 {
     import std.algorithm.searching : all;
@@ -498,11 +576,11 @@ in
 
     // check first c
     if (points[0].isInfinity)
-        assert(cs.front > - 1,"c must be > -1 for unbounded domains");
+        assert(cs.front > - 1, "c must be > -1 for unbounded domains");
 
     // check last c
     if (points[$ - 1].isInfinity)
-        assert(cs[$ - 1] > - 1,"cs must be > -1 for unbounded domains");
+        assert(cs[$ - 1] > - 1, "cs must be > -1 for unbounded domains");
 }
 body
 {
@@ -594,7 +672,7 @@ body
     }
 
     // Flex is not guaranteed to converge
-    for (auto i = 0; i < maxIterations && nrIntervals < apprMaxPoints; i++)
+    for (; nrIntervals < maxApproxPoints; nrIntervals++)
     {
         immutable totalHatArea = totalHatAreaSummator.sum;
         immutable totalSqueezeArea = totalSqueezeAreaSummator.sum;
@@ -607,10 +685,10 @@ body
         version(Flex_logging)
         {
             tracef("iteration %d: totalHat: %.3f, totalSqueeze: %.3f, rho: %.3f",
-                    i, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
+                    nrIntervals, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
             version(Flex_logging_hex)
                 tracef("iteration %d: totalHat: %a, totalSqueeze: %a, rho: %a",
-                        i, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
+                        nrIntervals, totalHatArea, totalSqueezeArea, totalHatArea / totalSqueezeArea);
             version(Flex_logging_hex)
                 logf("to be split: %s", ips.front.logHex);
         }
@@ -678,8 +756,6 @@ body
         // insert new middle part into linked list
         ips.insert(curEl);
         ips.insert(midIP);
-
-        nrIntervals++;
     }
 
     // for sampling only a subset of the attributes is needed
@@ -912,11 +988,11 @@ Compute inverse transformation of a T_c family given point x.
 Based on Table 1, column 3 of Botts et al. (2013).
 
 Params:
-    common = can c be 0, -0.5, -1 or 1
+    common = whether c be 0, -0.5, -1 or 1
     x = value to transform
     c = T_c family to use for the transformation
 
-Returns: flex-inversed value of x
+Returns: Flex-inversed value of x
 */
 S flexInverse(bool common = false, S)(in S x, in S c)
 {

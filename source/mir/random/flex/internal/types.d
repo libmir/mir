@@ -269,62 +269,54 @@ unittest
 unittest
 {
     import std.math: PI;
-    import mir.internal.math : cos, sin;
+    // due to numerical errors a small padding must be added
+    // see e.g. https://gist.github.com/wilzbach/3d27d06b55821aa9795deb15d4d47679
+    import std.math : cos, sin;
 
     import std.meta : AliasSeq;
     foreach (S; AliasSeq!(float, double, real)) with(FunType)
     {
+        import std.stdio;
         const f0 = (S x) => sin(x);
         const f1 = (S x) => cos(x);
         const f2 = (S x) => -sin(x);
         enum c = 42; // c doesn't matter here
         auto dt = (S l, S r) => determineType(Interval!S(l, r, c, f0(l), f1(l), f2(l),
                                                                   f0(r), f1(r), f2(r)));
-
         // type 1a: concave
-        //assert(dt(0, 2 * PI) == T1a);
-        //assert(dt(2 * PI, 4 * PI) == T1a);
-        //assert(dt(2, 4) == T1a);
-        //assert(dt(0, 5) == T1a);
-        //assert(dt(1, 5) == T1a);
+        assert(dt(0.01, 2 * PI - 0.01) == T1a);
+        assert(dt(2 * PI + 0.01, 4 * PI - 0.01) == T1a);
+        assert(dt(2, 4) == T1a);
+        assert(dt(0.01, 5) == T1a);
+        assert(dt(1, 5) == T1a);
 
         // type 1b: convex
-        //assert(dt(-PI, PI) == T1b);
-        //assert(dt(PI, 3 * PI) == T1b);
-        //assert(dt(4, 8) == T1b);
+        assert(dt(-PI, PI) == T1b);
+        assert(dt(PI, 3 * PI) == T1b);
+        assert(dt(4, 8) == T1b);
 
-        //// type 2a: concave
-        ////assert(dt(2 * PI, 3 * PI) == T2a);
-        //assert(dt(1, 4) == T2a);
+        // type 2a: concave
+        assert(dt(1, 4) == T2a);
 
-        //// type 2b: convex
-        //assert(dt(6, 8) == T2b);
+        // type 2b: convex
+        assert(dt(6, 8) == T2b);
 
-        //// type 3a: concave
-        //assert(dt(3, 4) == T3a);
-        //assert(dt(2, 5.7) == T3a);
+        // type 3a: concave
+        assert(dt(3, 4) == T3a);
+        assert(dt(2, 5.7) == T3a);
 
-        //// type 3b: concave
-        ////assert(dt(PI, 2 * PI) == T3b);
-        //assert(dt(-3, 0.1) == T3b);
+        // type 3b: concave
+        assert(dt(-3, 0.1) == T3b);
 
         // type 4a - pure concave intervals (special case of 2a)
-        //assert(dt(0, PI - 0.01) == T4a);
-        //assert(dt(0, 3) == T4a);
+        assert(dt(0.01, PI - 0.01) == T4a);
+        assert(dt(0.01, 3) == T4a);
+        assert(dt(2 * PI + 0.01, 3 * PI - 0.01) == T4a);
 
-        //// type 4b - pure convex intervals (special case of 3b)
-        ////assert(dt(PI, 2 * PI - 0.01) == T4b);
-        //assert(dt(4, 6) == T4b);
-
-        // TODO: zero seems to be a special case here
-        //assert(dt(-PI, 0) == T4a); // should be convex!
-
-        // but:
-        //assert(dt(PI, 2 * PI) == T3b);
-
-        //assert(dt(0, PI) == T4b); // should be concave (a)
-        // but:
-        //assert(dt(2 * PI, 3 * PI) == T2a);
+        // type 4b - pure convex intervals (special case of 3b)
+        assert(dt(-PI + 0.01, -0.01) == T4b);
+        assert(dt(PI + 0.01, 2 * PI - 0.01) == T4b);
+        assert(dt(4, 6) == T4b);
     }
 }
 

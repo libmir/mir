@@ -43,18 +43,20 @@ void main(string[] args)
 
     // @@@BUG 16354@@@
     // static foreach doesn't work with mixins
-    import test1 : test1               = test;
-    import test2 : test2               = test;
-    import test3 : test3               = test;
-    import test4 : test4               = test;
-    import test5 : test5               = test;
-    import test6 : test6               = test;
-    import test_normal : test_normal   = test;
-    import test_arcsine : test_arcsine = test;
-    import test_gamma : test_gamma     = test;
+    import test_double_dist                  : double_dist                  = test;
+    import test_near_extrema                 : near_extrema                 = test;
+    import test_density_at_boundaries        : density_at_boundaries        = test;
+    import test_density_with_poles           : density_with_poles           = test;
+    import test_different_c_values           : different_c_values           = test;
+    import test_inflection_point_at_boundary : inflection_point_at_boundary = test;
+    import test_normal                       : normal                       = test;
+    import test_arcsine                      : arcsine                      = test;
+    import test_beta                         : beta                         = test;
+    import test_gamma                        : gamma                        = test;
 
-    alias funs = AliasSeq!(test1, test2, test3, test4, test5, test6,
-                          test_normal, test_arcsine, test_gamma);
+    alias funs = AliasSeq!(double_dist, near_extrema, density_at_boundaries,
+                           density_with_poles, different_c_values, inflection_point_at_boundary,
+                           normal, arcsine, gamma);
 
     bool runAll = args.length <= 1;
 

@@ -229,3 +229,46 @@ unittest
     auto t = linearFun!double(2, 0, 1);
     assert("%s".format(t) == "LinearFun!double(2, 0, 1)");
 }
+
+// test NaN behavior
+unittest
+{
+    import std.format : format;
+    auto t = linearFun!double(double.nan, 0, 1);
+    assert("%s".format(t) == "LinearFun!double(nan, 0, 1)");
+    assert("%l".format(t) == "#NaN#");
+}
+
+/**
+Compares whether to linear functions are approximately equal.
+
+Params:
+    x = first linear function to compare
+    y = second linear function to compare
+    maxRelDiff = maximum relative difference
+    maxAbsDiff = maximum absolute difference
+
+Returns:
+    True if both linear functions are approximately equal.
+*/
+bool approxEqual(S)(LinearFun!S x, LinearFun!S y, S maxRelDiff = 1e-2, S maxAbsDiff = 1e-5)
+{
+    import std.math : approxEqual;
+    return x.slope.approxEqual(y.slope, maxRelDiff, maxAbsDiff) &&
+           x.y.approxEqual(y.y, maxRelDiff, maxAbsDiff) &&
+           x.a.approxEqual(y.a, maxRelDiff, maxAbsDiff);
+}
+
+///
+unittest
+{
+    auto x = linearFun!double(2, 0, 1);
+    auto x2 = linearFun!double(2, 0, 1);
+    assert(x.approxEqual(x2));
+
+    auto y = linearFun!double(2, 1e-9, 1);
+    assert(x.approxEqual(y));
+
+    auto z = linearFun!double(2, 4, 1);
+    assert(!x.approxEqual(z));
+}

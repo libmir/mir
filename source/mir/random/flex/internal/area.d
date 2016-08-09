@@ -219,6 +219,49 @@ unittest
     }
 }
 
+// T4a with infinity
+unittest
+{
+    alias S = double;
+    import std.math : isFinite, isNaN, log, PI;
+    import mir.random.flex.internal.transformations : transformInterval;
+    import mir.random.flex.internal.types : determineType, FunType;
+    import mir.utility.linearfun : approxEqual, LinearFun;
+
+    S[] ps = [-S.infinity, -1.5, 0, 1.5, S.infinity];
+    enum S halfLog2PI = S(0.5) * log(2 * PI);
+    auto f0 = (S x) => -(x * x) * S(0.5) - halfLog2PI;
+    auto f1 = (S x) => -x;
+    auto f2 = (S x) => S(-1);
+    alias LF = LinearFun!S;
+
+    LF[][] res = [
+        [LF(2.084, -1.5, -2.77866), LF(S.nan, S.nan, S.nan)],
+        [LF(-0, 0, -1.58323), LF(0.796952, 0, -1.58323)],
+        [LF(-0, 0, -1.58323), LF(-0.796952, 0, -1.58323)],
+        [LF(-2.084, 1.5, -2.77866), LF(S.nan, S.nan, S.nan)]
+    ];
+
+    foreach (i; 0..ps.length - 1)
+    {
+        S l = ps[i], r = ps[i + 1];
+        S c = -0.5;
+        auto iv = Interval!S(l, r, c, f0(l), f1(l), f2(l), f0(r), f1(r), f2(r));
+        transformInterval(iv);
+
+        FunType t = determineType(iv);
+        assert(t == FunType.T4a);
+        determineSqueezeAndHat(iv);
+
+        assert(iv.hat.approxEqual(res[i][0]));
+
+        if (iv.squeeze.slope.isFinite)
+            assert(iv.squeeze.approxEqual(res[i][1]));
+        else
+            assert(res[i][1].slope.isNaN);
+    }
+}
+
 /**
 Flex-specific constants cutoffs for numeric errors.
 */
@@ -1041,10 +1084,7 @@ unittest
                 determineSqueezeAndHat(iv);
 
                 hatArea!S(iv);
-                if (iv.hatArea == S.max)
-                    assert(hats[i][j].isInfinity);
-                else
-                    assert(iv.hatArea.approxEqual(hats[i][j]));
+                assert(iv.hatArea.approxEqual(hats[i][j]));
 
                 squeezeArea!S(iv);
                 assert(iv.squeezeArea.approxEqual(sqs[i][j]));
