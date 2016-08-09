@@ -5,20 +5,20 @@ This is a submodule of $(MREF mir,ndslice).
 It contains basic multidimensional iteration algorithms.
 
 $(BOOKTABLE Iteration operators,
-$(TR $(TH Operator Name) $(TH Type) $(TH Functions / Seeds #)  $(TH Vectorization) $(TH Tensors #) $(TH Returns) $(TH First Argument))
-$(T7 ndMap, Lazy, `>=1`/`0`, N/A, 1, Tensor, Tensor)
-$(T7 ndFold, Eagerly, `>=1`, No, `1`, Scalar, Tensor)
-$(T7 ndReduce, Eagerly, `1`, Optional, `>=1`, Scalar, Seed)
-$(T7 ndEach, Eagerly, `1`/`0`, Optional, `>=1`, `void`, Tensor)
+$(TR $(TH Operator Name) $(TH Type) $(TH Functions / Seeds #)  $(TH Vectorization) $(TH Tensors #) $(TH Returns) $(TH First Argument) )
+$(T8 ndMap, Lazy, `>=1`/`0`, N/A, 1, Tensor, Tensor, N/A)
+$(T8 ndFold, Eagerly, `>=1`, No, `1`, Scalar, Tensor, No)
+$(T8 ndReduce, Eagerly, `1`, Optional, `>=1`, Scalar, Seed, Yes)
+$(T8 ndEach, Eagerly, `1`/`0`, Optional, `>=1`, `void`, Tensor, Yes)
 )
 
 $(BOOKTABLE Eagerly iteration operators with stop condition,
-$(TR $(TH Operator Name) $(TH Has Needle) $(TH Finds Index) $(TH Tensors #) $(TH Returns) $(TH Requires Equal Shapes))
-$(T6 ndFind, No, Yes, `>=1`, `void`, Yes)
-$(T6 ndAny, No, No, `>=1`, `bool`, Yes)
-$(T6 ndAll, No, No, `>=1`, `bool`, Yes)
-$(T6 ndEqual, No, No, `>=2`, `bool`, No)
-$(T6 ndCmp, No, No, `2`, `int`, No)
+$(TR $(TH Operator Name) $(TH Has Needle) $(TH Finds Index) $(TH Tensors #) $(TH Returns) $(TH Requires Equal Shapes) $(TH Triangular and Half Selection))
+$(T7 ndFind, No, Yes, `>=1`, `void`, Yes, Yes)
+$(T7 ndAny, No, No, `>=1`, `bool`, Yes, Yes)
+$(T7 ndAll, No, No, `>=1`, `bool`, Yes, Yes)
+$(T7 ndEqual, No, No, `>=2`, `bool`, No, Yes)
+$(T7 ndCmp, No, No, `2`, `int`, No, No)
 )
 
 All operators are suitable to change tensors using `ref` argument qualification in a function declaration.
@@ -49,8 +49,8 @@ Source:    $(PHOBOSSRC std/_experimental/_ndslice/_algorithm.d)
 Macros:
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
-T6=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4) $(TD $5) $(TD $6))
-T7=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4) $(TD $5) $(TD $6), $(TD $7))
+T7=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4) $(TD $5) $(TD $6) $(TD $7))
+T8=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4) $(TD $5) $(TD $6) $(TD $7) $(TD $8))
 */
 module mir.ndslice.algorithm;
 
@@ -871,6 +871,7 @@ Note:
     $(SUBREF selection, pack) can be used to specify dimensions.
 Params:
     fun = A function.
+    select = Selection type.
     vec = Use vectorization friendly iteration without manual unrolling
         in case of all tensors has the last (row) stride equal to 1.
     fm = Allow a compiler to use unsafe floating-point mathematic transformations,
@@ -1080,6 +1081,7 @@ Note:
     $(SUBREF selection, pack) can be used to specify dimensions.
 Params:
     fun = A function.
+    select = Selection type.
     vec = Use vectorization friendly iteration without manual unrolling
         in case of all tensors has the last (row) stride equal to 1.
     fm = Allow a compiler to use unsafe floating-point mathematic transformations,
@@ -1267,6 +1269,7 @@ Finds a backward index for which
 
 Params:
     pred = The predicate.
+    select = Selection type.
     backwardIndex = The variable passing by reference to be filled with the multidimensional backward index for which the predicate is true.
         `backwardIndex` equals zeros, if the predicate evaluates `false` for all indexes.
     tensors = One or more tensors.
@@ -1454,6 +1457,7 @@ Like $(LREF ndFind), but only returns whether or not the search was successful.
 
 Params:
     pred = The predicate.
+    select = Selection type.
     tensors = One or more tensors.
 
 Returns:
@@ -1555,6 +1559,7 @@ pure nothrow unittest
 Checks if all of the elements verify `pred`.
 Params:
     pred = The predicate.
+    select = Selection type.
     tensors = One or more tensors.
 Returns:
     `true` all of the elements verify `pred` and `false` otherwise.
@@ -1657,6 +1662,7 @@ Compares two or more tensors for equality, as defined by predicate `pred`.
 
 Params:
     pred = The predicate.
+    select = Selection type.
     tensors = Two or more tensors.
 
 Returns:
