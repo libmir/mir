@@ -5,7 +5,7 @@ This is a submodule of $(MREF mir,ndslice).
 It contains basic multidimensional iteration algorithms.
 
 $(BOOKTABLE Iteration operators,
-$(TR $(TH Operator Name) $(TH Type) $(TH Functions / Seeds #)  $(TH Vectorization) $(TH Tensors #) $(TH Returns) $(TH First Argument) )
+$(TR $(TH Operator Name) $(TH Type) $(TH Functions / Seeds #)  $(TH Vectorization) $(TH Tensors #) $(TH Returns) $(TH First Argument)  $(TH Triangular and Half Selection))
 $(T8 ndMap, Lazy, `>=1`/`0`, N/A, 1, Tensor, Tensor, N/A)
 $(T8 ndFold, Eagerly, `>=1`, No, `1`, Scalar, Tensor, No)
 $(T8 ndReduce, Eagerly, `1`, Optional, `>=1`, Scalar, Seed, Yes)
