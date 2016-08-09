@@ -20,7 +20,7 @@ $(UL
     $(LI $(F_TILDE) contains one inflection point (`f''` intersects the x-axis once))
 )
 
-It is not important to identity the exact inflection points, but the user input requires:
+It is not important to identify the exact inflection points, but the user input requires:
 
 $(UL
     $(LI Continuous density function $(F_TILDE).)
