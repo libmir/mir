@@ -140,7 +140,7 @@ struct Discrete(T)
             lg.prob += sm.prob;
             lg.prob -= 1;
 
-            if (lg.prob < 1 || lg.prob.approxEqual(1, 1e-13))
+            if (lg.prob < 1 || lg.prob.approxEqual(1, 1e-13, 1e-13))
                 stack[smCounter++] = lg;
             else
                 stack[lgCounter--] = lg;
