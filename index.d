@@ -32,8 +32,8 @@ $(BOOKTABLE ,
     )
     $(LEADINGROW Random)
     $(TR
-        $(TDNW $(LINK2 mir_random_tinflex.html, mir.random.tinflex))
-        $(TD Sample from arbitrary distribution with the Tinflex algorithm)
+        $(TDNW $(LINK2 mir_random_flex.html, mir.random.flex))
+        $(TD Sample from arbitrary distribution with the Flex algorithm)
     )
     $(LEADINGROW Other)
     $(TR
