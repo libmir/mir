@@ -20,3 +20,4 @@ __test__d_source_library__
 
 *.sublime-project
 flex_plot_test_*
+trace.*
