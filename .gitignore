@@ -27,3 +27,4 @@ __test__source__
 *.out
 
 flex_plot_test_*
+trace.*
