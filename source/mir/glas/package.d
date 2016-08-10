@@ -1,6 +1,6 @@
 /++
 
-$(H1 GLAS (Gasic Linear Algebra Subprograms))
+$(H1 GLAS (Generic Linear Algebra Subprograms))
 
 The GLAS are generic routines that provide standard building blocks for performing vector and matrix operations.
 The Level 1 GLAS perform scalar, vector and vector-vector operations,
