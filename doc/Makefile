@@ -15,6 +15,7 @@ DOC_OUTPUT_DIR=web
 DOC_SOURCE_DIR=doc
 GENERATED=.generated
 MIR_DIR=source
+CPUID_DIR=~/.dub/packages/cpuid-0.2.6/cpuid/source
 DLANGORG_DIR=$(DOC_SOURCE_DIR)/dlang.org
 ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 
@@ -26,12 +27,12 @@ ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 # xy/zz is in variable PACKAGE_xy_zz. This allows automation in iterating
 # packages and their modules.
 MIR_PACKAGES = mir $(addprefix mir/,\
-			   blas combinatorics model/lda ndslice \
+			   glas combinatorics model/lda ndslice \
 			   random \
 			   sparse sparse/blas)
 
 PACKAGE_mir = math sum
-PACKAGE_mir_blas = package dot gemm gemv
+PACKAGE_mir_glas = package gemm
 PACKAGE_mir_combinatorics = package
 PACKAGE_mir_model_lda = hoffman
 PACKAGE_mir_ndslice = package algorithm iteration selection slice
@@ -39,7 +40,7 @@ PACKAGE_mir_random = discrete
 PACKAGE_mir_sparse = package
 PACKAGE_mir_sparse_blas = package axpy dot gemm gemv
 
-MOD_EXCLUDES=$(addprefix --ex=, mir.ndslice.internal mir.internal. mir.blas)
+MOD_EXCLUDES=$(addprefix --ex=, mir.ndslice.internal mir.internal. mir.glas.internal.)
 
 ###########################################################
 # Setup macros + generate dynamic info needed
@@ -85,7 +86,7 @@ ADDSOURCE=$(if $(subst index.d,,$1),$(MIR_DIR)/$1,$1)
 # ../web/phobos/std_conv.html : std/conv.d $(STDDOC) ; ...
 $(foreach p,$(SRC_DOCUMENTABLES),$(eval \
 $(DOC_OUTPUT_DIR)/$(call D2HTML,$p) : $(call ADDSOURCE,$p) $(STDDOC) ;\
-  $(DDOC) $(STDDOC) -I$(MIR_DIR) -Df$$@ $$<))
+  $(DDOC) $(STDDOC) -I$(MIR_DIR) -I$(CPUID_DIR) -Df$$@ $$<))
 
 ###########################################################
 # Setup all other resources needed by dlang.org

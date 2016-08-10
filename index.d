@@ -11,6 +11,11 @@ $(BOOKTABLE ,
         $(TH Modules)
         $(TH Description)
     )
+    $(LEADINGROW Linear Algebra)
+    $(TR
+        $(TDNW $(LINK2 mir_glas_gemm.html, mir.glas.gemm))
+        $(TD Matrix-matrix multiplication)
+    )
     $(LEADINGROW Models)
     $(TR
         $(TDNW $(LINK2 mir_model_lda_hoffman.html, mir.model.lda.hoffman))

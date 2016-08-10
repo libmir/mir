@@ -62,7 +62,7 @@ void main(string[] args)
 		foreach(word; doc.splitter.filter!(a => !a.empty))
 		{
 			auto t = dict.assumeSorted.trisect(word);
-			if(t[1].length)
+			if (t[1].length)
 				collection[i, t[0].length] += 1;
 		}
 	}

@@ -16,3 +16,9 @@ web
 __test__d_source_library__
 
 *.sublime-project
+
+__test__source__
+
+*.s
+
+*.out

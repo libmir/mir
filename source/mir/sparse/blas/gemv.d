@@ -5,8 +5,10 @@ Authors: Ilya Yaroshenko
 */
 module mir.sparse.blas.gemv;
 
+
 import std.traits;
 import mir.ndslice.slice;
+import mir.internal.utility;
 import mir.sparse;
 
 /++
@@ -36,7 +38,6 @@ in
 }
 body
 {
-    import mir.internal.utility;
     static if (isSimpleSlice!V2)
     {
         if (x.stride == 1)
@@ -131,7 +132,6 @@ in
 }
 body
 {
-    import mir.internal.utility;
     alias T3 = Unqual!(ForeachType!V3);
 
     static if (isSimpleSlice!V3)
@@ -232,7 +232,6 @@ in
 }
 body
 {
-    import mir.internal.utility;
     static if (isSimpleSlice!V3)
     {
         if (y.stride == 1)
@@ -302,10 +301,17 @@ in
 body
 {
     import mir.ndslice.iteration: transposed;
-    import mir.blas.dot;
 
     foreach (i, j; y.indexes)
     {
-        mixin(`y.values[i] ` ~ op ~ `= dot(a[j], x);`);
+        import mir.ndslice.algorithm : ndReduce;
+        import std.typecons : Yes;
+        auto d = ndReduce!(fmuladd, Yes.vectorized)(T(0), a[j], x);
+        mixin(`y.values[i] ` ~ op ~ `= d;`);
     }
+}
+
+@fastmath T fmuladd(T)(const T a, const T b, const T c)
+{
+    return a + b * c;
 }
