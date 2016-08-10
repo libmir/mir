@@ -107,7 +107,7 @@ build_script:
  #- sed 's/"to_be_filled"/"Flex_logging", "Flex_logging_hex"/' -i dub.json
  # For now only python 3.4 is supported with pyd
  - sed 's/python35/python34/' -i examples/flex_plot.d
- - sed 's/python35/python34/' -i examples/flex_plot/common/dub.json
+ - sed 's/python35/python34/' -i examples/flex_plot/flex_common/dub.json
 
 test_script:
  - echo %PLATFORM%
