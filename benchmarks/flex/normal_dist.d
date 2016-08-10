@@ -84,11 +84,14 @@ __gshared float r = 0.0;
 
 void main()
 {
-    import std.datetime: benchmark, Duration;
+    import std.datetime: benchmark, Duration, TickDuration;
     import std.stdio : writefln;
     import std.conv : to;
 
     alias S = double;
+
+    int nrRuns = 20; // number of runs
+    int nrSamples = 1_000_000; // number of samples
 
     auto flexNormalSlow = genNormal!S(1.3);
     auto flexNormalMedium = genNormal!S(1.1);
@@ -100,36 +103,58 @@ void main()
     import std.random : Mt19937;
     auto gen = Mt19937(42);
 
+    import hap.random.distribution : normalDistribution;
+    auto hapNormal = normalDistribution(S(0), S(1), gen);
 
-    auto bench = benchmark!(
-        { r += boxMueller!S(0, 1, gen); },
-        {
-            import hap.random.distribution : normal;
-            r += normal(0, 1, gen);
-        },
-        {
-            import dstats.random : rNorm;
-            r += rNorm(S(0), S(1), gen);
-        },
-        {
-            import atmosphere.random : rNormal;
-            r += rNormal!S(gen);
-        },
-        { r += flexNormalSlow(gen); },
-        { r += flexNormalMedium(gen); },
-        { r += flexNormalFast(gen); },
-        { r += zigguratNormal(gen); },
-    )(1_000_000);
+    enum names = ["boxMueller.naive", "boxMueller.hap", "boxMueller.dstats",
+                  "boxMueller.atmos",
+                  "flexNormal.slow", "flexNormal.medium",
+                  "flexNormal.fast", "ziggurat"];
 
-    string[] names = ["boxMueller.naive", "boxMueller.hap", "boxMueller.dstats",
-                      "boxMueller.atmos",
-                      "flexNormal.slow", "flexNormal.medium",
-                      "flexNormal.fast", "ziggurat"];
+    long[][names.length] runtimes;
+    foreach (i; 0..nrRuns)
+    {
+        auto bench = benchmark!(
+            { r += boxMueller!S(0, 1, gen); },
+            {
+                r += hapNormal.front;
+                hapNormal.popFront();
+            },
+            {
+                import dstats.random : rNorm;
+                r += rNorm(S(0), S(1), gen);
+            },
+            {
+                import atmosphere.random : rNormal;
+                r += rNormal!S(gen);
+            },
+            { r += flexNormalSlow(gen); },
+            { r += flexNormalMedium(gen); },
+            { r += flexNormalFast(gen); },
+            { r += zigguratNormal(gen); },
+        )(nrSamples);
 
-    foreach(j,r;bench)
-        writefln("%-18s = %s", names[j], r.to!Duration);
+        // log run times
+        foreach (j, b; bench)
+            runtimes[j] ~= b.hnsecs;
+    }
+
+    import std.stdio;
+    import std.range;
+    import std.datetime;
+    import core.time : Duration;
+    foreach(j, times;runtimes)
+    {
+        import std.algorithm.iteration : sum;
+        import std.algorithm.searching : minPos, maxPos;
+        import dstats.summary : meanStdev;
+        auto report = times.meanStdev();
+        writef("%-18s = %5d ms", names[j], report.mean.to!long.hnsecs.total!"msecs");
+
+        writef(", stddev: %-3d ms", report.stdev.to!long.hnsecs.total!"msecs");
+        writeln();
+    }
 }
-
 
 
 // the ziggurat implementation is WIP, as dub doesn't support pure git modules yet,
