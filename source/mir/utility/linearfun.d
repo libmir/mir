@@ -114,7 +114,7 @@ struct LinearFun(S)
     }
 
     ///
-    version(Flex_logging) string logHex()
+    string logHex()
     {
         import std.format : format;
         return "LinearFun!%s(%a, %a, %a)".format(S.stringof, slope, y, a);

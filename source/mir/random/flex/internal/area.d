@@ -335,6 +335,12 @@ body
         {
             area = exp(shR) - exp(shL);
             area /= sh.slope;
+
+            // according to own math
+            import std.math : approxEqual, isNaN;
+            if (!area.isNaN)
+                assert(area.approxEqual(
+                    leftOrRight * exp(sh.a) / sh.slope * (exp(leftOrRight * sh.slope * ivLength) - 1)));
         }
     }
     else
@@ -350,6 +356,10 @@ body
             area = S(0.5) * sh.a * ivLength;
             S t = z + 2;
             area *= t;
+
+            // according to own math
+            import std.math : approxEqual;
+            assert(approxEqual(area, ivLength * (sh.a + leftOrRight * S(0.5) * sh.slope * ivLength)));
         }
         else if (iv.c == S(-0.5))
         {
