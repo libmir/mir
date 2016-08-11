@@ -320,6 +320,20 @@ body
 
     // sh.y is the boundary point where f obtains its maximum
 
+    /**
+        Note that the general case of the integration is:
+
+            A_h = 1 / b * (F_T(r) - F_T(l))
+
+        or in code:
+
+            area = (antiderivative(shR, iv.c) - antiderivative(shL, iv.c)) / sh.slope;
+
+        However several specializations are applied to lessen numerical errors
+        and yield faster performance.
+        One powerful trick is based on the fact that `y` must be either `r` or `l`.
+    */
+
     // specializations for T_c family (page 6, table 2 from Botts et al. (2013))
     if (iv.c == 0)
     {
@@ -372,6 +386,12 @@ body
                 S _l = 1 / shL;
                 S _r = 1 / shR;
                 area = (_l - _r) / sh.slope;
+
+                import std.math : approxEqual, isFinite;
+
+                if (area.isFinite && ivLength.isFinite)
+                    assert(approxEqual(area,
+                        (ivLength) / (sh.a * sh.a + sh.a * sh.slope * leftOrRight * ivLength)));
             }
         }
         else if (iv.c == -1)
@@ -391,6 +411,22 @@ body
                 area = lexp - rexp + rem;
                 area /= sh.slope;
                 area /= S(LOG2E);
+
+                import std.math : log;
+                S val = -log(-sh.a - sh.slope * leftOrRight * ivLength ) + log(-sh.a);
+                val /= sh.slope * leftOrRight;
+                import std.math : approxEqual, isFinite;
+                scope(failure) {
+                    import std.stdio;
+                    writeln("sigma", leftOrRight);
+                    writeln("sh", sh);
+                    writeln("l", iv.lx);
+                    writeln("r", iv.rx);
+                    writeln("area", area);
+                    writeln("val", val);
+                }
+                if (area.isFinite)
+                    assert(approxEqual(area, val));
             }
         }
         else
