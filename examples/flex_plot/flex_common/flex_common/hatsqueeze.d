@@ -120,12 +120,15 @@ auto npPlotHatAndSqueeze(S, Pdf)(in FlexInterval!S[] intervals, Pdf pdf,
 
     pythonContext.fileName = fileName;
     pythonContext.title = title;
+    pythonContext.xmin = left;
+    pythonContext.xmax = right;
     pythonContext.py_stmts(`
         import matplotlib.pyplot as plt
         import numpy as np
     `);
     scope(exit) pythonContext.py_stmts(`
         plt.title(title)
+        plt.xlim(xmin, xmax)
         plt.savefig(fileName, bbox_inches='tight', format="pdf")
         plt.close()
     `);
