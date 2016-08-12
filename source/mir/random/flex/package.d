@@ -341,17 +341,35 @@ private S flexImpl(S, Pdf, RNG)
     S X = void;
     enum S one_div_3 = 1 / S(3);
 
-    // acceptance-rejection sampling
+    /**
+    The following performs a acceptance-rejection sampling loop based on these steps
+    1) Pick an interval randomly according to their density (=hatArea)
+    2) Sample a point p on the definite integral of the hat function of the selected interval
+    3) Transform the point p to an X value using the inverse function of the integral of hat(x)
+    4) Transform x back to the target space
+    5) Generate a second random variable and check whether y * X is below our density
+        at the point X
+
+    To prevent numerical errors, some approximations need to be applied.
+    */
+
     for (;;)
     {
         // sample an interval with density proportional to their hatArea
-        immutable index = ds(rng); // J in Botts et al. (2013)
+        immutable index = ds(rng);
         assert(index < intervals.length);
         immutable interval = intervals[index];
 
         S u = uniform!("[)", S, S)(0, interval.hatArea, rng);
 
-        // generate X with density proportional to the selected interval
+        /**
+        Generate X with density proportional to the selected interval
+        In essence this is
+
+            hat^{-1}(F_T^{-1}(u * hat.slope + T_{-1}(hat(iv.lx))))
+
+        but we need to apply some approximations here.
+        */
         with(interval)
         {
             immutable hatLx = hat(lx);
@@ -406,11 +424,31 @@ private S flexImpl(S, Pdf, RNG)
             immutable hatX = hat(X);
             immutable squeezeX = squeeze(X);
 
+            /**
+            We have sampled a point X which is a point on the inverse CDF of the
+            transformed hat function. However all this happened in the transformed
+            spaces, hence we need to transform back to our origin space using
+            the flex inverse transformation.
+            */
+
             auto invHatX = flexInverse(hatX, c);
             auto invSqueezeX = squeezeArea > 0 ? flexInverse(squeezeX, c) : 0;
 
+            /**
+            We sample a second point - this is the y coordinate (aka height)
+            of the sampling area.
+            */
+
             S u2 = uniform!("[)", S, S)(0, 1, rng);
             immutable t = u2 * invHatX;
+
+            /**
+            With rejection sampling we need to check whether our point X
+            is below the target density. By definition the squeeze function
+            is always below f(x). As calculating the squeeze function will be cheaper
+            than evaluating f(x) (it's a linear function!), we first check the
+            squeeze function.
+            */
 
             // u * h(c) < s(X)  "squeeze evaluation"
             if (t <= invSqueezeX)
