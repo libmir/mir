@@ -17,8 +17,11 @@ struct HistogramConfig
     /// histogram type to plot ('bar', 'step', 'stepfilled')
     string histType = "bar";
 
+    /// color of the histogram lines
+    string color = "blue";
+
     /// whether the reference pdf should be plotted
-    bool plotReference;
+    bool plotReference = true;
 }
 
 /**
@@ -30,7 +33,7 @@ Params:
     fileName = path where the file should be saved
 */
 
-void npPlotHistogram(S, Pdf)(Pdf pdf, S[] values, string fileName, HistogramConfig config)
+void histogram(S, Pdf)(Pdf pdf, S[] values, string fileName, HistogramConfig config = HistogramConfig())
 in
 {
     with(config)
@@ -71,42 +74,47 @@ body
     pythonContext.sample = npValues.d_to_python_numpy_ndarray;
     pythonContext.cumulative = config.cumulative;
     pythonContext.nMax = 0;
+    pythonContext.color = config.color;
     pythonContext.py_stmts(`
         n, bins, patches = plt.hist(sample, num_bins, normed=1,
-            cumulative=cumulative, histtype=histType)
+            cumulative=cumulative, histtype=histType, color=color)
         nMax = np.max(n)
     `);
 
-    // plot actual density function
-    double[] xs = iota(values.minPos.front, values.maxPos.front, config.stepSize).array;
-    double[] ys = new double[xs.length];
-    foreach (i, x; xs)
-        ys[i] = pdf(x);
-
-    if (config.plotReference || pdf is null)
+    static if (!is(Pdf == typeof(null)))
     {
-        if (config.cumulative)
+        if (config.plotReference)
         {
-            // normalize
-            auto total = ys.sum();
-            foreach (ref y; ys)
-                y /= total;
-            foreach (i, ref y; ys[1..$])
-                y += ys[i];
-        }
-        else
-        {
-            // we try to scale the pdf according to highest bar of the histogram
-            // this is not a 100% perfect solution
-            auto nMax = pythonContext.nMax.to_d!double;
-            auto factor = nMax / ys.maxPos.front;
-            foreach (ref y; ys)
-                y *= factor;
-        }
 
-        pythonContext.xs = xs.d_to_python_numpy_ndarray;
-        pythonContext.ys = ys.d_to_python_numpy_ndarray;
-        pythonContext.py_stmts(`plt.plot(xs, ys, color='black')`);
+            // plot actual density function
+            double[] xs = iota(values.minPos.front, values.maxPos.front, config.stepSize).array;
+            double[] ys = new double[xs.length];
+            foreach (i, x; xs)
+                ys[i] = pdf(x);
+
+            if (config.cumulative)
+            {
+                // normalize
+                auto total = ys.sum();
+                foreach (ref y; ys)
+                    y /= total;
+                foreach (i, ref y; ys[1..$])
+                    y += ys[i];
+            }
+            else
+            {
+                // we try to scale the pdf according to highest bar of the histogram
+                // this is not a 100% perfect solution
+                auto nMax = pythonContext.nMax.to_d!double;
+                auto factor = nMax / ys.maxPos.front;
+                foreach (ref y; ys)
+                    y *= factor;
+            }
+
+            pythonContext.xs = xs.d_to_python_numpy_ndarray;
+            pythonContext.ys = ys.d_to_python_numpy_ndarray;
+            pythonContext.py_stmts(`plt.plot(xs, ys, color='black')`);
+        }
     }
 
     // save file
@@ -115,4 +123,10 @@ body
         plt.savefig(fileName, bbox_inches='tight')
         plt.close()
     `);
+}
+
+/// ditto
+void histogram(S)(S[] values, string fileName, HistogramConfig config = HistogramConfig())
+{
+    histogram(null, values, fileName, config);
 }

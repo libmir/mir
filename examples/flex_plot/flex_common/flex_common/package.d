@@ -5,6 +5,8 @@ shared static this() {
     py_init();
 }
 
+public import flex_common.hist;
+
 /**
 CFlex glues the Flex algorithm to plotting code and allows to visualize
 the resulting distribution and its hat and squeeze plots.
@@ -125,12 +127,12 @@ struct CFlex(S)
                 hc.histType = histType;
 
                 if (plotHistogram)
-                    pdf.npPlotHistogram(values, fileName ~ "_hist.pdf", hc);
+                    pdf.histogram(values, fileName ~ "_hist.pdf", hc);
 
                 if (plotCumulativeHistogram)
                 {
                     hc.cumulative = true;
-                    pdf.npPlotHistogram(values, fileName ~ "_hist_cum.pdf", hc);
+                    pdf.histogram(values, fileName ~ "_hist_cum.pdf", hc);
                 }
             }
 
