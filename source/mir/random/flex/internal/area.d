@@ -463,6 +463,7 @@ body
                 area = r - l;
                 area /= sh.slope;
 
+                version(X86_64)
                 if (iv.c > 0)
                 {
                     import std.math : pow;
