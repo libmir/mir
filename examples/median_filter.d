@@ -2,7 +2,7 @@
 /+ dub.sdl:
 name "median_filter"
 dependency "mir" path=".."
-dependency "imageformats" version="~>6.0.0"
+dependency "imageformats" version="==6.0.0"
 +/
 
 import mir.ndslice;
