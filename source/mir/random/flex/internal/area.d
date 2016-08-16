@@ -464,26 +464,28 @@ body
                 area /= sh.slope;
 
                 version(X86_64)
-                if (iv.c > 0)
                 {
-                    import std.math : pow;
-                    import std.math : approxEqual, isFinite;
-                    S p = (iv.c + 1) / iv.c;
-                    S val = (iv.c * leftOrRight) / (sh.slope * (iv.c + 1)) *
-                            (pow(sh.a + sh.slope * leftOrRight * ivLength, p) - pow(sh.a, p));
+                    if (iv.c > 0)
+                    {
+                        import std.math : pow;
+                        import std.math : approxEqual, isFinite;
+                        S p = (iv.c + 1) / iv.c;
+                        S val = (iv.c * leftOrRight) / (sh.slope * (iv.c + 1)) *
+                                (pow(sh.a + sh.slope * leftOrRight * ivLength, p) - pow(sh.a, p));
 
-                    assert(approxEqual(area, val));
-                }
-                else
-                {
-                    import std.math : sgn, pow;
-                    import std.math : approxEqual, isFinite;
-                    S p = (iv.c + 1) / iv.c;
-                    S sgnC = sgn(iv.c);
-                    S val = (iv.c * leftOrRight * sgnC) / (sh.slope * (iv.c + 1)) *
-                            (pow(sgnC * (sh.a + sh.slope * leftOrRight * ivLength), p) - pow(sgnC * sh.a, p));
+                        assert(approxEqual(area, val));
+                    }
+                    else
+                    {
+                        import std.math : sgn, pow;
+                        import std.math : approxEqual, isFinite;
+                        S p = (iv.c + 1) / iv.c;
+                        S sgnC = sgn(iv.c);
+                        S val = (iv.c * leftOrRight * sgnC) / (sh.slope * (iv.c + 1)) *
+                                (pow(sgnC * (sh.a + sh.slope * leftOrRight * ivLength), p) - pow(sgnC * sh.a, p));
 
-                    assert(approxEqual(area, val));
+                        assert(approxEqual(area, val));
+                    }
                 }
             }
         }

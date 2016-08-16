@@ -142,7 +142,7 @@ auto flex(S, F0, F1, F2)
                 S[] cs, S[] points, S rho = 1.1, int maxApproxPoints = 1_000)
     if (isFloatingPoint!S)
 {
-    import mir.internal.math: exp;
+    import mir.internal.math : exp;
     auto pdf = (S x) => exp(f0(x));
     return flex(pdf, flexIntervals(f0, f1, f2, cs, points, rho, maxApproxPoints));
 }
@@ -194,8 +194,10 @@ struct Flex(S, Pdf)
         foreach (el; intervals.map!`a.hatArea`)
             total += el;
 
+        S totalSum = total.sum;
+
         foreach (i, ref cd; cdPoints)
-            cd = intervals[i].hatArea / total.sum;
+            cd = intervals[i].hatArea / totalSum;
 
         this.ds = Discrete!S(cdPoints);
     }
