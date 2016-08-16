@@ -344,20 +344,11 @@ body
             t += 1 + z * S(0.5) + (z * z) * one_div_6;
             area *= t;
             area *= ivLength;
-            // TODO: this should be
-            //area *= leftOrRight;
-            //area /= iv.slope;
         }
         else
         {
             area = exp(shR) - exp(shL);
             area /= sh.slope;
-
-            // according to own math
-            import std.math : approxEqual, isNaN;
-            if (!area.isNaN)
-                assert(area.approxEqual(
-                    leftOrRight * exp(sh.a) / sh.slope * (exp(leftOrRight * sh.slope * ivLength) - 1)));
         }
     }
     else
@@ -373,30 +364,18 @@ body
             area = S(0.5) * sh.a * ivLength;
             S t = z + 2;
             area *= t;
-
-            // according to own math
-            import std.math : approxEqual;
-            assert(approxEqual(area, ivLength * (sh.a + leftOrRight * S(0.5) * sh.slope * ivLength)));
         }
         else if (iv.c == S(-0.5))
         {
             if (fabs(z) < S(0.5))
             {
                 area = 1 / (sh.a * sh.a) * ivLength / (z + 1);
-
-                // TODO - equivalent to
-                S area3 = (ivLength) / (sh.a * sh.a + sh.a * sh.slope * leftOrRight * ivLength);
             }
             else
             {
                 S _l = 1 / shL;
                 S _r = 1 / shR;
                 area = (_l - _r) / sh.slope;
-                import std.math : approxEqual, isFinite;
-
-                if (area.isFinite && ivLength.isFinite)
-                    assert(approxEqual(area,
-                        (ivLength) / (sh.a * sh.a + sh.a * sh.slope * leftOrRight * ivLength)));
             }
         }
         else if (iv.c == -1)
@@ -406,12 +385,6 @@ body
                 area = 1 - z * S(0.5) + z * z * one_div_3;
                 area *=  -ivLength;
                 area /= sh.a;
-
-                // TODO: why don't we use this trick?
-                //auto shc = sh;
-                //sh.slope = 0.0001;
-                //S area4 = -log(-sh.a - sh.slope * leftOrRight * ivLength ) + log(-sh.a);
-                //area4 /= sh.slope * leftOrRight;
             }
             else
             {
@@ -422,13 +395,6 @@ body
                 area = lexp - rexp + rem;
                 area /= sh.slope;
                 area /= S(LOG2E);
-
-                import std.math : log;
-                S val = -log(-sh.a - sh.slope * leftOrRight * ivLength ) + log(-sh.a);
-                val /= sh.slope * leftOrRight;
-                import std.math : approxEqual, isFinite;
-                if (area.isFinite)
-                    assert(approxEqual(area, val));
             }
         }
         else
@@ -439,21 +405,6 @@ body
                 assert(sh.a * sgn(iv.c) >= 0);
                 area = flexInverse!true(sh.a, iv.c);
                 area *= ivLength;
-
-                // TODO: why can't we simply set slope = 0.0001 here?
-                //if (iv.c > 0)
-                //{
-                    //import std.math : pow;
-                    //import std.math : approxEqual, isFinite;
-                    //S p = (iv.c + 1) / iv.c;
-                    //auto shC = sh;
-                    //shC.slope = 0.0001;
-                    //S val = (iv.c * leftOrRight) / (shC.slope * (iv.c + 1)) *
-                            //(pow(sh.a + shC.slope * leftOrRight * ivLength, p) - pow(sh.a, p));
-                    //import std.stdio;
-                    //writefln("val: %.10f", val);
-                    //writefln("area: %.10f", area);
-                //}
             }
             else
             {
@@ -462,31 +413,6 @@ body
                 S l = antiderivative!true(shL, iv.c);
                 area = r - l;
                 area /= sh.slope;
-
-                version(X86_64)
-                {
-                    if (iv.c > 0)
-                    {
-                        import std.math : pow;
-                        import std.math : approxEqual, isFinite;
-                        S p = (iv.c + 1) / iv.c;
-                        S val = (iv.c * leftOrRight) / (sh.slope * (iv.c + 1)) *
-                                (pow(sh.a + sh.slope * leftOrRight * ivLength, p) - pow(sh.a, p));
-
-                        assert(approxEqual(area, val));
-                    }
-                    else
-                    {
-                        import std.math : sgn, pow;
-                        import std.math : approxEqual, isFinite;
-                        S p = (iv.c + 1) / iv.c;
-                        S sgnC = sgn(iv.c);
-                        S val = (iv.c * leftOrRight * sgnC) / (sh.slope * (iv.c + 1)) *
-                                (pow(sgnC * (sh.a + sh.slope * leftOrRight * ivLength), p) - pow(sgnC * sh.a, p));
-
-                        assert(approxEqual(area, val));
-                    }
-                }
             }
         }
     }
