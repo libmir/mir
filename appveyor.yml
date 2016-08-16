@@ -117,7 +117,7 @@ test_script:
  - '%DC% --version'
  - dub test --arch=%Darch% --compiler=%DC%
  - dub build --single examples/lda_hoffman_sparse.d
- - dub fetch imageformats
+ - dub fetch imageformats --version 6.0.0
  - dub build imageformats
  - dub build --single examples/median_filter.d
  - dub build --single examples/means_of_columns.d

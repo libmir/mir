@@ -40,7 +40,7 @@ test:
     - sed 's/"to_be_filled"/"Flex_logging", "Flex_logging_hex"/' -i dub.json
     - dub build --single examples/lda_hoffman_sparse.d
     # workaround against dub bugs
-    - dub fetch imageformats && dub build imageformats
+    - dub fetch imageformats --version 6.0.0 && dub build imageformats
     - dub build --single examples/median_filter.d
     - dub build --single examples/means_of_columns.d
     # Build Flex plots
