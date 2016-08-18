@@ -170,13 +170,13 @@ mixin template AVX_D()
 
 mixin template AVX_C()
 {
-    enum size_t broadcast = 3;
+    enum size_t broadcast = 6;
     alias simdChain = AliasSeq!(__vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
 }
 
 mixin template AVX_Z()
 {
-    enum size_t broadcast = 3;
+    enum size_t broadcast = 6;
     alias simdChain = AliasSeq!(__vector(double[4])[1], __vector(double[2])[1], double[1]);
 }
 
@@ -194,13 +194,13 @@ mixin template SSE2_D()
 
 mixin template SSE2_C()
 {
-    enum size_t broadcast = 2;
+    enum size_t broadcast = 4;
     alias simdChain = AliasSeq!(__vector(float[4])[2], __vector(float[4])[1], optVec!(float[2]), float[1]);
 }
 
 mixin template SSE2_Z()
 {
-    enum size_t broadcast = 2;
+    enum size_t broadcast = 4;
     alias simdChain = AliasSeq!(__vector(double[2])[2], __vector(double[2])[1], double[1]);
 }
 
