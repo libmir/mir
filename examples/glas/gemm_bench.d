@@ -33,7 +33,9 @@ import mir.glas;
 // complex double 3.09874 3.06553
 // complex float 5.07269 5.35169
 
-alias C = long;
+//alias C = Complex!float;
+alias C = Complex!double;
+//alias C = float;
 alias A = C;
 alias B = C;
 
@@ -65,12 +67,14 @@ alias B = C;
 //2048	37,611	33,947
 //4096	37,0847	36,1249
 
+import std.experimental.allocator.mallocator;
+import std.experimental.allocator;
 
 void main(string[] args)
 {
-	foreach(pow; 1 .. 13)
+	foreach(m; args[1..$].map!(to!size_t))
 	{
-		size_t m = 2 ^^ pow;
+		//size_t m = 2 ^^ pow;
 		size_t n = m;
 		size_t k = m;
 
@@ -96,13 +100,11 @@ void main(string[] args)
 
 		auto nsecsBLAS = double.max;
 
-		StopWatch sw;
-
 		foreach(_; 0..4) {
 			static if(!(is(C == real) || is(C : Complex!real) || is(C : long)))
 			{
 				static import cblas;
-			sw.reset;
+			StopWatch sw;
 			sw.start;
 
 				static if(is(C : Complex!E, E))
@@ -154,17 +156,18 @@ void main(string[] args)
 
 
 		auto nsecsGLAS = double.max;
-		foreach(_; 0..4)
+		foreach(_; 0..6)
 		{
-			sw.reset;
+			StopWatch sw;
 			sw.start;
-			c.gemm(alpha, a, b);
+			glas.gemm(c, alpha, a, b);
 			sw.stop;
 			nsecsGLAS = min(sw.peek.to!Duration.total!"nsecs".to!double, nsecsGLAS);
 		}
 
 		//writefln("GLAS (single thread)               : %5s GFLOPS, %s", (m * n * k * 2) /  nsecsGLAS,  sw.peek.to!Duration);
 			write((m * n * k * 2) / nsecsGLAS, "\n");
+			writeln("^^^^^^^^^^^^^^^^^^^^^^^");
 	}
 	//writeln("identical results = ", c == d);
 

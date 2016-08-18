@@ -9,9 +9,10 @@ import std.meta, std.traits, std.stdio, std.complex, std.random;
 import mir.glas.gemm;
 import mir.glas.common;
 import mir.ndslice;
+
 void main()
 {
-	openblas_set_num_threads(1);
+	//openblas_set_num_threads(1);
 	size_t i;
 	//foreach(C; AliasSeq!(float, std.complex.Complex!real, long))
 	//foreach(A; AliasSeq!(double, std.complex.Complex!float, uint))
@@ -35,48 +36,48 @@ void main()
 	foreach(columnMajorB; [flag])
 	foreach(columnMajorC; [flag])
 	{
+		//writeln(i++);
 
+		pragma(msg, A);
+		pragma(msg, B);
+		pragma(msg, C);
+
+		static if(is(C : Complex!F, F))
+			auto alpha = C(3, 7);
+		else
+			auto alpha = C(3);
+
+		auto a = generateMatrix!A(columnMajorA, strideA, n, k);
+		auto b = generateMatrix!B(columnMajorB, strideB, k, m);
+		auto c = generateMatrix!C(columnMajorC,       1, n, m);
+		//c[] = 0;
+		if(reverseA0) a = a.reversed!0;
+		if(reverseA1) a = a.reversed!1;
+		if(reverseB0) b = b.reversed!0;
+		if(reverseB1) b = b.reversed!1;
+		if(reverseC0) c = c.reversed!0;
+		if(reverseC1) c = c.reversed!1;
+		auto t = c.slice; //copy
+
+		referenceMatrixMultiplication!(conjugation, C, A, B)(t, alpha, a, b);
+		glas.gemm!(conjugation)(c, alpha, a, b);
+		if(c != t)
+		{
+			import std.format;
+			throw new Exception(format("a = %s %s %s\nb = %s %s %s\nc = %s %s %s\nt = %s %s %s\n",
+				A.stringof, a.structure, a,
+				B.stringof, b.structure, b,
+				C.stringof, c.structure, c,
+				C.stringof, t.structure, t,
+				));
+		}
 	}
 }
 
-mixin template main()
-{
-	writeln(i++);
+//mixin template main()
+//{
 
-	pragma(msg, A);
-	pragma(msg, B);
-	pragma(msg, C);
-
-	static if(is(C : Complex!F, F))
-		auto alpha = C(3, 7);
-	else
-		auto alpha = C(3);
-
-	auto a = generateMatrix!A(columnMajorA, strideA, n, k);
-	auto b = generateMatrix!B(columnMajorB, strideB, k, m);
-	auto c = generateMatrix!C(columnMajorC,       1, n, m);
-	//c[] = 0;
-	if(reverseA0) a = a.reversed!0;
-	if(reverseA1) a = a.reversed!1;
-	if(reverseB0) b = b.reversed!0;
-	if(reverseB1) b = b.reversed!1;
-	if(reverseC0) c = c.reversed!0;
-	if(reverseC1) c = c.reversed!1;
-	auto t = c.slice; //copy
-
-	referenceMatrixMultiplication!(conjugation, C, A, B)(t, alpha, a, b);
-	gemm!(conjugation)(c, alpha, a, b);
-	if(c != t)
-	{
-		import std.format;
-		throw new Exception(format("a = %s %s %s\nb = %s %s %s\nc = %s %s %s\nt = %s %s %s\n",
-			A.stringof, a.structure, a,
-			B.stringof, b.structure, b,
-			C.stringof, c.structure, c,
-			C.stringof, t.structure, t,
-			));
-	}
-}
+//}
 
 alias nSeq = AliasSeq!(1, 3, 7, 8, 9, 17, 24, 100);
 alias mSeq = nSeq;
