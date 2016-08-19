@@ -147,7 +147,6 @@ body
     kc.normalizeChunkSize!mr(asl.length!1);
     assert(kc > 0, "MIR.gemm: internal error (kc <= 0)");
 
-
 SET_MC:
 
     auto df = T[PC][nr].sizeof + T[PA].sizeof * kc;

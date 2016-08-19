@@ -34,8 +34,8 @@ import mir.glas;
 // complex float 5.07269 5.35169
 
 //alias C = Complex!float;
-alias C = Complex!double;
-//alias C = float;
+//alias C = Complex!double;
+alias C = float;
 alias A = C;
 alias B = C;
 
@@ -72,6 +72,7 @@ import std.experimental.allocator;
 
 void main(string[] args)
 {
+	auto glas = new GlasContext;
 	foreach(m; args[1..$].map!(to!size_t))
 	{
 		//size_t m = 2 ^^ pow;
