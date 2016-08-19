@@ -219,6 +219,7 @@ unittest
     auto c = slice!double(3, 4);
     c[] = 0;
 
+    auto glas = new GlasContext;
     glas.gemm(c, 1.0, a, b);
 
     assert(c ==
@@ -434,8 +435,6 @@ void pack_b_nano_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl,
     }
 
 }
-
-alias ffff = gebp_opt1!(Conjugation.none, 2, 2, 2, double);
 
 pragma(inline, false)
 void gebp_opt1(Conjugation type, size_t PC, size_t PA, size_t PB, T)(
@@ -860,344 +859,62 @@ auto statComplex(C)(C val)
 
 unittest
 {
-
     import std.complex;
-    alias T = uint;
-    alias D = uint;
-
-
-    import std.random;
-    import mir.ndslice;
-
-    auto m = 111, n = 123, k = 2131;
-
-    auto a = slice!(D)(m, k);
-    auto b = slice!(D)(k, n);
-
-    auto c = slice!(D)(m, n);
-    auto d = slice!(D)(m, n);
-    D alpha = 3;
-
-
-    static if (isComplex!D)
+    foreach(trans; AlisSeq!(true, false))
+    foreach(T; AliasSeq!(uint, double, Complex!double))
     {
+        alias T = uint;
+        alias D = T;
 
-        foreach (ref e; a.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
 
-        foreach (ref e; b.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
+        import std.random;
+        import mir.ndslice;
 
-        foreach (ref e; c.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
+        auto m = 111, n = 123, k = 2131;
+
+        auto a = slice!(D)(m, k);
+        auto b = slice!(D)(k, n);
+
+        auto c = slice!(D)(m, n);
+        static if (trans)
+            auto d = slice!(D)(n, m).transposed;
+        else
+            auto d = slice!(D)(m, n);
+        D alpha = 3;
+
+        static if (isComplex!D)
+        {
+
+            foreach (ref e; a.byElement)
+                e = complex(uniform(0, 5), uniform(0, 5));
+
+            foreach (ref e; b.byElement)
+                e = complex(uniform(0, 5), uniform(0, 5));
+
+            foreach (ref e; c.byElement)
+                e = complex(uniform(0, 5), uniform(0, 5));
+        }
+        else
+        {
+            foreach (ref e; a.byElement)
+                e = uniform(ubyte(0), ubyte(5));
+
+            foreach (ref e; b.byElement)
+                e = uniform(ubyte(0), ubyte(5));
+
+            foreach (ref e; c.byElement)
+                e = uniform(ubyte(0), ubyte(5));
+        }
+
+        d[] = c[];
+
+        foreach (i; 0..a.length)
+            foreach (j; 0..b.length!1)
+                foreach (r; 0..b.length)
+                    d[i, j] += alpha * a[i, r] * b[r, j];
+
+        auto glas = new GlasContext;
+        glas.gemm(c, alpha, a, b);
+        assert(c == d);
     }
-    else
-    {
-        foreach (ref e; a.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; b.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; c.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-    }
-
-    d[] = c[];
-
-    foreach (i; 0..a.length)
-        foreach (j; 0..b.length!1)
-            foreach (r; 0..b.length)
-                d[i, j] += alpha * a[i, r] * b[r, j];
-
-
-    glas.gemm(c, alpha, a, b);
-    assert(c == d);
-}
-
-unittest
-{
-
-    import std.complex;
-    alias T = uint;
-    alias D = uint;
-
-
-    import std.random;
-    import mir.ndslice;
-
-    auto m = 111, n = 123, k = 2131;
-
-    auto a = slice!(D)(m, k);
-    auto b = slice!(D)(k, n);
-
-    auto c = slice!(D)(m, n);
-    auto d = slice!(D)(n, m).transposed;
-    D alpha = 3;
-
-
-    static if (isComplex!D)
-    {
-
-        foreach (ref e; a.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-
-        foreach (ref e; b.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-
-        foreach (ref e; c.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-    }
-    else
-    {
-        foreach (ref e; a.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; b.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; c.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-    }
-
-    d[] = c[];
-
-    foreach (i; 0..a.length)
-        foreach (j; 0..b.length!1)
-            foreach (r; 0..b.length)
-                d[i, j] += alpha * a[i, r] * b[r, j];
-
-
-    glas.gemm(c, alpha, a, b);
-    assert(c == d);
-}
-
-
-unittest
-{
-
-    import std.complex;
-    alias T = double;
-    alias D = double;
-
-
-    import std.random;
-    import mir.ndslice;
-
-    auto m = 111, n = 123, k = 2131;
-
-    auto a = slice!(D)(m, k);
-    auto b = slice!(D)(k, n);
-
-    auto c = slice!(D)(m, n);
-    auto d = slice!(D)(m, n);
-    D alpha = 3;
-
-
-    static if (isComplex!D)
-    {
-
-        foreach (ref e; a.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-
-        foreach (ref e; b.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-
-        foreach (ref e; c.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-    }
-    else
-    {
-        foreach (ref e; a.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; b.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; c.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-    }
-
-    d[] = c[];
-
-    foreach (i; 0..a.length)
-        foreach (j; 0..b.length!1)
-            foreach (r; 0..b.length)
-                d[i, j] += alpha * a[i, r] * b[r, j];
-
-
-    glas.gemm(c, alpha, a, b);
-    assert(c == d);
-}
-
-unittest
-{
-
-    import std.complex;
-    alias T = double;
-    alias D = double;
-
-
-    import std.random;
-    import mir.ndslice;
-
-    auto m = 111, n = 123, k = 2131;
-
-    auto a = slice!(D)(m, k);
-    auto b = slice!(D)(k, n);
-
-    auto c = slice!(D)(m, n);
-    auto d = slice!(D)(n, m).transposed;
-    D alpha = 3;
-
-
-    static if (isComplex!D)
-    {
-
-        foreach (ref e; a.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-
-        foreach (ref e; b.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-
-        foreach (ref e; c.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-    }
-    else
-    {
-        foreach (ref e; a.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; b.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; c.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-    }
-
-    d[] = c[];
-
-    foreach (i; 0..a.length)
-        foreach (j; 0..b.length!1)
-            foreach (r; 0..b.length)
-                d[i, j] += alpha * a[i, r] * b[r, j];
-
-
-    glas.gemm(c, alpha, a, b);
-    assert(c == d);
-}
-
-
-unittest
-{
-
-    import std.complex;
-    alias T = Complex!double;
-    alias D = Complex!double;
-
-
-    import std.random;
-    import mir.ndslice;
-
-    auto m = 111, n = 123, k = 2131;
-
-    auto a = slice!(D)(m, k);
-    auto b = slice!(D)(k, n);
-
-    auto c = slice!(D)(m, n);
-    auto d = slice!(D)(m, n);
-    D alpha = 3;
-
-
-    static if (isComplex!D)
-    {
-
-        foreach (ref e; a.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-
-        foreach (ref e; b.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-
-        foreach (ref e; c.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-    }
-    else
-    {
-        foreach (ref e; a.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; b.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; c.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-    }
-
-    d[] = c[];
-
-    foreach (i; 0..a.length)
-        foreach (j; 0..b.length!1)
-            foreach (r; 0..b.length)
-                d[i, j] += alpha * a[i, r] * b[r, j];
-
-
-    glas.gemm(c, alpha, a, b);
-    assert(c == d);
-}
-
-unittest
-{
-
-    import std.complex;
-    alias T = Complex!double;
-    alias D = Complex!double;
-
-
-    import std.random;
-    import mir.ndslice;
-
-    auto m = 111, n = 123, k = 2131;
-
-    auto a = slice!(D)(m, k);
-    auto b = slice!(D)(k, n);
-
-    auto c = slice!(D)(m, n);
-    auto d = slice!(D)(n, m).transposed;
-    D alpha = 3;
-
-
-    static if (isComplex!D)
-    {
-
-        foreach (ref e; a.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-
-        foreach (ref e; b.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-
-        foreach (ref e; c.byElement)
-            e = complex(uniform(0, 5), uniform(0, 5));
-    }
-    else
-    {
-        foreach (ref e; a.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; b.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-
-        foreach (ref e; c.byElement)
-            e = uniform(ubyte(0), ubyte(5));
-    }
-
-    d[] = c[];
-
-    foreach (i; 0..a.length)
-        foreach (j; 0..b.length!1)
-            foreach (r; 0..b.length)
-                d[i, j] += alpha * a[i, r] * b[r, j];
-
-
-    glas.gemm(c, alpha, a, b);
-    assert(c == d);
 }

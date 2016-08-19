@@ -12,18 +12,6 @@ Authors: Ilya Yaroshenko
 module mir.glas.common;
 
 /++
-Returns a lazily initialized global instantiation of $(LREF GlasContext).
-This function can safely be called concurrently from multiple non-worker
-threads.
-+/
-@property GlasContext glas() @trusted
-{
-    __gshared GlasContext ctx;
-    import std.concurrency : initOnce;
-    return initOnce!ctx(new GlasContext);
-}
-
-/++
 GLAS Context
 
 Note: `GlasContext` is single thread for now.
