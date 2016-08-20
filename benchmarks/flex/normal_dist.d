@@ -22,14 +22,14 @@ LDC - the LLVM D compiler (798cda):
 
 $ dub run --build=release-nobounds --compiler=ldmd2-git --single benchmarks/flex/normal_dist.d
 
-boxMueller.naive   =   850 ms, stddev: 82  ms
-boxMueller.hap     =  3618 ms, stddev: 4   ms
-boxMueller.dstats  =   801 ms, stddev: 2   ms
-boxMueller.atmos   =   934 ms, stddev: 2   ms
-flexNormal.slow    =  1406 ms, stddev: 4   ms
-flexNormal.medium  =  1206 ms, stddev: 1   ms
-flexNormal.fast    =  1124 ms, stddev: 0   ms
-ziggurat           =   357 ms, stddev: 5   ms
+boxMueller.naive   =   850 ms, stddev:  82 ms
+boxMueller.hap     =  3618 ms, stddev:   4 ms
+boxMueller.dstats  =   801 ms, stddev:   2 ms
+boxMueller.atmos   =   934 ms, stddev:   2 ms
+flexNormal.slow    =  1406 ms, stddev:   4 ms
+flexNormal.medium  =  1206 ms, stddev:   1 ms
+flexNormal.fast    =  1124 ms, stddev:   0 ms
+ziggurat           =   357 ms, stddev:   5 ms
 +/
 
 import mir.random.flex;
@@ -111,7 +111,7 @@ void main()
     enum names = ["boxMueller.naive", "boxMueller.hap", "boxMueller.dstats",
                   "boxMueller.atmos",
                   "flexNormal.slow", "flexNormal.medium",
-                  "flexNormal.fast", "ziggurat"];
+                  "flexNormal.fast", /*"ziggurat"*/];
 
     long[][names.length] runtimes;
     foreach (i; 0..nrRuns)
@@ -153,7 +153,7 @@ void main()
         auto report = times.meanStdev();
         writef("%-18s = %5d ms", names[j], report.mean.to!long.hnsecs.total!"msecs");
 
-        writef(", stddev: %-3d ms", report.stdev.to!long.hnsecs.total!"msecs");
+        writef(", stddev: %3d ms", report.stdev.to!long.hnsecs.total!"msecs");
         writeln();
     }
 }
