@@ -105,7 +105,6 @@ struct Discrete(T)
 
         import std.experimental.allocator.mallocator : Mallocator;
         import std.experimental.allocator : dispose, makeArray;
-        import std.math : approxEqual;
         auto alloc = Mallocator.instance;
 
         auto stack = alloc.makeArray!ProbsIndexed(n);
@@ -116,8 +115,7 @@ struct Discrete(T)
 
         foreach (i, p; probs)
         {
-            T sp = p;
-            sp *= n;
+            auto sp = p * n;
 
             // 1 is the average probability and depending on the ratio, we either
             // need to add values to a block or remove values
@@ -137,10 +135,9 @@ struct Discrete(T)
             arr[sm.index] = AltPair(sm.prob, lg.index);
 
             // update larger & reinsert
-            lg.prob += sm.prob;
-            lg.prob -= 1;
+            lg.prob += sm.prob - 1;
 
-            if (lg.prob < 1 || lg.prob.approxEqual(1, 1e-13, 1e-13))
+            if (lg.prob < 1)
                 stack[smCounter++] = lg;
             else
                 stack[lgCounter--] = lg;
