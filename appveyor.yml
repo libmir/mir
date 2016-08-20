@@ -123,12 +123,12 @@ test_script:
  - dub build --single --arch %Darch% examples/means_of_columns.d
  # ---- PYTHON setup -----
  # workaround against dub bugs
- - dub build --root=examples/flex_plot
- - dub build --root=examples/flex_plot/flex_common
+ - dub build --root=examples/flex_plot --arch %Darch%
+ - dub build --root=examples/flex_plot/flex_common --arch %Darch%
  # weird hack
  - "set PYTHONPATH=%MINICONDA%\\lib;%MINICONDA%\\lib\\lib-dynload;%MINICONDA%\\envs\\condaenv\\lib;%MINICONDA%\\envs\\condaenv\\lib\\site-packages"
  - echo %PYTHONPATH%
- - dub run --single examples/flex_plot.d -v -- normal
+ - dub run --single examples/flex_plot.d -v --arch %Darch% -- normal
  # check file size
  - FOR %%A IN (plots/dist_normal_hs.pdf) DO set size=%%~zA
  - echo %size%
