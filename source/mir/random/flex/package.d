@@ -551,9 +551,8 @@ unittest
             foreach (j; 0..10)
             {
                 S val = tf(gen);
-                //version(Flex_logging)
-                import std.stdio;
-                scope(failure) writefln("%d, %d: %5g vs. %g, type: %s", i, j, res[i][j], val, S.stringof);
+                version(Flex_logging)
+                scope(failure) logf("%d, %d: %5g vs. %g, type: %s", i, j, res[i][j], val, S.stringof);
                 assert(res[i][j].approxEqual(val));
             }
         }
