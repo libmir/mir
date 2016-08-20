@@ -16,12 +16,6 @@ branches:
   only:
     - master
     - stable
-    - tinflex2
-cache:
-  directories:
-    - $HOME/.cache/matplotlib
-    # macOS is special ...
-    - $HOME/.matplotlib
 script:
  - echo "$ARCH"
  - dub fetch cpuid && dub build --arch "$ARCH" cpuid
@@ -30,43 +24,9 @@ script:
  - dub fetch imageformats --version 6.0.0 && dub build --arch "$ARCH" imageformats
  - dub build --single --arch "$ARCH" examples/median_filter.d
  - dub build --single --arch "$ARCH" examples/means_of_columns.d
-
- ######## Setup python
- - if [ ${TRAVIS_OS_NAME} = "linux" ] ; then
-     wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh ;
-   else
-     wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh ;
-   fi
- - bash miniconda.sh -b -f -p $HOME/miniconda
- - export PATH="$HOME/miniconda/bin:$PATH"
- - conda config --set always_yes yes --set changeps1 no
- - conda update -q conda
- - conda info -a
- - conda create --yes -n condaenv python=3.5 || true
- - conda install --yes -n condaenv matplotlib
- - source activate condaenv
- - python -c 'import matplotlib as mpl; print(mpl.get_cachedir());print(mpl._version)'
- # conda and macOS is messed up, but we can manually set all required paths
- - if [ ${TRAVIS_OS_NAME} = "osx" ] ; then
-    export PYTHONPATH=$HOME/miniconda/lib/python3.5:$HOME/miniconda/lib/python3.5/lib-dynload:$HOME/miniconda/envs/condaenv/lib/python3.5/site-packages ;
-   fi
- ######## End setup python
-
- # workaround against dub bugs
  - dub build --root=examples/flex_plot
  - dub build --root=examples/flex_plot/flex_common
- # dub needs to find libpython3.5m.so
- - MPLBACKEND="agg" LD_LIBRARY_PATH=$HOME/miniconda/lib LIBRARY_PATH=$HOME/miniconda/lib/ dub --single examples/flex_plot.d -- normal
- - ls ~/.matplotlib
- - ls -al ~
- # check that we created a valid file
- - if [ ${TRAVIS_OS_NAME} = "osx" ] ; then
-     if [ $(stat -f%z plots/dist_normal_hs.pdf) -le 20000 ] ; then exit 1; fi ;
-   else
-     if [ $(stat -c%s plots/dist_normal_hs.pdf) -le 20000 ] ; then exit 1; fi
-   fi
- # this file always changes (forces to repack the cache)
- - rm -f $HOME/miniconda/lib/python3.5/__pycache__/_sysconfigdata.cpython-35.pyc
+ - dub build --single examples/flex_plot.d
 after_success:
  - bash <(curl -s https://codecov.io/bash)
 
