@@ -26,7 +26,6 @@ script:
  - dub build --single --arch "$ARCH" examples/means_of_columns.d
  - dub build --root=examples/flex_plot
  - dub build --root=examples/flex_plot/flex_common
- - dub build --single examples/flex_plot.d
 after_success:
  - bash <(curl -s https://codecov.io/bash)
 
