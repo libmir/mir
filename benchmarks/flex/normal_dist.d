@@ -35,7 +35,7 @@ ziggurat           =   357 ms, stddev: 5   ms
 import mir.random.flex;
 
 /*
-$(WEB https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform, Box Muller-transform)
+$(LINK2 https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform, Box Muller-transform)
 References:
     Butcher, J. C. "Random sampling from the normal distribution."
     The Computer Journal 3.4 (1961): 251-253.
@@ -48,26 +48,26 @@ auto boxMueller(S, RNG)(S mu, S sigma, ref RNG gen)
     import std.random : uniform;
 
     static S epsilon = S.min_normal;
-	static S two_pi = 2.0 * PI;
+    static S two_pi = 2.0 * PI;
 
-	static S z0, z1;
-	static bool generate;
-	generate = !generate;
+    static S z0, z1;
+    static bool generate;
+    generate = !generate;
 
-	if (!generate)
-	   return z1 * sigma + mu;
+    if (!generate)
+       return z1 * sigma + mu;
 
-	S u1, u2;
-	do
-	{
-	   u1 = uniform(0.0L, 1.0L, gen);
-	   u2 = uniform(0.0L, 1.0L, gen);
-	}
-	while (u1 <= epsilon);
+    S u1, u2;
+    do
+    {
+       u1 = uniform(0.0L, 1.0L, gen);
+       u2 = uniform(0.0L, 1.0L, gen);
+    }
+    while (u1 <= epsilon);
 
-	z0 = sqrt(-2.0 * log(u1)) * cos(two_pi * u2);
-	z1 = sqrt(-2.0 * log(u1)) * sin(two_pi * u2);
-	return z0 * sigma + mu;
+    z0 = sqrt(-2.0 * log(u1)) * cos(two_pi * u2);
+    z1 = sqrt(-2.0 * log(u1)) * sin(two_pi * u2);
+    return z0 * sigma + mu;
 }
 
 auto genNormal(S)(S rho = 1.1)
