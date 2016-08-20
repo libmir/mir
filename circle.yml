@@ -4,26 +4,11 @@ machine:
     DUB: 1.0.0
     PATH: "${HOME}/dmd2/linux/bin64:${PATH}"
     LD_LIBRARY_PATH: "${HOME}/dmd2/linux/lib64:${LD_LIBRARY_PATH}"
-    PYTHON_VERSION: 3.5.2
-  python:
-      version: 3.5.0
 checkout:
   post:
     - git submodule sync . && git submodule update --recursive --init || true
     - git submodule sync . && git submodule update --recursive --init || true # duplication needed due to circleci bug, don't remove
 dependencies:
-  cache_directories:
-    - ~/miniconda
-    - ~/.cache/matplotlib
-  pre:
-    # For now conda provides a reliable way to obtain Python3.5 bundled with sources and libs
-    - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    - bash miniconda.sh -b -f -p $HOME/miniconda
-    - $HOME/miniconda/bin/conda config --set always_yes yes --set changeps1 no
-    - $HOME/miniconda/bin/conda update -q conda
-    - $HOME/miniconda/bin/conda info -a
-    - $HOME/miniconda/bin/conda create --yes -n condaenv python=3.5 || true
-    - $HOME/miniconda/bin/conda install --yes -n condaenv matplotlib
   override:
     - curl -fsSL --retry 3 "http://downloads.dlang.org/releases/2.x/$DMD/dmd.$DMD.linux.tar.xz" | tar -C ~ -Jxf -
     - curl -fsSL --retry 3 http://code.dlang.org/files/dub-${DUB}-linux-x86_64.tar.gz | tar -C ~/dmd2/linux/bin64 -zxf -
@@ -44,12 +29,9 @@ test:
     - dub fetch imageformats --version=6.0.0 && dub build imageformats
     - dub build --single examples/median_filter.d
     - dub build --single examples/means_of_columns.d
-    # Build Flex plots
     - dub build --root=examples/flex_plot
     - dub build --root=examples/flex_plot/flex_common
-    # dub needs to find libpython3.5m.so
-    - source ~/miniconda/bin/activate condaenv && LD_LIBRARY_PATH=$HOME/miniconda/lib LIBRARY_PATH=$HOME/miniconda/lib/ dub --single examples/flex_plot.d -- normal
-    - if [ $(wc -c plots/dist_normal_hs.pdf | cut -f1 -d' ') -le 20000 ] ; then exit 1; fi
+    - dub build --single examples/flex_plot.d
 deployment:
   aws:
     branch: master
