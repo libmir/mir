@@ -464,7 +464,7 @@ private S flexImpl(S, Pdf, RNG)
     return X;
 }
 
-version(X86_64)
+version(X86_64) version(DigitalMars)
 unittest
 {
     import std.math : approxEqual, pow, log;
@@ -510,7 +510,7 @@ unittest
     }
 }
 
-version(X86_64)
+version(X86_64) version(DigitalMars)
 unittest
 {
     import std.math : approxEqual, pow;
