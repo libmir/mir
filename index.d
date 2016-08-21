@@ -30,6 +30,11 @@ $(BOOKTABLE ,
         $(TDNW $(LINK2 mir_sparse_blas.html, mir.sparse.blas))
         $(TD Sparse BLAS for CompressedTensor)
     )
+    $(LEADINGROW Random)
+    $(TR
+        $(TDNW $(LINK2 mir_random_flex.html, mir.random.flex))
+        $(TD Sample from arbitrary distribution with the Flex algorithm)
+    )
     $(LEADINGROW Other)
     $(TR
         $(TDNW $(LINK2 mir_combinatorics.html, mir.combinatorics))

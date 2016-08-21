@@ -24,6 +24,8 @@ script:
  - dub fetch imageformats --version 6.0.0 && dub build --arch "$ARCH" imageformats
  - dub build --single --arch "$ARCH" examples/median_filter.d
  - dub build --single --arch "$ARCH" examples/means_of_columns.d
+ - dub build --root=examples/flex_plot
+ - dub build --root=examples/flex_plot/flex_common
 after_success:
  - bash <(curl -s https://codecov.io/bash)
 

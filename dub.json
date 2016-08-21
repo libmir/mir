@@ -16,6 +16,10 @@
         {
             "name": "dynamic",
             "targetType": "dynamicLibrary",
+        },
+        {
+            "name": "unittest",
+            "versions": ["to_be_filled"],
         }
     ],
     "dependencies": {
