@@ -1,6 +1,4 @@
 /++
-$(H2 General Matrix-Vector Multiplication)
-
 $(SCRIPT inhibitQuickIndex = 1;)
 
 This is a submodule of $(LINK2 mir_glas.html, mir.glas).
@@ -16,83 +14,68 @@ GLAS Context
 
 Note: `GlasContext` is single thread for now.
 +/
-final class GlasContext
+struct GlasContext
 {
-    import std.experimental.allocator.mallocator;
+    import mir.internal.memory;
     import mir.glas.internal.context;
     static import cpuid.unified;
     import core.sync.mutex;
 
     private
     {
-        Mutex _mutex;
         void[] _memory;
-        uint _threads;
-        uint _cache1Size;
-        uint _cache2Size;
-        uint _cacheLine;
     }
 
-    nothrow @nogc
-    this(
-        Mutex mutex = new Mutex,
-        uint threads = 1, //cpuid.unified.threads,
-        uint cache1Size = defaultCache1Size(),
-        uint cache2Size = defaultCache2Size(),
-        uint cacheLine = defaultCacheLine(),
-        )
-    {
-        assert(threads, "Threads count must not be null.");
-        _threads = threads;
-        _cache1Size = cache1Size << 10;
-        _cache2Size = cache2Size << 10;
-        _cacheLine = cacheLine;
-        _memory = AlignedMallocator.instance.alignedAllocate(_cache2Size << 1, 4096);
-    }
+nothrow @nogc:
 
-    nothrow @nogc
     ~this()
     {
-        AlignedMallocator.instance.deallocate(_memory);
+        release;
     }
 
-
     /// Returns: reused unaligned memory chunk
-    nothrow @nogc
-    void[] memory(size_t size)
+    nothrow @nogc void[] memory(size_t size)
     {
         if (_memory.length < size)
         {
             auto f = _memory.length << 1;
             if (f > size)
                 size = f;
-            AlignedMallocator.instance.deallocate(_memory);
-            _memory = AlignedMallocator.instance.alignedAllocate(size, 4096);
+            if(_memory !is null)
+                deallocate(_memory);
+            _memory = alignedAllocate(size, 4096);
         }
         return _memory[0 .. size];
     }
 
-@safe pure nothrow @nogc:
+    /// Releases memory.
+    void release()
+    {
+        if(_memory !is null)
+            deallocate(_memory);
+    }
+}
 
-    /// Returns the mutex for this context.
-    Mutex mutex() { return _mutex; }
-    ///  Thread count
-    uint threads() { return _threads; }
-    /// Context's level 1 cache size in KB
-    uint cache1Size() { return _cache1Size; }
-    /// Context's level 2 or Level 3 cache size in KB
-    uint cache2Size() { return _cache2Size; }
-    /// Context's cache line size
-    uint cacheLine() { return _cacheLine; }
+/++
+Uplo specifies whether a matrix is an upper or lower triangular matrix.
++/
+enum Uplo
+{
+    /// upper triangular matrix.
+    lower,
+    /// lower triangular matrix
+    upper,
+}
 
-    static:
-
-    /// Default level 1 cache size in KB
-    uint defaultCache1Size() { return c1.size; }
-    /// Default level 2 or Level 3 cache size in KB
-    uint defaultCache2Size() { return c2.size; }
-    /// Default cache line size
-    uint defaultCacheLine() { return c1.line; }
+/++
+Diag specifies whether or not a matrix is unitriangular.
++/
+enum Diag
+{
+    /// a matrix assumed to be unit triangular
+    unit,
+    /// a matrix not assumed to be unit triangular
+    nounit,
 }
 
 /// Default conjugation type
@@ -104,12 +87,6 @@ enum Conjugation
     Pseudo code for `gemm` is `c[i, j] += a[i, k] * b[k, j]`.
     +/
     none,
-    /++
-    For internal use only.
-
-    Pseudo code for `gemm` is `c[i, j] -= a[i, k] * b[k, j]`, for internal use only.
-    +/
-    sub,
     /++
     A is conjugated.
 

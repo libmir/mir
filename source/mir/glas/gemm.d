@@ -16,6 +16,7 @@ SUBREF = $(LINK2 mir_glas_$1.html#.$2, $(TT $2))$(NBSP)
 module mir.glas.gemm;
 
 import std.traits;
+import std.complex;
 import std.meta;
 
 public import mir.glas.common;
@@ -23,24 +24,24 @@ import mir.ndslice.slice;
 import mir.internal.utility;
 import mir.glas.internal.config;
 
+alias fff = gemm!(conjN, Complex!float, Complex!float, Complex!float);
 
 version(LDC) version = LLVM_PREFETCH;
 
 @fastmath:
 
-import std.complex;
 
 private enum prefetchShift = 512;
 
 /++
-General matrix-vector multiplication.
+General matrix-matrix multiplication.
 
 Params:
+    type = conjugation type, optional template parameter
+    c = matrix
     alpha = scalar
     a = matrix
     b = matrix
-    c = matrix
-    type = conjugation type, optional template parameter
 
 Pseudo_code: `c += a × b`
 
@@ -54,9 +55,10 @@ BLAS: SGEMM, DGEMM, CGEMM, ZGEMM
 See_also: $(SUBREF common, Conjugation)
 +/
 //nothrow @nogc
+pragma(inline, false)
 void gemm(Conjugation type = conjN, C, A, B)
 (
-    GlasContext ctx,
+    GlasContext* ctx,
     Slice!(2, C*) csl,
     C alpha,
         Slice!(2, A*) asl,
@@ -75,7 +77,6 @@ in
 }
 body
 {
-    import std.stdio;
     import std.complex: Complex;
     import mir.ndslice.iteration: reversed, transposed;
 
@@ -136,65 +137,77 @@ body
             return;
         }
     }
+
     assert(csl.stride!0 == 1);
     auto alpha_ = alpha.statComplex;
-    alias conf = RegisterConfig!(PC, PA, PB, T);
-    enum nr = conf.broadcast;
-    enum mr = conf.simdChain[0].sizeof / T.sizeof;
-    sizediff_t kc = (ctx.cache1Size - 2 * (T[PC][nr][mr].sizeof + nr * ctx.cacheLine) - 512) / (T[PA][mr].sizeof + T[PB][nr].sizeof);
-    assert(ctx.cache1Size > mr);
-    assert(kc > mr);
-    kc.normalizeChunkSize!mr(asl.length!1);
-    assert(kc > 0, "MIR.gemm: internal error (kc <= 0)");
 
-SET_MC:
+    mixin RegisterConfig!(PC, PA, PB, T);
 
-    auto df = T[PC][nr].sizeof + T[PA].sizeof * kc;
-    sizediff_t mc = (ctx.cache2Size * 3 / 5 - kc * T[PB][nr].sizeof) / df;
 
-    mc.normalizeChunkSize!nr(asl.length!0);
-
-    auto a_length = kc * mc * T[PA].sizeof;
-    auto b_length = kc * T[PB][nr].sizeof * bsl.length!1;
-    auto buffLength = a_length + b_length;
-    auto _mem = ctx.memory(a_length + b_length + prefetchShift);
-    auto a = cast(T*) _mem.ptr;
-    auto b = cast(T[PB]*) (_mem.ptr + a_length);
-    for (;;)
+    auto bl = blocking!(PC, PA, PB, T)(ctx, asl.length!0, asl.length!1, bsl.length!1);
+    if (bl.mc == asl.length!0)
     {
-        if (asl.length!1 < kc)
-        {
-            if (asl.empty!1)
-                break;
-            kc = asl.length!1;
-            goto SET_MC;
-        }
-
-        auto aslp = asl.transposed[0 .. kc].transposed;
-
-        pack_b_nano_kernel!(PC, PA, PB, T, B)(bsl[0 .. kc].transposed, cast(T*) b);
-        bsl.popFrontExactly!0(kc);
-
-        auto c = cast(T[PC]*) csl.ptr;
-        auto mc_ = mc;
-
         for (;;)
         {
-            if (aslp.length!0 < mc_)
+            if (asl.length!1 < bl.kc)
             {
-                if (aslp.empty!0)
+                if (asl.empty!1)
                     break;
-                mc_ = aslp.length!0;
+                bl.kc = asl.length!1;
             }
-            assert(kc * mc_ * T[PB].sizeof <= ctx.cache2Size);
-            pack_a_nano_kernel!(PC, PA, PB, T, A)(aslp[0 .. mc_], a);
-            aslp.popFrontExactly!0(mc_);
+            auto aslp = asl.transposed[0 .. bl.kc].transposed;
+            asl.popFrontExactly!1(bl.kc);
 
-            gebp_opt1!(type, PC, PA, PB, T)(bsl.length!1, kc, mc_, csl.stride!1, c, alpha_, a, b);
-            c += mc_;
+            pack_a_micro_kernel!(PC, PA, PB, T, A)(aslp, bl.a);
+
+            //pack_b_micro_kernel!(PC, PA, PB, T, B)(bsl[0 .. bl.kc].transposed, bl.b);
+            //gebp_opt1!(type, PC, PA, PB, T)(bsl.length!1, bl.mc, bl.kc, csl.stride!1, cast(T*) csl.ptr, bl.a, bl.b, alpha_);
+
+            gebp_opt1_dot!(type, PC, PA, PB, T)(
+                bsl.length!1,
+                bl.mc,
+                bl.kc,
+                csl.stride!1,
+                bsl.stride!0,
+                bsl.stride!1,
+                cast(T*) csl.ptr,
+                bl.a,
+                bl.b,
+                bsl.ptr,
+                alpha_);
+            bsl.popFrontExactly!0(bl.kc);
         }
-
-        asl.popFrontExactly!1(kc);
+    }
+    else
+    {
+        for (;;)
+        {
+            if (asl.length!1 < bl.kc)
+            {
+                if (asl.empty!1)
+                    break;
+                bl.kc = asl.length!1;
+            }
+            auto aslp = asl.transposed[0 .. bl.kc].transposed;
+            asl.popFrontExactly!1(bl.kc);
+            pack_b_micro_kernel!(PC, PA, PB, T, B)(bsl[0 .. bl.kc].transposed, bl.b);
+            bsl.popFrontExactly!0(bl.kc);
+            auto c = cast(T*) csl.ptr;
+            auto mc = bl.mc;
+            for (;;)
+            {
+                if (aslp.length!0 < mc)
+                {
+                    if (aslp.empty!0)
+                        break;
+                    mc = aslp.length!0;
+                }
+                pack_a_micro_kernel!(PC, PA, PB, T, A)(aslp[0 .. mc], bl.a);
+                aslp.popFrontExactly!0(mc);
+                gebp_opt1!(type, PC, PA, PB, T)(bsl.length!1, mc, bl.kc, csl.stride!1, c, bl.a, bl.b, alpha_);
+                c += mc * PC;
+            }
+        }
     }
 }
 
@@ -215,8 +228,7 @@ unittest
          [-1.0, 9, 4, 8],
          [9.0, 8, 3, -2]];
 
-    auto c = slice!double(3, 4);
-    c[] = 0;
+    auto c = slice!double([3, 4], 0);
 
     auto glas = new GlasContext;
     glas.gemm(c, 1.0, a, b);
@@ -228,6 +240,54 @@ unittest
 }
 
 package:
+
+struct BlockInfo(T)
+{
+    sizediff_t mc;
+    sizediff_t kc;
+    T* a;
+    T* b;
+}
+
+BlockInfo!T blocking(size_t PC, size_t PA, size_t PB, T)(GlasContext* ctx, size_t m, size_t k, size_t n)
+{
+    import mir.glas.internal.context;
+    mixin RegisterConfig!(PC, PA, PB, T);
+    BlockInfo!T ret = void;
+
+    sizediff_t l2 = (c2.size << 10) / 2;
+
+    ret.kc = (l2 - m * T[PC][nr].sizeof) / (m * T[PA].sizeof + T[PB][nr].sizeof);
+    ret.mc = m;
+    enum minKc = 320 / PC;
+
+    import std.stdio;
+
+    if (ret.kc < minKc)
+    {
+        ret.kc = ((c1.size << 10) - 2 * (T[PC][nr][mr].sizeof + nr * c1.line) - 512) / (T[PA][mr].sizeof + T[PB][nr].sizeof);
+        assert(c1.size << 10 > mr);
+        assert(ret.kc > mr);
+        ret.kc.normalizeChunkSize!mr(k);
+        assert(ret.kc > 0);
+        auto df = T[PC][nr].sizeof + T[PA].sizeof * ret.kc;
+        ret.mc = (l2 - ret.kc * T[PB][nr].sizeof) / df;
+        ret.mc.normalizeChunkSize!nr(m);
+    }
+    else
+    {
+        ret.kc.normalizeChunkSize!mr(k);
+    }
+
+    auto a_length = ret.kc * ret.mc * T[PA].sizeof;
+    auto b_length = ret.kc * T[PB][nr].sizeof * (ret.mc == m && false ? nr : n);
+    auto buffLength = a_length + b_length;
+    auto _mem = ctx.memory(a_length + b_length + prefetchShift);
+    ret.a = cast(T*) _mem.ptr;
+    ret.b = cast(T*) (_mem.ptr + a_length);
+
+    return ret;
+}
 
 void normalizeChunkSize(size_t subChunk)(ref sizediff_t chunk, size_t length)
 {
@@ -253,8 +313,123 @@ void normalizeChunkSize(size_t subChunk)(ref sizediff_t chunk, size_t length)
     chunk = new_ch;
 }
 
+void pack_dense_a_nano_kernel(bool llvmDense, size_t n, size_t P, F, T)(size_t length, in F* from, T* to)
+{
+    enum s = n * P;
+    do
+    {
+        static if (llvmDense)
+        {
+            import ldc.simd;
+            alias V = __vector(T[n]);
+            static if (P == 1)
+            {
+                auto rv = loadUnaligned!V(cast(T*)from);
+                *cast(V*)to = rv;
+            }
+            else
+            {
+                auto r0 = loadUnaligned!V(cast(T*)from);
+                auto r1 = loadUnaligned!V(cast(T*)((cast(V*)from) + 1));
+                auto re = _re!V(r0, r1);
+                auto im = _im!V(r0, r1);
+                *cast(V*)to = re;
+                *((cast(V*)to) + 1) = im;
+            }
+        }
+        else
+        {
+            foreach (i; Iota!n)
+            {
+                static if (P == 2)
+                {
+                    a[0 + i] = cast(T) row[i].re;
+                    a[n + i] = cast(T) row[i].im;
+                }
+                else
+                {
+                    static if (isComplex!C)
+                        a[i] = cast(T) row[i].re;
+                    else
+                        a[i] = cast(T) row[i];
+                }
+            }
+        }
+        from += n;
+        to += s;
+    }
+    while (--length);
+}
+
+T* pack_dense_b_nano_kernel(bool llvmDense, size_t n, size_t P, F, T)(size_t length, size_t stride, F* from, T* to)
+{
+    enum s = n * P;
+    do
+    {
+        static if (llvmDense)
+        {
+            import ldc.simd;
+            alias V = __vector(T[s]);
+            storeUnaligned!V(loadUnaligned!V(cast(T*)from), to);
+            from += s;
+            to += s;
+        }
+        else
+        {
+            foreach (i; Iota!n)
+            {
+                static if (P == 2)
+                {
+                    to[2 * i + 0] = cast(T) from[i].re;
+                    to[2 * i + 1] = cast(T) from[i].im;
+                }
+                else
+                {
+                    static if (isComplex!F)
+                        to[i] = cast(T) from[i].re;
+                    else
+                        to[i] = cast(T) from[i];
+                }
+            }
+        }
+        from += stride;
+        to += s;
+    }
+    while (--length);
+    return to;
+}
+
 //pragma(inline, false)
-void pack_a_nano_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl, T* a)
+T* pack_strided_b_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t stride, size_t elemStride, F* from, T* to)
+{
+    enum s = n * P;
+    do
+    {
+        foreach (i; Iota!n)
+        {
+            static if (P == 2)
+            {
+                to[2 * i + 0] = cast(T) from[elemStride * i].re;
+                to[2 * i + 1] = cast(T) from[elemStride * i].im;
+            }
+            else
+            {
+                static if (isComplex!F)
+                    to[i] = cast(T) from[elemStride * i].re;
+                else
+                    to[i] = cast(T) from[elemStride * i];
+            }
+        }
+        from += stride;
+        to += s;
+    }
+    while (--length);
+    return to;
+}
+
+
+//pragma(inline, false)
+void pack_a_micro_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl, T* a)
 {
     import std.complex: Complex;
     version(LDC)
@@ -262,12 +437,10 @@ void pack_a_nano_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl,
     else
         enum LDC = false;
     import mir.ndslice.iteration: transposed;
-    alias conf = RegisterConfig!(PC, PA, PB, T);
-    alias mrTypeChain = conf.simdChain;
-    alias chain = conf.broadcastChain;
+    mixin RegisterConfig!(PC, PA, PB, T);
     if (sl.stride!0 == 1)
     {
-        foreach (mri, mrType; mrTypeChain)
+        foreach (mri, mrType; simdChain)
         {
             enum mr = mrType.sizeof / T.sizeof;
             if (sl.length >= mr) do
@@ -320,7 +493,7 @@ void pack_a_nano_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl,
     }
     else
     {
-        foreach (mri, mrType; mrTypeChain)
+        foreach (mri, mrType; simdChain)
         {
             enum mr = mrType.sizeof / T.sizeof;
             if (sl.length >= mr) do
@@ -352,7 +525,7 @@ void pack_a_nano_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl,
 }
 
 //pragma(inline, false)
-void pack_b_nano_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl, T* b)
+void pack_b_micro_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl, T* b)
 {
     import mir.ndslice.iteration: transposed;
     import std.complex: Complex;
@@ -360,42 +533,16 @@ void pack_b_nano_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl,
         enum LDC = true;
     else
         enum LDC = false;
-    alias conf = RegisterConfig!(PC, PA, PB, T);
-    alias nrChain = conf.broadcastChain;
+    mixin RegisterConfig!(PC, PA, PB, T);
     if (sl.stride!0 == 1)
     {
-        foreach (nri; Iota!(nrChain.length))
+        foreach (nri; Iota!(broadcastChain.length))
         {
-            enum nr = nrChain[nri];
+            enum nr = broadcastChain[nri];
             if (sl.length >= nr) do
             {
-                foreach (row_; sl[0 .. nr].transposed)
-                {
-                    auto row = row_.toDense;
-                    static if (nr * PB > 1 && !is(T == real) && LDC && (is(T == C) && PB == 1 || is(Complex!T == C) && PB == 2))
-                    {
-                        import ldc.simd;
-                        alias V = __vector(T[nr * PB]);
-                        storeUnaligned!V(loadUnaligned!V(cast(T*)row), b);
-                    }
-                    else
-                    foreach (j; Iota!nr)
-                    {
-                        static if (PB == 2)
-                        {
-                            b[2 * j + 0] = cast(T) row[j].re;
-                            b[2 * j + 1] = cast(T) row[j].im;
-                        }
-                        else
-                        {
-                            static if (isComplex!C)
-                                b[j] = cast(T) row[j].re;
-                            else
-                                b[j] = cast(T) row[j];
-                        }
-                    }
-                    b += nr * PB;
-                }
+                enum llvm = nr * PB > 1 && !is(T == real) && LDC && (is(T == C) && PB == 1 || is(Complex!T == C) && PB == 2);
+                b = pack_dense_b_nano_kernel!(llvm, nr, PB)(sl.length!1, sl.stride!1, sl.ptr, b);
                 sl.popFrontExactly(nr);
             }
             while (!nri && sl.length >= nr);
@@ -403,124 +550,158 @@ void pack_b_nano_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl,
     }
     else
     {
-        foreach (nri; Iota!(nrChain.length))
+        foreach (nri; Iota!(broadcastChain.length))
         {
-            enum nr = nrChain[nri];
+            enum nr = broadcastChain[nri];
             if (sl.length >= nr) do
             {
-                foreach (row; sl[0 .. nr].transposed)
-                {
-                    foreach (j; Iota!nr)
-                    {
-                        static if (PB == 2)
-                        {
-                            b[2 * j + 0] = cast(T) row[j].re;
-                            b[2 * j + 1] = cast(T) row[j].im;
-                        }
-                        else
-                        {
-                            static if (isComplex!C)
-                                b[j] = cast(T) row[j].re;
-                            else
-                                b[j] = cast(T) row[j];
-                        }
-                    }
-                    b += nr * PB;
-                }
+                b = pack_strided_b_nano_kernel!(nr, PB)(sl.length!1, sl.stride!1, sl.stride!0, sl.ptr, b);
                 sl.popFrontExactly(nr);
             }
             while (!nri && sl.length >= nr);
         }
     }
-
 }
 
-pragma(inline, false)
-void gebp_opt1(Conjugation type, size_t PC, size_t PA, size_t PB, T)(
+void gebp_opt1_dot(Conjugation type, size_t PC, size_t PA, size_t PB, T, C)(
     size_t n,
+    const size_t mc,
     const size_t kc,
-    const size_t mc_,
-    const size_t ldc,
-    scope T[PC]* c_,
+    const sizediff_t ldc,
+    const sizediff_t ldb,
+    const sizediff_t ldeb,
+    scope T* c,
+    const(T)* a,
+    T* b,
+    const(C)* slbPtr,
     const T[PC] alpha,
-    const(T)* a_,
-    const(T[PB])* b,
     )
 {
-    alias conf = RegisterConfig!(PC, PA, PB, T);
-    alias nrChain = conf.broadcastChain;
-    alias mrTypeChain = conf.simdChain;
-    foreach (nri; Iota!(nrChain.length))
+    import mir.ndslice.iteration: transposed;
+    import std.complex: Complex;
+    version(LDC)
+        enum LDC = true;
+    else
+        enum LDC = false;
+    mixin RegisterConfig!(PC, PA, PB, T);
+    if (ldeb == 1)
     {
-        enum size_t nr = nrChain[nri];
+        foreach (nri; Iota!(broadcastChain.length))
+        {
+            enum nr = broadcastChain[nri];
+            if (n >= nr) do
+            {
+                enum llvm = nr * PB > 1 && !is(T == real) && LDC && (is(T == C) && PB == 1 || is(Complex!T == C) && PB == 2);
+                pack_dense_b_nano_kernel!(llvm, nr, PB)(kc, ldb, slbPtr, b);
+                slbPtr += nr * ldeb;
+                gemm_micro_kernel!
+                            (type, PC, PA, PB, nr, T)
+                            (mc, kc, ldc, c, a, b, alpha);
+                n -= nr;
+                c += nr * PC * ldc;
+            }
+            while (!nri && n >= nr);
+        }
+    }
+    else
+    {
+        foreach (nri; Iota!(broadcastChain.length))
+        {
+            enum nr = broadcastChain[nri];
+            if (n >= nr) do
+            {
+                pack_strided_b_nano_kernel!(nr, PB)(kc, ldb, ldeb, slbPtr, b);
+                slbPtr += nr * ldeb;
+                gemm_micro_kernel!
+                            (type, PC, PA, PB, nr, T)
+                            (mc, kc, ldc, c, a, b, alpha);
+                n -= nr;
+                c += nr * PC * ldc;
+            }
+            while (!nri && n >= nr);
+        }
+    }
+}
+
+void gebp_opt1(Conjugation type, size_t PC, size_t PA, size_t PB, T)(
+    size_t n,
+    const size_t mc,
+    const size_t kc,
+    const sizediff_t ldc,
+    scope T* c,
+    const(T)* a,
+    const(T)* b,
+    const T[PC] alpha,
+    )
+{
+    mixin RegisterConfig!(PC, PA, PB, T);
+    foreach (nri; Iota!(broadcastChain.length))
+    {
+        enum size_t nr = broadcastChain[nri];
         if (n >= nr) do
         {
-            size_t mc = mc_;
-            auto a = a_;
-            auto c = c_;
-            foreach (mri, mrType; mrTypeChain)
-            {
-                enum mr = mrType.sizeof / T.sizeof;
-                if (mc >= mr) do
-                {
-                    a = gemm_micro_kernel!
-                        (type, PC, PA, PB, mrType.length, nr, typeof(mrType.init[0]), T)
-                        (alpha, cast(mrType[PA]*)a, cast(T[PB][nr]*)b, kc, c, ldc);
-                    mc -= mr;
-                    c += mr;
-                }
-                while (!mri && mc >= mr);
-            }
+            gemm_micro_kernel!
+                        (type, PC, PA, PB, nr, T)
+                        (mc, kc, ldc, c, a, b, alpha);
             n -= nr;
-            c_ += nr * ldc;
-            b += nr * kc;
+            c += nr * PC * ldc;
+            b += nr * PB * kc ;
         }
         while (!nri && n >= nr);
     }
 }
 
-const(F)*
-gemm_micro_kernel (
+pragma(inline, true)
+void gemm_micro_kernel (
     Conjugation type,
     size_t PC,
     size_t PA,
     size_t PB,
-    size_t N,
     size_t M,
-    V,
     F,
 )
 (
-    F[PC] alpha,
-    const(V[N][PA])* a,
-    const(F[PB][M])* b,
-    size_t length,
-    F[PC]* c,
+    size_t mc,
+    size_t kc,
     sizediff_t ldc,
+    F* c,
+    const(F)* a,
+    const(F)* b,
+    F[PC] alpha,
 )
-    if (is(V == F) || isSIMDVector!V)
 {
-    version(LDC) pragma(inline, true);
-
-    version(LLVM_PREFETCH)
+    mixin RegisterConfig!(PC, PA, PB, F);
+    foreach (mri, mrType; simdChain)
     {
-        import ldc.intrinsics: llvm_prefetch;
+        enum mr = mrType.sizeof / F.sizeof;
+        if (mc >= mr) do
+        {
+            enum N = mrType.length;
+            alias V = typeof(mrType.init[0]);
+            version(LLVM_PREFETCH)
+            {
+                import ldc.intrinsics: llvm_prefetch;
 
-        foreach (m; Iota!M)
-        foreach (pr; Iota!(V[N][PC].sizeof / 64 + bool(V[N][PC].sizeof % 64 > 0)))
-            llvm_prefetch(cast(void*)c + pr * 64 + ldc * m, 1, 3, 1);
+                foreach (m; Iota!M)
+                foreach (pr; Iota!(V[N][PC].sizeof / 64 + bool(V[N][PC].sizeof % 64 > 0)))
+                    llvm_prefetch(cast(void*)c + pr * 64 + ldc * m, 1, 3, 1);
+            }
+            V[N][PC][M] reg = void;
+            a = gemm_nano_kernel!type(reg, cast(const(V[N][PA])*) a, cast(const(F[PB][M])*)b, kc)[0];
+            reg.scale_nano_kernel!(PA + PB == 2)(alpha);
+            save_nano_kernel(reg, cast(F[PC]*)c, ldc);
+            mc -= mr;
+            c += mr * PC;
+        }
+        while (!mri && mc >= mr);
     }
-    V[N][PC][M] reg = void;
-    reg.set_zero_nano_kernel;
-    auto ret = gemm_nano_kernel!type(reg, a, b, length)[0];
-    reg.scale_nano_kernel!(PA + PB == 2)(alpha);
-    save_nano_kernel(reg, c, ldc);
-    return ret;
 }
 
+pragma(inline, true)
 const(F)*[2]
 gemm_nano_kernel (
     Conjugation type,
+    bool sub = false,
     size_t PC,
     size_t PB,
     size_t PA,
@@ -537,14 +718,12 @@ gemm_nano_kernel (
 )
     if (is(V == F) || isSIMDVector!V)
 {
-    version(LDC) pragma(inline, true);
-
     V[N][PC][M] reg = void;
 
     foreach (m; Iota!M)
     foreach (p; Iota!PC)
     foreach (n; Iota!N)
-        reg[m][p][n] = c[m][p][n];
+        reg[m][p][n] = 0;
 
     do
     {
@@ -588,40 +767,61 @@ gemm_nano_kernel (
             foreach (m; um)
             foreach (n; Iota!N)
             {
-                    static if (type == conjN)
+                    static if (type == conjN && !sub)
                 {
                     reg[m][0][n] += ai[0][n] * bi[m][0];
      static if (CB) reg[m][1][n] += ai[0][n] * bi[m][1];
      static if (AB) reg[m][0][n] -= ai[1][n] * bi[m][1];
      static if (CA) reg[m][1][n] += ai[1][n] * bi[m][0];
                 }
-                else static if (type == Conjugation.sub)
+                else static if (type == conjN &&  sub)
                 {
                     reg[m][0][n] -= ai[0][n] * bi[m][0];
      static if (CB) reg[m][1][n] -= ai[0][n] * bi[m][1];
      static if (AB) reg[m][0][n] += ai[1][n] * bi[m][1];
      static if (CA) reg[m][1][n] -= ai[1][n] * bi[m][0];
                 }
-                else static if (type == Conjugation.conjA)
+                else static if (type == conjA && !sub)
                 {
                     reg[m][0][n] += ai[0][n] * bi[m][0];
      static if (CB) reg[m][1][n] += ai[0][n] * bi[m][1];
      static if (AB) reg[m][0][n] += ai[1][n] * bi[m][1];
      static if (CA) reg[m][1][n] -= ai[1][n] * bi[m][0];
                 }
-                else static if (type == Conjugation.conjB)
+                else static if (type == conjA &&  sub)
+                {
+                    reg[m][0][n] -= ai[0][n] * bi[m][0];
+     static if (CB) reg[m][1][n] -= ai[0][n] * bi[m][1];
+     static if (AB) reg[m][0][n] -= ai[1][n] * bi[m][1];
+     static if (CA) reg[m][1][n] += ai[1][n] * bi[m][0];
+                }
+                else static if (type == conjB && !sub)
                 {
                     reg[m][0][n] += ai[0][n] * bi[m][0];
      static if (CB) reg[m][1][n] -= ai[0][n] * bi[m][1];
      static if (AB) reg[m][0][n] += ai[1][n] * bi[m][1];
      static if (CA) reg[m][1][n] += ai[1][n] * bi[m][0];
                 }
-                else static if (type == Conjugation.conjC)
+                else static if (type == conjB &&  sub)
+                {
+                    reg[m][0][n] -= ai[0][n] * bi[m][0];
+     static if (CB) reg[m][1][n] += ai[0][n] * bi[m][1];
+     static if (AB) reg[m][0][n] -= ai[1][n] * bi[m][1];
+     static if (CA) reg[m][1][n] -= ai[1][n] * bi[m][0];
+                }
+                else static if (type == conjC && !sub)
                 {
                     reg[m][0][n] += ai[0][n] * bi[m][0];
      static if (CB) reg[m][1][n] -= ai[0][n] * bi[m][1];
      static if (AB) reg[m][0][n] -= ai[1][n] * bi[m][1];
      static if (CA) reg[m][1][n] -= ai[1][n] * bi[m][0];
+                }
+                else static if (type == conjC &&  sub)
+                {
+                    reg[m][0][n] -= ai[0][n] * bi[m][0];
+     static if (CB) reg[m][1][n] += ai[0][n] * bi[m][1];
+     static if (AB) reg[m][0][n] += ai[1][n] * bi[m][1];
+     static if (CA) reg[m][1][n] += ai[1][n] * bi[m][0];
                 }
                 else static assert(0);
             }
@@ -644,6 +844,7 @@ gemm_nano_kernel (
     return ret;
 }
 
+pragma(inline, true)
 void scale_nano_kernel (
     bool realOnly = false,
     size_t P,
@@ -657,8 +858,6 @@ void scale_nano_kernel (
     F[P] alpha,
 )
 {
-    version(LDC) pragma(inline, true);
-
     V[N][P][M] reg = void;
 
     foreach (m; Iota!M)
@@ -696,15 +895,16 @@ void scale_nano_kernel (
         c[m][p][n] = reg[m][p][n];
 }
 
+pragma(inline, true)
 void save_nano_kernel(size_t P, size_t N, size_t M, V, T)
     (ref V[N][P][M] reg, T[P]* c, sizediff_t ldc)
 {
-    version(LDC) pragma(inline, true);
     foreach (m; Iota!M)
     {
         save_nano_kernel_impl(reg[m], c + ldc * m);
     }
 }
+
 version(LDC)
 {
     pragma(inline, true)
@@ -752,6 +952,7 @@ version(LDC)
 }
 else
 {
+    pragma(inline, true)
     void save_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
     {
         foreach (j; Iota!(N * V.sizeof / T.sizeof))
@@ -793,15 +994,6 @@ version(LDC)
         enum _pred(size_t a) = (a & 1) != 0;
         alias _im = shufflevector!(V, Filter!(_pred, Iota!(V.length * 2)));
     }
-}
-
-pragma(inline, true)
-void set_zero_nano_kernel(size_t A, size_t B, size_t C, V)(ref V[C][B][A] to)
-{
-    foreach (p; Iota!A)
-    foreach (m; Iota!B)
-    foreach (n; Iota!C)
-        to[p][m][n] = 0;
 }
 
 pragma(inline, true)

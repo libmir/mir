@@ -23,13 +23,11 @@ Contents
  - Precise algorithm: improved analog of Python's `fsum`
  - Pairwise algorithm: fast version for Input Ranges
  - Kahan, KBN, and KB2 algorithms
-- `mir.blas` - this is slow snail, it is for experiments with BLAS API. Don't use for now.
-
 
 ### In progress
 
  - `mir.random` - non-uniform RNGs.
- - `mir.blas` - BLAS in D.
+ - `mir.glas` - Generic Lineae Algebra Subroutins.
 
 Documentation
 -------------

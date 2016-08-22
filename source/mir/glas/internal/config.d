@@ -46,6 +46,8 @@ template RegisterConfig(size_t PR, size_t PS, size_t PB, T)
     else
         mixin M1;
     enum broadcastChain = BroadcastChain!broadcast;
+    enum size_t nr = broadcast;
+    enum size_t mr = simdChain[0].sizeof / T.sizeof;
 }
 
 template BroadcastChain(size_t s)
