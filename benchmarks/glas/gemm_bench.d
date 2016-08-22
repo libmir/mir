@@ -12,20 +12,19 @@ import std.traits;
 import std.datetime;
 import std.conv;
 import std.complex;
-import std.algorithm;
+import std.algorithm.comparison;
 import std.stdio;
 import std.exception;
 import std.getopt;
 import mir.ndslice;
 import mir.glas;
 
-//alias C = Complex!float;
-//alias C = Complex!double;
 alias C = float;
 //alias C = double;
+//alias C = Complex!float;
+//alias C = Complex!double;
 alias A = C;
 alias B = C;
-
 
 void main(string[] args)
 {
@@ -70,13 +69,13 @@ void main(string[] args)
 
 	auto nsecsBLAS = double.max;
 
+
 	foreach(_; 0..count) {
+		StopWatch sw;
+		sw.start;
 		static if(!(is(C == real) || is(C : Complex!real) || is(C : long)))
 		{
 			static import cblas;
-		StopWatch sw;
-		sw.start;
-
 			static if(is(C : Complex!E, E))
 			cblas.gemm(
 				cblas.Order.RowMajor,
@@ -110,9 +109,13 @@ void main(string[] args)
 				d.ptr,
 				cast(cblas.blasint) d.stride);
 
-			sw.stop;
-			nsecsBLAS = min(sw.peek.to!Duration.total!"nsecs".to!double, nsecsBLAS);
 		}
+		sw.stop;
+
+		auto newns = sw.peek.to!Duration.total!"nsecs".to!double;
+		//writefln("_BLAS (amount of threads is unknown): %5s GFLOPS", (m * n * k * 2) / newns);
+
+		nsecsBLAS = min(newns, nsecsBLAS);
 
 	}
 	auto nsecsGLAS = double.max;
@@ -122,7 +125,9 @@ void main(string[] args)
 		sw.start;
 		glas.gemm(c, alpha, a, b);
 		sw.stop;
-		nsecsGLAS = min(sw.peek.to!Duration.total!"nsecs".to!double, nsecsGLAS);
+		auto newns = sw.peek.to!Duration.total!"nsecs".to!double;
+		//writefln("_GLAS (single thread)               : %5s GFLOPS", (m * n * k * 2) / newns);
+		nsecsGLAS = min(newns, nsecsGLAS);
 	}
 	writefln("BLAS (amount of threads is unknown): %5s GFLOPS", (m * n * k * 2) / nsecsBLAS,);
 	writefln("GLAS (single thread)               : %5s GFLOPS", (m * n * k * 2) / nsecsGLAS,);
@@ -143,12 +148,12 @@ void fillRNG(T)(Slice!(2, T*) sl)
 	{
 		static if(is(T : Complex!F, F))
 		{
-			e.re = cast(F) uniform(0, 10);
-			e.im = cast(F) uniform(0, 10);
+			e.re = cast(F) uniform(-100, 100);
+			e.im = cast(F) uniform(-100, 100);
 		}
 		else
 		{
-			e = cast(T) uniform(0, 10);
+			e = cast(T) uniform(-100, 100);
 		}
 	}
 }
