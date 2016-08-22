@@ -26,8 +26,6 @@ dependency "mir" path=".."
 * faster than the numpy version.
 */
 
-import std.range : iota;
-import std.array : array;
 import std.algorithm;
 import std.datetime;
 import std.conv : to;
@@ -35,20 +33,17 @@ import std.stdio;
 import mir.ndslice;
 
 enum testCount = 10_000;
-double[] means;
-int[] data;
-
-void f0() {
-    means = data
-        .sliced(100, 1000)
-        .transposed
-        .map!(r => sum(r, 0L) / cast(double) r.length)
-        .array;
-}
+__gshared Slice!(1, double*) means;
+Slice!(2, int*) sl;
 
 void main() {
-    data = 100_000.iota.array;
-    auto r = benchmark!(f0)(testCount);
-    auto f0Result = to!Duration(r[0] / testCount);
-    f0Result.writeln;
+    sl = iotaSlice(100, 1000).ndMap!(to!int).slice;
+    auto r = benchmark!({
+    	means = sl
+        .transposed
+        .pack!1
+        .ndMap!(col => ndReduce!"a + b"(0L, col) / double(col.length))
+        .slice;
+        })(testCount)[0].to!Duration / testCount;
+    r.writeln;
 }

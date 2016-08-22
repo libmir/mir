@@ -42,12 +42,9 @@ Returns:
 Slice!(3, C*) movingWindowByChannel(alias filter, C)
 (Slice!(3, C*) image, size_t nr, size_t nc)
 {
-    import std.algorithm.iteration: map;
-    import std.array: array;
-
         // 0. 3D
         // The last dimension represents the color channel.
-    auto wnds = image
+    return image
         // 1. 2D composed of 1D
         // Packs the last dimension.
         .pack!1
@@ -62,21 +59,11 @@ Slice!(3, C*) movingWindowByChannel(alias filter, C)
         .transposed!(0, 1, 4)
         // 5. 3D Composed of 2D
         // Packs the last two dimensions.
-        .pack!2;
-
-    return wnds
-        // 6. Range composed of 2D
-        // Gathers all windows in the range.
-        .byElement
-        // 7. Range composed of pixels
+        .pack!2
         // 2D to pixel lazy conversion.
-        .map!filter
-        // 8. `C[]`
-        // The only memory allocation in this function.
-        .array
-        // 9. 3D
-        // Returns slice with corresponding shape.
-        .sliced(wnds.shape);
+        .ndMap!filter
+        // Creates the new image. The only memory allocation in this function.
+        .slice;
 }
 
 /++
@@ -86,15 +73,19 @@ Params:
 Returns:
     median value over the range `r`
 +/
-T median(Range, T)(Range r, T[] buf)
+T median(Range, T)(Slice!(2, Range) sl, T[] buf)
 {
-    import std.algorithm.sorting;
-    size_t n;
-    foreach (e; r)
-        buf[n++] = e;
-    immutable m = n >> 1;
-    buf[0..n].topN(m);
-    return buf[m];
+    import std.algorithm.sorting : topN;
+    import mir.ndslice.algorithm : ndFold;
+    // copy sl to the buffer
+    auto retPtr = sl.ndFold!(
+        (ptr, elem) {
+            *ptr = elem;
+            return ptr + 1;
+        } )(buf.ptr);
+    auto n = retPtr - buf.ptr;
+    buf[0 .. n].topN(n / 2);
+    return buf[n / 2];
 }
 
 /++
@@ -137,7 +128,7 @@ void main(string[] args)
         auto ret = image.pixels
             .sliced(cast(size_t)image.h, cast(size_t)image.w, cast(size_t)image.c)
             .movingWindowByChannel
-                !(window => median(window.byElement, buf))
+                !(window => median(window, buf))
                  (nr, nc);
 
         write_image(
