@@ -8,6 +8,11 @@ Mir
 ======
 Generic Numerical Library for Science and Machine Learning.
 
+Documentation
+-------------
+
+API can be found [here](http://docs.mir.dlang.io/latest/index.html).
+
 Contents
 --------
 
@@ -28,11 +33,6 @@ Contents
 
  - `mir.random` - non-uniform RNGs.
  - `mir.glas` - Generic Linear Algebra Subroutines.
-
-Documentation
--------------
-
-Alpha version of API is available [here](http://docs.mir.dlang.io/latest/index.html).
 
 Compatibility
 -------------
