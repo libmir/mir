@@ -108,7 +108,7 @@ void trsm_nano_kernel (
             foreach (p; Iota!PB)
                 s[p] = a[n][p][n];
             foreach (n; Iota!N)
-            {                
+            {
                 auto re  = s[0] * reg[n][m][0];
  static if (AA) auto im  = s[0] * reg[n][m][1];
                 static if (type == conjN)

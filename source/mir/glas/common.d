@@ -41,7 +41,7 @@ nothrow @nogc:
             auto f = _memory.length << 1;
             if (f > size)
                 size = f;
-            if(_memory !is null)
+            if (_memory !is null)
                 deallocate(_memory);
             _memory = alignedAllocate(size, 4096);
         }
@@ -51,7 +51,7 @@ nothrow @nogc:
     /// Releases memory.
     void release()
     {
-        if(_memory !is null)
+        if (_memory !is null)
             deallocate(_memory);
     }
 }
