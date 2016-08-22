@@ -27,7 +27,7 @@ Contents
 ### In progress
 
  - `mir.random` - non-uniform RNGs.
- - `mir.glas` - Generic Lineae Algebra Subroutins.
+ - `mir.glas` - Generic Linear Algebra Subroutines.
 
 Documentation
 -------------
