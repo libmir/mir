@@ -67,7 +67,7 @@ assert(matrix(3, 2) == 6); // Math & Fortran index order
 ------
 
 Note:
-In many examples $(LINK2 std_experimental_ndslice_selection.html#iotaSlice, iotaSlice) is used
+In many examples $(LINK2 mir_ndslice_selection.html#iotaSlice, iotaSlice) is used
 instead of a regular array, which makes it
 possible to carry out tests without memory allocation.
 
@@ -309,11 +309,11 @@ Authors:   Ilya Yaroshenko
 
 Acknowledgements:   John Loughran Colvin
 
-Source:    $(PHOBOSSRC std/_experimental/_ndslice/_package.d)
+Source:    $(PHOBOSSRC mir/_ndslice/_package.d)
 
 Macros:
-SUBMODULE = $(MREF_ALTTEXT $1, std, experimental, ndslice, $1)
-SUBREF = $(REF_ALTTEXT $(TT $2), $2, std,experimental, ndslice, $1)$(NBSP)
+SUBMODULE = $(MREF_ALTTEXT $1, mir, ndslice, $1)
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 TDNW2 = <td class="donthyphenate nobr" rowspan="2">$0</td>
 */
