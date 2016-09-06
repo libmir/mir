@@ -28,3 +28,4 @@ __test__source__
 
 flex_plot_test_*
 trace.*
+*.DS_Store
