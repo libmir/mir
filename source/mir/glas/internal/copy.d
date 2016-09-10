@@ -134,7 +134,10 @@ T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length,
         {
             import ldc.simd;
             alias V = __vector(T[s]);
-            storeUnaligned!V(loadUnaligned!V(cast(T*)from), to);
+            static if (conj == false)
+                storeUnaligned!V(loadUnaligned!V(cast(T*)from), to);
+            else
+                storeUnaligned!V(-loadUnaligned!V(cast(T*)from), to);
         }
         else
         {
