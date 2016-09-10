@@ -109,7 +109,7 @@ $(DOC_OUTPUT_DIR)/css/custom.css: $(DOC_SOURCE_DIR)/custom.css
 	@mkdir -p $(dir $@)
 	cp $< $@
 
-$(DOC_OUTPUT_DIR)/images/mir.svg: $(ARTWORK_DIR)/logo/mir_black_white_grey.svg
+$(DOC_OUTPUT_DIR)/images/mir.svg: $(ARTWORK_DIR)/logo/mir_site_logo.svg
 	@mkdir -p $(dir $@)
 	cp $< $@
 
