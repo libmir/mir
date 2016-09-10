@@ -239,7 +239,7 @@ T* pack_a_dense_nano(size_t mr, size_t P, bool conj = false, T, F)(size_t length
             static if (P == 2)
             {
                 to[ 0 + j] = cast(T) from[j].re;
-                static if (conj == false) 
+                static if (conj == false)
                     to[mr + j] = cast(T) from[j].im;
                 else
                     to[mr + j] = -cast(T) from[j].im;
