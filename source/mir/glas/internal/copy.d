@@ -10,9 +10,6 @@ import mir.glas.common;
 
 @fastmath:
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 pragma(inline, true)
 T* pack_b_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
 {
@@ -94,18 +91,6 @@ T* pack_b_sym_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, S
 
 pragma(inline, false)
 T* pack_b_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
-=======
-pragma(inline, false)
-T* pack_b_strided_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t stride, size_t elemStride, F* from, T* to)
->>>>>>> origin/example
-=======
-pragma(inline, false)
-T* pack_b_strided_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t stride, size_t elemStride, F* from, T* to)
->>>>>>> origin/example
-=======
-pragma(inline, false)
-T* pack_b_strided_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t stride, size_t elemStride, F* from, T* to)
->>>>>>> origin/example
 {
     enum s = n * P;
     do
@@ -115,22 +100,10 @@ T* pack_b_strided_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t st
             static if (P == 2)
             {
                 to[2 * i + 0] = cast(T) from[elemStride * i].re;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
                 static if (conj == false)
                     to[2 * i + 1] = cast(T) from[elemStride * i].im;
                 else
                     to[2 * i + 1] = -cast(T) from[elemStride * i].im;
-=======
-                to[2 * i + 1] = cast(T) from[elemStride * i].im;
->>>>>>> origin/example
-=======
-                to[2 * i + 1] = cast(T) from[elemStride * i].im;
->>>>>>> origin/example
-=======
-                to[2 * i + 1] = cast(T) from[elemStride * i].im;
->>>>>>> origin/example
             }
             else
             {
@@ -147,59 +120,8 @@ T* pack_b_strided_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t st
     return to;
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 pragma(inline, false)
 T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, F* from, T* to)
-=======
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-T* pack_a_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t stride, size_t elemStride, F* from, T* to)
-{
-    if(elemStride == 1)
-        return pack_a_dense_nano_kernel!(n, P)(length, stride, from, to);
-    else
-        return pack_a_strided_nano_kernel!(n, P)(length, stride, elemStride, from, to);
-}
-
-pragma(inline, false)
-T* pack_a_strided_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t stride, size_t elemStride, F* from, T* to)
-{
-    static if (P == 1)
-    {
-        return pack_b_strided_nano_kernel!(n, P, F, T)(length, stride, elemStride, from, to);
-    }
-    else
-    {
-        pragma(inline, false)
-        enum s = n * P;
-        do
-        {
-            foreach (i; Iota!n)
-            {
-                to[i + 0] = cast(T) from[elemStride * i].re;
-                to[i + n] = cast(T) from[elemStride * i].im;
-            }
-            from += stride;
-            to += s;
-        }
-        while (--length);
-        return to;
-    }
-}
-
-//pragma(inline, false)
-T* pack_b_dense_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t stride, F* from, T* to)
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
 {
     enum s = n * P;
      version(LDC)
@@ -213,21 +135,6 @@ T* pack_b_dense_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t stri
             import ldc.simd;
             alias V = __vector(T[s]);
             storeUnaligned!V(loadUnaligned!V(cast(T*)from), to);
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-            from += s;
-            to += s;
->>>>>>> origin/example
-=======
-            from += s;
-            to += s;
->>>>>>> origin/example
-=======
-            from += s;
-            to += s;
->>>>>>> origin/example
         }
         else
         {
@@ -236,22 +143,10 @@ T* pack_b_dense_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t stri
                 static if (P == 2)
                 {
                     to[2 * i + 0] = cast(T) from[i].re;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
                     static if (conj == false)
                         to[2 * i + 1] = cast(T) from[i].im;
                     else
                         to[2 * i + 1] = -cast(T) from[i].im;
-=======
-                    to[2 * i + 1] = cast(T) from[i].im;
->>>>>>> origin/example
-=======
-                    to[2 * i + 1] = cast(T) from[i].im;
->>>>>>> origin/example
-=======
-                    to[2 * i + 1] = cast(T) from[i].im;
->>>>>>> origin/example
                 }
                 else
                 {
@@ -269,9 +164,6 @@ T* pack_b_dense_nano_kernel(size_t n, size_t P, F, T)(size_t length, size_t stri
     return to;
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 T* pack_a_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
 {
     if(elemStride == 1)
@@ -310,18 +202,6 @@ T* pack_a_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t lengt
 
 //pragma(inline, false)
 T* pack_a_dense_nano(size_t mr, size_t P, bool conj = false, T, F)(size_t length, sizediff_t stride, F* from, T* to)
-=======
-//pragma(inline, false)
-T* pack_a_dense_nano_kernel(size_t mr, size_t P, T, F)(size_t length, sizediff_t stride, F* from, T* to)
->>>>>>> origin/example
-=======
-//pragma(inline, false)
-T* pack_a_dense_nano_kernel(size_t mr, size_t P, T, F)(size_t length, sizediff_t stride, F* from, T* to)
->>>>>>> origin/example
-=======
-//pragma(inline, false)
-T* pack_a_dense_nano_kernel(size_t mr, size_t P, T, F)(size_t length, sizediff_t stride, F* from, T* to)
->>>>>>> origin/example
 {
     version(LDC)
         enum LDC = true;
@@ -345,22 +225,10 @@ T* pack_a_dense_nano_kernel(size_t mr, size_t P, T, F)(size_t length, sizediff_t
                 auto re = _re!V(r0, r1);
                 auto im = _im!V(r0, r1);
                 *cast(V*)to = re;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
                 static if (conj == false)
                     *((cast(V*)to) + 1) = im;
                 else
                     *((cast(V*)to) + 1) = -im;
-=======
-                *((cast(V*)to) + 1) = im;
->>>>>>> origin/example
-=======
-                *((cast(V*)to) + 1) = im;
->>>>>>> origin/example
-=======
-                *((cast(V*)to) + 1) = im;
->>>>>>> origin/example
             }
         }
         else
@@ -369,22 +237,10 @@ T* pack_a_dense_nano_kernel(size_t mr, size_t P, T, F)(size_t length, sizediff_t
             static if (P == 2)
             {
                 to[ 0 + j] = cast(T) from[j].re;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
                 static if (conj == false) 
                     to[mr + j] = cast(T) from[j].im;
                 else
                     to[mr + j] = -cast(T) from[j].im;
-=======
-                to[mr + j] = cast(T) from[j].im;
->>>>>>> origin/example
-=======
-                to[mr + j] = cast(T) from[j].im;
->>>>>>> origin/example
-=======
-                to[mr + j] = cast(T) from[j].im;
->>>>>>> origin/example
             }
             else
             {
@@ -401,34 +257,13 @@ T* pack_a_dense_nano_kernel(size_t mr, size_t P, T, F)(size_t length, sizediff_t
     return to;
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 pragma(inline, false)
 void pack_a(size_t PA, size_t PB, size_t PC, bool conj = false, T, C)(Slice!(2, C*) sl, T* a)
 {
-=======
-void pack_a_micro_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl, T* a)
-{
-    import std.complex: Complex;
->>>>>>> origin/example
-=======
-void pack_a_micro_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl, T* a)
-{
-    import std.complex: Complex;
->>>>>>> origin/example
-=======
-void pack_a_micro_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl, T* a)
-{
-    import std.complex: Complex;
->>>>>>> origin/example
     import mir.ndslice.iteration: transposed;
     mixin RegisterConfig!(PC, PA, PB, T);
     if (sl.stride!0 == 1)
     {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         foreach (mri, mr; mr_chain)
         if (sl.length >= mr) do
         {
@@ -446,51 +281,10 @@ void pack_a_micro_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl
             sl.popFrontExactly(mr);
         }
         while (!mri && sl.length >= mr);
-=======
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-        foreach (mri, mrType; simdChain)
-        {
-            enum mr = mrType.sizeof / T.sizeof;
-            if (sl.length >= mr) do
-            {
-                pack_a_dense_nano_kernel!(mr, PA, T, C)(sl.length!1, sl.stride!1, sl.ptr, a);
-                a += PA * mr * sl.length!1;
-                sl.popFrontExactly(mr);
-            }
-            while (!mri && sl.length >= mr);
-        }
-
-    }
-    else
-    {
-        foreach (mri, mrType; simdChain)
-        {
-            enum mr = mrType.sizeof / T.sizeof;
-            if (sl.length >= mr) do
-            {
-                pack_a_strided_nano_kernel!(mr, PA, C, T)(sl.length!1, sl.stride!1, sl.stride!0, sl.ptr, a);
-                a += PA * mr * sl.length!1;
-                sl.popFrontExactly(mr);
-            }
-            while (!mri && sl.length >= mr);
-        }
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
     }
 }
 
 pragma(inline, false)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 void pack_a_sym(size_t PA, size_t PB, size_t PC, bool conj = false, T, F)(Slice!(2, F*) sl, size_t i, size_t t, size_t mc, size_t kc, T* to)
 {
     import mir.ndslice.iteration: transposed, reversed;
@@ -589,81 +383,12 @@ void pack_b_triangular(Uplo uplo, bool inverseDiagonal, size_t PA, size_t PB, si
 {
     assert(sl.length!0 == sl.length!1);
     import mir.ndslice.iteration: transposed;
-=======
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-void pack_b_lower_micro_kernel(bool inverseDiagonal, size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl, T* b)
-{
-    assert(sl.length!0 == sl.length!1);
-    import mir.ndslice.iteration: transposed;
-    import std.complex: Complex;
-    version(LDC)
-        enum LDC = true;
-    else
-        enum LDC = false;
-    mixin RegisterConfig!(PC, PA, PB, T);
-    size_t length;
-    foreach (nri; Iota!(broadcastChain.length))
-    {
-        enum nr = broadcastChain[nri];
-        if (sl.length >= nr) do
-        {
-            length += nr;
-            if (sl.stride!0 == 1)
-                b = pack_b_dense_nano_kernel!(nr, PB)(length, sl.stride!1, sl.ptr, b);
-            else
-                b = pack_b_strided_nano_kernel!(nr, PB)(length, sl.stride!1, sl.stride!0, sl.ptr, b);
-            static if (inverseDiagonal)
-            {
-                auto a = cast(T[PB]*) b;
-                foreach(i; Iota!nr)
-                {
-                    enum sizediff_t j = i + i * nr - sizediff_t(nr * nr);
-                    static if (PB == 1)
-                    {
-                        a[j][0] = 1 / a[j][0];
-                    }
-                    else
-                    {
-                        auto re = a[j][0];
-                        auto im = a[j][1];
-                        auto d = re * re + im * im;
-                        re /= d;
-                        im /= d;
-                        im = -im;
-                        a[j][0] = re;
-                        a[j][1] = im;
-                    }
-                }
-            }
-            sl.popFrontExactly(nr);
-        }
-        while (!nri && sl.length >= nr);
-    }
-}
 
-pragma(inline, false)
-void pack_b_micro_kernel(size_t PC, size_t PA, size_t PB, T, C)(Slice!(2, C*) sl, T* b)
-{
-    import mir.ndslice.iteration: transposed;
-    import std.complex: Complex;
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
     version(LDC)
         enum LDC = true;
     else
         enum LDC = false;
     mixin RegisterConfig!(PC, PA, PB, T);
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     static if (uplo == Uplo.lower)
         size_t length;
     foreach (nri, nr; nr_chain)
@@ -801,178 +526,31 @@ void load_simd(size_t mr, size_t P, T)(T* to, T[P]* from)
 
 //pragma(inline, false)
 //void save_transposed_nano(size_t P, size_t N, V, T)
-=======
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-    if (sl.stride!0 == 1)
-    {
-        foreach (nri; Iota!(broadcastChain.length))
-        {
-            enum nr = broadcastChain[nri];
-            if (sl.length >= nr) do
-            {
-                b = pack_b_dense_nano_kernel!(nr, PB)(sl.length!1, sl.stride!1, sl.ptr, b);
-                sl.popFrontExactly(nr);
-            }
-            while (!nri && sl.length >= nr);
-        }
-    }
-    else
-    {
-        foreach (nri; Iota!(broadcastChain.length))
-        {
-            enum nr = broadcastChain[nri];
-            if (sl.length >= nr) do
-            {
-                b = pack_b_strided_nano_kernel!(nr, PB)(sl.length!1, sl.stride!1, sl.stride!0, sl.ptr, b);
-                sl.popFrontExactly(nr);
-            }
-            while (!nri && sl.length >= nr);
-        }
-    }
-}
 
-pragma(inline, false)
-void save_transposed_nano_kernel(size_t P, size_t N, V, T)
-    (size_t length, sizediff_t stride, V[N][P]* from, T[P]* to)
-{
-    enum M = N * V.sizeof / T.sizeof;
-    size_t j = M;
-    auto f = cast(T*)from;
-    do
-    {
-        auto len = length;
-        auto t = to;
-        auto ff = f;
-        do
-        {
-            foreach (p; Iota!P)
-            {
-                enum i = (P-1) * M;
-                (*t)[p] = ff[i];
-            }
-            t++;
-            ff += M * P;
-        }
-        while(--len);
-        to += stride;
-        f++;
-    }
-    while(--j);
-}
-
-//pragma(inline, false)
-//void save_transposed_nano_kernel(size_t P, size_t N, V, T)
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-//    (V[N][P]* from, T[P]* to, sizediff_t ldce, size_t length)
-//{
-//    enum M = N * V.sizeof / T.sizeof;
-//    T[P]*[M] top = void;
-//    foreach(j; Iota!M)
-//        top[j] = to + ldce * j;
-//    do
-//    {
-//        foreach (j; Iota!M)
-//        {
-//            foreach (p; Iota!P)
-//            {
-//                (*top[j])[p] = (cast(T*) &from[p])[j];
-//            }
-//            top[j]++;
-//        }
-//    }
-//    while(--length);
-//}
-
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 void save_nano(size_t P, size_t N, size_t M, V, T)
-=======
-void save_nano_kernel(size_t P, size_t N, size_t M, V, T)
->>>>>>> origin/example
-=======
-void save_nano_kernel(size_t P, size_t N, size_t M, V, T)
->>>>>>> origin/example
-=======
-void save_nano_kernel(size_t P, size_t N, size_t M, V, T)
->>>>>>> origin/example
     (ref V[N][P][M] reg, T[P]* c, sizediff_t ldc)
 {
     version(LDC) pragma(inline, true);
     foreach (m; Iota!M)
     {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         save_nano_impl(reg[m], c + ldc * m);
     }
 }
 
-void save_nano(size_t P, size_t N, size_t M, V, T)
-=======
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-        save_nano_kernel_impl(reg[m], c + ldc * m);
-    }
-}
-
 void save_nano_kernel(size_t P, size_t N, size_t M, V, T)
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
     (ref V[N][P][M] reg, T[P]* c)
 {
     version(LDC) pragma(inline, true);
     foreach (m; Iota!M)
     {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         save_nano_impl(reg[m], c + m * V[N].sizeof / T.sizeof);
-=======
-        save_nano_kernel_impl(reg[m], c + m * V[N].sizeof / T.sizeof);
->>>>>>> origin/example
-=======
-        save_nano_kernel_impl(reg[m], c + m * V[N].sizeof / T.sizeof);
->>>>>>> origin/example
-=======
-        save_nano_kernel_impl(reg[m], c + m * V[N].sizeof / T.sizeof);
->>>>>>> origin/example
     }
 }
 
 version(LDC)
 {
     version(LDC) pragma(inline, true);
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     void save_nano_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
-=======
-    void save_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
-=======
-    void save_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
-=======
-    void save_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
     {
         import ldc.simd;
         foreach (j; Iota!(N))
@@ -1010,22 +588,7 @@ version(LDC)
 }
 else
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     void save_nano_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
-=======
-    version(LDC) pragma(inline, true);
-    void save_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
-=======
-    version(LDC) pragma(inline, true);
-    void save_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
-=======
-    version(LDC) pragma(inline, true);
-    void save_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
     {
         foreach (j; Iota!(N * V.sizeof / T.sizeof))
         {
@@ -1037,89 +600,30 @@ else
     }
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 void save_add_nano(size_t P, size_t N, size_t M, V, T)
-=======
-void save_add_nano_kernel(size_t P, size_t N, size_t M, V, T)
->>>>>>> origin/example
-=======
-void save_add_nano_kernel(size_t P, size_t N, size_t M, V, T)
->>>>>>> origin/example
-=======
-void save_add_nano_kernel(size_t P, size_t N, size_t M, V, T)
->>>>>>> origin/example
     (ref V[N][P][M] reg, T[P]* c, sizediff_t ldc)
 {
     version(LDC) pragma(inline, true);
     foreach (m; Iota!M)
     {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         save_add_nano_impl(reg[m], c + ldc * m);
     }
 }
 
-void save_add_nano(size_t P, size_t N, size_t M, V, T)
-=======
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-        save_add_nano_kernel_impl(reg[m], c + ldc * m);
-    }
-}
-
 void save_add_nano_kernel(size_t P, size_t N, size_t M, V, T)
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
     (ref V[N][P][M] reg, T[P]* c)
 {
     version(LDC) pragma(inline, true);
     foreach (m; Iota!M)
     {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         save_add_nano_impl(reg[m], c + m * V[N].sizeof / T.sizeof);
-=======
-        save_add_nano_kernel_impl(reg[m], c + m * V[N].sizeof / T.sizeof);
->>>>>>> origin/example
-=======
-        save_add_nano_kernel_impl(reg[m], c + m * V[N].sizeof / T.sizeof);
->>>>>>> origin/example
-=======
-        save_add_nano_kernel_impl(reg[m], c + m * V[N].sizeof / T.sizeof);
->>>>>>> origin/example
     }
 }
 
 version(LDC)
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     pragma(inline, true)
     void save_add_nano_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
-=======
-    version(LDC) pragma(inline, true);
-    void save_add_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
-=======
-    version(LDC) pragma(inline, true);
-    void save_add_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
-=======
-    version(LDC) pragma(inline, true);
-    void save_add_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
     {
         import ldc.simd;
         foreach (j; Iota!(N))
@@ -1164,19 +668,7 @@ version(LDC)
 else
 {
     version(LDC) pragma(inline, true);
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     void save_add_nano_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
-=======
-    void save_add_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
-=======
-    void save_add_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
-=======
-    void save_add_nano_kernel_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
->>>>>>> origin/example
     {
         foreach (j; Iota!(N * V.sizeof / T.sizeof))
         {
@@ -1190,9 +682,6 @@ else
 
 version(LDC)
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     pragma(inline, true)
     void save_madd_nano(size_t P, size_t N, size_t M, V, T)(ref V[N][P][M] reg, ref const T[P] beta, T[P]* c_, sizediff_t ldc)
     {
@@ -1296,12 +785,6 @@ else
 
 version(LDC)
 {
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
     template _mix0(V)
     {
         import ldc.simd;
@@ -1331,10 +814,6 @@ version(LDC)
     }
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-pragma(inline, true)
 void load_nano(size_t M, size_t PC, size_t N, V, W)(ref V[M][PC][N] to, ref W[M][PC][N] from)
 {
     foreach (n; Iota!N)
@@ -1345,15 +824,6 @@ void load_nano(size_t M, size_t PC, size_t N, V, W)(ref V[M][PC][N] to, ref W[M]
 
 pragma(inline, true)
 void load_nano(size_t A, V, F)
-=======
-void load_nano_kernel(size_t A, V, F)
->>>>>>> origin/example
-=======
-void load_nano_kernel(size_t A, V, F)
->>>>>>> origin/example
-=======
-void load_nano_kernel(size_t A, V, F)
->>>>>>> origin/example
 (ref V[A] to, ref const F[A] from)
     if (!isStaticArray!F)
 {
@@ -1373,36 +843,3 @@ void load_nano_kernel(size_t A, V, F)
     foreach (p; Iota!A)
         to[p] = from[p];
 }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-
-pragma(inline, true)
-auto statComplex(C)(C val)
-{
-    import std.complex: Complex;
-    static if (is(C : Complex!T, T))
-    {
-        T[2] ret = void;
-        ret[0] = val.re;
-        ret[1] = val.im;
-    }
-    else
-    {
-        C[1] ret = void;
-        ret[0] = val;
-    }
-    return ret;
-}
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example

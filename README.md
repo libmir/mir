@@ -37,20 +37,6 @@ Contents
 
  - `mir.random` - non-uniform RNGs.
  - `mir.glas` - Generic Linear Algebra Subroutines.
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-
-Documentation
--------------
-
-Alpha version of API is available [here](http://docs.mir.dlang.io/latest/index.html).
->>>>>>> origin/example
 
 Compatibility
 -------------

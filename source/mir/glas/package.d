@@ -52,16 +52,4 @@ Authors: Ilya Yaroshenko
 +/
 module mir.glas;
 
-<<<<<<< HEAD
 public import mir.glas.l3;
-=======
-public import mir.glas.gemm;
-public import mir.glas.trmm;
-public import mir.glas.trsm;
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
