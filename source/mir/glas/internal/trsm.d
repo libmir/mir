@@ -13,6 +13,8 @@ import std.traits;
 import std.complex;
 import std.meta;
 
+version(none):
+
 public import mir.glas.common;
 import mir.ndslice.slice : Slice;
 import mir.internal.utility;
@@ -88,7 +90,7 @@ body
 
     mixin RegisterConfig!(PB, PA, PB, T);
     auto bl = blocking_triangular!(PA, PB, T)(ctx, asl.length!0, bsl.length!1);
-    auto alpha_ = alpha.statComplex;
+    bl.kc = bl.mc = 2;
     size_t k;
     with(bl) for (;;)
     {
@@ -108,13 +110,14 @@ body
         if(bslp.length)
         {
             B gemm_alpha = -1;
-            gemm!type(ctx, bslb, gemm_alpha, aslp, bslp);
+            B gemm_beta = 1;
+            gemm!type(ctx, gemm_alpha, aslp, bslp, gemm_beta, bslb);
         }
-        pack_b_lower_micro_kernel!(true, PB, PA, PB)(aslb, a);
-        foreach (mri, mrType; simdChain)
+        pack_b_triangular_micro_kernel!(Uplo.lower, true, PB, PA, PB)(aslb, a);
+        foreach (mri, mrType; simd_chain)
         {
             enum mr = mrType.sizeof / T.sizeof;
-            if (bslp.length!1 >= mr) do
+            if (bslb.length!1 >= mr) do
             {
                 pack_a_nano_kernel!(mr, PA)(bslb.length, bslb.stride!0, bslb.stride!1, bslb.ptr, b);
                 trsm_kernel!(type, diag, PA, PB, mrType.length, typeof(mrType.init[0]), T)(
@@ -124,7 +127,7 @@ body
                     cast(T[PB]*) bslb.ptr,
                     cast(const(T[PA])*) a,
                     cast(mrType[PB]*)b,
-                    alpha_);
+                    alpha.castByRef);
                 bslb.popFrontExactly!1(mr);
             }
             while (!mri && bslb.length!1 >= mr);
@@ -222,6 +225,36 @@ unittest
     assert(ndEqual!approxEqual(b, r));
 }
 
+unittest
+{
+    import mir.ndslice;
+    import std.math: approxEqual;
+
+    auto a = slice!double(4, 4);
+    auto b = slice!double(3, 4).transposed;
+    auto r = slice!double(4, 3);
+    a[] =
+        [[8, 2,  9, 12],
+         [0, 4,  3, 20],
+         [0, 0, 10, 34],
+         [0, 0,  0, 12]];
+    b[] =
+        [[6, 4, 3],
+         [2, 5, 1],
+         [5, 7, 3],
+         [5, 9, 3]];
+    r[] =
+        [[ 1.380,  1.734,  0.766],
+         [-0.896, -1.113, -0.588],
+         [-0.917, -1.850, -0.550],
+         [ 0.417,  0.750,  0.250]];
+    auto ctx = new GlasContext;
+
+    ctx.trsm(Uplo.upper, 1.0, a, b);
+
+    assert(ndEqual!approxEqual(b, r));
+}
+
 package:
 
 pragma(inline, false)
@@ -247,82 +280,77 @@ void trsm_kernel (
 {
     mixin RegisterConfig!(PB, PA, PB, F);
     size_t kc;
-    foreach (nri; Iota!(broadcastChain.length))
+    foreach (nri, nr; broadcast_chain)
+    if (mc >= nr) do
     {
-        enum nr = broadcastChain[nri];
-        if (mc >= nr) do
+        enum N = nr;
+        version(LLVM_PREFETCH)
         {
-            enum N = nr;
-            typeof(b) t = b + kc;
-            version(LLVM_PREFETCH)
-            {
-                import ldc.intrinsics: llvm_prefetch;
+            import ldc.intrinsics: llvm_prefetch;
 
-                if(ldce == 1)
-                foreach (m; Iota!M)
-                foreach (pr; Iota!(V[M][PB].sizeof / 64 + bool(V[M][PB].sizeof % 64 > 0)))
-                    llvm_prefetch(cast(void*)c + pr * 64 + ldc * m, 1, 3, 1);
-
-                foreach (m; Iota!M)
-                foreach (pr; Iota!(V[M][PB][N].sizeof / 64 + bool(V[M][PB][N].sizeof % 64 > 0)))
-                    llvm_prefetch(cast(void*)t + pr * 64, 1, 3, 1);
-            }
-            V[M][PB][N] reg;
-            if(kc)
-            {
-                const(F)*[2] ba = void;
-                a = cast(typeof(a)) gemm_nano_kernel!(type, true, true, PB, PA, PB, M, N)(kc, reg, cast(V[M][PB]*) b, cast(const(F[PB][N])*)a);
-                V[PB] s = void;
-                s.load_nano_kernel(alpha);
-                foreach (n; Iota!N)
-                foreach (m; Iota!M)
-                {
-                    foreach(p; Iota!PB)
-                        reg[n][p][m] = s[0] * t[n][p][m] - reg[n][p][m];
-                    static if (PB == 2)
-                    {
-                        reg[n][0][m] -= s[1] * t[n][1][m];
-                        reg[n][1][m] += s[1] * t[n][0][m];
-                    }
-                }
-            }
-            else
-            {
-                V[PB] s = void;
-                s.load_nano_kernel(alpha);
-                foreach (n; Iota!N)
-                foreach (m; Iota!M)
-                {
-                    foreach(p; Iota!PB)
-                        reg[n][p][m] = s[0] * b[n][p][m];
-                    static if (PB == 2)
-                    {
-                        reg[n][0][m] -= s[1] * b[n][1][m];
-                        reg[n][1][m] += s[1] * b[n][0][m];
-                    }
-                }
-                t = b;
-            }
-            trsm_nano_kernel!(type, diag, PA, PB, M, N, F, V)(*cast(F[PA][N][N]*) a, reg);
-            foreach (n; Iota!N)
-            foreach (p; Iota!PB)
-            foreach (m; Iota!M)
-                t[n][p][m] = reg[n][p][m];
             if(ldce == 1)
-            {
-                save_nano_kernel(reg, c, ldc);
-                c += nr * ldc;
-            }
-            a += nr * nr;
-            mc -= nr;
-            kc += nr;
+            foreach (m; Iota!M)
+            foreach (pr; Iota!(V[M][PB].sizeof / 64 + bool(V[M][PB].sizeof % 64 > 0)))
+                llvm_prefetch(cast(void*)c + pr * 64 + ldc * m, 1, 3, 1);
+
+            //foreach (m; Iota!M)
+            //foreach (pr; Iota!(V[M][PB][N].sizeof / 64 + bool(V[M][PB][N].sizeof % 64 > 0)))
+            //    llvm_prefetch(cast(void*)t + pr * 64, 1, 3, 1);
         }
-        while (!nri && mc >= nr);
+        V[M][PB][N] reg = void;
+        if(kc)
+        {
+            a = cast(typeof(a)) gemm_nano_kernel!(type, true, true, false, PB, PA, PB, M, N)(kc, reg, cast(V[M][PB]*) b, cast(const(F[PB][N])*)a);
+            V[PB] s = void;
+            s.load_nano_kernel(alpha);
+            auto t = b + kc;
+            foreach (n; Iota!N)
+            foreach (m; Iota!M)
+            {
+                foreach(p; Iota!PB)
+                    reg[n][p][m] = s[0] * t[n][p][m] - reg[n][p][m];
+                static if (PB == 2)
+                {
+                    reg[n][0][m] -= s[1] * t[n][1][m];
+                    reg[n][1][m] += s[1] * t[n][0][m];
+                }
+            }
+        }
+        else
+        {
+            V[PB] s = void;
+            s.load_nano_kernel(alpha);
+            foreach (n; Iota!N)
+            foreach (m; Iota!M)
+            {
+                foreach(p; Iota!PB)
+                    reg[n][p][m] = s[0] * b[n][p][m];
+                static if (PB == 2)
+                {
+                    reg[n][0][m] -= s[1] * b[n][1][m];
+                    reg[n][1][m] += s[1] * b[n][0][m];
+                }
+            }
+        }
+        trsm_nano_kernel!(type, diag, PA, PB, M, N, F, V)(*cast(F[PA][N][N]*) a, reg);
+        typeof(b) t = b + kc;
+        foreach (n; Iota!N)
+        foreach (p; Iota!PB)
+        foreach (m; Iota!M)
+            t[n][p][m] = reg[n][p][m];
+        if(ldce == 1)
+        {
+            save_nano_kernel(reg, c, ldc);
+            c += nr * ldc;
+        }
+        a += nr * nr;
+        mc -= nr;
+        kc += nr;
     }
+    while (!nri && mc >= nr);
     if(ldce != 1)
     {
-        assert (ldc == 1);
-        save_transposed_nano_kernel(kc, ldce, b, c);
+        save_transposed_nano_kernel(kc, ldce, ldc, b, c);
     }
 }
 

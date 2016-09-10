@@ -7,14 +7,14 @@ License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: Ilya Yaroshenko
 +/
-module mir.glas.trsm;
+module mir.glas.trmm;
 
 import std.traits;
 import std.complex;
 import std.meta;
 
 public import mir.glas.common;
-import mir.ndslice.slice : Slice;
+import mir.ndslice.slice;
 import mir.internal.utility;
 import mir.glas.internal.config;
 import mir.glas.internal.copy;
@@ -23,14 +23,15 @@ import mir.glas.gemm: gemm, gemm_nano_kernel;
 
 version(LDC) version = LLVM_PREFETCH;
 
+version(none):
+
 @fastmath:
 
 pragma(inline, false)
 //nothrow @nogc
-void trsm(Conjugation type = conjN, Diag diag = Diag.nounit, A, B)
+void trmm(Conjugation type = conjN, Diag diag = Diag.nounit, A, B)
 (
     GlasContext* ctx,
-    Uplo uplo,
     B alpha,
         Slice!(2, A*) asl,
         Slice!(2, B*) bsl,
@@ -47,7 +48,7 @@ in
 }
 body
 {
-    import mir.ndslice.iteration: reversed, allReversed;
+    import mir.ndslice.iteration: reversed, allReversed, transposed;
     enum msg = "mir.glas does not allow slices on top of const/immutable/shared memory";
     static assert(is(Unqual!A == A), msg);
     static assert(is(Unqual!B == B), msg);
@@ -80,11 +81,6 @@ body
     {
         bsl = bsl.reversed!1;
     }
-    if(uplo == Uplo.upper)
-    {
-        asl = asl.allReversed;
-        bsl = bsl.reversed!0;
-    }
 
     mixin RegisterConfig!(PB, PA, PB, T);
     auto bl = blocking_triangular!(PA, PB, T)(ctx, asl.length!0, bsl.length!1);
@@ -107,17 +103,17 @@ body
         asl.popFrontExactly(kc);
         if(bslp.length)
         {
-            B gemm_alpha = -1;
+            B gemm_alpha = 1;
             gemm!type(ctx, bslb, gemm_alpha, aslp, bslp);
         }
-        pack_b_lower_micro_kernel!(true, PB, PA, PB)(aslb, a);
+        pack_b_triangle_micro_kernel!(PB, PA, PB)(aslb, a);
         foreach (mri, mrType; simdChain)
         {
             enum mr = mrType.sizeof / T.sizeof;
             if (bslp.length!1 >= mr) do
             {
                 pack_a_nano_kernel!(mr, PA)(bslb.length, bslb.stride!0, bslb.stride!1, bslb.ptr, b);
-                trsm_kernel!(type, diag, PA, PB, mrType.length, typeof(mrType.init[0]), T)(
+                trmm_kernel!(type, diag, PA, PB, mrType.length, typeof(mrType.init[0]), T)(
                     bslb.length,
                     bslb.stride!0,
                     bslb.stride!1,
@@ -135,8 +131,7 @@ body
 /// Lower triangular matrix
 unittest
 {
-    import mir.ndslice;
-
+    import mir.ndslice.algorithm;
     import std.math: approxEqual;
     auto a = slice!double(4, 4);
     auto b = slice!double(4, 3);
@@ -158,7 +153,7 @@ unittest
          [ 0.060, -1.275, -0.070]];
     auto ctx = new GlasContext;
 
-    ctx.trsm(Uplo.lower, 1.0, a, b);
+    ctx.trmm(1.0, a, b);
 
     assert(ndEqual!approxEqual(b, r));
 }
@@ -166,9 +161,9 @@ unittest
 /// Upper triangular matrix
 unittest
 {
-    import mir.ndslice;
+    import mir.ndslice.algorithm;
+    import mir.ndslice.iteration;
     import std.math: approxEqual;
-
     auto a = slice!double(4, 4);
     auto b = slice!double(4, 3);
     auto r = slice!double(4, 3);
@@ -189,16 +184,16 @@ unittest
          [ 0.417,  0.750,  0.250]];
     auto ctx = new GlasContext;
 
-    ctx.trsm(Uplo.upper, 1.0, a, b);
+    ctx.trmm(1.0, a.allReversed, b.reversed!0);
 
     assert(ndEqual!approxEqual(b, r));
 }
 
 unittest
 {
-    import mir.ndslice;
+    import mir.ndslice.algorithm;
+    import mir.ndslice.iteration;
     import std.math: approxEqual;
-
     auto a = slice!double(4, 4);
     auto b = slice!double(3, 4).transposed;
     auto r = slice!double(4, 3);
@@ -218,14 +213,14 @@ unittest
          [-0.213, -0.050, -0.056],
          [ 0.060, -1.275, -0.070]];
     auto ctx = new GlasContext;
-    ctx.trsm(Uplo.lower, 1.0, a, b);
+    ctx.trmm(1.0, a, b);
     assert(ndEqual!approxEqual(b, r));
 }
 
 package:
 
 pragma(inline, false)
-void trsm_kernel (
+void trmm_kernel (
     Conjugation type,
     Diag diag,
     size_t PA,
@@ -303,7 +298,7 @@ void trsm_kernel (
                 }
                 t = b;
             }
-            trsm_nano_kernel!(type, diag, PA, PB, M, N, F, V)(*cast(F[PA][N][N]*) a, reg);
+            trmm_nano_kernel!(type, diag, PA, PB, M, N, F, V)(*cast(F[PA][N][N]*) a, reg);
             foreach (n; Iota!N)
             foreach (p; Iota!PB)
             foreach (m; Iota!M)
@@ -327,7 +322,7 @@ void trsm_kernel (
 }
 
 pragma(inline, true)
-void trsm_nano_kernel (
+void trmm_nano_kernel (
     Conjugation type,
     Diag diag,
     size_t PA,
@@ -352,26 +347,6 @@ void trsm_nano_kernel (
         reg[n][p][m] = b[n][p][m];
     foreach (n; Iota!N)
     {
-        foreach (i; Iota!n)
-        {
-            V[PA] s = void;
-            s.load_nano_kernel(a[i][n]);
-            foreach (m; Iota!M)
-            {
-                    reg[n][0][m]  -= s[0] * reg[i][0][m];
-     static if (AB) reg[n][1][m]  -= s[0] * reg[i][1][m];
-                static if (type == conjN)
-                {
-     static if (AA) reg[n][0][m]  += s[1] * reg[i][1][m];
-     static if (AB) reg[n][1][m]  -= s[1] * reg[i][0][m];
-                }
-                else
-                {
-     static if (AA) reg[n][0][m]  -= s[1] * reg[i][1][m];
-     static if (AB) reg[n][1][m]  += s[1] * reg[i][0][m];
-                }
-            }
-        }
         static if (diag == Diag.nounit)
         {
             V[PA] s = void;
@@ -392,6 +367,26 @@ void trsm_nano_kernel (
                 }
                 reg[n][0][m] = re;
  static if (AA) reg[n][1][m] = im;
+            }
+        }
+        foreach (i; Iota!(n + 1, N))
+        {
+            V[PA] s = void;
+            s.load_nano_kernel(a[i][n]);
+            foreach (m; Iota!M)
+            {
+                    reg[n][0][m]  += s[0] * reg[i][0][m];
+     static if (AB) reg[n][1][m]  += s[0] * reg[i][1][m];
+                static if (type == conjN)
+                {
+     static if (AA) reg[n][0][m]  -= s[1] * reg[i][1][m];
+     static if (AB) reg[n][1][m]  += s[1] * reg[i][0][m];
+                }
+                else
+                {
+     static if (AA) reg[n][0][m]  += s[1] * reg[i][1][m];
+     static if (AB) reg[n][1][m]  -= s[1] * reg[i][0][m];
+                }
             }
         }
     }
@@ -424,7 +419,7 @@ unittest
          [ 0.060, -1.275, -0.070]];
     foreach(i; 0 .. a.length)
             a[i][i] = 1 / a[i][i];
-    alias f = trsm_nano_kernel!(conjN, Diag.nounit, 1, 1, 3, 4, double, double);
+    alias f = trmm_nano_kernel!(conjN, Diag.nounit, 1, 1, 3, 4, double, double);
     f(*cast(double[1][4][4]*) &a, *cast(double[3][1][4]*) &b);
     import std.math: approxEqual;
     foreach(i; 0..b.length)

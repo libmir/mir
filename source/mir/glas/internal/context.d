@@ -7,7 +7,7 @@ __gshared immutable Cache c1;
 __gshared immutable Cache c2;
 __gshared immutable Tlb tlb;
 
-//nothrow @nogc
+nothrow @nogc
 shared static this()
 {
     auto dc = dCache;
