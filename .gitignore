@@ -29,3 +29,11 @@ __test__source__
 flex_plot_test_*
 trace.*
 *.DS_Store
+
+examples/median_filter
+
+examples/means_of_columns
+
+benchmarks/glas/gemm_bench
+
+benchmarks/glas/symm_bench

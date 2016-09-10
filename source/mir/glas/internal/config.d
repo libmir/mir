@@ -5,7 +5,7 @@ import std.meta;
 import std.complex: Complex;
 import mir.internal.utility;
 
-template RegisterConfig(size_t PR, size_t PS, size_t PB, T)
+template RegisterConfig(size_t PS, size_t PB, size_t PR, T)
     if (is(Unqual!T == T) && !isComplex!T)
 {
     static if (isFloatingPoint!T)
@@ -45,10 +45,16 @@ template RegisterConfig(size_t PR, size_t PS, size_t PB, T)
                 mixin M16;
     else
         mixin M1;
-    enum broadcastChain = BroadcastChain!broadcast;
-    enum size_t nr = broadcast;
-    enum size_t mr = simdChain[0].sizeof / T.sizeof;
+    enum _countOf(C) = C.sizeof / T.sizeof;
+    alias nr_chain = BroadcastChain!_broadcast;
+    alias mr_chain = staticMap!(_countOf, _simd_type_chain);
+    enum size_t main_nr = _broadcast;
+    enum size_t main_mr = _countOf!(_simd_type_chain[0]);
+    alias Vi(size_t mri) = ForeachType!(_simd_type_chain[mri]);
+    enum Mi(size_t mri) = _simd_type_chain[mri].length;
 }
+
+//private:
 
 template BroadcastChain(size_t s)
 {
@@ -57,12 +63,12 @@ template BroadcastChain(size_t s)
     static assert(s);
     static if (s == 1)
     {
-        enum size_t[] BroadcastChain = [s];
+        alias BroadcastChain = AliasSeq!(s);
     }
     else
     {
         private enum trp2 = 1 << bsr(s);
-        enum size_t[] BroadcastChain = [s] ~ BroadcastChain!(Select!(trp2 == s, trp2 / 2, trp2));
+        alias BroadcastChain = AliasSeq!(s, BroadcastChain!(Select!(trp2 == s, trp2 / 2, trp2)));
     }
 }
 
@@ -136,110 +142,110 @@ template optVec(V)
 
 mixin template AVX512_S()
 {
-    enum size_t broadcast = 6;
-    alias simdChain = AliasSeq!(__vector(float[8])[4], __vector(float[16])[2], __vector(float[16])[1], __vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    enum size_t _broadcast = 6;
+    alias _simd_type_chain = AliasSeq!(__vector(float[8])[4], __vector(float[16])[2], __vector(float[16])[1], __vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
 }
 
 mixin template AVX512_D()
 {
-    enum size_t broadcast = 6;
-    alias simdChain = AliasSeq!(__vector(double[8])[4], __vector(double[8])[2], __vector(double[8])[1], __vector(double[4])[1], __vector(double[2])[1], double[1]);
+    enum size_t _broadcast = 6;
+    alias _simd_type_chain = AliasSeq!(__vector(double[8])[4], __vector(double[8])[2], __vector(double[8])[1], __vector(double[4])[1], __vector(double[2])[1], double[1]);
 }
 
 mixin template AVX512_C()
 {
-    enum size_t broadcast = 6;
-    alias simdChain = AliasSeq!(__vector(float[16])[2], __vector(float[16])[1], __vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    enum size_t _broadcast = 6;
+    alias _simd_type_chain = AliasSeq!(__vector(float[16])[2], __vector(float[16])[1], __vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
 }
 
 mixin template AVX512_Z()
 {
-    enum size_t broadcast = 6;
-    alias simdChain = AliasSeq!(__vector(double[8])[2], __vector(double[8])[1], __vector(double[4])[1], __vector(double[2])[1], double[1]);
+    enum size_t _broadcast = 6;
+    alias _simd_type_chain = AliasSeq!(__vector(double[8])[2], __vector(double[8])[1], __vector(double[4])[1], __vector(double[2])[1], double[1]);
 }
 
 mixin template AVX_S()
 {
-    enum size_t broadcast = 6;
-    alias simdChain = AliasSeq!(__vector(float[8])[2], __vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    enum size_t _broadcast = 6;
+    alias _simd_type_chain = AliasSeq!(__vector(float[8])[2], __vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
 }
 
 mixin template AVX_D()
 {
-    enum size_t broadcast = 6;
-    alias simdChain = AliasSeq!(__vector(double[4])[2], __vector(double[4])[1], __vector(double[2])[1], double[1]);
+    enum size_t _broadcast = 6;
+    alias _simd_type_chain = AliasSeq!(__vector(double[4])[2], __vector(double[4])[1], __vector(double[2])[1], double[1]);
 }
 
 mixin template AVX_C()
 {
-    enum size_t broadcast = 6;
-    alias simdChain = AliasSeq!(__vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    enum size_t _broadcast = 6;
+    alias _simd_type_chain = AliasSeq!(__vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
 }
 
 mixin template AVX_Z()
 {
-    enum size_t broadcast = 6;
-    alias simdChain = AliasSeq!(__vector(double[4])[1], __vector(double[2])[1], double[1]);
+    enum size_t _broadcast = 6;
+    alias _simd_type_chain = AliasSeq!(__vector(double[4])[1], __vector(double[2])[1], double[1]);
 }
 
 mixin template SSE2_S()
 {
-    enum size_t broadcast = 6;
-    alias simdChain = AliasSeq!(__vector(float[4])[2], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    enum size_t _broadcast = 6;
+    alias _simd_type_chain = AliasSeq!(__vector(float[4])[2], __vector(float[4])[1], optVec!(float[2]), float[1]);
 }
 
 mixin template SSE2_D()
 {
-    enum size_t broadcast = 6;
-    alias simdChain = AliasSeq!(__vector(double[2])[2], __vector(double[2])[1], double[1]);
+    enum size_t _broadcast = 6;
+    alias _simd_type_chain = AliasSeq!(__vector(double[2])[2], __vector(double[2])[1], double[1]);
 }
 
 mixin template SSE2_C()
 {
-    enum size_t broadcast = 4;
-    alias simdChain = AliasSeq!(__vector(float[4])[2], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    enum size_t _broadcast = 4;
+    alias _simd_type_chain = AliasSeq!(__vector(float[4])[2], __vector(float[4])[1], optVec!(float[2]), float[1]);
 }
 
 mixin template SSE2_Z()
 {
-    enum size_t broadcast = 4;
-    alias simdChain = AliasSeq!(__vector(double[2])[2], __vector(double[2])[1], double[1]);
+    enum size_t _broadcast = 4;
+    alias _simd_type_chain = AliasSeq!(__vector(double[2])[2], __vector(double[2])[1], double[1]);
 }
 
 mixin template M16()
 {
     static if (PR == 1)
     {
-        enum size_t broadcast = 6;
-        alias simdChain = AliasSeq!(T[2], T[1]);
+        enum size_t _broadcast = 6;
+        alias _simd_type_chain = AliasSeq!(T[2], T[1]);
     }
     else
     {
-        enum size_t broadcast = 2;
-        alias simdChain = AliasSeq!(T[2], T[1]);
+        enum size_t _broadcast = 2;
+        alias _simd_type_chain = AliasSeq!(T[2], T[1]);
     }
 }
 
 mixin template M8()
 {
-    enum size_t broadcast = 2;
+    enum size_t _broadcast = 2;
     static if (PR == 1)
-        alias simdChain = AliasSeq!(T[2], T[1]);
+        alias _simd_type_chain = AliasSeq!(T[2], T[1]);
     else
-        alias simdChain = AliasSeq!(T[1]);
+        alias _simd_type_chain = AliasSeq!(T[1]);
 }
 
 mixin template M4()
 {
-    enum size_t broadcast = 1;
+    enum size_t _broadcast = 1;
     static if (PR == 1)
-        alias simdChain = AliasSeq!(T[2], T[1]);
+        alias _simd_type_chain = AliasSeq!(T[2], T[1]);
     else
-        alias simdChain = AliasSeq!(T[1]);
+        alias _simd_type_chain = AliasSeq!(T[1]);
 }
 
 mixin template M1()
 {
-    enum size_t broadcast = 1;
-    alias simdChain = AliasSeq!(T[1]);
+    enum size_t _broadcast = 1;
+    alias _simd_type_chain = AliasSeq!(T[1]);
 }

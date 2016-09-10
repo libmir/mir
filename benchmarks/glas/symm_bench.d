@@ -1,7 +1,7 @@
 #!/usr/bin/env dub
 /+ dub.json:
 {
-	"name": "gemm_bench",
+	"name": "symm_bench",
 	"dependencies": {"mir": {"path": "../.."}, "cblas": "~>0.1.0"},
 	"dflags-ldc": ["-mcpu=native"],
 	"lflags": ["-L./"]
@@ -33,11 +33,12 @@ void main(string[] args)
 	size_t n = size_t.max;
 	size_t k = size_t.max;
 	size_t count = 6;
+	bool trans;
 	auto helpInformation = 
 	getopt(args,
+		"cm", "C is column major", &trans, 
 		"size_m|m", "Default value is " ~ m.to!string, &m, 
 		"size_n|n", "Default value equals to m", &n,
-		"size_k|k", "Default value equals to m", &k, 
 		"count|c", "Iteration count. Default value is " ~ count.to!string, &count);
 	if (helpInformation.helpWanted)
 	{
@@ -46,13 +47,11 @@ void main(string[] args)
 	}
 	if(n == n.max)
 		n = m;
-	if(k == k.max)
-		k = m;
 
+	auto c = trans ? slice!C(m, n) : slice!C(n, m).transposed;
 	auto d = slice!C(m, n);
-	auto c = slice!C(m, n);
-	auto a = slice!A(m, k);
-	auto b = slice!B(k, n);
+	auto a = slice!A(m, m);
+	auto b = slice!B(m, n);
 
 	fillRNG(c);
 	fillRNG(a);
@@ -82,13 +81,12 @@ void main(string[] args)
 		{
 			static import cblas;
 			static if(is(C : Complex!E, E))
-			cblas.gemm(
+			cblas.symm(
 				cblas.Order.RowMajor,
-				cblas.Transpose.NoTrans,
-				cblas.Transpose.NoTrans,
+				cblas.Side.Left,
+				cblas.Uplo.Lower,
 				cast(cblas.blasint) m,
 				cast(cblas.blasint) n,
-				cast(cblas.blasint) k,
 				& alpha,
 				a.ptr,
 				cast(cblas.blasint) a.stride,
@@ -98,13 +96,12 @@ void main(string[] args)
 				d.ptr,
 				cast(cblas.blasint) d.stride);
 			else
-			cblas.gemm(
+			cblas.symm(
 				cblas.Order.RowMajor,
-				cblas.Transpose.NoTrans,
-				cblas.Transpose.NoTrans,
+				cblas.Side.Left,
+				cblas.Uplo.Lower,
 				cast(cblas.blasint) m,
 				cast(cblas.blasint) n,
-				cast(cblas.blasint) k,
 				alpha,
 				a.ptr,
 				cast(cblas.blasint) a.stride,
@@ -118,7 +115,7 @@ void main(string[] args)
 		sw.stop;
 
 		auto newns = sw.peek.to!Duration.total!"nsecs".to!double;
-		//writefln("_BLAS (amount of threads is unknown): %5s GFLOPS", (m * n * k * 2) / newns);
+		//writefln("_BLAS (amount of threads is unknown): %5s GFLOPS", (m * n * m * 2) / newns);
 
 		nsecsBLAS = min(newns, nsecsBLAS);
 
@@ -128,16 +125,20 @@ void main(string[] args)
 	{
 		StopWatch sw;
 		sw.start;
-		glas.gemm(alpha, a, b, beta, c);
+		glas.symm(Side.left, Uplo.lower, alpha, a, b, beta, c);
 		sw.stop;
 		auto newns = sw.peek.to!Duration.total!"nsecs".to!double;
-		//writefln("_GLAS (single thread)               : %5s GFLOPS", (m * n * k * 2) / newns);
+		//writefln("_GLAS (single thread)               : %5s GFLOPS", (m * n * m * 2) / newns);
 		nsecsGLAS = min(newns, nsecsGLAS);
 	}
-	writefln("BLAS (amount of threads is unknown): %5s GFLOPS", (m * n * k * 2) / nsecsBLAS,);
-	writefln("GLAS (single thread)               : %5s GFLOPS", (m * n * k * 2) / nsecsGLAS,);
+	writefln("BLAS (amount of threads is unknown): %5s GFLOPS", (m * n * m * 2) / nsecsBLAS,);
+	writefln("GLAS (single thread)               : %5s GFLOPS", (m * n * m * 2) / nsecsGLAS,);
 	if(count == 1 && c != d)
 	{
+		//writefln("a =\n%(%(%4s %)\n%)\n", a);
+		//writefln("b =\n%(%(%4s %)\n%)\n", b);
+		//writefln("c =\n%(%(%4s %)\n%)\n", c);
+		//writefln("d =\n%(%(%4s %)\n%)\n", d);
 		writeln("results are very different");
 	}
 }
