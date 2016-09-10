@@ -130,7 +130,7 @@ T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length,
         enum LDC = false;
     do
     {
-        static if (n * P > 1 && !is(T == real) && LDC && (is(T == F) && P == 1 || is(Complex!T == F) && P == 2))
+        static if (conj == false && n * P > 1 && !is(T == real) && LDC && (is(T == F) && P == 1 || is(Complex!T == F) && P == 2))
         {
             import ldc.simd;
             alias V = __vector(T[s]);
