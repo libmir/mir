@@ -117,9 +117,6 @@ void main(string[] args)
 	}
 	writefln("BLAS (amount of threads is unknown): %5s GFLOPS", (m * k * k + k) / nsecsBLAS,);
 	writefln("GLAS (single thread)               : %5s GFLOPS", (m * k * k + k) / nsecsGLAS,);
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 	if(count == 1)
 	{
 		static if(is(B : Complex!E, E))
@@ -130,25 +127,6 @@ void main(string[] args)
 		{
 			writeln("results are very different");
 		}
-=======
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-	static if(is(B : Complex!E, E))
-		auto equal = ndAll!((a, b) => approxEqual(a.re, b.re) && approxEqual(a.im, b.im))(b, d);
-	else
-		auto equal = ndAll!approxEqual(b, d);
-	if(!equal)
-	{
-		writeln("results are very different");
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/example
-=======
->>>>>>> origin/example
-=======
->>>>>>> origin/example
 	}
 }
 
