@@ -12,7 +12,7 @@ custom color for mir
 }
 
 #top a:hover, #top #cssmenu li.open > a, #top #cssmenu li.active > a {
-    background: #00127b;
+    background: #000000;
 }
 
 a, .question, .expand-toggle {
