@@ -17,7 +17,7 @@ $(BOOKTABLE ,
     )
     $(LEADINGROW Level 3)
     $(TR
-        $(TDNW $(LINK2 mir_glas_l3.html, mir.glas.gemm))
+        $(TDNW $(LINK2 mir_glas_l3.html, mir.glas.l3))
         $(TD matrix-matrix operations)
     )
 )
