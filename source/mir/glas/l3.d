@@ -130,7 +130,7 @@ unittest
 /++
 Performs symmetric or hermitian matrix-matrix multiplication.
 
-Pseudo_code: `C := alpha A × B + beta C` or `C := alpha B × A + beta C`, 
+Pseudo_code: `C := alpha A × B + beta C` or `C := alpha B × A + beta C`,
     where  `alpha` and `beta` are scalars, `A` is a symmetric or hermitian matrix and `B` and
     `C` are `m × n` matrices.
 
@@ -138,7 +138,7 @@ Params:
     ctx = GLAS context. Should not be accessed by other threads.
     side = specifies whether the symmetric matrix A
            appears on the  left or right  in the  operation.
-    uplo = specifies  whether  the  upper  or  lower triangular 
+    uplo = specifies  whether  the  upper  or  lower triangular
            part of the symmetric matrix A is to be referenced.
            When `uplo` equals to `Uplo.upper`, the upper triangular
            part of the matrix `asl`  must contain the upper triangular part
@@ -149,7 +149,7 @@ Params:
            matrix A and the strictly upper triangular part of `asl` is not
            referenced.
     alpha = scalar
-    asl = `k x k` matrix, where `k` is `m`  when  `side` equals to 'Side.left' 
+    asl = `k x k` matrix, where `k` is `m`  when  `side` equals to 'Side.left'
            and is `n` otherwise.
     bsl = `m x n` matrix
     beta = scalar. When  `beta`  is supplied as zero then the matrix `csl` need not be set on input.

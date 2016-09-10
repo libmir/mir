@@ -128,7 +128,6 @@ body
         auto bslp = bsl[kc .. $];
         auto aslp = asl[0 .. kc, kc .. $];
         bslb = bsl[0 .. kc];
-            
         writefln("asl = \n%(%s\n%)", asl);
         writefln("bsl = \n%(%s\n%)", bsl);
         if (bslp.length)
@@ -140,7 +139,7 @@ body
             B gemm_beta = 1;
             gemm!type(ctx, gemm_alpha, aslp, bslp, gemm_beta, bslb);
             writefln("c = \n%(%s\n%)", bslb);
-        } 
+        }
         writefln("asl = \n%(%s\n%)", asl);
         writefln("bsl = \n%(%s\n%)", bsl);
         assert(asl.length!1 == asl.length);
