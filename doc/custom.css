@@ -7,7 +7,7 @@ custom color for mir
 */
 
 #top {
-    background: rgba(23, 0, 185, 0.83);
+    background: rgba(0, 0, 0, 0.83);
     border-bottom: 1px #000000 solid;
 }
 
@@ -25,4 +25,11 @@ a:hover, .question:hover, .expand-toggle:hover {
 
 .d_decl {
     border-left: 5px solid #0003bd;
+}
+
+#top img#logo
+{
+    height: 2.533em;
+    vertical-align: middle;
+    width: 2.533em;
 }
