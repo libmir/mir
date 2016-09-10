@@ -119,7 +119,7 @@ T* pack_b_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t lengt
     return to;
 }
 
-pragma(inline, false)
+//pragma(inline, false)
 T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, F* from, T* to)
 {
     enum s = n * P;
