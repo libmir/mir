@@ -7,6 +7,8 @@ This is a submodule of $(LINK2 mir_glas.html, mir.glas).
 
 Level 3 GLAS perform matrix-matrix operations.
 
+Note: GLAS is singe thread for now.
+
 $(BOOKTABLE $(H2 Matrix-matrix operations),
 
 $(TR $(TH Function Name) $(TH Description))
