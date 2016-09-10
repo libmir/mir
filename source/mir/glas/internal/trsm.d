@@ -82,7 +82,7 @@ body
     {
         bsl = bsl.reversed!1;
     }
-    if(uplo == Uplo.upper)
+    if (uplo == Uplo.upper)
     {
         asl = asl.allReversed;
         bsl = bsl.reversed!0;
@@ -107,7 +107,7 @@ body
         auto aslb = asl[0 .. kc, k .. newK];
         k = newK;
         asl.popFrontExactly(kc);
-        if(bslp.length)
+        if (bslp.length)
         {
             B gemm_alpha = -1;
             B gemm_beta = 1;
@@ -288,7 +288,7 @@ void trsm_kernel (
         {
             import ldc.intrinsics: llvm_prefetch;
 
-            if(ldce == 1)
+            if (ldce == 1)
             foreach (m; Iota!M)
             foreach (pr; Iota!(V[M][PB].sizeof / 64 + bool(V[M][PB].sizeof % 64 > 0)))
                 llvm_prefetch(cast(void*)c + pr * 64 + ldc * m, 1, 3, 1);
@@ -298,7 +298,7 @@ void trsm_kernel (
             //    llvm_prefetch(cast(void*)t + pr * 64, 1, 3, 1);
         }
         V[M][PB][N] reg = void;
-        if(kc)
+        if (kc)
         {
             a = cast(typeof(a)) gemm_nano_kernel!(type, true, true, false, PB, PA, PB, M, N)(kc, reg, cast(V[M][PB]*) b, cast(const(F[PB][N])*)a);
             V[PB] s = void;
@@ -307,7 +307,7 @@ void trsm_kernel (
             foreach (n; Iota!N)
             foreach (m; Iota!M)
             {
-                foreach(p; Iota!PB)
+                foreach (p; Iota!PB)
                     reg[n][p][m] = s[0] * t[n][p][m] - reg[n][p][m];
                 static if (PB == 2)
                 {
@@ -323,7 +323,7 @@ void trsm_kernel (
             foreach (n; Iota!N)
             foreach (m; Iota!M)
             {
-                foreach(p; Iota!PB)
+                foreach (p; Iota!PB)
                     reg[n][p][m] = s[0] * b[n][p][m];
                 static if (PB == 2)
                 {
@@ -338,7 +338,7 @@ void trsm_kernel (
         foreach (p; Iota!PB)
         foreach (m; Iota!M)
             t[n][p][m] = reg[n][p][m];
-        if(ldce == 1)
+        if (ldce == 1)
         {
             save_nano_kernel(reg, c, ldc);
             c += nr * ldc;
@@ -348,7 +348,7 @@ void trsm_kernel (
         kc += nr;
     }
     while (!nri && mc >= nr);
-    if(ldce != 1)
+    if (ldce != 1)
     {
         save_transposed_nano_kernel(kc, ldce, ldc, b, c);
     }
@@ -437,8 +437,8 @@ unittest
          [2 , 4 , 0 ,  0],
          [9 , 3 , 10,  0],
          [12, 20, 34,  12]];
-    foreach(i; 0..a.length)
-    foreach(j; 0..i)
+    foreach (i; 0..a.length)
+    foreach (j; 0..i)
         swap(a[i][j], a[j][i]);
     double[3][4] b =
         [[6, 4, 3],
@@ -450,12 +450,12 @@ unittest
          [ 0.125,  1.000,  0.063],
          [-0.213, -0.050, -0.056],
          [ 0.060, -1.275, -0.070]];
-    foreach(i; 0 .. a.length)
+    foreach (i; 0 .. a.length)
             a[i][i] = 1 / a[i][i];
     alias f = trsm_nano_kernel!(conjN, Diag.nounit, 1, 1, 3, 4, double, double);
     f(*cast(double[1][4][4]*) &a, *cast(double[3][1][4]*) &b);
     import std.math: approxEqual;
-    foreach(i; 0..b.length)
-    foreach(j; 0..b[0].length)
+    foreach (i; 0..b.length)
+    foreach (j; 0..b[0].length)
         assert(b[i][j].approxEqual(x[i][j]));
 }

@@ -26,7 +26,7 @@ unittest
         if (trans)
             c = c.reshape(n, m).transposed;
 
-        static if(isComplex!D)
+        static if (isComplex!D)
         {
             D alpha = D(3, 7);
             D beta = D(2, 5);
@@ -71,7 +71,7 @@ unittest
         if (trans)
             c = c.reshape(n, m).transposed;
 
-        static if(isComplex!D)
+        static if (isComplex!D)
         {
             D alpha = D(3, 7);
             D beta = D(2, 5);
@@ -92,7 +92,7 @@ unittest
         foreach (i; 0..a.length)
             foreach (j; 0..b.length!1)
                 foreach (r; 0..b.length)
-                    if(i < r)
+                    if (i < r)
                         d[i, j] += alpha * a[r, i] * b[r, j];
                     else
                         d[i, j] += alpha * a[i, r] * b[r, j];
@@ -105,9 +105,9 @@ unittest
 void fillRNG(T)(Slice!(2, T*) sl)
 {
 	import std.random;
-    foreach(ref e; sl.byElement)
+    foreach (ref e; sl.byElement)
     {
-        static if(is(T : Complex!F, F))
+        static if (is(T : Complex!F, F))
         {
             e.re = cast(F) uniform(-100, 100);
             e.im = cast(F) uniform(-100, 100);

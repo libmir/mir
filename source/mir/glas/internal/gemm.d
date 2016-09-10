@@ -73,13 +73,13 @@ void gemm_impl(A, B, C)
     {
         if (beta == 0)
         {
-            foreach(row; csl)
+            foreach (row; csl)
                 row.toDense[] = C(0);
             return;
         }
         if (beta == 1)
             return;
-        foreach(row; csl)
+        foreach (row; csl)
             row.toDense[] *= beta;
         return;
     }
@@ -90,20 +90,20 @@ void gemm_impl(A, B, C)
         beta_kernels = void,
         one_kernels = void;
 
-    foreach(nri, nr; nr_chain)
+    foreach (nri, nr; nr_chain)
         one_kernels [nri] = &gemv_reg!(BetaType.one, PA, PB, PC, nr, T);
 
     Kernel!(PC, T)* kernels = one_kernels.ptr;
-    if(beta == 0)
+    if (beta == 0)
     {
-        foreach(nri, nr; nr_chain)
+        foreach (nri, nr; nr_chain)
             beta_kernels[nri] = &gemv_reg!(BetaType.zero, PA, PB, PC, nr, T);
         kernels = beta_kernels.ptr;
     }
     else
-    if(beta != 1)
+    if (beta != 1)
     {
-        foreach(nri, nr; nr_chain)
+        foreach (nri, nr; nr_chain)
             beta_kernels[nri] = &gemv_reg!(BetaType.beta, PA, PB, PC, nr, T);
         kernels = beta_kernels.ptr;
     }
@@ -128,7 +128,7 @@ void gemm_impl(A, B, C)
                 if (aslp.length!0 < mc)
                     mc = aslp.length!0;
                 ////////////////////////
-                if(PA && conja)
+                if (PA && conja)
                     pack_a!(PA, PB, PC, true, T, A)(aslp[0 .. mc], a);
                 else
                     pack_a!(PA, PB, PC, false, T, A)(aslp[0 .. mc], a);
@@ -155,13 +155,13 @@ void gemm_impl(A, B, C)
                 cslm.popFrontExactly!0(mc);
                 aslp.popFrontExactly!0(mc);
             }
-            while(aslp.length!0);
+            while (aslp.length!0);
             ////////////////////////
             kernels = one_kernels.ptr;
             bsl.popFrontExactly!0(kc);
             asl.popFrontExactly!1(kc);
         }
-        while(asl.length!1);
+        while (asl.length!1);
     }
 }
 
@@ -190,7 +190,7 @@ void gebp(size_t PA, size_t PB, size_t PC, F, C)(
     {
         if (ptrb)
         {
-            if(PB && conj)
+            if (PB && conj)
                 pack_b_nano!(nr, PB, true)(kc, ldb, ldbe, ptrb, b);
             else
                 pack_b_nano!(nr, PB, false)(kc, ldb, ldbe, ptrb, b);

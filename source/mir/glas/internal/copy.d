@@ -13,7 +13,7 @@ import mir.glas.common;
 pragma(inline, true)
 T* pack_b_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
 {
-    if(elemStride == 1)
+    if (elemStride == 1)
         return pack_b_dense_nano!(n, P, conj)(length, stride, from, to);
     else
         return pack_b_strided_nano!(n, P, conj)(length, stride, elemStride, from, to);
@@ -24,22 +24,21 @@ T* pack_b_sym_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, S
 {
     {
         sizediff_t diff = i - j;
-        if(diff > 0)
+        if (diff > 0)
         {
             diff++;
-            if(diff > length)
+            if (diff > length)
                 diff = length;
             to = pack_b_nano!(n, P, false, F, T)(diff, sl.stride!0, sl.stride!1, &sl[j, i], to);
             j += diff;
             length -= diff;
-            if(length == 0)
+            if (length == 0)
                 return to;
         }
     }
 
     auto from = &sl[i, j];
-    //foreach(u; sizediff_t(j - i) .. sizediff_t(n - 1 < length ? n - 1 : length))
-    foreach(u; sizediff_t(j - i) .. n - 1)
+    foreach (u; sizediff_t(j - i) .. n - 1)
     {
         auto pfrom = from;
         foreach (v; 0 .. u)
@@ -83,7 +82,7 @@ T* pack_b_sym_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, S
         from += sl.stride!1;
         j++;
         length--;
-        if(length == 0)
+        if (length == 0)
             return to;
     }
     return pack_b_nano!(n, P, conj, F, T)(length, sl.stride!1, sl.stride!0, from, to);
@@ -169,7 +168,7 @@ T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length,
 
 T* pack_a_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
 {
-    if(elemStride == 1)
+    if (elemStride == 1)
         return pack_a_dense_nano!(n, P, conj)(length, stride, from, to);
     else
         return pack_a_strided_nano!(n, P, conj)(length, stride, elemStride, from, to);
@@ -299,15 +298,15 @@ void pack_a_sym(size_t PA, size_t PB, size_t PC, bool conj = false, T, F)(Slice!
         size_t length = kc;
         {
             sizediff_t diff = i - j;
-            if(diff > 0)
+            if (diff > 0)
             {
                 diff++;
-                if(diff > length)
+                if (diff > length)
                     diff = length;
                 to = pack_a_nano!(mr, PA, false, F, T)(diff, sl.stride!1, sl.stride!0, &sl[i, j], to);
                 j += diff;
                 length -= diff;
-                if(length == 0)
+                if (length == 0)
                 {
                     mc -= mr;
                     i += mr;
@@ -317,7 +316,7 @@ void pack_a_sym(size_t PA, size_t PB, size_t PC, bool conj = false, T, F)(Slice!
         }
         auto tos = to;
         auto from = &sl[j, i];
-        foreach(u; sizediff_t(j - i) .. mr - 1)
+        foreach (u; sizediff_t(j - i) .. mr - 1)
         {
             auto pfrom = from;
             foreach (v; 0 .. u)
@@ -363,16 +362,16 @@ void pack_a_sym(size_t PA, size_t PB, size_t PC, bool conj = false, T, F)(Slice!
                 to++;
                 pfrom += sl.stride!0;
             }
-            static if(PA == 2)
+            static if (PA == 2)
                 to += mr;
             from += sl.stride!0;
             j++;
             length--;
-            if(length == 0)
+            if (length == 0)
                 break;
         }
         tos = to;
-        if(length)
+        if (length)
             to = pack_a_nano!(mr, PA, conj, F, T)(length, sl.stride!0, sl.stride!1, from, to);
         mc -= mr;
         i += mr;
@@ -408,7 +407,7 @@ void pack_b_triangular(Uplo uplo, bool inverseDiagonal, size_t PA, size_t PB, si
         static if (inverseDiagonal)
         {
             auto a = cast(T[PB]*) b;
-            foreach(i; Iota!nr)
+            foreach (i; Iota!nr)
             {
                 enum sizediff_t j = i + i * nr - sizediff_t(nr * nr);
                 static if (PB == 1)
@@ -462,7 +461,7 @@ void load_simd(size_t mr, size_t P, T)(T* to, T[P]* from)
     }
     else
     foreach (j; Iota!mr)
-    foreach(p; Iota!P)
+    foreach (p; Iota!P)
         to[mr * p + j] = cast(T) from[j * P][p];
 }
 
@@ -520,11 +519,11 @@ void load_simd(size_t mr, size_t P, T)(T* to, T[P]* from)
 //            t += elemStride;
 //            ff += P * M;
 //        }
-//        while(--len);
+//        while (--len);
 //        to += stride;
 //        f += P;
 //    }
-//    while(--j);
+//    while (--j);
 //}
 
 //pragma(inline, false)

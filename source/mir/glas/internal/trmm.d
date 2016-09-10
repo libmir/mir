@@ -84,7 +84,7 @@ body
     {
         bsl = bsl.reversed!1;
     }
-    if(uplo == Uplo.lower)
+    if (uplo == Uplo.lower)
     {
         asl = asl.allReversed;
         bsl = bsl.reversed!0;
@@ -131,7 +131,7 @@ body
             
         writefln("asl = \n%(%s\n%)", asl);
         writefln("bsl = \n%(%s\n%)", bsl);
-        if(bslp.length)
+        if (bslp.length)
         {
             writefln("c = \n%(%s\n%)", bslb);
             writefln("a = \n%(%s\n%)", aslp);
@@ -316,7 +316,7 @@ void trmm_kernel (
         {
             import ldc.intrinsics: llvm_prefetch;
 
-            if(ldce == 1)
+            if (ldce == 1)
             foreach (m; Iota!M)
             foreach (pr; Iota!(V[M][PB].sizeof / 64 + bool(V[M][PB].sizeof % 64 > 0)))
                 llvm_prefetch(cast(void*)c + pr * 64 + ldc * m, 1, 3, 1);
@@ -333,7 +333,7 @@ void trmm_kernel (
         //foreach (n; Iota!N)
         //foreach (p; Iota!PB)
         //foreach (m; Iota!M)
-            //static if(isSIMDVector!V)
+            //static if (isSIMDVector!V)
             //writefln("reg[%s][%s][%s] = %s", n,p,m, reg[n][p][m].array);
             //else
             //writefln("reg[%s][%s][%s] = %s", n,p,m, reg[n][p][m]);
@@ -342,14 +342,14 @@ void trmm_kernel (
         //foreach (n; Iota!N)
         //foreach (p; Iota!PB)
         //foreach (m; Iota!M)
-            //static if(isSIMDVector!V)
+            //static if (isSIMDVector!V)
             //writefln("reg[%s][%s][%s] = %s", n,p,m, reg[n][p][m].array);
             //else
             //writefln("reg[%s][%s][%s] = %s", n,p,m, reg[n][p][m]);
 
         a += nr * nr;
         mc -= nr;
-        if(mc)
+        if (mc)
             a = cast(typeof(a)) gemm_nano_kernel!(type, true, true, true, PB, PA, PB, M, N)(mc, reg, b + nr, cast(const(F[PB][N])*)a);
         V[PB] s = void;
         s.load_nano_kernel(alpha);
@@ -364,7 +364,7 @@ void trmm_kernel (
             {
                 auto re = s[0] * reg[n][0][m];
                 auto im = s[0] * reg[n][1][m];
-                static if(PA == 2)
+                static if (PA == 2)
                 {
                     re -= s[1] * reg[n][1][m];
                     im += s[1] * reg[n][0][m];
@@ -376,7 +376,7 @@ void trmm_kernel (
         //foreach (n; Iota!N)
         //foreach (p; Iota!PB)
         //foreach (m; Iota!M)
-            //static if(isSIMDVector!V)
+            //static if (isSIMDVector!V)
             //writefln("reg[%s][%s][%s] = %s", n,p,m, reg[n][p][m].array);
             //else
             //writefln("reg[%s][%s][%s] = %s", n,p,m, reg[n][p][m]);
@@ -385,14 +385,14 @@ void trmm_kernel (
         foreach (m; Iota!M)
             b[n][p][m] = reg[n][p][m];
         b += nr;
-        if(ldce == 1)
+        if (ldce == 1)
         {
             save_nano_kernel(reg, c, ldc);
             c += nr * ldc;
         }
     }
     while (!nri && mc >= nr);
-    if(ldce != 1)
+    if (ldce != 1)
     {
         save_transposed_nano_kernel(kc, ldce, ldc, bs, c);
     }
@@ -499,7 +499,7 @@ unittest
     //writeln(b);
     //writeln(x);
     import std.math: approxEqual;
-    foreach(i; 0..b.length)
-    foreach(j; 0..b[0].length)
+    foreach (i; 0..b.length)
+    foreach (j; 0..b[0].length)
         assert(b[i][j].approxEqual(x[i][j]));
 }

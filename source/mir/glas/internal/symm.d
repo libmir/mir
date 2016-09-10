@@ -67,13 +67,13 @@ void symm_impl(A, B, C)
     {
         if (beta == 0)
         {
-            foreach(row; csl)
+            foreach (row; csl)
                 row.toDense[] = C(0);
             return;
         }
         if (beta == 1)
             return;
-        foreach(row; csl)
+        foreach (row; csl)
             row.toDense[] *= beta;
         return;
     }
@@ -86,42 +86,42 @@ void symm_impl(A, B, C)
 
     static if (PA == PB)
     {
-        foreach(nri, nr; nr_chain)
+        foreach (nri, nr; nr_chain)
             one_kernels [nri] = &gemv_reg!(BetaType.one, PA, PB, PC, nr, T);
 
         Kernel!(PC, T)* kernels = one_kernels.ptr;
-        if(beta == 0)
+        if (beta == 0)
         {
-            foreach(nri, nr; nr_chain)
+            foreach (nri, nr; nr_chain)
                 beta_kernels[nri] = &gemv_reg!(BetaType.zero, PA, PB, PC, nr, T);
             kernels = beta_kernels.ptr;
         }
         else
-        if(beta != 1)
+        if (beta != 1)
         {
-            foreach(nri, nr; nr_chain)
+            foreach (nri, nr; nr_chain)
                 beta_kernels[nri] = &gemv_reg!(BetaType.beta, PA, PB, PC, nr, T);
             kernels = beta_kernels.ptr;
         }
     }
-    if(csl.stride!0 == 1)
+    if (csl.stride!0 == 1)
     {
         static if (PA != PB)
         {
-            foreach(nri, nr; nr_chain)
+            foreach (nri, nr; nr_chain)
                 one_kernels [nri] = &gemv_reg!(BetaType.one, PA, PB, PC, nr, T);
 
             Kernel!(PC, T)* kernels = one_kernels.ptr;
-            if(beta == 0)
+            if (beta == 0)
             {
-                foreach(nri, nr; nr_chain)
+                foreach (nri, nr; nr_chain)
                     beta_kernels[nri] = &gemv_reg!(BetaType.zero, PA, PB, PC, nr, T);
                 kernels = beta_kernels.ptr;
             }
             else
-            if(beta != 1)
+            if (beta != 1)
             {
-                foreach(nri, nr; nr_chain)
+                foreach (nri, nr; nr_chain)
                     beta_kernels[nri] = &gemv_reg!(BetaType.beta, PA, PB, PC, nr, T);
                 kernels = beta_kernels.ptr;
             }
@@ -147,7 +147,7 @@ void symm_impl(A, B, C)
                 if (asl.length!0 - i < mc)
                     mc = asl.length!0 - i;
 
-                if(PA && conja)
+                if (PA && conja)
                     pack_a_sym!(PA, PB, PC, true, T, A)(asl, i, j, mc, kc, a);
                 else
                     pack_a_sym!(PA, PB, PC, false, T, A)(asl, i, j, mc, kc, a);
@@ -174,32 +174,32 @@ void symm_impl(A, B, C)
                 cslm.popFrontExactly!0(mc);
                 i += mc;
             }
-            while(i < asl.length!0);
+            while (i < asl.length!0);
             ////////////////////////
             kernels = one_kernels.ptr;
             bsl.popFrontExactly!0(kc);
             j += kc;
         }
-        while(j < asl.length!0);
+        while (j < asl.length!0);
     }
     else
     {
         static if (PA != PB)
         {
-            foreach(nri, nr; nr_chain)
+            foreach (nri, nr; nr_chain)
                 one_kernels [nri] = &gemv_reg!(BetaType.one, PB, PA, PC, nr, T);
 
             Kernel!(PC, T)* kernels = one_kernels.ptr;
-            if(beta == 0)
+            if (beta == 0)
             {
-                foreach(nri, nr; nr_chain)
+                foreach (nri, nr; nr_chain)
                     beta_kernels[nri] = &gemv_reg!(BetaType.zero, PB, PA, PC, nr, T);
                 kernels = beta_kernels.ptr;
             }
             else
-            if(beta != 1)
+            if (beta != 1)
             {
-                foreach(nri, nr; nr_chain)
+                foreach (nri, nr; nr_chain)
                     beta_kernels[nri] = &gemv_reg!(BetaType.beta, PB, PA, PC, nr, T);
                 kernels = beta_kernels.ptr;
             }
@@ -228,7 +228,7 @@ void symm_impl(A, B, C)
                 if (bslp.length!0 < mc)
                     mc = bslp.length!0;
                 ////////////////////////
-                if(conjb)
+                if (conjb)
                     pack_a!(PB, PA, PC, true, T, B)(bslp[0 .. mc], a);
                 else
                     pack_a!(PB, PA, PC, false, T, B)(bslp[0 .. mc], a);
@@ -255,13 +255,13 @@ void symm_impl(A, B, C)
                 cslm.popFrontExactly!0(mc);
                 bslp.popFrontExactly!0(mc);
             }
-            while(bslp.length!0);
+            while (bslp.length!0);
             ////////////////////////
             j += kc;
             kernels = one_kernels.ptr;
             bsl.popFrontExactly!1(kc);
         }
-        while(bsl.length!1);
+        while (bsl.length!1);
     }
 }
 
@@ -291,7 +291,7 @@ void sybp(size_t PA, size_t PB, size_t PC, F, B, C)(
     {
         if (copy)
         {
-            if(PB && conj)
+            if (PB && conj)
                 pack_b_sym_nano!(nr, PB, true)(kc, bsl, j, i, b);
             else
                 pack_b_sym_nano!(nr, PB, false)(kc, bsl, j, i, b);

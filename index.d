@@ -13,8 +13,8 @@ $(BOOKTABLE ,
     )
     $(LEADINGROW Linear Algebra)
     $(TR
-        $(TDNW $(LINK2 mir_glas_gemm.html, mir.glas.gemm))
-        $(TD Matrix-matrix multiplication)
+        $(TDNW $(LINK2 mir_glas_l3.html, mir.glas.l3))
+        $(TD Matrix-matrix operations)
     )
     $(LEADINGROW Models)
     $(TR

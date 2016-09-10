@@ -20,6 +20,7 @@ License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Authors: Ilya Yaroshenko
 
 Macros:
+T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 SUBMODULE = $(LINK2 mir_glas_$1.html, mir.glas.$1)
 SUBREF = $(LINK2 mir_glas_$1.html#.$2, $(TT $2))$(NBSP)
 +/
@@ -38,7 +39,6 @@ Performs general matrix-matrix multiplication.
 Pseudo_code: `C := alpha A × B + beta C`.
 
 Params:
-    type = conjugation type, optional template parameter
     ctx = GLAS context. Should not be accessed by other threads.
     alpha = scalar
     asl = `m x k` matrix
@@ -135,7 +135,6 @@ Pseudo_code: `C := alpha A × B + beta C` or `C := alpha B × A + beta C`,
     `C` are `m × n` matrices.
 
 Params:
-    type = conjugation type, optional template parameter
     ctx = GLAS context. Should not be accessed by other threads.
     side = specifies whether the symmetric matrix A
            appears on the  left or right  in the  operation.
@@ -199,13 +198,13 @@ body
     mixin prefix3;
 
     import mir.ndslice.iteration : transposed;
-    if(side == Side.right)
+    if (side == Side.right)
     {
         asl = asl.transposed;
         bsl = bsl.transposed;
         csl = csl.transposed;
     }
-    if(uplo == Uplo.upper)
+    if (uplo == Uplo.upper)
     {
         asl = asl.transposed;
     }
