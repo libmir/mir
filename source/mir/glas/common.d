@@ -160,5 +160,4 @@ package mixin template prefix3()
     static assert(!isComplex!T);
 }
 
-
-enum msgWrongType = "result slice must be not qualified (const/immutable/shared)";
+package enum msgWrongType = "result slice must be not qualified (const/immutable/shared)";
