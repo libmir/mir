@@ -356,7 +356,7 @@ unittest
     //        0          1          2         3
     x[] = [cd(0, -1), cd(-2, 3), cd(2, 3), cd(2, 2)];
 
-    assert(iamax(x) == 2);
+    assert(iamax(x) == 1);
     // -1 for empty vectors
     assert(iamax(x[$ .. $]) == -1);
 }
