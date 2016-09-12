@@ -45,7 +45,7 @@ GLAS is ...
 <ul>
 <li>fast to execute.</li>
 <li>fast to compile.</li>
-<li>fast to extend using D multidimensional arrays.</li>
+<li>fast to extend using $(MREF_ALTTEXT ndslices, mir, ndslice).</li>
 <li>fast to add new instruction set targets.</li>
 </ul>
 
