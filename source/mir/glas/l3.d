@@ -5,7 +5,7 @@ $(SCRIPT inhibitQuickIndex = 1;)
 
 This is a submodule of $(LINK2 mir_glas.html, mir.glas).
 
-Level 3 GLAS perform matrix-matrix operations.
+The Level 3 GLAS perform matrix-matrix operations.
 
 Note: GLAS is singe thread for now.
 
@@ -23,8 +23,8 @@ Authors: Ilya Yaroshenko
 
 Macros:
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
-SUBMODULE = $(LINK2 mir_glas_$1.html, mir.glas.$1)
-SUBREF = $(LINK2 mir_glas_$1.html#.$2, $(TT $2))$(NBSP)
+SUBMODULE = $(MREF_ALTTEXT $1, mir, glas, $1)
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, glas, $1)$(NBSP)
 +/
 module mir.glas.l3;
 public import mir.glas.common;

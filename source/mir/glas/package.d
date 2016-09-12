@@ -15,9 +15,16 @@ $(BOOKTABLE ,
         $(TH Modules)
         $(TH Description)
     )
-    $(LEADINGROW Level 3)
     $(TR
-        $(TDNW $(LINK2 mir_glas_l3.html, mir.glas.l3))
+        $(TDNW $(SUBMODULE l1))
+        $(TD scalar and vector operations)
+    )
+    $(TR
+        $(TDNW $(SUBMODULE l2))
+        $(TD matrix-vector operations)
+    )
+    $(TR
+        $(TDNW $(SUBMODULE l3))
         $(TD matrix-matrix operations)
     )
 )
@@ -38,7 +45,7 @@ GLAS is ...
 <ul>
 <li>fast to execute.</li>
 <li>fast to compile.</li>
-<li>fast to extend using D multidimensional arrays.</li>
+<li>fast to extend using $(MREF_ALTTEXT ndslices, mir, ndslice).</li>
 <li>fast to add new instruction set targets.</li>
 </ul>
 
@@ -49,7 +56,12 @@ GLAS requires recent $(LINK2 https://github.com/ldc-developers/ldc, LDC) >= 1.1.
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: Ilya Yaroshenko
+
+SUBMODULE = $(MREF_ALTTEXT $1, mir, glas, $1)
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, glas, $1)$(NBSP)
 +/
 module mir.glas;
 
+public import mir.glas.l1;
+public import mir.glas.l2;
 public import mir.glas.l3;

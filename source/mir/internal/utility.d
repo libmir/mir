@@ -20,6 +20,15 @@ template Iota(size_t i, size_t j)
 
 enum isSimpleSlice(S) = is(S : Slice!(N1, T1[]), size_t N1,T1) || is(S : Slice!(N2, T2*), size_t N2,T2);
 
+template realType(C)
+{
+    import std.complex : Complex;
+    static if (is(C : Complex!F, F))
+        alias realType = Unqual!F;
+    else
+        alias realType = Unqual!C;
+}
+
 template isComplex(C)
 {
     import std.complex : Complex;
