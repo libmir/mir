@@ -90,7 +90,7 @@ import mir.ndslice.algorithm : ndReduce;
 private enum _shouldBeCastedToUnqual(T) = (isPointer!T || isDynamicArray!T) && !is(Unqual!T == T);
 
 /++
-Forms the dot product of two vectors or flattened tensors tensors.
+Forms the dot product of two vectors.
 Uses unrolled loops for stride equal to one when compiled with LDC.
 Returns: dot product `conj(xᐪ) × y`
 Params:
