@@ -7,7 +7,7 @@
     "targetType": "sourceLibrary",
     "buildTypes": {
         "unittest-release": {
-            "buildOptions": ["unittests", "releaseMode"]
+            "buildOptions": ["unittests", "releaseMode", "optimize", "inline"]
         }
     },
     "dependencies": {
