@@ -1,11 +1,12 @@
 #!/usr/bin/env dub
-/+ dub.sdl:
-name "flex_plot_all"
-dependency "flex_plots" path="./flex_plot"
-subConfigurations "pyd" "python35"
-versions "Flex_logging"
+/+ dub.json:
+{
+    "name": "flex_plot_all",
+    "dependencies": {"flex_plots": {"path": "./flex_plot"}},
+    "subConfigurations": {"pyd": "python35"},
+    "versions": ["Flex_logging"]
+}
 +/
-
 /**
 Provides a convenient interface to access all plots
 */

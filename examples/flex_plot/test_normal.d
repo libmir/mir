@@ -1,10 +1,11 @@
 #!/usr/bin/env dub
-/+ dub.sdl:
-name "flex_plot_test_normal"
-dependency "flex_common" path="./flex_common"
-versions "Flex_logging" "Flex_single"
+/+ dub.json:
+{
+    "name": "flex_plot_test_normal",
+    "dependencies": {"flex_common": {"path": "./flex_common"}},
+    "versions": ["Flex_logging", "Flex_single"]
+}
 +/
-
 /**
 Normal distribution.
 
