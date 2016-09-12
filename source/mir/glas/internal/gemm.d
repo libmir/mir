@@ -165,7 +165,6 @@ void gemm_impl(A, B, C)
     }
 }
 
-pragma(inline, true)
 void gebp(size_t PA, size_t PB, size_t PC, F, C)(
     size_t mc,
     size_t nc,
@@ -184,6 +183,7 @@ void gebp(size_t PA, size_t PB, size_t PC, F, C)(
     Conjugated conj,
     )
 {
+    version(LDC) pragma(inline, true);
     mixin RegisterConfig!(PA, PB, PC, F);
     foreach (nri, nr; nr_chain)
     if (nc >= nr) do
@@ -403,9 +403,9 @@ void prefetch_r(size_t M, size_t N, size_t rem, size_t shift)(void* ptr, sizedif
     }
 }
 
-pragma(inline, true)
 void scale_nano(size_t M, size_t P, size_t N, V, F)(ref const F[P] alpha, ref V[M][P][N] c)
 {
+    version(LDC) pragma(inline, true);
     V[P] s = void;
     V[M][P][N] reg = void;
     load_nano(s, alpha);

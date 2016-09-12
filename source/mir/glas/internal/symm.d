@@ -265,7 +265,6 @@ void symm_impl(A, B, C)
     }
 }
 
-pragma(inline, true)
 void sybp(size_t PA, size_t PB, size_t PC, F, B, C)(
     size_t mc,
     size_t nc,
@@ -284,6 +283,7 @@ void sybp(size_t PA, size_t PB, size_t PC, F, B, C)(
     Conjugated conj,
     )
 {
+    version(LDC) pragma(inline, true);
     mixin RegisterConfig!(PA, PB, PC, F);
     size_t i;
     foreach (nri, nr; nr_chain)
