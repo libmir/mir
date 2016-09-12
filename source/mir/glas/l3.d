@@ -59,7 +59,6 @@ BLAS: SGEMM, DGEMM, CGEMM, ZGEMM
 
 See_also: $(SUBREF common, Conjugated).
 +/
-pragma(inline, true)
 nothrow @nogc
 void gemm(A, B, C)
 (
@@ -84,6 +83,7 @@ in
 }
 body
 {
+    version(LDC) pragma(inline, true);
     static assert(is(Unqual!C == C), msgWrongType);
     mixin prefix3;
     import mir.glas.internal.gemm: gemm_impl;
@@ -168,7 +168,6 @@ BLAS: SSYMM, DSYMM, CSYMM, ZSYMM, SHEMM, DHEMM, CHEMM, ZHEMM
 
 See_also: $(SUBREF common, Conjugated), $(SUBREF common, Side), $(SUBREF common, Uplo).
 +/
-pragma(inline, true)
 nothrow @nogc
 void symm(A, B, C)
 (
@@ -196,6 +195,7 @@ in
 }
 body
 {
+    version(LDC) pragma(inline, true);
     static assert(is(Unqual!C == C), msgWrongType);
     mixin prefix3;
 

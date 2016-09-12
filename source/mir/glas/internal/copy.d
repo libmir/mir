@@ -10,9 +10,9 @@ import mir.glas.common;
 
 @fastmath:
 
-pragma(inline, true)
 T* pack_b_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
 {
+    version(LDC) pragma(inline, true);
     if (elemStride == 1)
         return pack_b_dense_nano!(n, P, conj)(length, stride, from, to);
     else
@@ -168,6 +168,7 @@ T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length,
 
 T* pack_a_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
 {
+    version(LDC) pragma(inline, true);
     if (elemStride == 1)
         return pack_a_dense_nano!(n, P, conj)(length, stride, from, to);
     else
