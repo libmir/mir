@@ -244,7 +244,7 @@ unittest
     auto value = tf();
 }
 
-unittest
+version(X86_64) unittest
 {
     import std.meta : AliasSeq;
     import std.math : approxEqual, PI;
@@ -296,7 +296,7 @@ unittest
     }
 }
 
-unittest
+version(X86_64) unittest
 {
     import std.math : approxEqual, pow;
     import std.meta : AliasSeq;
