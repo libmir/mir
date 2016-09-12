@@ -366,12 +366,8 @@ struct Permutations
     whereas the length of indices should be `n`
     */
     this(uint[] state, uint[] indices) @safe pure nothrow @nogc
-    in
     {
         assert(state.length + 1 == indices.length);
-    }
-    body
-    {
         // iota
         foreach (uint i, ref index; indices)
             index = i;
@@ -469,7 +465,7 @@ pure @safe nothrow unittest
 }
 
 ///
-static if (__VERSION__ > 2069) @nogc unittest
+@nogc unittest
 {
     import std.algorithm: equal;
     import std.range : iota;
@@ -501,7 +497,8 @@ pure @safe nothrow unittest
     assert(10.permutations.length == 3_628_800);
 }
 
-static if (__VERSION__ > 2069) unittest
+version (assert)
+unittest
 {
     // check invalid
     import std.exception: assertThrown;
@@ -552,35 +549,23 @@ See_Also:
     $(LREF CartesianPower)
 */
 CartesianPower cartesianPower(size_t n, size_t repeat = 1) @safe pure nothrow
-in
 {
     assert(repeat >= 1, "Invalid number of repetitions");
-}
-body
-{
     return CartesianPower(n, new uint[repeat]);
 }
 
 /// ditto
 IndexedRoR!(CartesianPower, Range) cartesianPower(Range)(Range r, size_t repeat = 1)
 if (isRandomAccessRange!Range)
-in
 {
     assert(repeat >= 1, "Invalid number of repetitions");
-}
-body
-{
     return cartesianPower(r.length, repeat).indexedRoR(r);
 }
 
 /// ditto
 CartesianPower makeCartesianPower(Allocator)(auto ref Allocator alloc, size_t n, size_t repeat)
-in
 {
     assert(repeat >= 1, "Invalid number of repetitions");
-}
-body
-{
     import std.experimental.allocator: makeArray;
     return CartesianPower(n, alloc.makeArray!uint(repeat));
 }
@@ -685,7 +670,7 @@ pure nothrow @safe unittest
 }
 
 ///
-static if (__VERSION__ > 2069) @nogc unittest
+@nogc unittest
 {
     import std.algorithm: equal;
     import std.range: iota;
@@ -731,7 +716,8 @@ pure nothrow @safe unittest
     assert(d.length == 1);
 }
 
-static if (__VERSION__ > 2069) unittest
+version(assert)
+unittest
 {
     // check invalid
     import std.exception: assertThrown;
@@ -796,35 +782,23 @@ See_Also:
     $(LREF Combinations)
 */
 Combinations combinations(size_t n, size_t k = 1) @safe pure nothrow
-in
 {
     assert(k >= 1, "Invalid number of combinations");
-}
-body
-{
     return Combinations(n, new uint[k]);
 }
 
 /// ditto
 IndexedRoR!(Combinations, Range) combinations(Range)(Range r, uint k = 1)
 if (isRandomAccessRange!Range)
-in
 {
     assert(k >= 1, "Invalid number of combinations");
-}
-body
-{
     return combinations(r.length, k).indexedRoR(r);
 }
 
 /// ditto
 Combinations makeCombinations(Allocator)(auto ref Allocator alloc, size_t n, size_t repeat)
-in
 {
     assert(repeat >= 1, "Invalid number of repetitions");
-}
-body
-{
     import std.experimental.allocator: makeArray;
     return Combinations(cast(uint) n, alloc.makeArray!uint(cast(uint) repeat));
 }
@@ -954,7 +928,7 @@ pure nothrow @safe unittest
 }
 
 ///
-static if (__VERSION__ > 2069) @nogc unittest
+@nogc unittest
 {
     import std.algorithm: equal;
     import std.range: iota;
@@ -1068,7 +1042,8 @@ pure nothrow @safe unittest
     assert(30.combinations(15).length == 155_117_520);
 }
 
-static if (__VERSION__ > 2069) unittest
+version(assert)
+unittest
 {
     // check invalid
     import std.exception: assertThrown;
@@ -1120,35 +1095,23 @@ See_Also:
     $(LREF CombinationsRepeat)
 */
 CombinationsRepeat combinationsRepeat(size_t n, size_t k = 1) @safe pure nothrow
-in
 {
     assert(k >= 1, "Invalid number of combinations");
-}
-body
-{
     return CombinationsRepeat(n, new uint[k]);
 }
 
 /// ditto
 IndexedRoR!(CombinationsRepeat, Range) combinationsRepeat(Range)(Range r, size_t k = 1)
-if (isRandomAccessRange!Range)
-in
+    if (isRandomAccessRange!Range)
 {
     assert(k >= 1, "Invalid number of combinations");
-}
-body
-{
     return combinationsRepeat(r.length, k).indexedRoR(r);
 }
 
 /// ditto
 CombinationsRepeat makeCombinationsRepeat(Allocator)(auto ref Allocator alloc, size_t n, size_t repeat)
-in
 {
     assert(repeat >= 1, "Invalid number of repetitions");
-}
-body
-{
     import std.experimental.allocator: makeArray;
     return CombinationsRepeat(n, alloc.makeArray!uint(repeat));
 }
@@ -1257,7 +1220,7 @@ pure nothrow @safe unittest
 }
 
 ///
-static if (__VERSION__ > 2069) @nogc unittest
+@nogc unittest
 {
     import std.algorithm: equal;
     import std.range: iota;
@@ -1373,7 +1336,8 @@ pure nothrow @safe unittest
     assert(iota(5).combinationsRepeat(2).equal!equal(expected5r2));
 }
 
-static if (__VERSION__ > 2069) unittest
+version(assert)
+unittest
 {
     // check invalid
     import std.exception: assertThrown;

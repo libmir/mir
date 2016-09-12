@@ -1,27 +1,15 @@
 {
     "name": "mir",
-    "description": "Numerical library for Dlang",
+    "description": "Generic Numerical Library for Science and Machine Learning",
     "copyright": "2015-2016, Ilya Yaroshenko, Mir Team",
-    "authors": ["Ilya Yaroshenko"],
+    "authors": ["Ilya Yaroshenko", "Sebastian Wilzbach"],
     "license": "BSL-1.0",
-    "configurations": [
-        {
-            "name": "source",
-            "targetType": "sourceLibrary",
-        },
-        {
-            "name": "static",
-            "targetType": "staticLibrary",
-        },
-        {
-            "name": "dynamic",
-            "targetType": "dynamicLibrary",
-        },
-        {
-            "name": "unittest",
-            "versions": ["to_be_filled"],
+    "targetType": "sourceLibrary",
+    "buildTypes": {
+        "unittest-release": {
+            "buildOptions": ["unittests", "releaseMode"]
         }
-    ],
+    },
     "dependencies": {
         "cpuid": "~>0.2.6"
     }

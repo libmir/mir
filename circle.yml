@@ -24,6 +24,7 @@ test:
     - rdmd ./checkwhitespace.d $(find source -name '*.d')
     - dub fetch cpuid && dub build cpuid
     - dub test
+    - dub test --build=unittest-release
     - make -f doc/Makefile html
     - dub build --single examples/lda_hoffman_sparse.d
     - dub fetch imageformats --version=6.0.0 && dub build imageformats
