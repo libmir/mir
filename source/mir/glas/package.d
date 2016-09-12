@@ -15,7 +15,14 @@ $(BOOKTABLE ,
         $(TH Modules)
         $(TH Description)
     )
-    $(LEADINGROW Level 3)
+    $(TR
+        $(TDNW $(LINK2 mir_glas_l1.html, mir.glas.l1))
+        $(TD scalar and vector operations)
+    )
+    $(TR
+        $(TDNW $(LINK2 mir_glas_l2.html, mir.glas.l2))
+        $(TD matrix-vector operations)
+    )
     $(TR
         $(TDNW $(LINK2 mir_glas_l3.html, mir.glas.l3))
         $(TD matrix-matrix operations)
@@ -52,4 +59,6 @@ Authors: Ilya Yaroshenko
 +/
 module mir.glas;
 
+public import mir.glas.l1;
+public import mir.glas.l2;
 public import mir.glas.l3;
