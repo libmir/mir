@@ -23,7 +23,7 @@ enum isSimpleSlice(S) = is(S : Slice!(N1, T1[]), size_t N1,T1) || is(S : Slice!(
 template realType(C)
 {
     import std.complex : Complex;
-    static if(is(C : Complex!F, F))
+    static if (is(C : Complex!F, F))
         alias realType = Unqual!F;
     else
         alias realType = Unqual!C;

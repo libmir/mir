@@ -330,7 +330,7 @@ sizediff_t iamax(R)(Slice!(1, R) x)
             }
             x.popFront;
         }
-        while(x.length);
+        while (x.length);
         return l - r;
     }
 }
