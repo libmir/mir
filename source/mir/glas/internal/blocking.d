@@ -57,46 +57,6 @@ BlockInfo!T blocking(size_t PA, size_t PB, size_t PC, T)(GlasContext* ctx, size_
     return ret;
 }
 
-BlockInfo!T blocking_sym(size_t PA, size_t PB, size_t PC, T)(GlasContext* ctx, size_t m, size_t n)
-{
-    import mir.glas.internal.context;
-    mixin RegisterConfig!(PB, PA, PB, T);
-    BlockInfo!T ret = void;
-
-        import std.stdio;
-
-    sizediff_t l2 = c2.size << 9; // half cache
-    ret.kc = ((c1.size << 10) - 2 * (T[PC][main_nr][main_mr].sizeof + main_nr * c1.line) - 512) / (T[PA][main_mr].sizeof + T[PB][main_nr].sizeof);
-    writeln("kc l1 = ", ret.kc);
-
-    if (l2 >= m * ((m + main_nr) * PA + PC * main_mr) * T.sizeof)
-    {
-        writeln("opt1");
-        ret.kc = ret.mc = ret.kc > m ? m : ret.kc;
-    }
-    else
-    {
-        sizediff_t x = l2 / T.sizeof - (main_nr * PA + main_mr * PB);
-        assert(x > 1);
-        import mir.internal.math : sqrt;
-        x = cast(size_t) sqrt(double(x));
-        assert(x > 1);
-        writeln("x = ",  x);
-        x.normalizeChunkSize!main_nr(m);
-        ret.kc = ret.mc = ret.kc > x ? x : ret.kc;
-    }
-    writeln("kc l2 = ", ret.kc);
-
-    auto a_length = ret.kc * ret.kc * T[PA].sizeof;
-    auto b_length = ret.kc * T[PB].sizeof * (ret.kc == m && false ? main_nr : n);
-    auto buffLength = a_length + b_length;
-    auto _mem = ctx.memory(a_length + b_length + prefetchShift);
-    ret.a = cast(T*) _mem.ptr;
-    ret.b = cast(T*) (_mem.ptr + a_length);
-
-    return ret;
-}
-
 BlockInfo!T blocking_triangular(size_t PA, size_t PB, T)(GlasContext* ctx, size_t m, size_t n)
 {
     import mir.glas.internal.context;

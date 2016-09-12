@@ -85,7 +85,6 @@ body
 {
     version(LDC) pragma(inline, true);
     static assert(is(Unqual!C == C), msgWrongType);
-    mixin prefix3;
     import mir.glas.internal.gemm: gemm_impl;
     gemm_impl(
         ctx,
@@ -197,7 +196,6 @@ body
 {
     version(LDC) pragma(inline, true);
     static assert(is(Unqual!C == C), msgWrongType);
-    mixin prefix3;
 
     import mir.ndslice.iteration : transposed;
     if (side == Side.right)
