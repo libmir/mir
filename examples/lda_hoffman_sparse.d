@@ -1,7 +1,9 @@
 #!/usr/bin/env dub
-/+ dub.sdl:
-name "lda_hoffman_sparse"
-dependency "mir" path=".."
+/+ dub.json:
+{
+    "name": "lda_hoffman_sparse",
+    "dependencies": {"mir": {"path": ".."}},
+}
 +/
 
 /++

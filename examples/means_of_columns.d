@@ -1,7 +1,9 @@
 #!/usr/bin/env dub
-/+ dub.sdl:
-name "means_of_columns"
-dependency "mir" path=".."
+/+ dub.json:
+{
+    "name": "means_of_columns",
+    "dependencies": {"mir": {"path": ".."}},
+}
 +/
 
 /**

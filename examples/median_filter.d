@@ -1,8 +1,9 @@
 #!/usr/bin/env dub
-/+ dub.sdl:
-name "median_filter"
-dependency "mir" path=".."
-dependency "imageformats" version="==6.0.0"
+/+ dub.json:
+{
+    "name": "median_filter",
+    "dependencies": {"mir": {"path": ".."}, "imageformats": "==6.1.0"},
+}
 +/
 
 import mir.ndslice;

@@ -1,10 +1,11 @@
 #!/usr/bin/env dub
-/+ dub.sdl:
-name "flex_plot_test_density_with_poles"
-dependency "flex_common" path="./flex_common"
-versions "Flex_logging" "Flex_single"
+/+ dub.json:
+{
+    "name": "flex_plot_test_density_with_poles",
+    "dependencies": {"flex_common": {"path": "./flex_common"}},
+    "versions": ["Flex_logging", "Flex_single"]
+}
 +/
-
 /**
 Test density with pole.
 */
