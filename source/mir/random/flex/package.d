@@ -965,7 +965,7 @@ unittest
 }
 
 // test standard normal distribution
-unittest
+version(X86_64) unittest
 {
     import mir.internal.math : exp, sqrt;
     import std.algorithm : equal, map;
@@ -989,7 +989,7 @@ unittest
     }
 }
 
-unittest
+version(X86_64) unittest
 {
     import std.algorithm : equal, map;
     import std.array : array;
