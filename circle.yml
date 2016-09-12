@@ -27,7 +27,7 @@ test:
     - dub test --build=unittest-release
     - make -f doc/Makefile html
     - dub build --single examples/lda_hoffman_sparse.d
-    - dub fetch imageformats --version=6.0.0 && dub build imageformats
+    - dub fetch imageformats --version=6.1.0 && dub build imageformats
     - dub build --single examples/median_filter.d
     - dub build --single examples/means_of_columns.d
     - dub build --root=examples/flex_plot

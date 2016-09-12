@@ -100,7 +100,7 @@ test_script:
  - dub test --arch %Darch% --build=unittest-cov
  - dub test --arch %Darch% --build=unittest-release
  - dub build --single --arch %Darch% examples/lda_hoffman_sparse.d
- - dub fetch imageformats --version 6.0.0 && dub build --arch %Darch% imageformats
+ - dub fetch imageformats --version 6.1.0 && dub build --arch %Darch% imageformats
  - dub build --single --arch %Darch% examples/median_filter.d
  - dub build --single --arch %Darch% examples/means_of_columns.d
  - dub build --root=examples/flex_plot --arch %Darch%
