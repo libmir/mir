@@ -309,7 +309,7 @@ Authors:   Ilya Yaroshenko
 
 Acknowledgements:   John Loughran Colvin
 
-Source:    $(PHOBOSSRC mir/_ndslice/_package.d)
+Source:    $(PHOBOSSRC std/_experimental/_ndslice/_package.d)
 
 Macros:
 SUBMODULE = $(MREF_ALTTEXT $1, mir, ndslice, $1)

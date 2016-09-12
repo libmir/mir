@@ -16,15 +16,15 @@ $(BOOKTABLE ,
         $(TH Description)
     )
     $(TR
-        $(TDNW $(LINK2 mir_glas_l1.html, mir.glas.l1))
+        $(TDNW $(SUBMODULE l1))
         $(TD scalar and vector operations)
     )
     $(TR
-        $(TDNW $(LINK2 mir_glas_l2.html, mir.glas.l2))
+        $(TDNW $(SUBMODULE l2))
         $(TD matrix-vector operations)
     )
     $(TR
-        $(TDNW $(LINK2 mir_glas_l3.html, mir.glas.l3))
+        $(TDNW $(SUBMODULE l3))
         $(TD matrix-matrix operations)
     )
 )
@@ -56,6 +56,9 @@ GLAS requires recent $(LINK2 https://github.com/ldc-developers/ldc, LDC) >= 1.1.
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: Ilya Yaroshenko
+
+SUBMODULE = $(MREF_ALTTEXT $1, mir, glas, $1)
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, glas, $1)$(NBSP)
 +/
 module mir.glas;
 

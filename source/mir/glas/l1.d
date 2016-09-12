@@ -10,12 +10,16 @@ The Level 1 BLAS perform scalar, vector and vector-vector operations.
 $(BOOKTABLE $(H2 Matrix-matrix operations),
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 dot, dot product)
+$(T2 dot, dot product, conjugating the first vector)
+$(T2 dotu, dot product)
 $(T2 nrm2, Euclidean norm)
 $(T2 sqnrm2, square of Euclidean norm)
 $(T2 asum, sum of absolute values)
 $(T2 iamax, index of max abs value)
 )
+
+GLAS does not provide `swap`, `scal`, and `copy`  functions.
+This functionality is part of $(MREF_ALTTEXT ndslice, mir, ndslice) package.
 
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
@@ -23,10 +27,48 @@ Authors: Ilya Yaroshenko
 
 Macros:
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
-SUBMODULE = $(LINK2 mir_glas_$1.html, mir.glas.$1)
-SUBREF = $(LINK2 mir_glas_$1.html#.$2, $(TT $2))$(NBSP)
+SUBMODULE = $(MREF_ALTTEXT $1, mir, glas, $1)
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, glas, $1)$(NBSP)
 +/
 module mir.glas.l1;
+
+/// SWAP
+unittest
+{
+    import std.algorithm.mutation: swap;
+    import mir.ndslice.slice: slice;
+    import mir.ndslice.algorithm: ndEach;
+    import std.typecons: Yes;
+    auto x = slice!double(4);
+    auto y = slice!double(4);
+    x[] = [0, 1, 2, 3];
+    y[] = [4, 5, 6, 7];
+    ndEach!(swap, Yes.vectorized)(x, y);
+    assert(x == [4, 5, 6, 7]);
+    assert(y == [0, 1, 2, 3]);
+}
+
+/// SCAL
+unittest
+{
+    import mir.ndslice.slice: slice;
+    import std.typecons: Yes;
+    auto x = slice!double(4);
+    x[] = [0, 1, 2, 3];
+    x[] *= 2.0;
+    assert(x == [0, 2, 4, 6]);
+}
+
+/// COPY
+unittest
+{
+    import mir.ndslice.slice: slice;
+    auto x = slice!double(4);
+    auto y = slice!double(4);
+    x[] = [0, 1, 2, 3];
+    y[] = x;
+    assert(y == [0, 1, 2, 3]);
+}
 
 import std.traits;
 import std.meta;
@@ -37,7 +79,7 @@ import mir.internal.math;
 import mir.internal.utility;
 import mir.ndslice.internal : fastmath;
 import mir.ndslice.slice;
-import mir.ndslice.algorithm : ndReduce;
+import mir.ndslice.algorithm : ndReduce, ndEach;
 
 @fastmath realType!T _fabs(T)(in T x)
 {
@@ -89,9 +131,62 @@ import mir.ndslice.algorithm : ndReduce;
 
 private enum _shouldBeCastedToUnqual(T) = (isPointer!T || isDynamicArray!T) && !is(Unqual!T == T);
 
+
+/++
+Constant times a vector plus a vector.
+Uses unrolled loops for strides equal to one when compiled with LDC.
+Returns: dot product `conj(xᐪ) × y`
+Params:
+    a = scale parameter
+    x = first n-dimensional tensor
+    y = second n-dimensional tensor
+BLAS: SAXPY, DAXPY, CAXPYC, ZAXPYC
++/
+void axpy(A, size_t N, R1, R2)(in A a, Slice!(N, R1) x, Slice!(N, R2) y)
+{
+    static if (_shouldBeCastedToUnqual!R2)
+    {
+        .axpy(a, cast(Slice!(N, Unqual!R1))x, cast(Slice!(N, Unqual!R2))y);
+    }
+    else
+    {
+        assert(x.shape == y.shape, "constraints: x and y must have equal shapes");
+        pragma(inline, false);
+        ndEach!((ref x, ref y) { y += a * x; }, Yes.vectorized)(x, y);
+    }
+}
+
+/// SAXPY, DAXPY
+unittest
+{
+    import mir.ndslice.slice: slice;
+    auto x = slice!double(4);
+    auto y = slice!double(4);
+    x[] = [0, 1, 2, 3];
+    y[] = [4, 5, 6, 7];
+    axpy(2.0, x, y);
+    assert(y == [4, 7, 10, 13]);
+}
+
+/// SAXPY, DAXPY
+unittest
+{
+    import mir.ndslice.slice: slice;
+    import std.complex;
+    alias cd = Complex!double;
+
+    auto a = cd(3, 4);
+    auto x = slice!cd(2);
+    auto y = slice!cd(2);
+    x[] = [cd(0, 1), cd(2, 3)];
+    y[] = [cd(4, 5), cd(6, 7)];
+    axpy(a, x, y);
+    assert(y == [a * cd(0, 1) + cd(4, 5), a * cd(2, 3) + cd(6, 7)]);
+}
+
 /++
 Forms the dot product of two vectors.
-Uses unrolled loops for stride equal to one when compiled with LDC.
+Uses unrolled loops for strides equal to one when compiled with LDC.
 Returns: dot product `conj(xᐪ) × y`
 Params:
     F = type for summation (optional template parameter)
@@ -113,6 +208,17 @@ F dot(F, size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
     }
 }
 
+/// SDOT, DDOT
+unittest
+{
+    import mir.ndslice.slice: slice;
+    auto x = slice!double(4);
+    auto y = slice!double(4);
+    x[] = [0, 1, 2, 3];
+    y[] = [4, 5, 6, 7];
+    assert(dot(x, y) == 5 + 12 + 21);
+}
+
 /// ditto
 auto dot(size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
 {
@@ -122,6 +228,7 @@ auto dot(size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
 /// SDOT, DDOT
 unittest
 {
+    import mir.ndslice.slice: slice;
     auto x = slice!double(4);
     auto y = slice!double(4);
     x[] = [0, 1, 2, 3];
@@ -132,6 +239,7 @@ unittest
 /// SDSDOT, DSDOT
 unittest
 {
+    import mir.ndslice.slice: slice;
     auto x = slice!float(4);
     auto y = slice!float(4);
     x[] = [0, 1, 2, 3];
@@ -142,6 +250,7 @@ unittest
 /// CDOTC, ZDOTC
 unittest
 {
+    import mir.ndslice.slice: slice;
     import std.complex;
     alias cd = Complex!double;
 
@@ -154,7 +263,53 @@ unittest
 
 
 /++
+Forms the dot product of two complex vectors.
+Uses unrolled loops for strides equal to one when compiled with LDC.
+Returns: dot product `xᐪ × y`
+Params:
+    F = type for summation (optional template parameter)
+    x = first n-dimensional tensor
+    y = second n-dimensional tensor
+BLAS: CDOTU, ZDOTU
++/
+F dotu(F, size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
+    if (isComplex!(ForeachType!(typeof(x))) && isComplex!(ForeachType!(typeof(y))))
+{
+    static if (allSatisfy!(_shouldBeCastedToUnqual, R1, R2))
+    {
+        return .dotu!F(cast(Slice!(N, Unqual!R1))x, cast(Slice!(N, Unqual!R2))y);
+    }
+    else
+    {
+        assert(x.shape == y.shape, "constraints: x and y must have equal shapes");
+        pragma(inline, false);
+        return ndReduce!(_fmuladd, Yes.vectorized)(F(0), x, y);
+    }
+}
+
+/// ditto
+auto dotu(size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
+{
+    return .dotu!(Unqual!(typeof(x[0] * y[0])))(x, y);
+}
+
+/// CDOTU, ZDOTU
+unittest
+{
+    import mir.ndslice.slice: slice;
+    import std.complex;
+    alias cd = Complex!double;
+
+    auto x = slice!cd(2);
+    auto y = slice!cd(2);
+    x[] = [cd(0, 1), cd(2, 3)];
+    y[] = [cd(4, 5), cd(6, 7)];
+    assert(dotu(x, y) == cd(0, 1) * cd(4, 5) + cd(2, 3) * cd(6, 7));
+}
+
+/++
 Returns the euclidean norm of a vector.
+Uses unrolled loops for stride equal to one when compiled with LDC.
 Returns: euclidean norm `sqrt(conj(xᐪ)  × x)`
 Params:
     F = type for summation (optional template parameter)
@@ -178,23 +333,25 @@ auto nrm2(size_t N, R)(Slice!(N, R) x)
 /// SNRM2, DNRM2
 unittest
 {
-    import mir.internal.math: sqrt;
+    import mir.ndslice.slice: slice;
+    import std.math: sqrt, approxEqual;
     auto x = slice!double(4);
     x[] = [0, 1, 2, 3];
-    assert(nrm2(x) == sqrt(1.0 + 4 + 9));
+    assert(nrm2(x).approxEqual(sqrt(1.0 + 4 + 9)));
 }
 
 /// SCNRM2, DZNRM2
 unittest
 {
+    import mir.ndslice.slice: slice;
+    import std.math: sqrt, approxEqual;
     import std.complex;
     alias cd = Complex!double;
-    import mir.internal.math: sqrt;
 
     auto x = slice!cd(2);
     x[] = [cd(0, 1), cd(2, 3)];
 
-    assert(nrm2(x) == sqrt(1.0 + 4 + 9));
+    assert(nrm2(x).approxEqual(sqrt(1.0 + 4 + 9)));
 }
 
 /++
@@ -227,6 +384,7 @@ auto sqnrm2(size_t N, R)(Slice!(N, R) x)
 ///
 unittest
 {
+    import mir.ndslice.slice: slice;
     auto x = slice!double(4);
     x[] = [0, 1, 2, 3];
     assert(sqnrm2(x) == 1.0 + 4 + 9);
@@ -235,6 +393,7 @@ unittest
 ///
 unittest
 {
+    import mir.ndslice.slice: slice;
     import std.complex;
     alias cd = Complex!double;
 
@@ -276,6 +435,7 @@ auto asum(size_t N, R)(Slice!(N, R) x)
 /// SASUM, DASUM
 unittest
 {
+    import mir.ndslice.slice: slice;
     auto x = slice!double(4);
     x[] = [0, -1, -2, 3];
     assert(asum(x) == 1 + 2 + 3);
@@ -284,6 +444,7 @@ unittest
 /// SCASUM, DZASUM
 unittest
 {
+    import mir.ndslice.slice: slice;
     import std.complex;
     alias cd = Complex!double;
 
@@ -338,6 +499,7 @@ sizediff_t iamax(R)(Slice!(1, R) x)
 /// ISAMAX, IDAMAX
 unittest
 {
+    import mir.ndslice.slice: slice;
     auto x = slice!double(6);
     //     0  1   2   3   4  5
     x[] = [0, -1, -2, -3, 3, 2];
@@ -349,6 +511,7 @@ unittest
 /// ICAMAX, IZAMAX
 unittest
 {
+    import mir.ndslice.slice: slice;
     import std.complex;
     alias cd = Complex!double;
 
