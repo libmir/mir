@@ -57,6 +57,7 @@ License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: Ilya Yaroshenko
 
+Macros:
 SUBMODULE = $(MREF_ALTTEXT $1, mir, glas, $1)
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, glas, $1)$(NBSP)
 +/
