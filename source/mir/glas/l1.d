@@ -10,6 +10,7 @@ The Level 1 BLAS perform scalar, vector and vector-vector operations.
 $(BOOKTABLE $(H2 Matrix-matrix operations),
 
 $(TR $(TH Function Name) $(TH Description))
+$(T2 axpy, constant times a vector plus a vector)
 $(T2 dot, dot product, conjugating the first vector)
 $(T2 dotu, dot product)
 $(T2 nrm2, Euclidean norm)
@@ -135,7 +136,6 @@ private enum _shouldBeCastedToUnqual(T) = (isPointer!T || isDynamicArray!T) && !
 /++
 Constant times a vector plus a vector.
 Uses unrolled loops for strides equal to one when compiled with LDC.
-Returns: dot product `conj(xᐪ) × y`
 Params:
     a = scale parameter
     x = first n-dimensional tensor
@@ -357,7 +357,7 @@ unittest
 /++
 Forms the square of the euclidean norm.
 Uses unrolled loops for stride equal to one when compiled with LDC.
-Returns: dot product `conj(xᐪ) × y`
+Returns: `conj(xᐪ) × x`
 Params:
     F = type for summation (optional template parameter)
     x = n-dimensional tensor

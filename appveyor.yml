@@ -11,10 +11,6 @@ environment:
     DVersion: 1.1.0-beta2
     arch: x64
 
-matrix:
-  allow_failures:
-    - DC: ldc
-
 skip_tags: true
 branches:
   only:

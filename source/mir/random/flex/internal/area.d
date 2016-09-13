@@ -711,8 +711,8 @@ unittest
             hatArea!S(iv);
             squeezeArea!S(iv);
 
-            assert(iv.hatArea.fpEqual(hats[i][j]));
-            assert(iv.squeezeArea.fpEqual(sqs[i][j]));
+            assert(iv.hatArea.approxEqual(hats[i][j]));
+            assert(iv.squeezeArea.approxEqual(sqs[i][j]));
         }
     }
 }
