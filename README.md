@@ -84,7 +84,7 @@ Now you can create a main file in the `source` and run your code with:
 dub
 ```
 
-You can use a different compile with `dub --compiler ldc`.
+You can use a different compile with `dub --compiler=ldmd2` (to compile with LDC).
 For a performance boost, add `-b release` to let the compiler perform additional
 optimizations, inlining, removal of bound checking and `assert` statements.
 
