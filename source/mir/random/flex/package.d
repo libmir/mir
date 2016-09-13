@@ -1004,6 +1004,7 @@ version(X86_64) unittest
     static immutable sqs = [0, 0.0125563, 0.274612, 0.484543, 0.484543,
                             0.156698, 0.12444, 0.0125563, 0];
 
+    version(none)
     foreach (S; AliasSeq!(float, real))
     {
         auto f0 = (S x) => cast(S) log(1 - x^^4);
