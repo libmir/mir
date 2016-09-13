@@ -4,7 +4,7 @@
     "copyright": "2015-2016, Ilya Yaroshenko, Mir Team",
     "authors": ["Ilya Yaroshenko", "Sebastian Wilzbach"],
     "license": "BSL-1.0",
-    "targetType": "library",
+    "targetType": "sourceLibrary",
     "buildTypes": {
         "unittest-release": {
             "buildOptions": ["unittests", "releaseMode", "optimize", "inline"]
