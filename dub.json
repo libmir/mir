@@ -10,6 +10,24 @@
             "buildOptions": ["unittests", "releaseMode", "optimize", "inline"]
         }
     },
+    "configurations": [
+        {
+            "name": "source",
+            "targetType": "sourceLibrary",
+        },
+        {
+            "name": "static",
+            "targetType": "staticLibrary",
+        },
+        {
+            "name": "dynamic",
+            "targetType": "dynamicLibrary",
+        },
+        {
+            "name": "unittest",
+            "versions": ["to_be_filled"],
+        }
+    ],
     "dependencies": {
         "cpuid": "~>0.2.6"
     }
