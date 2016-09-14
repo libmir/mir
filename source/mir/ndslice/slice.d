@@ -1,5 +1,5 @@
 /**
-This is a submodule of $(MREF std, experimental, ndslice).
+This is a submodule of $(MREF mir, ndslice).
 
 License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 

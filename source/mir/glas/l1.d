@@ -7,7 +7,7 @@ This is a submodule of $(MREF mir,glas).
 
 The Level 1 BLAS perform scalar, vector and vector-vector operations.
 
-$(BOOKTABLE $(H2 Vector and scalar operations),
+$(BOOKTABLE $(H2 Scalar and vector operations),
 
 $(TR $(TH Function Name) $(TH Description))
 $(T2 axpy, constant times a vector plus a vector)
@@ -19,6 +19,8 @@ $(T2 asum, sum of absolute values)
 $(T2 iamax, index of max abs value)
 $(T2 amax, max abs value)
 )
+
+All functions except $(LREF iamax) work with multidimensional tensors.
 
 GLAS does not provide `swap`, `scal`, and `copy`  functions.
 This functionality is part of $(MREF_ALTTEXT ndslice, mir, ndslice) package.

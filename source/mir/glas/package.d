@@ -17,15 +17,15 @@ $(BOOKTABLE ,
     )
     $(TR
         $(TDNW $(SUBMODULE l1))
-        $(TD scalar and vector operations)
+        $(TD scalar and vector operations $(RED %90 done))
     )
     $(TR
         $(TDNW $(SUBMODULE l2))
-        $(TD matrix-vector operations)
+        $(TD matrix-vector operations $(RED %3 done))
     )
     $(TR
         $(TDNW $(SUBMODULE l3))
-        $(TD matrix-matrix operations)
+        $(TD matrix-matrix operations $(RED 40% done))
     )
 )
 
