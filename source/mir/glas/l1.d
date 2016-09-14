@@ -7,7 +7,7 @@ This is a submodule of $(MREF mir,glas).
 
 The Level 1 BLAS perform scalar, vector and vector-vector operations.
 
-$(BOOKTABLE $(H2 Matrix-matrix operations),
+$(BOOKTABLE $(H2 Vector and scalar operations),
 
 $(TR $(TH Function Name) $(TH Description))
 $(T2 axpy, constant times a vector plus a vector)

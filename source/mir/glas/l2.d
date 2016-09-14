@@ -11,7 +11,7 @@ The Level 2 BLAS perform matrix-vector operations.
 
 Note: GLAS is singe thread for now.
 
-$(BOOKTABLE $(H2 Matrix-matrix operations),
+$(BOOKTABLE $(H2 Matrix-vector operations),
 
 $(TR $(TH Function Name) $(TH Description))
 $(T2 gemv, general matrix-vector multiplication $(RED DRAFT))
