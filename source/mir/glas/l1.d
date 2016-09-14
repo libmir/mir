@@ -17,6 +17,7 @@ $(T2 nrm2, Euclidean norm)
 $(T2 sqnrm2, square of Euclidean norm)
 $(T2 asum, sum of absolute values)
 $(T2 iamax, index of max abs value)
+$(T2 amax, max abs value)
 )
 
 GLAS does not provide `swap`, `scal`, and `copy`  functions.
