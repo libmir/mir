@@ -79,14 +79,16 @@ Now you need to edit the `dub.json` add `mir` as dependency and set its targetTy
 }
 ```
 
-Now you can create a main file in the `source` and run your code with:
-
+Now you can create a main file in the `source` and run your code with 
 ```
 dub
 ```
-add `--compiler=ldmd2` and `--build=release` for a performance boost.
-`ldmd2` is a shell on top of [LDC (LLVM D Compiler)](https://github.com/ldc-developers/ldc).
+Flags `--build=release` and `--compiler=ldmd2` can be added for a performance boost:
+```
+dub --build=release --compiler=ldmd2
+```
 
+`ldmd2` is a shell on top of [LDC (LLVM D Compiler)](https://github.com/ldc-developers/ldc).
 `"dflags-ldc": ["-mcpu=native"]` allows LDC to optimize Mir for your CPU.
 
 #### Arch Linux
