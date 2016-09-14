@@ -291,7 +291,7 @@ Params:
 BLAS: CDOTU, ZDOTU
 +/
 F dotu(F, size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
-    if (isComplex!(ForeachType!(typeof(x))) && isComplex!(ForeachType!(typeof(y))))
+    if (isComplex!(DeepElementType!(typeof(x))) && isComplex!(DeepElementType!(typeof(y))))
 {
     static if (allSatisfy!(_shouldBeCastedToUnqual, R1, R2))
     {
@@ -308,7 +308,7 @@ F dotu(F, size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
 /// ditto
 auto dotu(size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
 {
-    return .dotu!(Unqual!(typeof(x[0] * y[0])))(x, y);
+    return .dotu!(Unqual!(typeof(x[x.shape.init] * y[y.shape.init])))(x, y);
 }
 
 /// CDOTU, ZDOTU
@@ -446,7 +446,7 @@ F asum(F, size_t N, R)(Slice!(N, R) x)
 /// ditto
 auto asum(size_t N, R)(Slice!(N, R) x)
 {
-    alias T = typeof(x[0]);
+    alias T = DeepElementType!(typeof(x));
     return .asum!(realType!T)(x);
 }
 
@@ -491,7 +491,7 @@ sizediff_t iamax(R)(Slice!(1, R) x)
             return -1;
         if (x.stride == 0)
             return 0;
-        alias T = Unqual!(typeof(x[0]));
+        alias T = Unqual!(DeepElementType!(typeof(x)));
         alias F = realType!T;
         static if (isFloatingPoint!F)
             auto m = -double.infinity;
@@ -577,7 +577,7 @@ auto amax(size_t N, R)(Slice!(N, R) x)
     else
     {
         pragma(inline, false);
-        alias T = typeof(x[0]);
+        alias T = DeepElementType!(typeof(x));
         alias F = realType!T;
         return ndReduce!(_amax, Yes.vectorized)(F(0), x);
     }
