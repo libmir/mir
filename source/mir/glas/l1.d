@@ -345,7 +345,7 @@ F nrm2(F, size_t N, R)(Slice!(N, R) x)
 /// ditto
 auto nrm2(size_t N, R)(Slice!(N, R) x)
 {
-    return .nrm2!(realType!(typeof(x[0] * x[0])))(x);
+    return .nrm2!(realType!(typeof(x[x.shape.init] * x[x.shape.init])))(x);
 }
 
 /// SNRM2, DNRM2
@@ -396,7 +396,7 @@ F sqnrm2(F, size_t N, R)(Slice!(N, R) x)
 /// ditto
 auto sqnrm2(size_t N, R)(Slice!(N, R) x)
 {
-    return .sqnrm2!(realType!(typeof(x[0] * x[0])))(x);
+    return .sqnrm2!(realType!(typeof(x[x.shape.init] * x[x.shape.init])))(x);
 }
 
 ///
