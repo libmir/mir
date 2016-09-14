@@ -23,7 +23,7 @@ $(T2 amax, max abs value)
 All functions except $(LREF iamax) work with multidimensional tensors.
 
 GLAS does not provide `swap`, `scal`, and `copy`  functions.
-This functionality is part of $(MREF_ALTTEXT ndslice, mir, ndslice) package.
+This functionality is part of $(MREF_ALTTEXT ndslice, mir, ndslice) package. Examples can be found below.
 
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
