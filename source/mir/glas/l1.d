@@ -83,32 +83,14 @@ import mir.ndslice.internal : fastmath;
 import mir.ndslice.slice;
 import mir.ndslice.algorithm : ndReduce, ndEach;
 
-@fastmath realType!T _fabs(T)(in T x)
-{
-    static if (isComplex!T)
-    {
-        return x.re.fabs + x.im.fabs;
-    }
-    else
-    static if (isFloatingPoint!T)
-    {
-        return x.fabs;
-    }
-    else
-    {
-        static if (isUnsigned!T)
-            return x;
-        else
-            return (x >= 0 ? x : -x);
-    }
-}
+@fastmath:
 
-@fastmath A _fmuladd(A, B, C)(A a, B b, C c)
+A _fmuladd(A, B, C)(A a, in B b, in C c)
 {
     return a + b * c;
 }
 
-@fastmath A _fmuladdc(A, B, C)(A a, B b, C c)
+A _fmuladdc(A, B, C)(A a, in B b, in C c)
 {
     static if (isComplex!B)
     {
@@ -118,7 +100,7 @@ import mir.ndslice.algorithm : ndReduce, ndEach;
         return a + b * c;
 }
 
-@fastmath A _nrm2(A, B)(A a, B b)
+A _nrm2(A, B)(A a, in B b)
 {
     static if (isComplex!B)
         return a + b.re * b.re + b.im * b.im;
@@ -126,9 +108,43 @@ import mir.ndslice.algorithm : ndReduce, ndEach;
         return a + b * b;
 }
 
-@fastmath A _asum(A, B)(A a, B b)
+A _asum(A, B)(A a, in B b)
 {
-    return a + _fabs(b);
+    static if (isComplex!B)
+    {
+        return a + (b.re.fabs + b.im.fabs);
+    }
+    else
+    static if (isFloatingPoint!B)
+    {
+        return a + b.fabs;
+    }
+    else
+    {
+        static if (isUnsigned!B)
+            return a + b;
+        else
+            return a + (b >= 0 ? b : -b);
+    }
+}
+
+A _amax(A, B)(A a, in B b)
+{
+    static if (isComplex!B)
+    {
+        return a.fmax(b.re.fabs + b.im.fabs);
+    }
+    else
+    static if (isFloatingPoint!B)
+    {
+        return a.fmax(b.fabs);
+    }
+    else
+    {
+        static if (!isUnsigned!B)
+            b = (b >= 0 ? b : -b);
+        return a >= b ? a : b;
+    }
 }
 
 private enum _shouldBeCastedToUnqual(T) = (isPointer!T || isDynamicArray!T) && !is(Unqual!T == T);
@@ -484,7 +500,24 @@ sizediff_t iamax(R)(Slice!(1, R) x)
         sizediff_t r = x.length;
         do
         {
-            auto e = x.front._fabs;
+            auto f = x.front;
+            static if (isComplex!T)
+            {
+                auto e = f.re.fabs + f.im.fabs;
+            }
+            else
+            static if (isFloatingPoint!T)
+            {
+                auto e = f.fabs;
+            }
+            else
+            {
+                static if (isUnsigned!T)
+                    auto e = f;
+                else
+                    auto e = (f >= 0 ? f : -f);
+            }
+
             if (e > m)
             {
                 m = e;
@@ -523,4 +556,54 @@ unittest
     assert(iamax(x) == 1);
     // -1 for empty vectors
     assert(iamax(x[$ .. $]) == -1);
+}
+
+/++
+Takes the sum of the `|Re(.)| + |Im(.)|`'s of a vector and
+    returns a single precision result.
+Returns: sum of the `|Re(.)| + |Im(.)|`'s
+Params:
+    F = type for summation (optional template parameter)
+    x = n-dimensional tensor
+BLAS: SASUM, DASUM, SCASUM, DZASUM
++/
+auto amax(size_t N, R)(Slice!(N, R) x)
+{
+    static if (_shouldBeCastedToUnqual!R)
+    {
+        return .amax(cast(Slice!(N, Unqual!R))x);
+    }
+    else
+    {
+        pragma(inline, false);
+        alias T = typeof(x[0]);
+        alias F = realType!T;
+        return ndReduce!(_amax, Yes.vectorized)(F(0), x);
+    }
+}
+
+///
+unittest
+{
+    import mir.ndslice.slice: slice;
+    auto x = slice!double(6);
+    x[] = [0, -1, -2, -7, 6, 2];
+    assert(amax(x) == 7);
+    // 0 for empty vectors
+    assert(amax(x[0 .. 0]) == 0);
+}
+
+///
+unittest
+{
+    import mir.ndslice.slice: slice;
+    import std.complex;
+    alias cd = Complex!double;
+
+    auto x = slice!cd(4);
+    x[] = [cd(0, -1), cd(-7, 3), cd(2, 3), cd(2, 2)];
+
+    assert(amax(x) == 10);
+    // 0 for empty vectors
+    assert(amax(x[$ .. $]) == 0);
 }

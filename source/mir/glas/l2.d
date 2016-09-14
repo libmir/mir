@@ -117,7 +117,7 @@ body
         asl.popFront;
         ysl.popFront;
     }
-    while(ysl.length);
+    while (ysl.length);
 }
 
 ///
