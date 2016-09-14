@@ -63,7 +63,7 @@ Fast setup with the dub package manager
 You can create a new project with:
 
 ```
-dub init --format=json <project-name>
+dub init <project-name>
 ```
 
 Now you need to edit the `dub.json` add `mir` as dependency and set its targetType to `executable`.
@@ -84,11 +84,8 @@ Now you can create a main file in the `source` and run your code with:
 ```
 dub
 ```
-or
-```
-dub --compiler=ldmd2 --build=release
-```
-for a performance boost. `ldmd2` is a shell on top of [LDC (LLVM D Compiler)](https://github.com/ldc-developers/ldc).
+add `--compiler=ldmd2` and `--build=release` for a performance boost.
+`ldmd2` is a shell on top of [LDC (LLVM D Compiler)](https://github.com/ldc-developers/ldc).
 
 `"dflags-ldc": ["-mcpu=native"]` allows LDC to optimize Mir for your CPU.
 
