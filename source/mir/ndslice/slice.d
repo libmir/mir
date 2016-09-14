@@ -62,10 +62,6 @@ auto sliced(
     if (!isStaticArray!Range && !isNarrowString!Range && N)
 in
 {
-    foreach (len; lengths)
-        assert(len > 0,
-            "All lengths must be positive."
-            ~ tailErrorMessage!());
     static if (hasLength!Range)
     {
         static if (allowDownsize)
