@@ -52,12 +52,11 @@ Compatibility
 | DMD 64 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build status](https://ci.appveyor.com/api/projects/status/f2n4dih5s4c32q7u/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
 | DMD 32 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | N/A | [![Build status](https://ci.appveyor.com/api/projects/status/f2n4dih5s4c32q7u/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
 
-Installation
+Fast setup with the dub package manager
 ------------
 
-### Fast setup with the dub package manager
-
-[![Dub version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
+[![Latest version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
+[![Latest version](https://img.shields.io/github/tag/libmir/mir.svg?maxAge=3600)](http://code.dlang.org/packages/mir)
 [![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
 
 [Dub](https://code.dlang.org/getting_started) is the D's package manager.
