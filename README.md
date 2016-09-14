@@ -1,6 +1,7 @@
-[![codecov.io](https://codecov.io/github/libmir/mir/coverage.svg?branch=master)](https://codecov.io/github/libmir/mir?branch=master)
+[![Latest version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
 [![Latest version](https://img.shields.io/github/tag/libmir/mir.svg?maxAge=3600)](http://code.dlang.org/packages/mir)
 [![License](https://img.shields.io/dub/l/mir.svg)](http://code.dlang.org/packages/mir)
+[![codecov.io](https://codecov.io/github/libmir/mir/coverage.svg?branch=master)](https://codecov.io/github/libmir/mir?branch=master)
 [![Gitter](https://img.shields.io/gitter/room/libmir/public.svg)](https://gitter.im/libmir/public)
 [![Circle CI](https://circleci.com/gh/libmir/mir.svg?style=svg)](https://circleci.com/gh/libmir/mir)
 
@@ -74,7 +75,8 @@ Now you need to edit the `dub.json` add `mir` as dependency and set its targetTy
 	"dependencies": {
 		"mir": "~><current-version>"
 	},
-	"targetType": "executable"
+	"targetType": "executable",
+	"dflags-ldc": ["-mcpu=native"]
 }
 ```
 
@@ -88,6 +90,8 @@ or
 dub --compiler=ldmd2 --build=release
 ```
 for a performance boost. `ldmd2` is a shell on top of [LDC (LLVM D Compiler)](https://github.com/ldc-developers/ldc).
+
+`"dflags-ldc": ["-mcpu=native"]` allows LDC to optimize Mir for your CPU.
 
 #### Arch Linux
 
