@@ -3,7 +3,7 @@ $(H2 Level 3)
 
 $(SCRIPT inhibitQuickIndex = 1;)
 
-This is a submodule of $(LINK2 mir_glas.html, mir.glas).
+This is a submodule of $(MREF mir,glas).
 
 The Level 3 GLAS perform matrix-matrix operations.
 
@@ -25,6 +25,7 @@ Macros:
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 SUBMODULE = $(MREF_ALTTEXT $1, mir, glas, $1)
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, glas, $1)$(NBSP)
+NDSLICEREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 +/
 module mir.glas.l3;
 public import mir.glas.common;
@@ -43,16 +44,16 @@ Pseudo_code: `C := alpha A × B + beta C`.
 Params:
     ctx = GLAS context. Should not be accessed by other threads.
     alpha = scalar
-    asl = `m x k` matrix
-    bsl = `k x n` matrix
+    asl = `m ⨉ k` matrix
+    bsl = `k ⨉ n` matrix
     beta = scalar. When  `beta`  is supplied as zero then the matrix `csl` need not be set on input.
-    csl = `m x n` matrix with one stride equal to `±1`.
+    csl = `m ⨉ n` matrix with one stride equal to `±1`.
     conja = specifies if the matrix `asl` stores conjugated elements.
     conjb = specifies if the matrix `bsl` stores conjugated elements.
 
 Note:
     GLAS does not require transposition parameters.
-    Use $(LINK2 mir_ndslice_iteration.html#transposed, mir.ndslice.iteration.transposed)
+    Use $(NDSLICEREF iteration, transposed)
     to perform zero cost `Slice` transposition.
 
 BLAS: SGEMM, DGEMM, CGEMM, ZGEMM
@@ -117,10 +118,10 @@ unittest
          [-1.0,  9,  4,  8],
          [  9.0, 8,  3, -2]];
 
-    auto c = slice!double([3, 4], 0);
+    auto c = slice!double(3, 4);
 
     auto glas = new GlasContext;
-    glas.gemm(1.0, a, b, 1.0, c);
+    glas.gemm(1.0, a, b, 0.0, c);
 
     assert(c ==
         [[-42.0,  35,  -7, 77],
@@ -150,17 +151,17 @@ Params:
            matrix A and the strictly upper triangular part of `asl` is not
            referenced.
     alpha = scalar
-    asl = `k x k` matrix, where `k` is `m`  when  `side` equals to 'Side.left'
+    asl = `k ⨉ k` matrix, where `k` is `m`  when  `side` equals to 'Side.left'
            and is `n` otherwise.
-    bsl = `m x n` matrix
+    bsl = `m ⨉ n` matrix
     beta = scalar. When  `beta`  is supplied as zero then the matrix `csl` need not be set on input.
-    csl = `m x n` matrix with one stride equals to `±1`.
+    csl = `m ⨉ n` matrix with one stride equals to `±1`.
     conja = specifies whether the matrix A is symmetric (`Conjugated.no`) or hermitian (`Conjugated.yes`).
     conjb = specifies if the matrix `bsl` stores conjugated elements.
 
 Note:
     GLAS does not require transposition parameters.
-    Use $(LINK2 mir_ndslice_iteration.html#transposed, mir.ndslice.iteration.transposed)
+    Use $(NDSLICEREF iteration, transposed)
     to perform zero cost `Slice` transposition.
 
 BLAS: SSYMM, DSYMM, CSYMM, ZSYMM, SHEMM, DHEMM, CHEMM, ZHEMM

@@ -3,7 +3,7 @@ $(H2 Level 1)
 
 $(SCRIPT inhibitQuickIndex = 1;)
 
-This is a submodule of $(LINK2 mir_glas.html, mir.glas).
+This is a submodule of $(MREF mir,glas).
 
 The Level 1 BLAS perform scalar, vector and vector-vector operations.
 
@@ -30,6 +30,7 @@ Macros:
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 SUBMODULE = $(MREF_ALTTEXT $1, mir, glas, $1)
 SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, glas, $1)$(NBSP)
+NDSLICEREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 +/
 module mir.glas.l1;
 

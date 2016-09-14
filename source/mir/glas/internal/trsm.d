@@ -1,12 +1,3 @@
-/++
-$(SCRIPT inhibitQuickIndex = 1;)
-
-This is a submodule of $(LINK2 mir_ndslice.html, mir.ndslice).
-
-License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
-
-Authors: Ilya Yaroshenko
-+/
 module mir.glas.trsm;
 
 import std.traits;

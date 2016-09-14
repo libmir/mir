@@ -1,20 +1,4 @@
-/++
-$(H2 Symmetric Matrix-Matrix Multiplication)
-
-$(SCRIPT inhibitQuickIndex = 1;)
-
-This is a submodule of $(LINK2 mir_glas.html, mir.glas).
-
-License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
-
-Authors: Ilya Yaroshenko
-
-Macros:
-SUBMODULE = $(LINK2 mir_glas_$1.html, mir.glas.$1)
-SUBREF = $(LINK2 mir_glas_$1.html#.$2, $(TT $2))$(NBSP)
-+/
 module mir.glas.internal.symm;
-
 
 import std.traits;
 import std.complex;

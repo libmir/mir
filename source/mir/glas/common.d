@@ -1,7 +1,7 @@
 /++
 $(SCRIPT inhibitQuickIndex = 1;)
 
-This is a submodule of $(LINK2 mir_glas.html, mir.glas).
+This is a submodule of $(MREF mir,glas).
 
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
