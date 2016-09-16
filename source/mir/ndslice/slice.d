@@ -3160,7 +3160,7 @@ package template PtrTuple(Names...)
         auto opBinary(string op)(sizediff_t shift)
             if (op == `+` || op == `-`)
         {
-            auto ret = this.ptrs;
+            auto ret = this;
             ret.opOpAssign!op(shift);
             return ret;
         }
