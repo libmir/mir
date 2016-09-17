@@ -1842,7 +1842,7 @@ Slice!(Lengths.length, Slice!(N + 1, Range)) repeatSlice(size_t N, Range, Length
 ///
 @safe pure nothrow unittest
 {
-    import std.experimental.ndslice.iteration : transposed;
+    import mir.ndslice.iteration : transposed;
 
     auto sl = iotaSlice(3)
         .repeatSlice(4)
@@ -1857,7 +1857,7 @@ Slice!(Lengths.length, Slice!(N + 1, Range)) repeatSlice(size_t N, Range, Length
 ///
 pure nothrow unittest
 {
-    import std.experimental.ndslice.slice : slice;
+    import mir.ndslice.slice : slice;
 
     auto sl = iotaSlice([3], 6).slice;
     auto slC = sl.repeatSlice(2, 3);
