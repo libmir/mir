@@ -1911,8 +1911,6 @@ template  RepeatSlice(size_t N, T)
         private alias UT = T;
     private UT _value;
 
-    @fmb:
-
     ref T opIndex(sizediff_t)
     {
         return _value;
