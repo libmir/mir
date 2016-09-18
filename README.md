@@ -1,3 +1,4 @@
+[![Bountysource](https://img.shields.io/bountysource/team/libmir/activity.svg)](https://www.bountysource.com/teams/libmir)
 [![Latest version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
 [![Latest version](https://img.shields.io/github/tag/libmir/mir.svg?maxAge=3600)](http://code.dlang.org/packages/mir)
 [![License](https://img.shields.io/dub/l/mir.svg)](http://code.dlang.org/packages/mir)
