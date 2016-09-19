@@ -214,7 +214,7 @@ unittest
     double sin = 4.0 / 5;
     x[] = [0, 1, 2, 3];
     y[] = [4, 5, 6, 7];
-    foreach(i; 0 .. 4)
+    foreach (i; 0 .. 4)
     {
         a[i] = cos * x[i] + sin * y[i];
         b[i] = cos * y[i] - sin * x[i];
