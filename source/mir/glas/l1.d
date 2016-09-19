@@ -5,14 +5,17 @@ $(SCRIPT inhibitQuickIndex = 1;)
 
 This is a submodule of $(MREF mir,glas).
 
-The Level 1 BLAS perform scalar, vector and vector-vector operations.
+The Level 1 GLAS perform vector and vector-vector operations.
 
-$(BOOKTABLE $(H2 Scalar and vector operations),
-
-$(TR $(TH Function Name) $(TH Description))
+$(BOOKTABLE $(H2 Vector-vector operations),
+$(T2 rot, apply Givens rotation)
 $(T2 axpy, constant times a vector plus a vector)
 $(T2 dot, dot product, conjugating the first vector)
 $(T2 dotu, dot product)
+)
+
+$(BOOKTABLE $(H2 Vector operations),
+$(TR $(TH Function Name) $(TH Description))
 $(T2 nrm2, Euclidean norm)
 $(T2 sqnrm2, square of Euclidean norm)
 $(T2 asum, sum of absolute values)
@@ -88,6 +91,36 @@ import mir.ndslice.algorithm : ndReduce, ndEach;
 
 @fastmath:
 
+template _rot(alias c, alias s)
+{
+    @fastmath
+    void _rot(X, Y)(ref X xr, ref Y yr)
+    {
+        auto x = xr;
+        auto y = yr;
+        auto t1 = c * x + s * y;
+        static if (isComplex!(typeof(c)))
+            auto t2 = conj(c) * y;
+        else
+            auto t2 = c * y;
+        static if (isComplex!(typeof(s)))
+            t2 -= conj(s) * x;
+        else
+            t2 -= s * x;
+        xr = t1;
+        yr = t2;
+    }
+}
+
+template _axpy(alias a)
+{
+    @fastmath
+    void _axpy(X, Y)(ref X x, ref Y y)
+    {
+        y += a * x;
+    }
+}
+
 A _fmuladd(A, B, C)(A a, in B b, in C c)
 {
     return a + b * c;
@@ -152,6 +185,44 @@ A _amax(A, B)(A a, in B b)
 
 private enum _shouldBeCastedToUnqual(T) = (isPointer!T || isDynamicArray!T) && !is(Unqual!T == T);
 
+/++
+Applies a plane rotation, where the  `c` (cos) and `s` (sin) are scalars.
+Uses unrolled loops for strides equal to one when compiled with LDC.
+Params:
+    c = cos scalar
+    s = sin scalar
+    x = first n-dimensional tensor
+    y = second n-dimensional tensor
+BLAS: SROT, DROT, CROT, ZROT, CSROT, ZDROTF
++/
+void rot(C, S, size_t N, R1, R2)(in C c, in S s, Slice!(N, R1) x, Slice!(N, R2) y)
+{
+    assert(x.shape == y.shape, "constraints: x and y must have equal shapes");
+    pragma(inline, false);
+    ndEach!(_rot!(c, s), Yes.vectorized)(x, y);
+}
+
+///
+unittest
+{
+    import mir.ndslice.slice: slice;
+    auto x = slice!double(4);
+    auto y = slice!double(4);
+    auto a = slice!double(4);
+    auto b = slice!double(4);
+    double cos = 3.0 / 5;
+    double sin = 4.0 / 5;
+    x[] = [0, 1, 2, 3];
+    y[] = [4, 5, 6, 7];
+    foreach(i; 0 .. 4)
+    {
+        a[i] = cos * x[i] + sin * y[i];
+        b[i] = cos * y[i] - sin * x[i];
+    }
+    rot(cos, sin, x, y);
+    assert(x == a);
+    assert(y == b);
+}
 
 /++
 Constant times a vector plus a vector.
@@ -160,7 +231,7 @@ Params:
     a = scale parameter
     x = first n-dimensional tensor
     y = second n-dimensional tensor
-BLAS: SAXPY, DAXPY, CAXPYC, ZAXPYC
+BLAS: SAXPY, DAXPY, CAXPY, ZAXPY
 +/
 void axpy(A, size_t N, R1, R2)(in A a, Slice!(N, R1) x, Slice!(N, R2) y)
 {
@@ -172,7 +243,7 @@ void axpy(A, size_t N, R1, R2)(in A a, Slice!(N, R1) x, Slice!(N, R2) y)
     {
         assert(x.shape == y.shape, "constraints: x and y must have equal shapes");
         pragma(inline, false);
-        ndEach!((ref x, ref y) { y += a * x; }, Yes.vectorized)(x, y);
+        ndEach!(_axpy!a, Yes.vectorized)(x, y);
     }
 }
 
