@@ -17,7 +17,7 @@ $(BOOKTABLE ,
     )
     $(TR
         $(TDNW $(SUBMODULE l1))
-        $(TD scalar and vector operations $(RED %90 done))
+        $(TD vector operations 100% done)
     )
     $(TR
         $(TDNW $(SUBMODULE l2))

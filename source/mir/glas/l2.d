@@ -3,8 +3,6 @@ $(H2 Level 2)
 
 $(SCRIPT inhibitQuickIndex = 1;)
 
-$(RED NOT IMPLEMENTED)
-
 This is a submodule of $(MREF mir,glas).
 
 The Level 2 BLAS perform matrix-vector operations.
@@ -14,7 +12,7 @@ Note: GLAS is singe thread for now.
 $(BOOKTABLE $(H2 Matrix-vector operations),
 
 $(TR $(TH Function Name) $(TH Description))
-$(T2 gemv, general matrix-vector multiplication $(RED DRAFT))
+$(T2 gemv, general matrix-vector multiplication, $(RED partially optimized))
 )
 
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
