@@ -25,16 +25,14 @@ BlockInfo!T blocking(size_t PA, size_t PB, size_t PC, T)(GlasContext* ctx, size_
     import mir.glas.internal.context;
     mixin RegisterConfig!(PC, PA, PB, T);
     BlockInfo!T ret = void;
-
     sizediff_t l2 = c2.size << 9; // half cache
-
     ret.kc = (l2 - m * T[PC][main_nr].sizeof) / (m * T[PA].sizeof + T[PB][main_nr].sizeof);
     ret.mc = m;
     enum minKc = 320 / PC;
-
-    if (ret.kc < minKc)
+    auto a = 2 * (T[PC][main_nr][main_mr].sizeof + main_nr * c1.line) + 512;
+    if (ret.kc < minKc || ret.kc * (T[PA][main_mr].sizeof + T[PB][main_nr].sizeof) + a  > c1.size << 10)
     {
-        ret.kc = ((c1.size << 10) - 2 * (T[PC][main_nr][main_mr].sizeof + main_nr * c1.line) - 512) / (T[PA][main_mr].sizeof + T[PB][main_nr].sizeof);
+        ret.kc = ((c1.size << 10) - a) / (T[PA][main_mr].sizeof + T[PB][main_nr].sizeof);
         assert(c1.size << 10 > main_mr);
         assert(ret.kc > main_mr);
         ret.kc.normalizeChunkSize!main_mr(k);
@@ -47,14 +45,12 @@ BlockInfo!T blocking(size_t PA, size_t PB, size_t PC, T)(GlasContext* ctx, size_
     {
         ret.kc.normalizeChunkSize!main_mr(k);
     }
-
     auto a_length = ret.kc * ret.mc * T[PA].sizeof;
     auto b_length = ret.kc * T[PB].sizeof * (ret.mc == m && false ? main_nr : n);
     auto buffLength = a_length + b_length;
     auto _mem = ctx.memory(a_length + b_length + prefetchShift);
     ret.a = cast(T*) _mem.ptr;
     ret.b = cast(T*) (_mem.ptr + a_length);
-
     return ret;
 }
 
