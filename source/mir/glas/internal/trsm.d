@@ -14,8 +14,7 @@ import mir.glas.internal.copy;
 import mir.glas.internal.blocking;
 import mir.glas.gemm: gemm, gemm_nano_kernel;
 
-version(LDC) version = LLVM_PREFETCH;
-
+import ldc.attributes : fastmath;
 @fastmath:
 
 pragma(inline, false)
@@ -275,7 +274,7 @@ void trsm_kernel (
     if (mc >= nr) do
     {
         enum N = nr;
-        version(LLVM_PREFETCH)
+        version(PREFETCH)
         {
             import ldc.intrinsics: llvm_prefetch;
 

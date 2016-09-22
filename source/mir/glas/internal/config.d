@@ -10,23 +10,17 @@ template RegisterConfig(size_t PS, size_t PB, size_t PR, T)
 {
     static if (isFloatingPoint!T)
         version(X86)
-            version(LDC)
-                static if (__traits(targetHasFeature, "sse2"))
-                    mixin SSE2;
-                else
-                    mixin FPU;
+            static if (__traits(targetHasFeature, "sse2"))
+                mixin SSE2;
             else
                 mixin FPU;
         else
         version(X86_64)
-            version(LDC)
-                static if (__traits(targetHasFeature, "avx512f"))
-                    mixin AVX512F;
-                else
-                static if (__traits(targetHasFeature, "avx"))
-                    mixin AVX;
-                else
-                    mixin SSE2;
+            static if (__traits(targetHasFeature, "avx512f"))
+                mixin AVX512F;
+            else
+            static if (__traits(targetHasFeature, "avx"))
+                mixin AVX;
             else
                 mixin SSE2;
         else
@@ -132,18 +126,10 @@ mixin template SSE2()
 
 alias FPU = M8;
 
-template optVec(V)
-{
-    version(LDC)
-        alias optVec = __vector(V)[1];
-    else
-        alias optVec = V;
-}
-
 mixin template AVX512_S()
 {
     enum size_t _broadcast = 6;
-    alias _simd_type_chain = AliasSeq!(__vector(float[8])[4], __vector(float[16])[2], __vector(float[16])[1], __vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    alias _simd_type_chain = AliasSeq!(__vector(float[8])[4], __vector(float[16])[2], __vector(float[16])[1], __vector(float[8])[1], __vector(float[4])[1], __vector(float[2])[1], float[1]);
 }
 
 mixin template AVX512_D()
@@ -155,7 +141,7 @@ mixin template AVX512_D()
 mixin template AVX512_C()
 {
     enum size_t _broadcast = 6;
-    alias _simd_type_chain = AliasSeq!(__vector(float[16])[2], __vector(float[16])[1], __vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    alias _simd_type_chain = AliasSeq!(__vector(float[16])[2], __vector(float[16])[1], __vector(float[8])[1], __vector(float[4])[1], __vector(float[2])[1], float[1]);
 }
 
 mixin template AVX512_Z()
@@ -167,7 +153,7 @@ mixin template AVX512_Z()
 mixin template AVX_S()
 {
     enum size_t _broadcast = 6;
-    alias _simd_type_chain = AliasSeq!(__vector(float[8])[2], __vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    alias _simd_type_chain = AliasSeq!(__vector(float[8])[2], __vector(float[8])[1], __vector(float[4])[1], __vector(float[2])[1], float[1]);
 }
 
 mixin template AVX_D()
@@ -179,7 +165,7 @@ mixin template AVX_D()
 mixin template AVX_C()
 {
     enum size_t _broadcast = 6;
-    alias _simd_type_chain = AliasSeq!(__vector(float[8])[1], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    alias _simd_type_chain = AliasSeq!(__vector(float[8])[1], __vector(float[4])[1], __vector(float[2])[1], float[1]);
 }
 
 mixin template AVX_Z()
@@ -191,7 +177,7 @@ mixin template AVX_Z()
 mixin template SSE2_S()
 {
     enum size_t _broadcast = 6;
-    alias _simd_type_chain = AliasSeq!(__vector(float[4])[2], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    alias _simd_type_chain = AliasSeq!(__vector(float[4])[2], __vector(float[4])[1], __vector(float[2])[1], float[1]);
 }
 
 mixin template SSE2_D()
@@ -203,7 +189,7 @@ mixin template SSE2_D()
 mixin template SSE2_C()
 {
     enum size_t _broadcast = 4;
-    alias _simd_type_chain = AliasSeq!(__vector(float[4])[2], __vector(float[4])[1], optVec!(float[2]), float[1]);
+    alias _simd_type_chain = AliasSeq!(__vector(float[4])[2], __vector(float[4])[1], __vector(float[2])[1], float[1]);
 }
 
 mixin template SSE2_Z()

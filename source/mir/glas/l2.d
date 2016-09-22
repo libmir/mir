@@ -35,11 +35,13 @@ import std.typecons: Flag, Yes, No;
 
 import mir.internal.math;
 import mir.internal.utility;
-import mir.ndslice.internal : fastmath;
 import mir.ndslice.slice;
 import mir.ndslice.algorithm : ndReduce;
 
 import mir.glas.l1;
+
+import ldc.attributes : fastmath;
+@fastmath:
 
 /++
 $(RED DRAFT)

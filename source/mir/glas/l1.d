@@ -187,7 +187,7 @@ private enum _shouldBeCastedToUnqual(T) = (isPointer!T || isDynamicArray!T) && !
 
 /++
 Applies a plane rotation, where the  `c` (cos) and `s` (sin) are scalars.
-Uses unrolled loops for strides equal to one when compiled with LDC.
+Uses unrolled loops for strides equal to one.
 Params:
     c = cos scalar
     s = sin scalar
@@ -226,7 +226,7 @@ unittest
 
 /++
 Constant times a vector plus a vector.
-Uses unrolled loops for strides equal to one when compiled with LDC.
+Uses unrolled loops for strides equal to one.
 Params:
     a = scale parameter
     x = first n-dimensional tensor
@@ -277,7 +277,7 @@ unittest
 
 /++
 Forms the dot product of two vectors.
-Uses unrolled loops for strides equal to one when compiled with LDC.
+Uses unrolled loops for strides equal to one.
 Returns: dot product `conj(xᐪ) × y`
 Params:
     F = type for summation (optional template parameter)
@@ -355,7 +355,7 @@ unittest
 
 /++
 Forms the dot product of two complex vectors.
-Uses unrolled loops for strides equal to one when compiled with LDC.
+Uses unrolled loops for strides equal to one.
 Returns: dot product `xᐪ × y`
 Params:
     F = type for summation (optional template parameter)
@@ -400,7 +400,7 @@ unittest
 
 /++
 Returns the euclidean norm of a vector.
-Uses unrolled loops for stride equal to one when compiled with LDC.
+Uses unrolled loops for stride equal to one.
 Returns: euclidean norm `sqrt(conj(xᐪ)  × x)`
 Params:
     F = type for summation (optional template parameter)
@@ -447,7 +447,7 @@ unittest
 
 /++
 Forms the square of the euclidean norm.
-Uses unrolled loops for stride equal to one when compiled with LDC.
+Uses unrolled loops for stride equal to one.
 Returns: `conj(xᐪ) × x`
 Params:
     F = type for summation (optional template parameter)

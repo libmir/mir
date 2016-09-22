@@ -6,7 +6,7 @@
 LATEST:=$(git describe --abbrev=0 --tags | tr -d v)
 
 # binaries
-DMD=dmd
+DMD=ldmd2
 RDMD=rdmd
 DDOC=$(DMD) -w -c -o- -version=StdDdoc
 
@@ -59,7 +59,7 @@ ${GENERATED}/${LATEST}.ddoc :
 
 ${GENERATED}/mir.ddoc : $(DOC_SOURCE_DIR)/gen_modlist.d $(MIR_DIR)
 	mkdir -p $(dir $@)
-	$(RDMD) $< $(MIR_DIR) $(MOD_EXCLUDES) >$@
+	$(RDMD) --compiler=$(DMD) $< $(MIR_DIR) $(MOD_EXCLUDES) >$@
 
 ###########################################################
 # Makefile bootstrapping

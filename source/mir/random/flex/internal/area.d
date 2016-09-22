@@ -47,12 +47,8 @@ version(unittest)
         bool fpEqual(float a, float b) { return a.approxEqual(b, 1e-5, 1e-5); }
         bool fpEqual(double a, double b) { return a.approxEqual(b, 1e-14, 1e-14); }
 
-        // probably yet another LDC Windows bug
-        version(LDC)
-            version(Windows)
-                enum real maxError = 1e-14;
-            else
-                enum real maxError = 1e-18;
+        version(Windows)
+            enum real maxError = 1e-14;
         else
             enum real maxError = 1e-18;
 

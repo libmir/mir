@@ -4,18 +4,15 @@ os:
  - osx
 language: d
 d:
- - dmd-2.071.1
  - ldc-1.1.0-beta2
 env:
  - ARCH="x86_64"
 matrix:
   include:
-    - {os: linux, d: dmd-2.071.1, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
     - {os: linux, d: ldc-1.1.0-beta2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
 branches:
   only:
     - master
-    - stable
 script:
  - echo "$ARCH"
  - dub fetch cpuid && dub build --arch "$ARCH" cpuid

@@ -57,23 +57,3 @@ alias ConstData(S : T[], T) = const(T)[];
 
 enum isVector(V) = is(V : T1[], T1) || is(V : Slice!(1, T2*), T2);
 enum isMatrix(M) = is(M : Slice!(2, T*), T);
-
-version(LDC)
-{
-    static if (__VERSION__ >= 2071)
-    {
-        static import ldc.attributes;
-        alias fastmath = ldc.attributes.fastmath;
-    }
-    else
-    {
-        struct FastMath{}
-        FastMath fastmath() { return FastMath.init; };
-    }
-}
-else
-{
-    struct FastMath{}
-    FastMath fastmath() { return FastMath.init; };
-}
-
