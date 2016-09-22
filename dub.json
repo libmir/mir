@@ -1,6 +1,6 @@
 {
     "name": "mir",
-    "description": "Generic Numerical Library for Science and Machine Learning",
+    "description": "LLVM-accelerated Generic Numerical Library for Science and Machine Learning",
     "copyright": "2015-2016, Ilya Yaroshenko, Mir Team",
     "authors": ["Ilya Yaroshenko", "Sebastian Wilzbach"],
     "license": "BSL-1.0",
