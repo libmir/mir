@@ -9,9 +9,10 @@ import mir.ndslice.slice : Slice;
 import mir.internal.utility;
 import mir.glas.internal;
 
-version(LDC) version = LLVM_PREFETCH;
-
+import ldc.attributes : fastmath;
 @fastmath:
+
+version = PREFETCH;
 
 pragma(inline, false)
 //nothrow @nogc
@@ -165,6 +166,7 @@ void gemm_impl(A, B, C)
     }
 }
 
+pragma(inline, true)
 void gebp(size_t PA, size_t PB, size_t PC, F, C)(
     size_t mc,
     size_t nc,
@@ -183,7 +185,6 @@ void gebp(size_t PA, size_t PB, size_t PC, F, C)(
     Conjugated conj,
     )
 {
-    version(LDC) pragma(inline, true);
     mixin RegisterConfig!(PA, PB, PC, F);
     foreach (nri, nr; nr_chain)
     if (nc >= nr) do
@@ -259,6 +260,7 @@ enum BetaType
     beta,
 }
 
+pragma(inline, true)
 //nothrow @nogc
 const(V[M][PA])* dot_reg (
     BetaType beta_type,
@@ -280,7 +282,6 @@ const(V[M][PA])* dot_reg (
     sizediff_t ldc,
 )
 {
-    version(LDC) pragma(inline, true);
     prefetch_w!(V[M][PC].sizeof, N, 1)(c, ldc * c[0].sizeof);
     V[M][PC][N] reg = void;
     a = dot_reg_basic(a, b, length, reg);
@@ -295,6 +296,7 @@ const(V[M][PA])* dot_reg (
     return a;
 }
 
+pragma(inline, true)
 //nothrow @nogc
 const(V[M][PA])*
 dot_reg_basic (
@@ -314,7 +316,6 @@ dot_reg_basic (
 )
     if (is(V == F) || isSIMDVector!V)
 {
-    version(LDC) pragma(inline, true);
     V[M][PC][N] reg = void;
 
     foreach (n; Iota!N)
@@ -343,16 +344,6 @@ dot_reg_basic (
             //alias um = AliasSeq!(u);
             foreach (n; um)
             foreach (p; Iota!PB)
-            static if (isSIMDVector!V && !isSIMDVector!F)
-                version(LDC)
-                    bi[n][p] = b[0][n][p];
-                else
-                {
-                    auto e = b[0][n][p];
-                    foreach (s; Iota!(bi[n][p].array.length))
-                        bi[n][p].array[s] = e;
-                }
-            else
                 bi[n][p] = b[0][n][p];
             foreach (n; um)
             foreach (m; Iota!M)
@@ -375,7 +366,7 @@ dot_reg_basic (
 pragma(inline, true)
 void prefetch_w(size_t M, size_t N, size_t rem = 1)(void* ptr, sizediff_t ld)
 {
-    version(LLVM_PREFETCH)
+    version(PREFETCH)
     {
         import ldc.intrinsics: llvm_prefetch;
         foreach (n; Iota!N)
@@ -390,7 +381,7 @@ void prefetch_w(size_t M, size_t N, size_t rem = 1)(void* ptr, sizediff_t ld)
 pragma(inline, true)
 void prefetch_r(size_t M, size_t N, size_t rem, size_t shift)(void* ptr, sizediff_t ld)
 {
-    version(LLVM_PREFETCH)
+    version(PREFETCH)
     {
         import ldc.intrinsics: llvm_prefetch;
         foreach (n; Iota!N)
@@ -403,9 +394,9 @@ void prefetch_r(size_t M, size_t N, size_t rem, size_t shift)(void* ptr, sizedif
     }
 }
 
+pragma(inline, true)
 void scale_nano(size_t M, size_t P, size_t N, V, F)(ref const F[P] alpha, ref V[M][P][N] c)
 {
-    version(LDC) pragma(inline, true);
     V[P] s = void;
     V[M][P][N] reg = void;
     load_nano(s, alpha);

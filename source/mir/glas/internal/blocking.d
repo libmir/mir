@@ -7,9 +7,10 @@ import mir.internal.utility;
 import mir.glas.internal.config;
 import mir.glas.common;
 
-enum prefetchShift = 512;
-
+import ldc.attributes : fastmath;
 @fastmath:
+
+enum prefetchShift = 512;
 
 struct BlockInfo(T)
 {

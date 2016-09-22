@@ -8,11 +8,12 @@ import mir.internal.utility;
 import mir.glas.internal.config;
 import mir.glas.common;
 
+import ldc.attributes : fastmath;
 @fastmath:
 
+pragma(inline, true)
 T* pack_b_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
 {
-    version(LDC) pragma(inline, true);
     if (elemStride == 1)
         return pack_b_dense_nano!(n, P, conj)(length, stride, from, to);
     else
@@ -123,13 +124,9 @@ T* pack_b_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t lengt
 T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, F* from, T* to)
 {
     enum s = n * P;
-     version(LDC)
-        enum LDC = true;
-    else
-        enum LDC = false;
     do
     {
-        static if (conj == false && n * P > 1 && !is(T == real) && LDC && (is(T == F) && P == 1 || is(Complex!T == F) && P == 2))
+        static if (conj == false && n * P > 1 && !is(T == real) && (is(T == F) && P == 1 || is(Complex!T == F) && P == 2))
         {
             import ldc.simd;
             alias V = __vector(T[s]);
@@ -166,9 +163,9 @@ T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length,
     return to;
 }
 
+pragma(inline, true)
 T* pack_a_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
 {
-    version(LDC) pragma(inline, true);
     if (elemStride == 1)
         return pack_a_dense_nano!(n, P, conj)(length, stride, from, to);
     else
@@ -206,13 +203,9 @@ T* pack_a_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t lengt
 //pragma(inline, false)
 T* pack_a_dense_nano(size_t mr, size_t P, bool conj = false, T, F)(size_t length, sizediff_t stride, F* from, T* to)
 {
-    version(LDC)
-        enum LDC = true;
-    else
-        enum LDC = false;
     do
     {
-        static if (mr > 1 && !is(T == real) && LDC && (is(T == F) && P == 1 || is(Complex!T == F) && P == 2))
+        static if (mr > 1 && !is(T == real) && (is(T == F) && P == 1 || is(Complex!T == F) && P == 2))
         {
             import ldc.simd;
             alias V = __vector(T[mr]);
@@ -387,10 +380,6 @@ void pack_b_triangular(Uplo uplo, bool inverseDiagonal, size_t PA, size_t PB, si
     assert(sl.length!0 == sl.length!1);
     import mir.ndslice.iteration: transposed;
 
-    version(LDC)
-        enum LDC = true;
-    else
-        enum LDC = false;
     mixin RegisterConfig!(PC, PA, PB, T);
     static if (uplo == Uplo.lower)
         size_t length;
@@ -437,11 +426,7 @@ void pack_b_triangular(Uplo uplo, bool inverseDiagonal, size_t PA, size_t PB, si
 
 void load_simd(size_t mr, size_t P, T)(T* to, T[P]* from)
 {
-    version(LDC)
-        enum LDC = true;
-    else
-        enum LDC = false;
-    static if (mr > 1 && !is(T == real) && LDC)
+    static if (mr > 1 && !is(T == real))
     {
         import ldc.simd;
         alias V = __vector(T[mr]);
@@ -471,10 +456,6 @@ void load_simd(size_t mr, size_t P, T)(T* to, T[P]* from)
 //{
 //    import mir.ndslice.iteration: transposed;
 //    import std.complex: Complex;
-//    version(LDC)
-//        enum LDC = true;
-//    else
-//        enum LDC = false;
 //    mixin RegisterConfig!(PC, PA, PB, T);
 //    if (sl.stride!0 == 1)
 //    {
@@ -530,104 +511,134 @@ void load_simd(size_t mr, size_t P, T)(T* to, T[P]* from)
 //pragma(inline, false)
 //void save_transposed_nano(size_t P, size_t N, V, T)
 
+pragma(inline, true)
 void save_nano(size_t P, size_t N, size_t M, V, T)
     (ref V[N][P][M] reg, T[P]* c, sizediff_t ldc)
 {
-    version(LDC) pragma(inline, true);
     foreach (m; Iota!M)
     {
         save_nano_impl(reg[m], c + ldc * m);
     }
 }
 
+pragma(inline, true)
 void save_nano_kernel(size_t P, size_t N, size_t M, V, T)
     (ref V[N][P][M] reg, T[P]* c)
 {
-    version(LDC) pragma(inline, true);
     foreach (m; Iota!M)
     {
         save_nano_impl(reg[m], c + m * V[N].sizeof / T.sizeof);
     }
 }
 
-version(LDC)
+pragma(inline, true);
+void save_nano_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
 {
-    version(LDC) pragma(inline, true);
-    void save_nano_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
+    import ldc.simd;
+    foreach (j; Iota!(N))
     {
-        import ldc.simd;
-        foreach (j; Iota!(N))
+        static if (P == 1)
         {
-            static if (P == 1)
+            static if (isSIMDVector!V)
             {
-                static if (isSIMDVector!V)
-                {
-                    storeUnaligned!V(reg[0][j], cast(T*)(c + j * V.length));
-                }
-                else
-                {
-                    c[j][0] = reg[0][j];
-                }
+                storeUnaligned!V(reg[0][j], cast(T*)(c + j * V.length));
             }
             else
             {
-                static if (isSIMDVector!V)
-                {
-                    auto re = reg[0][j];
-                    auto im = reg[1][j];
-                    auto r0 = _mix0!V(re, im);
-                    auto r1 = _mix1!V(re, im);
-                    storeUnaligned!V(r0, cast(T*)(c + j * V.length));
-                    storeUnaligned!V(r1, cast(T*)((cast(V*)(c + j * V.length)) + 1));
-                }
-                else
-                {
-                    c[j][0] = reg[0][j];
-                    c[j][1] = reg[1][j];
-                }
+                c[j][0] = reg[0][j];
             }
         }
-    }
-}
-else
-{
-    void save_nano_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
-    {
-        foreach (j; Iota!(N * V.sizeof / T.sizeof))
+        else
         {
-            foreach (p; Iota!P)
+            static if (isSIMDVector!V)
             {
-                c[j][p] = (cast(T*) &reg[p])[j];
+                auto re = reg[0][j];
+                auto im = reg[1][j];
+                auto r0 = _mix0!V(re, im);
+                auto r1 = _mix1!V(re, im);
+                storeUnaligned!V(r0, cast(T*)(c + j * V.length));
+                storeUnaligned!V(r1, cast(T*)((cast(V*)(c + j * V.length)) + 1));
+            }
+            else
+            {
+                c[j][0] = reg[0][j];
+                c[j][1] = reg[1][j];
             }
         }
     }
 }
 
+pragma(inline, true)
 void save_add_nano(size_t P, size_t N, size_t M, V, T)
     (ref V[N][P][M] reg, T[P]* c, sizediff_t ldc)
 {
-    version(LDC) pragma(inline, true);
     foreach (m; Iota!M)
     {
         save_add_nano_impl(reg[m], c + ldc * m);
     }
 }
 
+pragma(inline, true)
 void save_add_nano_kernel(size_t P, size_t N, size_t M, V, T)
     (ref V[N][P][M] reg, T[P]* c)
 {
-    version(LDC) pragma(inline, true);
     foreach (m; Iota!M)
     {
         save_add_nano_impl(reg[m], c + m * V[N].sizeof / T.sizeof);
     }
 }
 
-version(LDC)
+pragma(inline, true)
+void save_add_nano_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
 {
-    pragma(inline, true)
-    void save_add_nano_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
+    import ldc.simd;
+    foreach (j; Iota!(N))
     {
+        static if (P == 1)
+        {
+            static if (isSIMDVector!V)
+            {
+                auto cj = loadUnaligned!V(cast(T*)(c + j * V.length));
+                cj += reg[0][j];
+                storeUnaligned!V(cj, cast(T*)(c + j * V.length));
+            }
+            else
+            {
+                c[j][0] += reg[0][j];
+            }
+        }
+        else
+        {
+            static if (isSIMDVector!V)
+            {
+                auto cj0 = loadUnaligned!V(cast(T*)(c + j * V.length));
+                auto cj1 = loadUnaligned!V(cast(T*)((cast(V*)(c + j * V.length)) + 1));
+                auto re = reg[0][j];
+                auto im = reg[1][j];
+                auto r0 = _mix0!V(re, im);
+                auto r1 = _mix1!V(re, im);
+                cj0 += r0;
+                cj1 += r1;
+                storeUnaligned!V(cj0, cast(T*)(c + j * V.length));
+                storeUnaligned!V(cj1, cast(T*)((cast(V*)(c + j * V.length)) + 1));
+            }
+            else
+            {
+                c[j][0] += reg[0][j];
+                c[j][1] += reg[1][j];
+            }
+        }
+    }
+}
+
+pragma(inline, true)
+void save_madd_nano(size_t P, size_t N, size_t M, V, T)(ref V[N][P][M] reg, ref const T[P] beta, T[P]* c_, sizediff_t ldc)
+{
+    V[P] s = void;
+    s.load_nano(beta);
+    foreach (m; Iota!M)
+    {
+        auto c = c_ + m * ldc;
         import ldc.simd;
         foreach (j; Iota!(N))
         {
@@ -636,12 +647,12 @@ version(LDC)
                 static if (isSIMDVector!V)
                 {
                     auto cj = loadUnaligned!V(cast(T*)(c + j * V.length));
-                    cj += reg[0][j];
+                    cj = reg[m][0][j] + s[0] * cj;
                     storeUnaligned!V(cj, cast(T*)(c + j * V.length));
                 }
                 else
                 {
-                    c[j][0] += reg[0][j];
+                    c[j][0] = reg[m][0][j] + s[0] * c[j][0];
                 }
             }
             else
@@ -650,171 +661,67 @@ version(LDC)
                 {
                     auto cj0 = loadUnaligned!V(cast(T*)(c + j * V.length));
                     auto cj1 = loadUnaligned!V(cast(T*)((cast(V*)(c + j * V.length)) + 1));
-                    auto re = reg[0][j];
-                    auto im = reg[1][j];
+
+                    auto cre = _re!V(cj0, cj1);
+                    auto cim = _im!V(cj0, cj1);
+
+                    auto re = reg[m][0][j] + cre * s[0];
+                    auto im = reg[m][1][j] + cim * s[0];
+
+                    re -= cim * s[1];
+                    im += cre * s[1];
+
                     auto r0 = _mix0!V(re, im);
                     auto r1 = _mix1!V(re, im);
-                    cj0 += r0;
-                    cj1 += r1;
-                    storeUnaligned!V(cj0, cast(T*)(c + j * V.length));
-                    storeUnaligned!V(cj1, cast(T*)((cast(V*)(c + j * V.length)) + 1));
-                }
-                else
-                {
-                    c[j][0] += reg[0][j];
-                    c[j][1] += reg[1][j];
-                }
-            }
-        }
-    }
-}
-else
-{
-    version(LDC) pragma(inline, true);
-    void save_add_nano_impl(size_t P, size_t N, V, T)(ref V[N][P] reg, T[P]* c)
-    {
-        foreach (j; Iota!(N * V.sizeof / T.sizeof))
-        {
-            foreach (p; Iota!P)
-            {
-                c[j][p] += (cast(T*) &reg[p])[j];
-            }
-        }
-    }
-}
 
-version(LDC)
-{
-    pragma(inline, true)
-    void save_madd_nano(size_t P, size_t N, size_t M, V, T)(ref V[N][P][M] reg, ref const T[P] beta, T[P]* c_, sizediff_t ldc)
-    {
-        V[P] s = void;
-        s.load_nano(beta);
-        foreach (m; Iota!M)
-        {
-            auto c = c_ + m * ldc;
-            import ldc.simd;
-            foreach (j; Iota!(N))
-            {
-                static if (P == 1)
-                {
-                    static if (isSIMDVector!V)
-                    {
-                        auto cj = loadUnaligned!V(cast(T*)(c + j * V.length));
-                        cj = reg[m][0][j] + s[0] * cj;
-                        storeUnaligned!V(cj, cast(T*)(c + j * V.length));
-                    }
-                    else
-                    {
-                        c[j][0] = reg[m][0][j] + s[0] * c[j][0];
-                    }
-                }
-                else
-                {
-                    static if (isSIMDVector!V)
-                    {
-                        auto cj0 = loadUnaligned!V(cast(T*)(c + j * V.length));
-                        auto cj1 = loadUnaligned!V(cast(T*)((cast(V*)(c + j * V.length)) + 1));
-
-                        auto cre = _re!V(cj0, cj1);
-                        auto cim = _im!V(cj0, cj1);
-
-                        auto re = reg[m][0][j] + cre * s[0];
-                        auto im = reg[m][1][j] + cim * s[0];
-
-                        re -= cim * s[1];
-                        im += cre * s[1];
-
-                        auto r0 = _mix0!V(re, im);
-                        auto r1 = _mix1!V(re, im);
-
-                        storeUnaligned!V(r0, cast(T*)(c + j * V.length));
-                        storeUnaligned!V(r1, cast(T*)((cast(V*)(c + j * V.length)) + 1));
-                    }
-                    else
-                    {
-                        auto cre = c[j][0];
-                        auto cim = c[j][1];
-
-                        auto re = reg[m][0][j] + cre * s[0];
-                        auto im = reg[m][1][j] + cim * s[0];
-
-                        re -= cim * s[1];
-                        im += cre * s[1];
-
-                        c[j][0] = re;
-                        c[j][1] = im;
-                    }
-                }
-            }
-        }
-    }
-}
-else
-{
-    void save_madd_nano(size_t P, size_t N, size_t M, V, T)(ref V[N][P][M] reg, ref const T[P] beta, T[P]* c, sizediff_t ldc)
-    {
-        T[P] s = beta;
-        foreach (m; 0..M)
-        {
-            foreach (j; 0 .. N * V.sizeof / T.sizeof)
-            {
-                static if (P == 1)
-                {
-                    c[j][0] = (cast(T*) &reg[m][0])[j] + c[j][0] * s[0];
+                    storeUnaligned!V(r0, cast(T*)(c + j * V.length));
+                    storeUnaligned!V(r1, cast(T*)((cast(V*)(c + j * V.length)) + 1));
                 }
                 else
                 {
                     auto cre = c[j][0];
                     auto cim = c[j][1];
 
-                    auto re = (cast(T*) &reg[m][0])[j] + cre * s[0];
-                    auto im = (cast(T*) &reg[m][1])[j] + cim * s[0];
-
+                    auto re = reg[m][0][j] + cre * s[0];
+                    auto im = reg[m][1][j] + cim * s[0];
 
                     re -= cim * s[1];
                     im += cre * s[1];
 
-
                     c[j][0] = re;
                     c[j][1] = im;
-
                 }
             }
-            c += ldc;
         }
     }
 }
 
-version(LDC)
+template _mix0(V)
 {
-    template _mix0(V)
-    {
-        import ldc.simd;
-        enum _pred(size_t a) = (a & 1) == 0 ? a / 2 : a / 2 + V.length;
-        alias _mix0 = shufflevector!(V, staticMap!(_pred, Iota!(V.length)));
-    }
+    import ldc.simd;
+    enum _pred(size_t a) = (a & 1) == 0 ? a / 2 : a / 2 + V.length;
+    alias _mix0 = shufflevector!(V, staticMap!(_pred, Iota!(V.length)));
+}
 
-    template _mix1(V)
-    {
-        import ldc.simd;
-        enum _pred(size_t a) = ((a & 1) == 0 ? a / 2 : a / 2 + V.length) + V.length / 2;
-        alias _mix1 = shufflevector!(V, staticMap!(_pred, Iota!(V.length)));
-    }
+template _mix1(V)
+{
+    import ldc.simd;
+    enum _pred(size_t a) = ((a & 1) == 0 ? a / 2 : a / 2 + V.length) + V.length / 2;
+    alias _mix1 = shufflevector!(V, staticMap!(_pred, Iota!(V.length)));
+}
 
-    template _re(V)
-    {
-        import ldc.simd;
-        enum _pred(size_t a) = (a & 1) == 0;
-        alias _re = shufflevector!(V, Filter!(_pred, Iota!(V.length * 2)));
-    }
+template _re(V)
+{
+    import ldc.simd;
+    enum _pred(size_t a) = (a & 1) == 0;
+    alias _re = shufflevector!(V, Filter!(_pred, Iota!(V.length * 2)));
+}
 
-    template _im(V)
-    {
-        import ldc.simd;
-        enum _pred(size_t a) = (a & 1) != 0;
-        alias _im = shufflevector!(V, Filter!(_pred, Iota!(V.length * 2)));
-    }
+template _im(V)
+{
+    import ldc.simd;
+    enum _pred(size_t a) = (a & 1) != 0;
+    alias _im = shufflevector!(V, Filter!(_pred, Iota!(V.length * 2)));
 }
 
 void load_nano(size_t M, size_t PC, size_t N, V, W)(ref V[M][PC][N] to, ref W[M][PC][N] from)
@@ -830,19 +737,6 @@ void load_nano(size_t A, V, F)
 (ref V[A] to, ref const F[A] from)
     if (!isStaticArray!F)
 {
-    version(LDC) pragma(inline, true);
-    static if (isSIMDVector!V && !isSIMDVector!F)
-        version(LDC)
-        foreach (p; Iota!A)
-                to[p] = from[p];
-        else
-        foreach (p; Iota!A)
-        {
-            auto e = from[p];
-            foreach (s; Iota!(to[p].array.length))
-                to[p].array[s] = e;
-        }
-    else
     foreach (p; Iota!A)
         to[p] = from[p];
 }

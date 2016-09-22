@@ -304,14 +304,8 @@ body
 
     foreach (i, j; y.indexes)
     {
-        import mir.ndslice.algorithm : ndReduce;
-        import std.typecons : Yes;
-        auto d = ndReduce!(fmuladd, Yes.vectorized)(T(0), a[j], x);
+        import mir.glas.l1 : dot;
+        auto d = dot(a[j], x);
         mixin(`y.values[i] ` ~ op ~ `= d;`);
     }
-}
-
-@fastmath T fmuladd(T)(const T a, const T b, const T c)
-{
-    return a + b * c;
 }
