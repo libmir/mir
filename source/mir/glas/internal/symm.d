@@ -53,7 +53,7 @@ void symm_impl(A, B, C)
             do {
                 (cast(T[])(csl.front.toDense))[] = T(0); // memset
                 csl.popFront;
-            } while(csl.length);
+            } while (csl.length);
             return;
         }
         if (beta == 1)
@@ -61,7 +61,7 @@ void symm_impl(A, B, C)
         do {
             csl.front.toDense[] *= beta;
             csl.popFront;
-        } while(csl.length);
+        } while (csl.length);
         return;
     }
 
