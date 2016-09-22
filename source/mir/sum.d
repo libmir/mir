@@ -380,12 +380,6 @@ struct Summator(T, Summation summation)
             is(F : __vector(W[N]), W, size_t N);
             //false;
 
-    static if (isCompesatorAlgorithm!summation)
-    {
-        static assert(summation == Summation.kahan,
-            "internal error in mir.las.sum.Summator: template constraints is broken.");
-    }
-
     alias F = T;
 
     static if (summation == Summation.precise)
