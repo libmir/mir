@@ -47,7 +47,7 @@ before_build:
   - ps:
         $version = $env:DVersion;
         $env:PATH += ";C:\ldc2-$($version)-win64-msvc\bin";
-        $env:DC = "ldc2";
+        $env:DC = "ldmd2";
   - ps: $env:compilersetup = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall";
   - '"%compilersetup%" %compilersetupargs%'
 
