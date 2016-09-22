@@ -129,6 +129,29 @@ unittest
          [ 23.0,  69,   3, 29]]);
 }
 
+unittest
+{
+    auto a = slice!double(3, 0);
+    auto b = slice!double(0, 4);
+    auto c = slice!double(3, 4);
+
+    auto glas = new GlasContext;
+    glas.gemm(1.0, a, b, 0.0, c);
+
+    assert(c ==
+        [[0.0, 0, 0, 0],
+         [0.0, 0, 0, 0],
+         [0.0, 0, 0, 0]]);
+
+    c[] = 2;
+    glas.gemm(1.0, a, b, 2, c);
+
+    assert(c ==
+        [[4.0, 4, 4, 4],
+         [4.0, 4, 4, 4],
+         [4.0, 4, 4, 4]]);
+}
+
 /++
 Performs symmetric or hermitian matrix-matrix multiplication.
 
@@ -281,4 +304,27 @@ unittest
     glas.gemm(cd(1.0), a, b, cd(0.0), d);
 
     assert(c == d);
+}
+
+unittest
+{
+    auto a = slice!double(3, 3);
+    auto b = slice!double(3, 4);
+    auto c = slice!double(3, 4);
+
+    auto glas = new GlasContext;
+    glas.symm(Side.left, Uplo.lower, 0.0, a, b, 0.0, c);
+
+    assert(c ==
+        [[0.0, 0, 0, 0],
+         [0.0, 0, 0, 0],
+         [0.0, 0, 0, 0]]);
+
+    c[] = 2;
+    glas.symm(Side.left, Uplo.upper, 0.0, a, b, 2, c);
+
+    assert(c ==
+        [[4.0, 4, 4, 4],
+         [4.0, 4, 4, 4],
+         [4.0, 4, 4, 4]]);
 }

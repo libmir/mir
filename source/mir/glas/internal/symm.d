@@ -30,9 +30,7 @@ void symm_impl(A, B, C)
     mixin prefix3;
     import mir.ndslice.iteration: reversed, transposed;
 
-    if (asl.empty!0)
-        return;
-    if (bsl.empty!1)
+    if (csl.anyEmpty)
         return;
 
     if (csl.stride!0 < 0)
@@ -48,16 +46,22 @@ void symm_impl(A, B, C)
 
     if (asl.empty!1 || alpha == 0)
     {
+        if (csl.stride!1 != 1)
+            csl = csl.transposed;
         if (beta == 0)
         {
-            foreach (row; csl)
-                row.toDense[] = C(0);
+            do {
+                (cast(T[])(csl.front.toDense))[] = T(0); // memset
+                csl.popFront;
+            } while (csl.length);
             return;
         }
         if (beta == 1)
             return;
-        foreach (row; csl)
-            row.toDense[] *= beta;
+        do {
+            csl.front.toDense[] *= beta;
+            csl.popFront;
+        } while (csl.length);
         return;
     }
 
