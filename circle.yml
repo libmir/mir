@@ -12,7 +12,7 @@ dependencies:
   override:
     - curl -fsSL --retry 3 "https://github.com/ldc-developers/ldc/releases/download/v$LDC/ldc2-$LDC-linux-x86_64.tar.xz" | tar -C ~ -Jxf -
     - ldmd2 --version
-    - curl -fsSL --retry 3 http://code.dlang.org/files/dub-${DUB}-linux-x86_64.tar.gz | tar -C ~/dmd2/ldc2-$LDC-linux-x86_64/bin -zxf -
+    - curl -fsSL --retry 3 http://code.dlang.org/files/dub-${DUB}-linux-x86_64.tar.gz | tar -C ~/ldc2-$LDC-linux-x86_64/bin -zxf -
     - dub --version
     # - wget -q -O dscanner "http://releases.dlang.io/dscanner/0.3.0-git/dscanner"
     # - chmod +x dscanner
