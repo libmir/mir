@@ -16,7 +16,7 @@ Generic Numerical Library for Science and Machine Learning.
 Documentation
 -------------
 
-API can be found [here](http://docs.mir.dlang.io/latest/index.html).
+Documentation API can be found [here](http://docs.mir.dlang.io/latest/index.html).
 Read also the [Mir blog](http://blog.mir.dlang.io/).
 
 Contents
@@ -42,16 +42,12 @@ Contents
 
 Compatibility
 -------------
-
-- LDC (LLVM D Compiler) >= `1.1.0-beta2` (recommended compiler).
-- DMD (reference D compiler) >= `2.072.1`.
+Mir can be compiled with LDC (LLVM D Compiler) >= `1.1.0-beta2` only. Other D compilers are not supported anymore.
 
 |           | Linux | Mac OS X | Windows |
 |-----------|-------|----------|---------|
-| LDC 64 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build status](https://ci.appveyor.com/api/projects/status/f2n4dih5s4c32q7u/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
-| LDC 32 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | N/A | N/A |
-| DMD 64 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build status](https://ci.appveyor.com/api/projects/status/f2n4dih5s4c32q7u/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
-| DMD 32 | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | N/A | [![Build status](https://ci.appveyor.com/api/projects/status/f2n4dih5s4c32q7u/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
+| 64-bit | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build status](https://ci.appveyor.com/api/projects/status/f2n4dih5s4c32q7u/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
+| 32-bit | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | N/A | N/A |
 
 Fast setup with the dub package manager
 ------------
@@ -67,7 +63,7 @@ You can create a new project with:
 dub init <project-name>
 ```
 
-Now you need to edit the `dub.json` add `mir` as dependency and set its targetType to `executable`.
+Now you need to edit the `dub.json` add `mir` as dependency.
 
 ```json
 {
@@ -75,29 +71,22 @@ Now you need to edit the `dub.json` add `mir` as dependency and set its targetTy
 	"dependencies": {
 		"mir": "~><current-version>"
 	},
-	"targetType": "executable",
 	"dflags-ldc": ["-mcpu=native"]
 }
 ```
 
-Now you can create a main file in the `source` and run your code with 
+Now you can create an `app.d` file in the `source` folder and run your code with 
 ```
-dub
+dub --compiler=ldmd2
 ```
-Flags `--build=release` and `--compiler=ldmd2` can be added for a performance boost:
+Flag `--build=release` and can be added for a performance boost:
 ```
-dub --build=release --compiler=ldmd2
+dub --compiler=ldmd2 --build=release
 ```
 
 `ldmd2` is a shell on top of [LDC (LLVM D Compiler)](https://github.com/ldc-developers/ldc).
+
 `"dflags-ldc": ["-mcpu=native"]` allows LDC to optimize Mir for your CPU.
-
-#### Arch Linux
-
-| Type   | Name         | Version  |
-|--------|--------------|----------|
-| Stable | `libmir`     | [![libmir](https://img.shields.io/aur/version/libmir.svg)](https://aur.archlinux.org/packages/libmir/) [![libmir](https://img.shields.io/aur/votes/libmir.svg)](https://aur.archlinux.org/packages/libmir/) |
-| Latest | `libmir-git` | [![libmir-git](https://img.shields.io/aur/version/libmir-git.svg)](https://aur.archlinux.org/packages/libmir-git/) |
 
 Contributing
 ------------
