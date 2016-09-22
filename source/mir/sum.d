@@ -213,10 +213,10 @@ unittest
 
     /// ma always keeps precise average of last 1000 elements
     auto ma = new MovingAverage(iota(0.0, 1000.0).array);
-    assert(ma.avg == (1000*999/2) / 1000.0);
+    assert(ma.avg == (1000 * 999 / 2) / 1000.0);
     /// move by 10 elements
     put(ma, iota(1000.0, 1010.0));
-    assert(ma.avg == (1010*1009/2 - 10*9/2) / 1000.0);
+    assert(ma.avg == (1010 * 1009 / 2 - 10 * 9 / 2) / 1000.0);
 }
 
 version(X86)
@@ -382,21 +382,11 @@ struct Summator(T, Summation summation)
 
     static if (isCompesatorAlgorithm!summation)
     {
-        static if (isFloatingPoint!T || isComplex!T)
-        {
-            alias F = SummationType!T;
-        }
-        else
-        {
-            static assert(summation == Summation.kahan,
-                "internal error in mir.las.sum.Summator: template constraints is broken.");
-            alias F = T;
-        }
+        static assert(summation == Summation.kahan,
+            "internal error in mir.las.sum.Summator: template constraints is broken.");
     }
-    else
-    {
-        alias F = T;
-    }
+
+    alias F = T;
 
     static if (summation == Summation.precise)
     {
@@ -551,14 +541,12 @@ struct Summator(T, Summation summation)
     {
         F s = void;
         static if (is(F : __vector(W[N]), W, size_t N))
-            F _unused = void; //DMD bug workaround
     }
     else
     static if (summation == Summation.fast)
     {
         F s = void;
         static if (is(F : __vector(W[N]), W, size_t N))
-            F _unused = void; //DMD bug workaround
     }
     else
     static assert(0, "Unsupported summation type for std.numeric.Summator.");
@@ -856,10 +844,7 @@ public:
             static if (fastPairwise && isRandomAccessRange!Range && hasLength!Range)
             {
                 import core.bitop: bsf;
-                version(DMD)
-                    enum SIMDOptimization = false;
-                else
-                    enum SIMDOptimization = is(Unqual!Range : F[]) && (is(F == double) || is(F == float));
+                enum SIMDOptimization = is(Unqual!Range : F[]) && (is(F == double) || is(F == float));
                 static if (SIMDOptimization)
                     F[0x20] v = void;
                 else
@@ -2174,33 +2159,6 @@ template isComplex(C)
 {
     import std.complex : Complex;
     enum bool isComplex = is(C : Complex!F, F);
-}
-
-private template SummationType(F)
-    if (isFloatingPoint!F || isComplex!F)
-{
-    version(X86) //workaround for Issue 13474
-    {
-        static if (!is(Unqual!F == real) && (isComplex!F || !is(Unqual!(typeof(F.init.re)) == real)))
-        {
-            enum note =  "Note: Summation algorithms on x86 use 80bit representation "
-                       ~ "for single and double floating point numbers.";
-            pragma(msg, note);
-        }
-        static if (isComplex!F)
-        {
-            import std.complex : Complex;
-            alias SummationType = Complex!real;
-        }
-        else
-        {
-            alias SummationType = real;
-        }
-    }
-    else
-    {
-        alias SummationType = F;
-    }
 }
 
 private enum bool isCompesatorAlgorithm(Summation summation) =
