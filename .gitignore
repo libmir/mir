@@ -37,3 +37,5 @@ examples/means_of_columns
 benchmarks/glas/gemm_bench
 
 benchmarks/glas/symm_bench
+
+checkwhitespace.d
