@@ -540,13 +540,11 @@ struct Summator(T, Summation summation)
     static if (summation == Summation.naive)
     {
         F s = void;
-        static if (is(F : __vector(W[N]), W, size_t N))
     }
     else
     static if (summation == Summation.fast)
     {
         F s = void;
-        static if (is(F : __vector(W[N]), W, size_t N))
     }
     else
     static assert(0, "Unsupported summation type for std.numeric.Summator.");
