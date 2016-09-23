@@ -25,7 +25,8 @@ Read also the [Mir blog](http://blog.mir.dlang.io/).
 Contents
 --------
 
-- `mir.ndslice` [Multidimensional Random Access Ranges and Arrays](http://docs.mir.dlang.io/latest/mir_ndslice.html)
+- `mir.glas` - Generic Linear Algebra Subroutines
+- `mir.ndslice` Multidimensional Random Access Ranges and Arrays
 - `mir.sparse` Sparse Tensors
  - `Sparse` - DOK format
  - Different ranges for COO format
@@ -33,15 +34,11 @@ Contents
 - `mir.sparse.blas` - Sparse BLAS for `CompressedTensor`
 - `mir.model.lda.hoffman` - Online variational Bayes for latent Dirichlet allocation (Online VB LDA) for sparse documents. LDA is used for topic modeling.
 - `mir.combinatorics` Combinations, combinations with repeats, cartesian power, permutations.
+- `mir.random.flex` - Tinfex non-uniform RNG implementation
 - `mir.las.sum` Functions and Output Ranges for Summation Algorithms. Works with user-defined types.
  - Precise algorithm: improved analog of Python's `fsum`
  - Pairwise algorithm: fast version for Input Ranges
  - Kahan, KBN, and KB2 algorithms
-
-### In progress
-
- - `mir.random` - non-uniform RNGs.
- - `mir.glas` - Generic Linear Algebra Subroutines.
 
 Compatibility
 -------------
