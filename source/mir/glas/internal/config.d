@@ -16,9 +16,9 @@ template RegisterConfig(size_t PS, size_t PB, size_t PR, T)
                 mixin FPU;
         else
         version(X86_64)
-            static if (__traits(targetHasFeature, "avx512f"))
-                mixin AVX512F;
-            else
+            //static if (__traits(targetHasFeature, "avx512f"))
+            //    mixin AVX512F;
+            //else
             static if (__traits(targetHasFeature, "avx"))
                 mixin AVX;
             else
