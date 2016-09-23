@@ -1,7 +1,7 @@
 #!/usr/bin/env dub
 /+ dub.json:
 {
-	"name": "gemm_bench",
+	"name": "gemm_report",
 	"dependencies": {"mir": {"path": "../.."}, "cblas": "~>0.1.0"},
 	"dflags-ldc": ["-mcpu=native"],
 	"lflags": ["-L./"]
@@ -20,8 +20,8 @@ import std.getopt;
 import mir.ndslice;
 import mir.glas;
 
-//alias C = float;
-alias C = double;
+alias C = float;
+//alias C = double;
 //alias C = Complex!float;
 //alias C = Complex!double;
 alias A = C;
