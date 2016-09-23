@@ -10,8 +10,8 @@ The Level 1 GLAS perform vector and vector-vector operations.
 $(BOOKTABLE $(H2 Vector-vector operations),
 $(T2 rot, apply Givens rotation)
 $(T2 axpy, constant times a vector plus a vector)
-$(T2 dot, dot product, conjugating the first vector)
-$(T2 dotu, dot product)
+$(T2 dot, dot product)
+$(T2 dotc, dot product, conjugating the first vector)
 )
 
 $(BOOKTABLE $(H2 Vector operations),
@@ -295,7 +295,7 @@ F dot(F, size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
     {
         assert(x.shape == y.shape, "constraints: x and y must have equal shapes");
         pragma(inline, false);
-        return ndReduce!(_fmuladdc, Yes.vectorized)(F(0), x, y);
+        return ndReduce!(_fmuladd, Yes.vectorized)(F(0), x, y);
     }
 }
 
@@ -338,52 +338,6 @@ unittest
     assert(dot!real(x, y) == 5 + 12 + 21); // 80-bit FP for x86 CPUs
 }
 
-/// CDOTC, ZDOTC
-unittest
-{
-    import mir.ndslice.slice: slice;
-    import std.complex;
-    alias cd = Complex!double;
-
-    auto x = slice!cd(2);
-    auto y = slice!cd(2);
-    x[] = [cd(0, 1), cd(2, 3)];
-    y[] = [cd(4, 5), cd(6, 7)];
-    assert(dot(x, y) == cd(0, -1) * cd(4, 5) + cd(2, -3) * cd(6, 7));
-}
-
-
-/++
-Forms the dot product of two complex vectors.
-Uses unrolled loops for strides equal to one.
-Returns: dot product `xᐪ × y`
-Params:
-    F = type for summation (optional template parameter)
-    x = first n-dimensional tensor
-    y = second n-dimensional tensor
-BLAS: CDOTU, ZDOTU
-+/
-F dotu(F, size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
-    if (isComplex!(DeepElementType!(typeof(x))) && isComplex!(DeepElementType!(typeof(y))))
-{
-    static if (allSatisfy!(_shouldBeCastedToUnqual, R1, R2))
-    {
-        return .dotu!F(cast(Slice!(N, Unqual!R1))x, cast(Slice!(N, Unqual!R2))y);
-    }
-    else
-    {
-        assert(x.shape == y.shape, "constraints: x and y must have equal shapes");
-        pragma(inline, false);
-        return ndReduce!(_fmuladd, Yes.vectorized)(F(0), x, y);
-    }
-}
-
-/// ditto
-auto dotu(size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
-{
-    return .dotu!(Unqual!(typeof(x[x.shape.init] * y[y.shape.init])))(x, y);
-}
-
 /// CDOTU, ZDOTU
 unittest
 {
@@ -395,7 +349,52 @@ unittest
     auto y = slice!cd(2);
     x[] = [cd(0, 1), cd(2, 3)];
     y[] = [cd(4, 5), cd(6, 7)];
-    assert(dotu(x, y) == cd(0, 1) * cd(4, 5) + cd(2, 3) * cd(6, 7));
+    assert(dot(x, y) == cd(0, 1) * cd(4, 5) + cd(2, 3) * cd(6, 7));
+}
+
+/++
+Forms the dot product of two complex vectors.
+Uses unrolled loops for strides equal to one.
+Returns: dot product `xᐪ × y`
+Params:
+    F = type for summation (optional template parameter)
+    x = first n-dimensional tensor
+    y = second n-dimensional tensor
+BLAS: CDOTU, ZDOTU
++/
+F dotc(F, size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
+    if (isComplex!(DeepElementType!(typeof(x))) && isComplex!(DeepElementType!(typeof(y))))
+{
+    static if (allSatisfy!(_shouldBeCastedToUnqual, R1, R2))
+    {
+        return .dotc!F(cast(Slice!(N, Unqual!R1))x, cast(Slice!(N, Unqual!R2))y);
+    }
+    else
+    {
+        assert(x.shape == y.shape, "constraints: x and y must have equal shapes");
+        pragma(inline, false);
+        return ndReduce!(_fmuladdc, Yes.vectorized)(F(0), x, y);
+    }
+}
+
+/// ditto
+auto dotc(size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
+{
+    return .dotc!(Unqual!(typeof(x[x.shape.init] * y[y.shape.init])))(x, y);
+}
+
+/// CDOTC, ZDOTC
+unittest
+{
+    import mir.ndslice.slice: slice;
+    import std.complex;
+    alias cd = Complex!double;
+
+    auto x = slice!cd(2);
+    auto y = slice!cd(2);
+    x[] = [cd(0, 1), cd(2, 3)];
+    y[] = [cd(4, 5), cd(6, 7)];
+    assert(dotc(x, y) == cd(0, -1) * cd(4, 5) + cd(2, -3) * cd(6, 7));
 }
 
 /++
