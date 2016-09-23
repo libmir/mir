@@ -17,15 +17,15 @@ $(BOOKTABLE ,
     )
     $(TR
         $(TDNW $(SUBMODULE l1))
-        $(TD vector operations 100% done)
+        $(TD vector operations 100% done, partially optimized for now)
     )
     $(TR
         $(TDNW $(SUBMODULE l2))
-        $(TD matrix-vector operations $(RED %3 done))
+        $(TD matrix-vector operations %3 done, partially optimized for now)
     )
     $(TR
         $(TDNW $(SUBMODULE l3))
-        $(TD matrix-matrix operations $(RED 40% done))
+        $(TD matrix-matrix operations 50% done)
     )
 )
 
