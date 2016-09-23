@@ -4,7 +4,6 @@
 [![Gitter](https://img.shields.io/gitter/room/libmir/public.svg)](https://gitter.im/libmir/public)
 
 [![Latest version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
-[![Latest version](https://img.shields.io/github/tag/libmir/mir.svg?maxAge=3600)](http://code.dlang.org/packages/mir)
 
 [![codecov.io](https://codecov.io/github/libmir/mir/coverage.svg?branch=master)](https://codecov.io/github/libmir/mir?branch=master)
 [![Circle CI](https://circleci.com/gh/libmir/mir.svg?style=svg)](https://circleci.com/gh/libmir/mir)
@@ -34,7 +33,7 @@ Contents
 - `mir.sparse.blas` - Sparse BLAS for `CompressedTensor`
 - `mir.model.lda.hoffman` - Online variational Bayes for latent Dirichlet allocation (Online VB LDA) for sparse documents. LDA is used for topic modeling.
 - `mir.combinatorics` Combinations, combinations with repeats, cartesian power, permutations.
-- `mir.random.flex` - Tinfex non-uniform RNG implementation
+- `mir.random.flex` - Tinfex non-uniform RNG implementation.
 - `mir.las.sum` Functions and Output Ranges for Summation Algorithms. Works with user-defined types.
  - Precise algorithm: improved analog of Python's `fsum`
  - Pairwise algorithm: fast version for Input Ranges
@@ -53,7 +52,6 @@ Fast setup with the dub package manager
 ------------
 
 [![Latest version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
-[![Latest version](https://img.shields.io/github/tag/libmir/mir.svg?maxAge=3600)](http://code.dlang.org/packages/mir)
 
 [Dub](https://code.dlang.org/getting_started) is the D's package manager.
 You can create a new project with:
