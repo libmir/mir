@@ -41,7 +41,7 @@ Contents
 
 Compatibility
 -------------
-Mir can be compiled with LDC (LLVM D Compiler) >= `1.1.0-beta2` only. Other D compilers are not supported anymore.
+Mir can be compiled with LDC (LLVM D Compiler) >= `1.1.0-beta2` only. DMD is not supported anymore.
 
 |           | Linux | Mac OS X | Windows |
 |-----------|-------|----------|---------|
