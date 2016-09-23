@@ -7,7 +7,10 @@
 	"lflags": ["-L./"]
 }
 +/
-// dub --compiler=ldmd2 -b release --single benchmarks/glas/gemm_report.d
+// Set up your libblas to approporiate version, or just copy it to the benchmarks/glas folder.
+// Note: GLAS is single thread for now.
+// $ dub build --compiler=ldmd2 -b release --single gemm_report.d
+// $ ./gemm_report
 import std.math;
 import std.traits;
 import std.datetime;
