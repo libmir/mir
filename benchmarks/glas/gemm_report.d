@@ -76,10 +76,8 @@ void main(string[] args)
 			C beta = 2;
 		}
 
-
+		/// BLAS
 		auto nsecsBLAS = double.max;
-
-
 		foreach(_; 0..count) {
 			StopWatch sw;
 			sw.start;
@@ -128,6 +126,8 @@ void main(string[] args)
 			nsecsBLAS = min(newns, nsecsBLAS);
 
 		}
+
+		/// GLAS
 		auto nsecsGLAS = double.max;
 		foreach(_; 0..count)
 		{
@@ -139,11 +139,9 @@ void main(string[] args)
 			//writefln("_GLAS (single thread)               : %5s GFLOPS", (m * n * k * 2) / newns);
 			nsecsGLAS = min(newns, nsecsGLAS);
 		}
+		
+		/// Result
 		writefln("%s,%s,%s", m, (m * n * k * 2) / nsecsGLAS, (m * n * k * 2) / nsecsBLAS);
-		if(count == 1 && c != d)
-		{
-			writeln("results are very different");
-		}
 	}
 }
 
