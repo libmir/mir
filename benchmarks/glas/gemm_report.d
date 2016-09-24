@@ -52,7 +52,7 @@ void main(string[] args)
 		return;
 	}
 
-	writeln("m=n=k,GLAS(thread_count=1),OpenBLAS(thread_count=?)");
+	writeln("m=n=k,GLAS(thread_count=1),BLAS(thread_count=?)");
 	foreach(m; reportValues)
 	{
 		auto n = m;
