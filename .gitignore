@@ -41,3 +41,5 @@ benchmarks/glas/symm_bench
 checkwhitespace.d
 
 *.ll
+
+benchmarks/glas/gemm_report

@@ -2,11 +2,15 @@
 /+ dub.json:
 {
 	"name": "gemm_report",
-	"dependencies": {"mir": {"path": "../.."}, "cblas": "~>0.1.0"},
+	"dependencies": {"mir": {"path": "../.."}, "cblas": "~>0.2.0"},
 	"dflags-ldc": ["-mcpu=native"],
-	"lflags": ["-L./"]
+	"lflags": ["-L./"],
+	"libs": ["blas"],
 }
 +/
+	//"lflags": ["-L/opt/intel/mkl/lib"],
+	//"libs": ["mkl_sequential", "mkl_core", "mkl_intel_lp64"],
+
 // Set up your libblas to approporiate version, or just copy it to the benchmarks/glas folder.
 // Note: GLAS is single thread for now.
 // $ dub build --compiler=ldmd2 -b release --single gemm_report.d
