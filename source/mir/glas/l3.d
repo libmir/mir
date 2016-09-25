@@ -36,6 +36,9 @@ import std.complex: Complex;
 import mir.ndslice.slice;
 import mir.internal.utility;
 
+import ldc.attributes : fastmath;
+@fastmath:
+
 /++
 Performs general matrix-matrix multiplication.
 

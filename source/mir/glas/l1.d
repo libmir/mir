@@ -85,10 +85,10 @@ import std.typecons: Flag, Yes, No;
 
 import mir.internal.math;
 import mir.internal.utility;
-import mir.ndslice.internal : fastmath;
 import mir.ndslice.slice;
 import mir.ndslice.algorithm : ndReduce, ndEach;
 
+import ldc.attributes : fastmath;
 @fastmath:
 
 template _rot(alias c, alias s)
