@@ -43,3 +43,5 @@ checkwhitespace.d
 *.ll
 
 benchmarks/glas/gemm_report
+
+*.dylib
