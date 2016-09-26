@@ -15,7 +15,7 @@ Mir
 ======
 Generic Numerical Library for Science and Machine Learning.
 
-##### Projects based on Mir
+##### Open Source Projects based on Mir
 - [Computer Vision Library for D Programming Language](https://github.com/ljubobratovicrelja/dcv)
 
 Documentation
