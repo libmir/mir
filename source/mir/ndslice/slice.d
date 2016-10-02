@@ -985,7 +985,7 @@ template as(T)
         else
         {
             import std.conv : to;
-            import std.experimental.ndslice.algorithm : ndMap;
+            import mir.ndslice.algorithm : ndMap;
             return ndMap!(to!T)(slice);
         }
     }
@@ -994,8 +994,8 @@ template as(T)
 ///
 unittest
 {
-    import std.experimental.ndslice.slice : as;
-    import std.experimental.ndslice.selection : diagonal;
+    import mir.ndslice.slice : as;
+    import mir.ndslice.selection : diagonal;
 
     auto matrix = slice!double([2, 2], 0);
     auto stringMatrixView = matrix.as!string;
