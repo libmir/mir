@@ -3,9 +3,9 @@
 {
 	"name": "gemm_report",
 	"dependencies": {"mir": {"path": "../.."}, "cblas": "~>0.2.0"},
-	"dflags-ldc": ["-mcpu=native"],
 	"lflags": ["-L./"],
 	"libs": ["blas"],
+	"dflags-ldc": ["-mcpu=native", "-singleobj"],
 }
 +/
 	//"lflags": ["-L/opt/intel/mkl/lib"],
