@@ -964,6 +964,55 @@ unittest
 }
 
 /++
+Convenience function that creates a lazy view,
+where each element of the original slice is converted to the type `T`.
+It uses $(SUBREF selection, mapSlice) and $(REF_ALTTEXT $(TT to), to, std,conv)$(NBSP)
+composition under the hood.
+Params:
+    slice = a slice to create a view on.
+Returns:
+    A lazy slice with elements converted to the type `T`.
++/
+template as(T)
+{
+    ///
+    auto as(size_t N, Range)(Slice!(N, Range) slice)
+    {
+        static if (is(slice.DeepElemType == T))
+        {
+            return slice;
+        }
+        else
+        {
+            import std.conv : to;
+            import mir.ndslice.algorithm : ndMap;
+            return ndMap!(to!T)(slice);
+        }
+    }
+}
+
+///
+unittest
+{
+    import mir.ndslice.slice : as;
+    import mir.ndslice.selection : diagonal;
+
+    auto matrix = slice!double([2, 2], 0);
+    auto stringMatrixView = matrix.as!string;
+    assert(stringMatrixView ==
+            [["0", "0"],
+             ["0", "0"]]);
+
+    matrix.diagonal[] = 1;
+    assert(stringMatrixView ==
+            [["1", "0"],
+             ["0", "1"]]);
+
+    /// allocate new slice composed of strings
+    Slice!(2, string*) stringMatrix = stringMatrixView.slice;
+}
+
+/++
 Base Exception class for $(MREF std, experimental, ndslice).
 +/
 class SliceException: Exception

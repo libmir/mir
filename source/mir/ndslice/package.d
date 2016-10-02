@@ -81,6 +81,7 @@ $(TR $(TH Submodule) $(TH Declarations))
 $(TR $(TDNW $(SUBMODULE slice)
         $(BR) $(SMALL $(SUBREF slice, Slice), its properties, operator overloading))
      $(TD
+        $(SUBREF slice, as)
         $(SUBREF slice, sliced)
         $(SUBREF slice, Slice)
         $(SUBREF slice, slice)
