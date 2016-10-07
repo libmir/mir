@@ -6,7 +6,7 @@ It contains basic multidimensional iteration algorithms.
 
 $(BOOKTABLE Iteration operators,
 $(TR $(TH Operator Name) $(TH Type) $(TH Functions / Seeds #)  $(TH Vectorization) $(TH Tensors #) $(TH Returns) $(TH First Argument)  $(TH Triangular and Half Selection))
-$(T8 ndMap, Lazy, `>=1`/`0`, N/A, 1, Tensor, Tensor, N/A)
+$(T8 sliceMap, Lazy, `>=1`/`0`, N/A, 1, Tensor, Tensor, N/A)
 $(T8 ndFold, Eagerly, `>=1`, No, `1`, Scalar, Tensor, No)
 $(T8 ndReduce, Eagerly, `1`, Optional, `>=1`, Scalar, Seed, Yes)
 $(T8 ndEach, Eagerly, `1`/`0`, Optional, `>=1`, `void`, Tensor, Yes)
@@ -138,9 +138,12 @@ private template naryFun(bool hasSeed, size_t argCount, alias fun)
     }
 }
 
+deprecated("please use mir.ndslice.selection.sliceMap instead.")
+alias ndMap = sliceMap;
+
 /++
 Implements the homonym function (also known as `transform`) present
-in many languages of functional flavor. The call `ndMap!(fun)(tensor)`
+in many languages of functional flavor. The call `sliceMap!(fun)(tensor)`
 returns a tensor of which elements are obtained by applying `fun`
 for all elements in `tensor`. The original tensors are
 not changed. Evaluation is done lazily.
@@ -158,11 +161,11 @@ See_Also:
     $(REF map, std,algorithm,iteration)
     $(HTTP en.wikipedia.org/wiki/Map_(higher-order_function), Map (higher-order function))
 +/
-template ndMap(fun...)
+template sliceMap(fun...)
     if (fun.length)
 {
     ///
-    auto ndMap(size_t N, Range)
+    auto sliceMap(size_t N, Range)
         (auto ref Slice!(N, Range) tensor)
     {
         // this static if-else block
@@ -217,7 +220,7 @@ pure nothrow unittest
 {
     import mir.ndslice.selection : iotaSlice;
 
-    auto s = iotaSlice(2, 3).ndMap!(a => a * 3);
+    auto s = iotaSlice(2, 3).sliceMap!(a => a * 3);
     assert(s == [[ 0,  3,  6],
                  [ 9, 12, 15]]);
 }
@@ -226,7 +229,7 @@ pure nothrow unittest
 {
     import mir.ndslice.selection : iotaSlice;
 
-    assert(iotaSlice(2, 3).slice.ndMap!"a * 2" == [[0, 2, 4], [6, 8, 10]]);
+    assert(iotaSlice(2, 3).slice.sliceMap!"a * 2" == [[0, 2, 4], [6, 8, 10]]);
 }
 
 /// Packed tensors.
@@ -234,7 +237,7 @@ pure nothrow unittest
 {
     import mir.ndslice.selection : iotaSlice, windows;
 
-    //  iotaSlice        windows     ndMap  sums ( ndFold!"a + b" )
+    //  iotaSlice        windows     sliceMap  sums ( ndFold!"a + b" )
     //                --------------
     //  -------      |  ---    ---  |      ------
     // | 0 1 2 |  => || 0 1 || 1 2 ||  => | 8 12 |
@@ -243,7 +246,7 @@ pure nothrow unittest
     //                --------------
     auto s = iotaSlice(2, 3)
         .windows(2, 2)
-        .ndMap!(a => a.ndFold!"a + b"(size_t(0)));
+        .sliceMap!(a => a.ndFold!"a + b"(size_t(0)));
 
     assert(s == [[8, 12]]);
 }
@@ -255,7 +258,7 @@ pure nothrow unittest
     auto s = iotaSlice(2, 3)
         .slice
         .windows(2, 2)
-        .ndMap!(a => a.ndFold!"a + b"(size_t(0)));
+        .sliceMap!(a => a.ndFold!"a + b"(size_t(0)));
 
     assert(s == [[8, 12]]);
 }
@@ -278,22 +281,22 @@ pure nothrow unittest
 
     auto zip = assumeSameStructure!("a", "b")(sl1, sl2);
 
-    auto lazySum = zip.ndMap!(z => z.a + z.b);
+    auto lazySum = zip.sliceMap!(z => z.a + z.b);
 
     assert(lazySum == [[ 1,  3,  5],
                        [ 7,  9, 11]]);
 }
 
 /++
-Multiple functions can be passed to `ndMap`.
-In that case, the element type of `ndMap` is a tuple containing
+Multiple functions can be passed to `sliceMap`.
+In that case, the element type of `sliceMap` is a tuple containing
 one element for each function.
 +/
 pure nothrow unittest
 {
     import mir.ndslice.selection : iotaSlice;
 
-    auto s = iotaSlice(2, 3).ndMap!("a + a", "a * a");
+    auto s = iotaSlice(2, 3).sliceMap!("a + a", "a * a");
 
     auto sums     = [[0, 2, 4], [6,  8, 10]];
     auto products = [[0, 1, 4], [9, 16, 25]];
@@ -308,14 +311,14 @@ pure nothrow unittest
 }
 
 /++
-You may alias `ndMap` with some function(s) to a symbol and use it separately:
+You may alias `sliceMap` with some function(s) to a symbol and use it separately:
 +/
 pure nothrow unittest
 {
     import std.conv : to;
     import mir.ndslice.selection : iotaSlice;
 
-    alias stringize = ndMap!(to!string);
+    alias stringize = sliceMap!(to!string);
     assert(stringize(iotaSlice(2, 3)) == [["0", "1", "2"], ["3", "4", "5"]]);
 }
 
@@ -782,10 +785,10 @@ pure unittest
 
     // 0 1 2
     // 3 4 5
-    auto sl1 = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto sl1 = iotaSlice(2, 3).sliceMap!(to!double).slice;
     // 1 2 3
     // 4 5 6
-    auto sl2 = iotaSlice([2, 3], 1).ndMap!(to!double).slice;
+    auto sl2 = iotaSlice([2, 3], 1).sliceMap!(to!double).slice;
 
     // tensors must have the same strides
     assert(sl1.structure == sl2.structure);
@@ -806,7 +809,7 @@ unittest
 
     //| 0 1 2 |
     //| 3 4 5 |
-    auto sl = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto sl = iotaSlice(2, 3).sliceMap!(to!double).slice;
 
     alias fun = (seed, ref elem) => seed + elem++;
 
@@ -832,7 +835,7 @@ unittest
 
     alias maxVal = (a) => a.ndFold!max(size_t.min);
     alias minVal = (a) => a.ndFold!min(size_t.max);
-    alias minimaxVal = (a) => minVal(a.pack!1.ndMap!maxVal);
+    alias minimaxVal = (a) => minVal(a.pack!1.sliceMap!maxVal);
 
     auto sl = iotaSlice(2, 3);
 
@@ -952,10 +955,10 @@ unittest
 
     //| 0 1 2 |
     //| 3 4 5 |
-    auto a = iotaSlice([2, 3], 0).ndMap!(to!double).slice;
+    auto a = iotaSlice([2, 3], 0).sliceMap!(to!double).slice;
     //| 1 2 3 |
     //| 4 5 6 |
-    auto b = iotaSlice([2, 3], 1).ndMap!(to!double).slice;
+    auto b = iotaSlice([2, 3], 1).sliceMap!(to!double).slice;
 
     alias dot = ndReduce!(fmuladd, Yes.vectorized);
     auto res = dot(0.0, a, b);
@@ -984,10 +987,10 @@ pure unittest
 
     // 0 1 2
     // 3 4 5
-    auto sl1 = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto sl1 = iotaSlice(2, 3).sliceMap!(to!double).slice;
     // 1 2 3
     // 4 5 6
-    auto sl2 = iotaSlice([2, 3], 1).ndMap!(to!double).slice;
+    auto sl2 = iotaSlice([2, 3], 1).sliceMap!(to!double).slice;
 
     // tensors must have the same strides
     assert(sl1.structure == sl2.structure);
@@ -1015,7 +1018,7 @@ unittest
 
     //| 0 1 2 |
     //| 3 4 5 |
-    auto sl = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto sl = iotaSlice(2, 3).sliceMap!(to!double).slice;
 
     auto res = ndReduce!(fun, Yes.vectorized)(double(0), sl);
 
@@ -1047,9 +1050,9 @@ unittest
 
     alias maxVal = (a) => ndReduce!(fmax, Yes.vectorized)(-double.infinity, a);
     alias minVal = (a) => ndReduce!fmin(double.infinity, a);
-    alias minimaxVal = (a) => minVal(a.pack!1.ndMap!maxVal);
+    alias minimaxVal = (a) => minVal(a.pack!1.sliceMap!maxVal);
 
-    auto sl = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto sl = iotaSlice(2, 3).sliceMap!(to!double).slice;
 
     // Vectorized execution path: row stride equals 1.
     //| 0 1 2 | => | 2 |
@@ -1137,7 +1140,7 @@ unittest
 
     //| 0 1 2 |
     //| 3 4 5 |
-    auto sl = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto sl = iotaSlice(2, 3).sliceMap!(to!double).slice;
 
     sl.ndEach!((ref a) { a = a * 10 + 5; }, Yes.vectorized);
 
@@ -1157,10 +1160,10 @@ unittest
 
     //| 0 1 2 |
     //| 3 4 5 |
-    auto a = iotaSlice([2, 3], 0).ndMap!(to!double).slice;
+    auto a = iotaSlice([2, 3], 0).sliceMap!(to!double).slice;
     //| 10 11 12 |
     //| 13 14 15 |
-    auto b = iotaSlice([2, 3], 10).ndMap!(to!double).slice;
+    auto b = iotaSlice([2, 3], 10).sliceMap!(to!double).slice;
 
     ndEach!(swap, Yes.vectorized)(a, b);
 
@@ -1179,10 +1182,10 @@ unittest
 
     //| 0 1 2 |
     //| 3 4 5 |
-    auto a = iotaSlice([2, 3], 0).ndMap!(to!double).slice;
+    auto a = iotaSlice([2, 3], 0).sliceMap!(to!double).slice;
     //| 10 11 12 |
     //| 13 14 15 |
-    auto b = iotaSlice([2, 3], 10).ndMap!(to!double).slice;
+    auto b = iotaSlice([2, 3], 10).sliceMap!(to!double).slice;
 
     auto zip = assumeSameStructure!("a", "b")(a, b);
 
@@ -1204,7 +1207,7 @@ pure nothrow unittest
 
     //| 0 1 2 |
     //| 3 4 5 |
-    auto a = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto a = iotaSlice(2, 3).sliceMap!(to!double).slice;
 
     ndEach!(swap, Select.half)(a, a.allReversed);
 
@@ -1221,7 +1224,7 @@ pure nothrow unittest
 
     //| 0 1 2 |
     //| 3 4 5 |
-    auto a = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto a = iotaSlice(2, 3).sliceMap!(to!double).slice;
     auto b = a.slice;
 
     alias reverseRows = a => ndEach!(swap, Select.halfPacked)(a.pack!1, a.reversed!1.pack!1);
@@ -1246,7 +1249,7 @@ pure nothrow unittest
     // | 0 1 2 |
     // | 3 4 5 |
     // | 6 7 8 |
-    auto a = iotaSlice(3, 3).ndMap!(to!double).slice;
+    auto a = iotaSlice(3, 3).sliceMap!(to!double).slice;
 
     // matrix should be square
     assert(a.length!0 == a.length!1);
@@ -1387,7 +1390,7 @@ pure nothrow unittest
 
     // 0 1 2
     // 3 4 5
-    auto sl = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto sl = iotaSlice(2, 3).sliceMap!(to!double).slice;
 
     static bool pred(T)(ref T a)
     {
@@ -1418,7 +1421,7 @@ pure nothrow unittest
     // |_0 1 2
     // 3 |_4 5
     // 6 7 |_8
-    auto sl = iotaSlice(3, 3).ndMap!(to!double).slice;
+    auto sl = iotaSlice(3, 3).sliceMap!(to!double).slice;
     size_t[2] bi;
     ndFind!("a > 5", Select.triangular)(bi, sl);
     assert(sl.backward(bi) == 8);
@@ -1542,7 +1545,7 @@ pure nothrow unittest
 
     // 0 1 2
     // 3 4 5
-    auto sl = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto sl = iotaSlice(2, 3).sliceMap!(to!double).slice;
 
     static bool pred(T)(ref T a)
     {
@@ -1632,7 +1635,7 @@ pure nothrow unittest
 
     // 0 1 2
     // 3 4 5
-    auto sl = iotaSlice(2, 3).ndMap!(to!double).slice;
+    auto sl = iotaSlice(2, 3).sliceMap!(to!double).slice;
 
     static bool pred(T)(ref T a)
     {

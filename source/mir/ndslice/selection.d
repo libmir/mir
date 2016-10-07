@@ -60,6 +60,8 @@ import std.meta; //: allSatisfy;
 import mir.ndslice.internal;
 import mir.ndslice.slice; //: Slice;
 
+public import mir.ndslice.algorithm : sliceMap;
+
 /++
 Creates a packed slice, i.e. slice of slices.
 The function does not carry out any calculations, it simply returns the same
