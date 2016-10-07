@@ -985,8 +985,8 @@ template as(T)
         else
         {
             import std.conv : to;
-            import mir.ndslice.algorithm : ndMap;
-            return ndMap!(to!T)(slice);
+            import mir.ndslice.selection : sliceMap;
+            return sliceMap!(to!T)(slice);
         }
     }
 }
