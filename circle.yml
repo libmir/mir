@@ -1,7 +1,7 @@
 machine:
   environment:
     DMD: 2.071.2 # for rdmd
-    LDC: 1.1.0-beta2
+    LDC: 1.1.0-beta3
     DUB: 1.0.0
     PATH: "${HOME}/dmd2/linux/bin64:${HOME}/ldc2-$LDC-linux-x86_64/bin:${PATH}"
     LD_LIBRARY_PATH: "${HOME}/dmd2/linux/lib64:${HOME}/ldc2-$LDC-linux-x86_64/lib:${LD_LIBRARY_PATH}"
