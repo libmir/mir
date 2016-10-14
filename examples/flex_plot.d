@@ -2,7 +2,7 @@
 /+ dub.json:
 {
     "name": "flex_plot_all",
-    "dependencies": {"flex_plots": {"path": "./flex_plot"}},
+    "dependencies": {"flex_plots_pack": {"path": "./flex_plot"}},
     "subConfigurations": {"pyd": "python35"},
     "versions": ["Flex_logging"]
 }
