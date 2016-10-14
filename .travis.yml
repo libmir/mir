@@ -4,12 +4,12 @@ os:
  - osx
 language: d
 d:
- - ldc-1.1.0-beta2
+ - ldc-1.1.0-beta3
 env:
  - ARCH="x86_64"
 matrix:
   include:
-    - {os: linux, d: ldc-1.1.0-beta2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: ldc-1.1.0-beta3, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
 branches:
   only:
     - master
