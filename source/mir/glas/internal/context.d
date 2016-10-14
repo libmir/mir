@@ -10,6 +10,8 @@ __gshared immutable Tlb tlb;
 nothrow @nogc
 shared static this()
 {
+    cpuid_init();
+
     auto dc = dCache;
     auto uc = uCache;
 
