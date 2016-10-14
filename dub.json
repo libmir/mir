@@ -29,6 +29,6 @@
         }
     ],
     "dependencies": {
-        "cpuid": "~>0.2.6"
+        "mir-cpuid": "~>0.4.0"
     }
 }

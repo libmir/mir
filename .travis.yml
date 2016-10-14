@@ -15,7 +15,7 @@ branches:
     - master
 script:
  - echo "$ARCH"
- - dub fetch cpuid && dub build --arch "$ARCH" cpuid
+ - dub fetch mir-cpuid && dub build --arch "$ARCH" mir-cpuid
  - dub test --arch "$ARCH" --build=unittest-cov
  - dub test --arch "$ARCH" --build=unittest-release
  - dub build --single --arch "$ARCH" examples/lda_hoffman_sparse.d
