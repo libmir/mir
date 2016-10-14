@@ -9,6 +9,12 @@ Authors: Ilya Yaroshenko
 +/
 module mir.glas.common;
 
+nothrow @nogc shared static this()
+{
+    import cpuid.unified;
+    cpuid_init();
+}
+
 /++
 GLAS Context
 
