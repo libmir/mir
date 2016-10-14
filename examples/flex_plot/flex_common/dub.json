@@ -1,5 +1,5 @@
 {
-    "name": "flex_common",
+    "name": "flex_common_pack",
     "sourcePaths": ["."],
     "importPaths": ["."],
     "license": "BSL-1.0",

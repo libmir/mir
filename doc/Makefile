@@ -15,7 +15,7 @@ DOC_OUTPUT_DIR=web
 DOC_SOURCE_DIR=doc
 GENERATED=.generated
 MIR_DIR=source
-CPUID_DIR=~/.dub/packages/cpuid-0.2.6/cpuid/source
+CPUID_DIR=~/.dub/packages/mir-cpuid-0.4.0/cpuid/source
 DLANGORG_DIR=$(DOC_SOURCE_DIR)/dlang.org
 ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 
