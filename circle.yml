@@ -34,7 +34,7 @@ test:
     - dub build --compiler=ldmd2 --single examples/median_filter.d
     - dub build --compiler=ldmd2 --single examples/means_of_columns.d
     - dub build --compiler=ldmd2 --root=examples/flex_plot
-    - dub build --compiler=ldmd2 --root=examples/flex_plot/flex_common
+    - dub build --compiler=ldmd2 --root=examples/flex_plot/flex_common_pack
 deployment:
   aws:
     branch: master
