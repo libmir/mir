@@ -2,7 +2,7 @@
 /+ dub.json:
 {
     "name": "flex_plot_test_inflection_point_at_boundary",
-    "dependencies": {"flex_common": {"path": "./flex_common"}},
+    "dependencies": {"flex_plots_pack": {"path": "./flex_common"}},
     "versions": ["Flex_logging", "Flex_single"]
 }
 +/

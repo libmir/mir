@@ -2,7 +2,7 @@
 /+ dub.json:
 {
     "name": "flex_plot_test_arcsine",
-    "dependencies": {"flex_common": {"path": "./flex_common"}},
+    "dependencies": {"flex_plots_pack": {"path": "./flex_common"}},
     "versions": ["Flex_logging", "Flex_single"]
 }
 +/
