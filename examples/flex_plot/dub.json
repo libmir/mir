@@ -4,8 +4,8 @@
     "importPaths": ["."],
     "license": "BSL-1.0",
     "dependencies": {
-        "flex_plots_pack": {
-            "path": "./flex_plots_pack"
+        "flex_common_pack": {
+            "path": "./flex_common_pack"
         }
     }
 }
