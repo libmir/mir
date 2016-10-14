@@ -2,7 +2,7 @@
 /+ dub.json:
 {
     "name": "flex_plot_test_different_c_values",
-    "dependencies": {"flex_plots_pack": {"path": "./flex_common"}},
+    "dependencies": {"flex_plots_pack": {"path": "./flex_plots_pack"}},
     "versions": ["Flex_logging", "Flex_single"]
 }
 +/
