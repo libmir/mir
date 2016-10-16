@@ -18,7 +18,6 @@ pragma(inline, false)
 //nothrow @nogc
 void gemm_impl(A, B, C)
 (
-    GlasContext* ctx,
     C alpha,
         Slice!(2, A*) asl,
         Slice!(2, B*) bsl,
@@ -60,7 +59,7 @@ void gemm_impl(A, B, C)
         }
         else
         {
-            ctx.gemm!(B, A, C)(alpha, bsl.transposed, asl.transposed, beta, csl.transposed, conjb, conja);
+            gemm_impl!(B, A, C)(alpha, bsl.transposed, asl.transposed, beta, csl.transposed, conjb, conja);
             return;
         }
     }
@@ -110,7 +109,7 @@ void gemm_impl(A, B, C)
             beta_kernels[nri] = &gemv_reg!(BetaType.beta, PA, PB, PC, nr, T);
         kernels = beta_kernels.ptr;
     }
-    auto bl = blocking!(PA, PB, PC, T)(ctx, asl.length!0, bsl.length!1, asl.length!1);
+    auto bl = blocking!(PA, PB, PC, T)(asl.length!0, bsl.length!1, asl.length!1);
     with(bl)
     {
         sizediff_t incb;

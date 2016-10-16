@@ -50,7 +50,6 @@ Performs general matrix-vector multiplication.
 Pseudo_code: `y := alpha A × x + beta y`.
 
 Params:
-    ctx = GLAS context. Should not be accessed by other threads.
     alpha = scalar
     asl = `m ⨉ n` matrix
     xsl = `n ⨉ 1` vector
@@ -67,10 +66,9 @@ BLAS: SGEMV, DGEMV, (CGEMV, ZGEMV are not implemented for now)
 
 See_also: $(SUBREF common, Conjugated).
 +/
-nothrow @nogc
+nothrow @nogc @system
 void gemv(A, B, C)
 (
-    GlasContext* ctx,
     C alpha,
         Slice!(2, A*) asl,
         Slice!(1, B*) xsl,
@@ -141,8 +139,7 @@ unittest
 
     auto c = slice!double(3);
 
-    auto glas = new GlasContext;
-    glas.gemv!(double, double, double)(1.0, a, b, 0.0, c);
+    gemv!(double, double, double)(1.0, a, b, 0.0, c);
 
     assert(c ==
         [-42.0,
