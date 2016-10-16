@@ -548,7 +548,7 @@ slice(T,
 Slice!(N, Select!(ra, T*, T[]))
 slice(T,
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
-    size_t N)(auto ref in size_t[N] lengths)
+    size_t N)(in size_t[N] lengths)
 {
     immutable len = lengthsProduct(lengths);
     return new T[len].sliced!ra(lengths);
@@ -557,7 +557,7 @@ slice(T,
 /// ditto
 auto slice(T,
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
-    size_t N)(auto ref in size_t[N] lengths, auto ref T init)
+    size_t N)(in size_t[N] lengths, auto ref T init)
 {
     immutable len = lengthsProduct(lengths);
     static if (ra && !hasElaborateAssign!T)
@@ -577,7 +577,7 @@ auto slice(T,
 /// ditto
 auto slice(
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
-    size_t N, Range)(auto ref Slice!(N, Range) slice)
+    size_t N, Range)(Slice!(N, Range) slice)
 {
     auto ret = .slice!(Unqual!(slice.DeepElemType), ra)(slice.shape);
     ret[] = slice;
@@ -632,7 +632,7 @@ uninitializedSlice(T,
 /// ditto
 auto uninitializedSlice(T,
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
-    size_t N)(auto ref in size_t[N] lengths)
+    size_t N)(in size_t[N] lengths)
 {
     immutable len = lengthsProduct(lengths);
     import std.array : uninitializedArray;
@@ -666,7 +666,7 @@ SliceAllocationResult!(Lengths.length, T, ra)
 makeSlice(T,
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
     Allocator,
-    Lengths...)(auto ref Allocator alloc, Lengths lengths)
+    Lengths...)(Allocator alloc, Lengths lengths)
     if (allSatisfy!(isIndex, Lengths) && Lengths.length)
 {
     return .makeSlice!(T, ra, Allocator)(alloc, [lengths]);
@@ -676,7 +676,7 @@ makeSlice(T,
 auto makeSlice(
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
     Allocator,
-    size_t N, Range)(auto ref Allocator alloc, auto ref Slice!(N, Range) slice)
+    size_t N, Range)(Allocator alloc, auto ref Slice!(N, Range) slice)
 {
     alias T = Unqual!(slice.DeepElemType);
     return makeSlice!(T, ra)(alloc, slice);
@@ -687,7 +687,7 @@ SliceAllocationResult!(N, T, ra)
 makeSlice(T,
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
     Allocator,
-    size_t N)(auto ref Allocator alloc, auto ref in size_t[N] lengths)
+    size_t N)(Allocator alloc, auto ref in size_t[N] lengths)
 {
     import std.experimental.allocator : makeArray;
     immutable len = lengthsProduct(lengths);
@@ -701,7 +701,7 @@ SliceAllocationResult!(N, T, ra)
 makeSlice(T,
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
     Allocator,
-    size_t N)(auto ref Allocator alloc, auto ref in size_t[N] lengths, auto ref T init)
+    size_t N)(Allocator alloc, auto ref in size_t[N] lengths, auto ref T init)
 {
     import std.experimental.allocator : makeArray;
     immutable len = lengthsProduct(lengths);
@@ -715,7 +715,7 @@ SliceAllocationResult!(N, T, ra)
 makeSlice(T,
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
     Allocator,
-    size_t N, Range)(auto ref Allocator alloc, auto ref Slice!(N, Range) slice)
+    size_t N, Range)(Allocator alloc, auto ref Slice!(N, Range) slice)
 {
     import std.experimental.allocator : makeArray;
     import mir.ndslice.selection : byElement;
@@ -784,7 +784,7 @@ SliceAllocationResult!(Lengths.length, T, ra)
 makeUninitializedSlice(T,
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
     Allocator,
-    Lengths...)(auto ref Allocator alloc, Lengths lengths)
+    Lengths...)(Allocator alloc, Lengths lengths)
     if (allSatisfy!(isIndex, Lengths) && Lengths.length)
 {
     return .makeUninitializedSlice!(T, ra, Allocator)(alloc, [lengths]);
@@ -795,7 +795,7 @@ SliceAllocationResult!(N, T, ra)
 makeUninitializedSlice(T,
     Flag!`replaceArrayWithPointer` ra = Yes.replaceArrayWithPointer,
     Allocator,
-    size_t N)(auto ref Allocator alloc, auto ref in size_t[N] lengths)
+    size_t N)(Allocator alloc, auto ref in size_t[N] lengths)
 {
     immutable len = lengthsProduct(lengths);
     auto array = cast(T[]) alloc.allocate(len * T.sizeof);
@@ -836,7 +836,7 @@ Params:
 Returns:
     multidimensional D array
 +/
-auto ndarray(size_t N, Range)(auto ref Slice!(N, Range) slice)
+auto ndarray(size_t N, Range)(Slice!(N, Range) slice)
 {
     import std.array : array;
     static if (N == 1)
@@ -868,7 +868,7 @@ Params:
 Returns:
     multidimensional D array
 +/
-auto makeNdarray(T, Allocator, size_t N, Range)(auto ref Allocator alloc,  Slice!(N, Range) slice)
+auto makeNdarray(T, Allocator, size_t N, Range)(Allocator alloc,  Slice!(N, Range) slice)
 {
     import std.experimental.allocator : makeArray;
     static if (N == 1)
@@ -1939,7 +1939,7 @@ struct Slice(size_t _N, _Range)
     /++
     Overloading `==` and `!=`
     +/
-    bool opEquals(size_t NR, RangeR)(auto ref Slice!(NR, RangeR) rslice)
+    bool opEquals(size_t NR, RangeR)(Slice!(NR, RangeR) rslice)
         if (Slice!(NR, RangeR).PureN == PureN)
     {
         foreach (i; Iota!(0, PureN))
@@ -2007,7 +2007,7 @@ struct Slice(size_t _N, _Range)
 
     Performs recursive row based lexicographical comparison.
     +/
-    int opCmp(size_t NR, RangeR)(auto ref Slice!(NR, RangeR) rslice)
+    int opCmp(size_t NR, RangeR)(Slice!(NR, RangeR) rslice)
         if (Slice!(NR, RangeR).PureN == PureN)
     {
         import mir.ndslice.algorithm : ndCmp;
@@ -3442,7 +3442,7 @@ private template PtrTupleFrontMembers(Names...)
             return _ptrs__[" ~ m.stringof ~ "][0];
         }
         static if (!__traits(compiles, &(_ptrs__[" ~ m.stringof ~ "][0])))
-        @property auto ref " ~ Names[$-1] ~ "(T)(auto ref T value) {
+        @property auto ref " ~ Names[$-1] ~ "(T)(T value) {
             return _ptrs__[" ~ m.stringof ~ "][0] = value;
         }
         ";

@@ -327,7 +327,7 @@ Returns:
     n-dimensional slice of the same type
 See_also: $(LREF swapped), $(LREF transposed)
 +/
-Slice!(N, Range) everted(size_t N, Range)(auto ref Slice!(N, Range) slice)
+Slice!(N, Range) everted(size_t N, Range)(Slice!(N, Range) slice)
 {
     mixin _DefineRet;
     with (slice)
@@ -408,7 +408,7 @@ See_also: $(LREF swapped), $(LREF everted)
 template transposed(Dimensions...)
     if (Dimensions.length)
 {
-    Slice!(N, Range) transposed(size_t N, Range)(auto ref Slice!(N, Range) slice)
+    Slice!(N, Range) transposed(size_t N, Range)(Slice!(N, Range) slice)
     {
         mixin DimensionsCountCTError;
         foreach (i, dimension; Dimensions)
@@ -423,7 +423,7 @@ template transposed(Dimensions...)
 }
 
 ///ditto
-Slice!(N, Range) transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t dimension)
+Slice!(N, Range) transposed(size_t N, Range)(Slice!(N, Range) slice, size_t dimension)
 in
 {
     mixin (DimensionRTError);
@@ -438,7 +438,7 @@ body
 }
 
 ///ditto
-Slice!(N, Range) transposed(size_t N, Range)(auto ref Slice!(N, Range) slice, in size_t[] dimensions...)
+Slice!(N, Range) transposed(size_t N, Range)(Slice!(N, Range) slice, in size_t[] dimensions...)
 in
 {
     mixin (DimensionsCountRTError);
@@ -456,7 +456,7 @@ body
 }
 
 ///ditto
-Slice!(2, Range) transposed(Range)(auto ref Slice!(2, Range) slice)
+Slice!(2, Range) transposed(Range)(Slice!(2, Range) slice)
 {
     return .transposed!(1, 0)(slice);
 }

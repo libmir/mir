@@ -75,7 +75,7 @@ Returns:
 +/
 template pack(K...)
 {
-    auto pack(size_t N, Range)(auto ref Slice!(N, Range) slice)
+    auto pack(size_t N, Range)(Slice!(N, Range) slice)
     {
         template Template(size_t NInner, Range, R...)
         {
@@ -174,7 +174,7 @@ Returns:
 
 See_also: $(LREF pack), $(LREF evertPack)
 +/
-Slice!(N, Range).PureThis unpack(size_t N, Range)(auto ref Slice!(N, Range) slice)
+Slice!(N, Range).PureThis unpack(size_t N, Range)(Slice!(N, Range) slice)
 {
     with (slice) return PureThis(_lengths, _strides, _ptr);
 }
@@ -200,7 +200,7 @@ Returns:
 See_also: $(LREF pack), $(LREF unpack)
 +/
 SliceFromSeq!(Slice!(N, Range).PureRange, NSeqEvert!(Slice!(N, Range).NSeq))
-evertPack(size_t N, Range)(auto ref Slice!(N, Range) slice)
+evertPack(size_t N, Range)(Slice!(N, Range) slice)
 {
     mixin _DefineRet;
     static assert(Ret.NSeq.length > 0);
@@ -294,7 +294,7 @@ Params:
 Returns:
     1-dimensional slice composed of diagonal elements
 +/
-Slice!(1, Range) diagonal(size_t N, Range)(auto ref Slice!(N, Range) slice)
+Slice!(1, Range) diagonal(size_t N, Range)(Slice!(N, Range) slice)
 {
     auto NewN = slice.PureN - N + 1;
     mixin _DefineRet;
@@ -472,7 +472,7 @@ Params:
 Returns:
     packed `N`-dimensional slice composed of `N`-dimensional slices
 +/
-Slice!(N, Slice!(N+1, Range)) blocks(size_t N, Range, Lengths...)(auto ref Slice!(N, Range) slice, Lengths lengths)
+Slice!(N, Slice!(N+1, Range)) blocks(size_t N, Range, Lengths...)(Slice!(N, Range) slice, Lengths lengths)
     if (allSatisfy!(isIndex, Lengths) && Lengths.length == N)
 in
 {
@@ -594,7 +594,7 @@ Params:
 Returns:
     packed `N`-dimensional slice composed of `N`-dimensional slices
 +/
-Slice!(N, Slice!(N+1, Range)) windows(size_t N, Range, Lengths...)(auto ref Slice!(N, Range) slice, Lengths lengths)
+Slice!(N, Slice!(N+1, Range)) windows(size_t N, Range, Lengths...)(Slice!(N, Range) slice, Lengths lengths)
     if (allSatisfy!(isIndex, Lengths) && Lengths.length == N)
 in
 {
@@ -724,7 +724,7 @@ Throws:
 Slice!(Lengths.length, Range)
     reshape
         (         size_t N, Range       , Lengths...     )
-        (auto ref Slice!(N, Range) slice, Lengths lengths)
+        (Slice!(N, Range) slice, Lengths lengths)
     if ( allSatisfy!(isIndex, Lengths) && Lengths.length)
 {
     mixin _DefineRet;
@@ -923,7 +923,7 @@ Params:
 Returns:
     random access range composed of elements of the `slice`
 +/
-auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
+auto byElement(size_t N, Range)(Slice!(N, Range) slice)
 {
     with (Slice!(N, Range))
     {
@@ -1176,7 +1176,7 @@ auto byElement(size_t N, Range)(auto ref Slice!(N, Range) slice)
 }
 
 /// ditto
-Slice!(1, Range) byElement(size_t N : 1, Range)(auto ref Slice!(N, Range) slice)
+Slice!(1, Range) byElement(size_t N : 1, Range)(Slice!(N, Range) slice)
 {
     return slice;
 }
@@ -1429,7 +1429,7 @@ Params:
 Returns:
     forward range composed of all elements of standard simplex of the `slice`
 +/
-auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice, size_t maxHypercubeLength = size_t.max)
+auto byElementInStandardSimplex(size_t N, Range)(Slice!(N, Range) slice, size_t maxHypercubeLength = size_t.max)
 {
     with (Slice!(N, Range))
     {
@@ -1516,7 +1516,7 @@ auto byElementInStandardSimplex(size_t N, Range)(auto ref Slice!(N, Range) slice
 }
 
 /// ditto
-Slice!(1, Range) byElementInStandardSimplex(size_t N : 1, Range)(auto ref Slice!(N, Range) slice, size_t maxHypercubeLength = size_t.max)
+Slice!(1, Range) byElementInStandardSimplex(size_t N : 1, Range)(Slice!(N, Range) slice, size_t maxHypercubeLength = size_t.max)
 {
     if (maxHypercubeLength > slice._lengths[0])
         maxHypercubeLength = slice._lengths[0];
@@ -1622,7 +1622,7 @@ IndexSlice!(Lengths.length) indexSlice(Lengths...)(Lengths lengths)
 }
 
 ///ditto
-IndexSlice!N indexSlice(size_t N)(auto ref size_t[N] lengths)
+IndexSlice!N indexSlice(size_t N)(size_t[N] lengths)
 {
     import mir.ndslice.slice : sliced;
     with (typeof(return)) return Range(lengths[1 .. $]).sliced(lengths);
@@ -1720,14 +1720,14 @@ IotaSlice!(Lengths.length) iotaSlice(Lengths...)(Lengths lengths)
 }
 
 ///ditto
-IotaSlice!N iotaSlice(size_t N)(auto ref size_t[N] lengths, size_t shift = 0)
+IotaSlice!N iotaSlice(size_t N)(size_t[N] lengths, size_t shift = 0)
 {
     import mir.ndslice.slice : sliced;
     return IotaMap!().init.sliced(lengths, shift);
 }
 
 ///ditto
-IotaSlice!N iotaSlice(size_t N)(auto ref size_t[N] lengths, size_t shift, size_t step)
+IotaSlice!N iotaSlice(size_t N)(size_t[N] lengths, size_t shift, size_t step)
 {
     auto iota = iotaSlice(lengths, shift);
     foreach (i; Iota!(0, N))
@@ -1814,7 +1814,7 @@ RepeatSlice!(Lengths.length, T) repeatSlice(T, Lengths...)(T value, Lengths leng
 }
 
 /// ditto
-Slice!(Lengths.length, Slice!(N + 1, Range)) repeatSlice(size_t N, Range, Lengths...)(auto ref Slice!(N, Range) slice, Lengths lengths)
+Slice!(Lengths.length, Slice!(N + 1, Range)) repeatSlice(size_t N, Range, Lengths...)(Slice!(N, Range) slice, Lengths lengths)
     if (allSatisfy!(isIndex, Lengths) && Lengths.length)
 {
     enum M = Lengths.length;
