@@ -45,7 +45,6 @@ Performs general matrix-matrix multiplication.
 Pseudo_code: `C := alpha A × B + beta C`.
 
 Params:
-    ctx = GLAS context. Should not be accessed by other threads.
     alpha = scalar
     asl = `m ⨉ k` matrix
     bsl = `k ⨉ n` matrix
@@ -67,7 +66,6 @@ pragma(inline, true)
 nothrow @nogc
 void gemm(A, B, C)
 (
-    GlasContext* ctx,
     C alpha,
         Slice!(2, A*) asl,
         Slice!(2, B*) bsl,
@@ -91,7 +89,6 @@ body
     static assert(is(Unqual!C == C), msgWrongType);
     import mir.glas.internal.gemm: gemm_impl;
     gemm_impl(
-        ctx,
         alpha,
             cast(Slice!(2, Unqual!A*)) asl,
             cast(Slice!(2, Unqual!B*)) bsl,
@@ -123,8 +120,7 @@ unittest
 
     auto c = slice!double(3, 4);
 
-    auto glas = new GlasContext;
-    glas.gemm(1.0, a, b, 0.0, c);
+    gemm(1.0, a, b, 0.0, c);
 
     assert(c ==
         [[-42.0,  35,  -7, 77],
@@ -138,8 +134,7 @@ unittest
     auto b = slice!double(0, 4);
     auto c = slice!double(3, 4);
 
-    auto glas = new GlasContext;
-    glas.gemm(1.0, a, b, 0.0, c);
+    gemm(1.0, a, b, 0.0, c);
 
     assert(c ==
         [[0.0, 0, 0, 0],
@@ -147,7 +142,7 @@ unittest
          [0.0, 0, 0, 0]]);
 
     c[] = 2;
-    glas.gemm(1.0, a, b, 2, c);
+    gemm(1.0, a, b, 2, c);
 
     assert(c ==
         [[4.0, 4, 4, 4],
@@ -163,7 +158,6 @@ Pseudo_code: `C := alpha A × B + beta C` or `C := alpha B × A + beta C`,
     `C` are `m × n` matrices.
 
 Params:
-    ctx = GLAS context. Should not be accessed by other threads.
     side = specifies whether the symmetric matrix A
            appears on the  left or right  in the  operation.
     uplo = specifies  whether  the  upper  or  lower triangular
@@ -198,7 +192,6 @@ pragma(inline, true)
 nothrow @nogc
 void symm(A, B, C)
 (
-    GlasContext* ctx,
     Side side,
     Uplo uplo,
     C alpha,
@@ -238,7 +231,6 @@ body
 
     import mir.glas.internal.symm: symm_impl;
     symm_impl(
-        ctx,
         alpha,
             cast(Slice!(2, Unqual!A*)) asl,
             cast(Slice!(2, Unqual!B*)) bsl,
@@ -268,8 +260,7 @@ unittest
 
     auto c = slice!double(3, 4);
 
-    auto glas = new GlasContext;
-    glas.symm(Side.left, Uplo.lower, 1.0, a, b, 0.0, c);
+    symm(Side.left, Uplo.lower, 1.0, a, b, 0.0, c);
 
     assert(c ==
         [[ 38,  23,  20,   2],
@@ -299,12 +290,10 @@ unittest
     auto c = slice!cd(3, 4);
     auto d = slice!cd(3, 4);
 
-    auto glas = new GlasContext;
-
-    glas.symm(Side.left, Uplo.lower, cd(1.0), a, b, cd(0.0), c, Conjugated.yes);
+    symm(Side.left, Uplo.lower, cd(1.0), a, b, cd(0.0), c, Conjugated.yes);
 
     ndEach!((ref a, ref b){a = conj(b);}, Select.triangular)(a, a.transposed);
-    glas.gemm(cd(1.0), a, b, cd(0.0), d);
+    gemm(cd(1.0), a, b, cd(0.0), d);
 
     assert(c == d);
 }
@@ -315,8 +304,7 @@ unittest
     auto b = slice!double(3, 4);
     auto c = slice!double(3, 4);
 
-    auto glas = new GlasContext;
-    glas.symm(Side.left, Uplo.lower, 0.0, a, b, 0.0, c);
+    symm(Side.left, Uplo.lower, 0.0, a, b, 0.0, c);
 
     assert(c ==
         [[0.0, 0, 0, 0],
@@ -324,7 +312,7 @@ unittest
          [0.0, 0, 0, 0]]);
 
     c[] = 2;
-    glas.symm(Side.left, Uplo.upper, 0.0, a, b, 2, c);
+    symm(Side.left, Uplo.upper, 0.0, a, b, 2, c);
 
     assert(c ==
         [[4.0, 4, 4, 4],
