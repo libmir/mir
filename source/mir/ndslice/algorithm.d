@@ -78,7 +78,7 @@ private template TensorFronts(size_t length)
     }
 }
 
-private void checkShapesMatch(bool seed, Select select, Args...)(auto ref Args tensors)
+private void checkShapesMatch(bool seed, Select select, Args...)(Args tensors)
 {
     enum msg = seed ?
         "all arguments except the first (seed) must be tensors" :
@@ -166,7 +166,7 @@ template mapSlice(fun...)
 {
     ///
     auto mapSlice(size_t N, Range)
-        (auto ref Slice!(N, Range) tensor)
+        (Slice!(N, Range) tensor)
     {
         // this static if-else block
         // may be unified with std.algorithms.iteration.map
@@ -699,7 +699,7 @@ template ndFold(fun...)
         import std.typecons : Tuple;
 
     ///
-    auto ndFold(size_t N, Range, S...)(auto ref Slice!(N, Range) tensor, S seed)
+    auto ndFold(size_t N, Range, S...)(Slice!(N, Range) tensor, S seed)
         if (S.length == fun.length)
     {
         alias US = staticMap!(Unqual, S);
