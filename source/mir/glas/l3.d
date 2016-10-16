@@ -67,10 +67,10 @@ nothrow @nogc
 void gemm(A, B, C)
 (
     C alpha,
-        Slice!(2, A*) asl,
-        Slice!(2, B*) bsl,
+        Slice!(2, const(A)*) asl,
+        Slice!(2, const(B)*) bsl,
     C beta,
-        Slice!(2, C*) csl,
+        Slice!(2, C*)        csl,
     Conjugated conja = Conjugated.no,
     Conjugated conjb = Conjugated.no,
 )
@@ -195,10 +195,10 @@ void symm(A, B, C)
     Side side,
     Uplo uplo,
     C alpha,
-        Slice!(2, A*) asl,
-        Slice!(2, B*) bsl,
+        Slice!(2, const(A)*) asl,
+        Slice!(2, const(B)*) bsl,
     C beta,
-        Slice!(2, C*) csl,
+        Slice!(2, C*)        csl,
     Conjugated conja = Conjugated.no,
     Conjugated conjb = Conjugated.no,
 )

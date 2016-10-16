@@ -70,8 +70,8 @@ nothrow @nogc @system
 void gemv(A, B, C)
 (
     C alpha,
-        Slice!(2, A*) asl,
-        Slice!(1, B*) xsl,
+        Slice!(2, const(A)*) asl,
+        Slice!(1, const(B)*) xsl,
     C beta,
         Slice!(1, C*) ysl,
     Conjugated conja = Conjugated.no,
