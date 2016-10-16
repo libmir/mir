@@ -27,16 +27,17 @@ $(T2 evertPack, reverses dimension packs)
 $(BOOKTABLE $(H2 Selectors),
 
 $(TR $(TH Function Name) $(TH Description))
+$(T2 blocks, n-dimensional slice composed of n-dimensional non-overlapping blocks.
+    If the slice has two dimensions, it is a block matrix.)
 $(T2 byElement, flat, random access range of all elements with `index` property)
 $(T2 byElementInStandardSimplex, an input range of all elements in standard simplex of hypercube with `index` property.
     If the slice has two dimensions, it is a range of all elements of upper left triangular matrix.)
+$(T2 diagonal, 1-dimensional slice composed of diagonal elements)
 $(T2 indexSlice, lazy slice with initial multidimensional index)
 $(T2 iotaSlice, lazy slice with initial flattened (continuous) index)
+$(T2 mapSlice, lazy multidimensional functional map)
 $(T2 repeatSlice, slice with identical values)
 $(T2 reshape, new slice with changed dimensions for the same data)
-$(T2 diagonal, 1-dimensional slice composed of diagonal elements)
-$(T2 blocks, n-dimensional slice composed of n-dimensional non-overlapping blocks.
-    If the slice has two dimensions, it is a block matrix.)
 $(T2 windows, n-dimensional slice of n-dimensional overlapping windows.
     If the slice has two dimensions, it is a sliding window.)
 )
@@ -45,10 +46,10 @@ License:   $(HTTP www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors:   Ilya Yaroshenko
 
-Source:    $(PHOBOSSRC std/_experimental/_ndslice/_selection.d)
+Source:    $(PHOBOSSRC mir/_ndslice/_selection.d)
 
 Macros:
-SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
+SUBREF = $(REF_ALTTEXT $(TT $2), $2, std,experimental, ndslice, $1)$(NBSP)
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
 T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
@@ -60,7 +61,7 @@ import std.meta; //: allSatisfy;
 import mir.ndslice.internal;
 import mir.ndslice.slice; //: Slice;
 
-public import mir.ndslice.algorithm : mapSlice;
+@fmb:
 
 /++
 Creates a packed slice, i.e. slice of slices.
@@ -75,7 +76,10 @@ Returns:
 +/
 template pack(K...)
 {
-    auto pack(size_t N, Range)(Slice!(N, Range) slice)
+    static if (!allSatisfy!(isSize_t, K))
+        alias pack = .pack!(staticMap!(toSize_t, K));
+    else
+    @fmb auto pack(size_t N, Range)(Slice!(N, Range) slice)
     {
         template Template(size_t NInner, Range, R...)
         {
@@ -472,8 +476,7 @@ Params:
 Returns:
     packed `N`-dimensional slice composed of `N`-dimensional slices
 +/
-Slice!(N, Slice!(N+1, Range)) blocks(size_t N, Range, Lengths...)(Slice!(N, Range) slice, Lengths lengths)
-    if (allSatisfy!(isIndex, Lengths) && Lengths.length == N)
+Slice!(N, Slice!(N+1, Range)) blocks(size_t N, Range)(Slice!(N, Range) slice, size_t[N] lengths...)
 in
 {
     foreach (i, length; lengths)
@@ -594,8 +597,7 @@ Params:
 Returns:
     packed `N`-dimensional slice composed of `N`-dimensional slices
 +/
-Slice!(N, Slice!(N+1, Range)) windows(size_t N, Range, Lengths...)(Slice!(N, Range) slice, Lengths lengths)
-    if (allSatisfy!(isIndex, Lengths) && Lengths.length == N)
+Slice!(N, Slice!(N+1, Range)) windows(size_t N, Range)(Slice!(N, Range) slice, size_t[N] lengths...)
 in
 {
     foreach (i, length; lengths)
@@ -721,11 +723,10 @@ Returns:
 Throws:
     $(LREF ReshapeException) if the slice cannot be reshaped with the input lengths.
 +/
-Slice!(Lengths.length, Range)
+Slice!(M, Range)
     reshape
-        (         size_t N, Range       , Lengths...     )
-        (Slice!(N, Range) slice, Lengths lengths)
-    if ( allSatisfy!(isIndex, Lengths) && Lengths.length)
+        (size_t N, Range, size_t M)
+        (Slice!(N, Range) slice, size_t[M] lengths...)
 {
     mixin _DefineRet;
     foreach (i; Iota!(0, ret.N))
@@ -821,14 +822,13 @@ pure unittest
     import mir.ndslice.iteration : reversed;
     import std.array : array;
 
-    auto reshape2(S, L...)(S slice, L lengths)
+    auto reshape2(S, size_t M)(S slice, size_t[M] lengths...)
     {
         // Tries to reshape without allocation
         try return slice.reshape(lengths);
         catch (ReshapeException e)
-            //allocates the elements and creates a slice
-            //Note: -1 length is not supported by reshape2
-            return slice.byElement.array.sliced(lengths);
+            // Allocates
+            return slice.slice.reshape(lengths);
     }
 
     auto slice =
@@ -932,6 +932,7 @@ auto byElement(size_t N, Range)(Slice!(N, Range) slice)
         +/
         static struct ByElement
         {
+            @fmb:
             This _slice;
             size_t _length;
             size_t[N] _indexes;
@@ -1438,6 +1439,7 @@ auto byElementInStandardSimplex(size_t N, Range)(Slice!(N, Range) slice, size_t 
         +/
         static struct ByElementInTopSimplex
         {
+            @fmb:
             This _slice;
             size_t _length;
             size_t maxHypercubeLength;
@@ -1615,14 +1617,7 @@ Returns:
     `N`-dimensional slice composed of indexes
 See_also: $(LREF IndexSlice), $(LREF iotaSlice)
 +/
-IndexSlice!(Lengths.length) indexSlice(Lengths...)(Lengths lengths)
-    if (allSatisfy!(isIndex, Lengths))
-{
-    return .indexSlice!(Lengths.length)([lengths]);
-}
-
-///ditto
-IndexSlice!N indexSlice(size_t N)(size_t[N] lengths)
+IndexSlice!N indexSlice(size_t N)(size_t[N] lengths...)
 {
     import mir.ndslice.slice : sliced;
     with (typeof(return)) return Range(lengths[1 .. $]).sliced(lengths);
@@ -1678,7 +1673,7 @@ template IndexSlice(size_t N)
     {
         private size_t[N-1] _lengths;
 
-        size_t[N] opIndex(size_t index) const
+        @fmb size_t[N] opIndex(size_t index) const
         {
             size_t[N] indexes = void;
             foreach_reverse (i; Iota!(0, N - 1))
@@ -1713,14 +1708,13 @@ Returns:
     `N`-dimensional slice composed of indexes
 See_also: $(LREF IotaSlice), $(LREF indexSlice)
 +/
-IotaSlice!(Lengths.length) iotaSlice(Lengths...)(Lengths lengths)
-    if (allSatisfy!(isIndex, Lengths))
+IotaSlice!N iotaSlice(size_t N)(size_t[N] lengths...)
 {
-    return .iotaSlice!(Lengths.length)([lengths]);
+    return .iotaSlice(lengths, 0);
 }
 
 ///ditto
-IotaSlice!N iotaSlice(size_t N)(size_t[N] lengths, size_t shift = 0)
+IotaSlice!N iotaSlice(size_t N)(size_t[N] lengths, size_t shift)
 {
     import mir.ndslice.slice : sliced;
     return IotaMap!().init.sliced(lengths, shift);
@@ -1788,8 +1782,9 @@ struct IotaMap()
 {
     enum bool empty = false;
 
-    static size_t opIndex()(size_t index) @safe pure nothrow @nogc @property
+    @fmb static size_t opIndex()(size_t index) @safe pure nothrow @nogc @property
     {
+        pragma(inline, true);
         return index;
     }
 }
@@ -1803,8 +1798,8 @@ Returns:
     `n`-dimensional slice composed of identical values, where `n` is dimension count.
 See_also: $(REF repeat, std,range)
 +/
-RepeatSlice!(Lengths.length, T) repeatSlice(T, Lengths...)(T value, Lengths lengths)
-    if (allSatisfy!(isIndex, Lengths) && !is(T : Slice!(N, Range), size_t N, Range))
+RepeatSlice!(M, T) repeatSlice(T, size_t M)(T value, size_t[M] lengths...)
+    if (!is(T : Slice!(N, Range), size_t N, Range))
 {
     typeof(return) ret;
     foreach (i; Iota!(0, ret.N))
@@ -1814,10 +1809,8 @@ RepeatSlice!(Lengths.length, T) repeatSlice(T, Lengths...)(T value, Lengths leng
 }
 
 /// ditto
-Slice!(Lengths.length, Slice!(N + 1, Range)) repeatSlice(size_t N, Range, Lengths...)(Slice!(N, Range) slice, Lengths lengths)
-    if (allSatisfy!(isIndex, Lengths) && Lengths.length)
+Slice!(M, Slice!(N + 1, Range)) repeatSlice(size_t N, Range, size_t M)(Slice!(N, Range) slice, size_t[M] lengths...)
 {
-    enum M = Lengths.length;
     typeof(return) ret;
     ret._ptr = slice._ptr;
     foreach (i; Iota!(0, M))
@@ -1913,6 +1906,8 @@ template  RepeatSlice(size_t N, T)
         private alias UT = T;
     private UT _value;
 
+    @fmb:
+
     ref T opIndex(sizediff_t)
     {
         return _value;
@@ -1943,4 +1938,197 @@ template  RepeatSlice(size_t N, T)
     assert((++val)._value == 3);
     val += 2;
     assert((val + 3)._value == 3);
+}
+
+/++
+Implements the homonym function (also known as `transform`) present
+in many languages of functional flavor. The call `mapSlice!(fun)(tensor)`
+returns a tensor of which elements are obtained by applying `fun`
+for all elements in `tensor`. The original tensors are
+not changed. Evaluation is done lazily.
+
+Note:
+    $(SUBREF iteration, transposed) and
+    $(SUBREF selection, pack) can be used to specify dimensions.
+Params:
+    fun = One or more functions.
+    tensor = An input tensor.
+Returns:
+    a tensor with each fun applied to all the elements. If there is more than one
+    fun, the element type will be `Tuple` containing one element for each fun.
+See_Also:
+    $(REF map, std,algorithm,iteration)
+    $(HTTP en.wikipedia.org/wiki/Map_(higher-order_function), Map (higher-order function))
++/
+template mapSlice(fun...)
+    if (fun.length)
+{
+    ///
+    @fmb auto mapSlice(size_t N, Range)
+        (Slice!(N, Range) tensor)
+    {
+        // this static if-else block
+        // may be unified with std.algorithms.iteration.map
+        // after ndslice be removed from the Mir library.
+        static if (fun.length > 1)
+        {
+            import std.functional : adjoin, unaryFun;
+
+            alias _funs = staticMap!(unaryFun, fun);
+            alias _fun = adjoin!_funs;
+
+            // Once DMD issue #5710 is fixed, this validation loop can be moved into a template.
+            foreach (f; _funs)
+            {
+                static assert(!is(typeof(f(RE.init)) == void),
+                    "Mapping function(s) must not return void: " ~ _funs.stringof);
+            }
+        }
+        else
+        {
+            import std.functional : unaryFun;
+
+            alias _fun = unaryFun!fun;
+            alias _funs = AliasSeq!(_fun);
+
+            // Do the validation separately for single parameters due to DMD issue #15777.
+            static assert(!is(typeof(_fun(RE.init)) == void),
+                "Mapping function(s) must not return void: " ~ _funs.stringof);
+        }
+
+        // Specialization for packed tensors (tensors composed of tensors).
+        static if (is(Range : Slice!(NI, RangeI), size_t NI, RangeI))
+        {
+            alias Ptr = Pack!(NI - 1, RangeI);
+            alias M = Map!(Ptr, _fun);
+            alias R = Slice!(N, M);
+            return R(tensor._lengths[0 .. N], tensor._strides[0 .. N],
+                M(Ptr(tensor._lengths[N .. $], tensor._strides[N .. $], tensor._ptr)));
+        }
+        else
+        {
+            alias M = Map!(SlicePtr!Range, _fun);
+            alias R = Slice!(N, M);
+            with(tensor) return R(_lengths, _strides, M(_ptr));
+        }
+    }
+}
+
+///
+pure nothrow unittest
+{
+    import mir.ndslice.selection : iotaSlice;
+
+    auto s = iotaSlice(2, 3).mapSlice!(a => a * 3);
+    assert(s == [[ 0,  3,  6],
+                 [ 9, 12, 15]]);
+}
+
+pure nothrow unittest
+{
+    import mir.ndslice.selection : iotaSlice;
+
+    assert(iotaSlice(2, 3).slice.mapSlice!"a * 2" == [[0, 2, 4], [6, 8, 10]]);
+}
+
+/// Packed tensors.
+pure nothrow unittest
+{
+    import mir.ndslice.selection : iotaSlice, windows;
+
+    //  iotaSlice        windows     mapSlice  sums ( ndFold!"a + b" )
+    //                --------------
+    //  -------      |  ---    ---  |      ------
+    // | 0 1 2 |  => || 0 1 || 1 2 ||  => | 8 12 |
+    // | 3 4 5 |     || 3 4 || 4 5 ||      ------
+    //  -------      |  ---    ---  |
+    //                --------------
+    auto s = iotaSlice(2, 3)
+        .windows(2, 2)
+        .mapSlice!((a) {
+            size_t s;
+            foreach (r; a)
+                foreach (e; r)
+                    s += e;
+            return s;
+            });
+
+    assert(s == [[8, 12]]);
+}
+
+pure nothrow unittest
+{
+    import mir.ndslice.selection : iotaSlice, windows;
+
+    auto s = iotaSlice(2, 3)
+        .slice
+        .windows(2, 2)
+        .mapSlice!((a) {
+            size_t s;
+            foreach (r; a)
+                foreach (e; r)
+                    s += e;
+            return s;
+            });
+
+    assert(s == [[8, 12]]);
+}
+
+/// Zipped tensors
+pure nothrow unittest
+{
+    import mir.ndslice.slice : assumeSameStructure;
+    import mir.ndslice.selection : iotaSlice;
+
+    // 0 1 2
+    // 3 4 5
+    auto sl1 = iotaSlice(2, 3);
+    // 1 2 3
+    // 4 5 6
+    auto sl2 = iotaSlice([2, 3], 1);
+
+    // tensors must have the same strides
+    assert(sl1.structure == sl2.structure);
+
+    auto zip = assumeSameStructure!("a", "b")(sl1, sl2);
+
+    auto lazySum = zip.mapSlice!(z => z.a + z.b);
+
+    assert(lazySum == [[ 1,  3,  5],
+                       [ 7,  9, 11]]);
+}
+
+/++
+Multiple functions can be passed to `mapSlice`.
+In that case, the element type of `mapSlice` is a tuple containing
+one element for each function.
++/
+pure nothrow unittest
+{
+    import mir.ndslice.selection : iotaSlice;
+
+    auto s = iotaSlice(2, 3).mapSlice!("a + a", "a * a");
+
+    auto sums     = [[0, 2, 4], [6,  8, 10]];
+    auto products = [[0, 1, 4], [9, 16, 25]];
+
+    foreach (i; 0..s.length!0)
+    foreach (j; 0..s.length!1)
+    {
+        auto values = s[i, j];
+        assert(values[0] == sums[i][j]);
+        assert(values[1] == products[i][j]);
+    }
+}
+
+/++
+You may alias `mapSlice` with some function(s) to a symbol and use it separately:
++/
+pure nothrow unittest
+{
+    import std.conv : to;
+    import mir.ndslice.selection : iotaSlice;
+
+    alias stringize = mapSlice!(to!string);
+    assert(stringize(iotaSlice(2, 3)) == [["0", "1", "2"], ["3", "4", "5"]]);
 }
