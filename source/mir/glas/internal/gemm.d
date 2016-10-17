@@ -18,10 +18,9 @@ pragma(inline, false)
 //nothrow @nogc
 void gemm_impl(A, B, C)
 (
-    GlasContext* ctx,
     C alpha,
-        Slice!(2, A*) asl,
-        Slice!(2, B*) bsl,
+        Slice!(2, const(A)*) asl,
+        Slice!(2, const(B)*) bsl,
     C beta,
         Slice!(2, C*) csl,
     Conjugated conja,
@@ -60,7 +59,7 @@ void gemm_impl(A, B, C)
         }
         else
         {
-            ctx.gemm!(B, A, C)(alpha, bsl.transposed, asl.transposed, beta, csl.transposed, conjb, conja);
+            gemm_impl!(B, A, C)(alpha, bsl.transposed, asl.transposed, beta, csl.transposed, conjb, conja);
             return;
         }
     }
@@ -110,7 +109,7 @@ void gemm_impl(A, B, C)
             beta_kernels[nri] = &gemv_reg!(BetaType.beta, PA, PB, PC, nr, T);
         kernels = beta_kernels.ptr;
     }
-    auto bl = blocking!(PA, PB, PC, T)(ctx, asl.length!0, bsl.length!1, asl.length!1);
+    auto bl = blocking!(PA, PB, PC, T)(asl.length!0, bsl.length!1, asl.length!1);
     with(bl)
     {
         sizediff_t incb;
@@ -426,9 +425,8 @@ void scale_nano(size_t M, size_t P, size_t N, V, F)(ref const F[P] alpha, ref V[
 pragma(inline, true)
 ref auto castByRef(C)(return ref C val)
 {
-    import std.complex: Complex;
-    static if (is(C : Complex!T, T))
-        alias R = T[2];
+    static if (isComplex!C)
+        alias R = typeof(val.re)[2];
     else
         alias R = C[1];
     return *cast(R*) &val;

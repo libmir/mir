@@ -17,10 +17,9 @@ pragma(inline, false)
 //nothrow @nogc
 void symm_impl(A, B, C)
 (
-    GlasContext* ctx,
     C alpha,
-        Slice!(2, A*) asl,
-        Slice!(2, B*) bsl,
+        Slice!(2, const(A)*) asl,
+        Slice!(2, const(B)*) bsl,
     C beta,
         Slice!(2, C*) csl,
     Conjugated conja,
@@ -114,7 +113,7 @@ void symm_impl(A, B, C)
             }
         }
 
-        auto bl = blocking!(PA, PB, PC, T)(ctx, asl.length!0, bsl.length!1, asl.length!0);
+        auto bl = blocking!(PA, PB, PC, T)(asl.length!0, bsl.length!1, asl.length!0);
         size_t j;
         sizediff_t incb;
         if (bl.mc  < asl.length!0)
@@ -195,7 +194,7 @@ void symm_impl(A, B, C)
         bsl = bsl.transposed;
         csl = csl.transposed;
         assert(csl.stride!0 == 1);
-        auto bl = blocking!(PB, PA, PC, T)(ctx, bsl.length!0, asl.length!0, bsl.length!1);
+        auto bl = blocking!(PB, PA, PC, T)(bsl.length!0, asl.length!0, bsl.length!1);
         sizediff_t incb;
         if (bl.mc < bsl.length!0)
             incb = bl.kc;
