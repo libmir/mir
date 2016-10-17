@@ -1,7 +1,6 @@
 module mir.glas.trsm;
 
 import std.traits;
-import std.complex;
 import std.meta;
 
 version(none):

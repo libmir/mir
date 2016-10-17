@@ -2,7 +2,6 @@ module mir.glas.internal.copy;
 
 import std.traits;
 import std.meta;
-import std.complex : Complex;
 import mir.ndslice.slice : Slice;
 import mir.internal.utility;
 import mir.glas.internal.config;
@@ -12,7 +11,7 @@ import ldc.attributes : fastmath;
 @fastmath:
 
 pragma(inline, true)
-T* pack_b_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
+T* pack_b_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, const(F)* from, T* to)
 {
     if (elemStride == 1)
         return pack_b_dense_nano!(n, P, conj)(length, stride, from, to);
@@ -21,7 +20,7 @@ T* pack_b_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sized
 }
 
 pragma(inline, false)
-T* pack_b_sym_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, Slice!(2, F*) sl, size_t j, size_t i, T* to)
+T* pack_b_sym_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, Slice!(2, const(F)*) sl, size_t j, size_t i, T* to)
 {
     {
         sizediff_t diff = i - j;
@@ -90,7 +89,7 @@ T* pack_b_sym_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, S
 }
 
 pragma(inline, false)
-T* pack_b_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
+T* pack_b_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, const(F)* from, T* to)
 {
     enum s = n * P;
     do
@@ -121,7 +120,7 @@ T* pack_b_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t lengt
 }
 
 //pragma(inline, false)
-T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, F* from, T* to)
+T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, const(F)* from, T* to)
 {
     enum s = n * P;
     do
@@ -164,7 +163,7 @@ T* pack_b_dense_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length,
 }
 
 pragma(inline, true)
-T* pack_a_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
+T* pack_a_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, const(F)* from, T* to)
 {
     if (elemStride == 1)
         return pack_a_dense_nano!(n, P, conj)(length, stride, from, to);
@@ -173,7 +172,7 @@ T* pack_a_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sized
 }
 
 //pragma(inline, false)
-T* pack_a_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, F* from, T* to)
+T* pack_a_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t length, sizediff_t stride, sizediff_t elemStride, const(F)* from, T* to)
 {
     static if (P == 1)
     {
@@ -201,7 +200,7 @@ T* pack_a_strided_nano(size_t n, size_t P, bool conj = false, F, T)(size_t lengt
 }
 
 //pragma(inline, false)
-T* pack_a_dense_nano(size_t mr, size_t P, bool conj = false, T, F)(size_t length, sizediff_t stride, F* from, T* to)
+T* pack_a_dense_nano(size_t mr, size_t P, bool conj = false, T, F)(size_t length, sizediff_t stride, const(F)* from, T* to)
 {
     do
     {
@@ -254,7 +253,7 @@ T* pack_a_dense_nano(size_t mr, size_t P, bool conj = false, T, F)(size_t length
 }
 
 pragma(inline, false)
-void pack_a(size_t PA, size_t PB, size_t PC, bool conj = false, T, C)(Slice!(2, C*) sl, T* a)
+void pack_a(size_t PA, size_t PB, size_t PC, bool conj = false, T, C)(Slice!(2, const(C)*) sl, T* a)
 {
     import mir.ndslice.iteration: transposed;
     mixin RegisterConfig!(PC, PA, PB, T);
@@ -281,7 +280,7 @@ void pack_a(size_t PA, size_t PB, size_t PC, bool conj = false, T, C)(Slice!(2, 
 }
 
 pragma(inline, false)
-void pack_a_sym(size_t PA, size_t PB, size_t PC, bool conj = false, T, F)(Slice!(2, F*) sl, size_t i, size_t t, size_t mc, size_t kc, T* to)
+void pack_a_sym(size_t PA, size_t PB, size_t PC, bool conj = false, T, F)(Slice!(2, const(F)*) sl, size_t i, size_t t, size_t mc, size_t kc, T* to)
 {
     import mir.ndslice.iteration: transposed, reversed;
     mixin RegisterConfig!(PC, PA, PB, T);
@@ -375,7 +374,7 @@ void pack_a_sym(size_t PA, size_t PB, size_t PC, bool conj = false, T, F)(Slice!
 
 
 //pragma(inline, false)
-void pack_b_triangular(Uplo uplo, bool inverseDiagonal, size_t PA, size_t PB, size_t PC, T, C)(Slice!(2, C*) sl, T* b)
+void pack_b_triangular(Uplo uplo, bool inverseDiagonal, size_t PA, size_t PB, size_t PC, T, C)(Slice!(2, const(C)*) sl, T* b)
 {
     assert(sl.length!0 == sl.length!1);
     import mir.ndslice.iteration: transposed;
@@ -424,7 +423,7 @@ void pack_b_triangular(Uplo uplo, bool inverseDiagonal, size_t PA, size_t PB, si
     while (!nri && sl.length >= nr);
 }
 
-void load_simd(size_t mr, size_t P, T)(T* to, T[P]* from)
+void load_simd(size_t mr, size_t P, T)(T* to, const(T[P])* from)
 {
     static if (mr > 1 && !is(T == real))
     {
@@ -455,7 +454,6 @@ void load_simd(size_t mr, size_t P, T)(T* to, T[P]* from)
 //void pack_b(size_t PA, size_t PB, size_t PC, T, C)(Slice!(2, C*) sl, T* b)
 //{
 //    import mir.ndslice.iteration: transposed;
-//    import std.complex: Complex;
 //    mixin RegisterConfig!(PC, PA, PB, T);
 //    if (sl.stride!0 == 1)
 //    {

@@ -2,10 +2,10 @@
 /+ dub.json:
 {
 	"name": "gemm_report",
-	"dependencies": {"mir": {"path": "../.."}, "cblas": "~>0.2.0"},
+	"dependencies": {"mir": {"path": "../.."}, "cblas": "~>1.0.0"},
 	"lflags": ["-L./"],
 	"libs": ["blas"],
-	"dflags-ldc": ["-mcpu=native", "-singleobj"],
+	"dflags-ldc": ["-mcpu=native"],
 }
 +/
 	//"lflags": ["-L/opt/intel/mkl/lib"],
@@ -19,18 +19,18 @@ import std.math;
 import std.traits;
 import std.datetime;
 import std.conv;
-import std.complex;
 import std.algorithm.comparison;
 import std.stdio;
 import std.exception;
 import std.getopt;
 import mir.ndslice;
 import mir.glas;
+import mir.internal.utility : isComplex;
 
 alias C = float;
 //alias C = double;
-//alias C = Complex!float;
-//alias C = Complex!double;
+//alias C = cfloat;
+//alias C = cdouble;
 alias A = C;
 alias B = C;
 
@@ -41,7 +41,6 @@ size_t[] reportValues = [
 
 void main(string[] args)
 {
-	auto glas = new GlasContext;
 	size_t count = 6;
 	auto helpInformation = 
 	getopt(args,
@@ -69,10 +68,10 @@ void main(string[] args)
 
 		d[] = c[];
 
-		static if(is(C : Complex!F, F))
+		static if(isComplex!C)
 		{
-			C alpha = C(3, 7);
-			C beta = C(2, 5);
+			C alpha = 3 + 7i;
+			C beta = 2 + 5i;
 		}
 		else
 		{
@@ -85,10 +84,10 @@ void main(string[] args)
 		foreach(_; 0..count) {
 			StopWatch sw;
 			sw.start;
-			static if(!(is(C == real) || is(C : Complex!real) || is(C : long)))
+			static if(!(is(C == real) || is(C == creal) || is(C : long)))
 			{
 				static import cblas;
-				static if(is(C : Complex!E, E))
+				static if(isComplex!C)
 				cblas.gemm(
 					cblas.Order.RowMajor,
 					cblas.Transpose.NoTrans,
@@ -137,7 +136,7 @@ void main(string[] args)
 		{
 			StopWatch sw;
 			sw.start;
-			glas.gemm(alpha, a, b, beta, c);
+			gemm(alpha, a, b, beta, c);
 			sw.stop;
 			auto newns = sw.peek.to!Duration.total!"nsecs".to!double;
 			//writefln("_GLAS (single thread)               : %5s GFLOPS", (m * n * k * 2) / newns);
@@ -154,10 +153,9 @@ void fillRNG(T)(Slice!(2, T*) sl)
 	import std.random;
 	foreach(ref e; sl.byElement)
 	{
-		static if(is(T : Complex!F, F))
+		static if(isComplex!T)
 		{
-			e.re = cast(F) uniform(-100, 100);
-			e.im = cast(F) uniform(-100, 100);
+			e = uniform(-100, 100) + uniform(-100, 100) * 1i;
 		}
 		else
 		{

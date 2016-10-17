@@ -7,6 +7,8 @@ Authors: Ilya Yaroshenko
 */
 module mir.sum;
 
+import ldc.attributes: fastmath;
+
 ///
 unittest
 {
@@ -90,12 +92,11 @@ All summation algorithms available for complex numbers.
 +/
 unittest
 {
-    import std.complex;
-    Complex!double[] ar = [complex(1.0, 2), complex(2, 3), complex(3, 4), complex(4, 5)];
-    Complex!double r = complex(10, 14);
+    cdouble[] ar = [1.0 + 2i, 2 + 3i, 3 + 4i, 4 + 5i];
+    cdouble r = 10 + 14i;
     assert(r == ar.sum!(Summation.fast));
     assert(r == ar.sum!(Summation.naive));
-    //assert(r == ar.sum!(Summation.pairwise));
+    assert(r == ar.sum!(Summation.pairwise));
     assert(r == ar.sum!(Summation.kahan));
     assert(r == ar.sum!(Summation.kbn));
     assert(r == ar.sum!(Summation.kb2));
@@ -246,6 +247,7 @@ import std.traits;
 import std.typecons;
 import std.range.primitives;
 import std.math: isInfinity, isFinite, isNaN, signbit;
+import mir.internal.utility: isComplex;
 
 
 /++
@@ -357,7 +359,7 @@ enum Summation
     naive,
 
     /++
-    SIMD optimized summation algorithm. It is identical to `naive` for now.
+    SIMD optimized summation algorithm.
     +/
     fast,
 }
@@ -369,6 +371,17 @@ struct Summator(T, Summation summation)
     if (isMutable!T)
 {
     import std.math: fabs;
+    //import mir.internal.math: fabs;
+
+    static if (summation == Summation.fast)
+        alias attr = fastmath;
+    else
+    {
+        import std.meta: AliasSeq;
+        alias attr = AliasSeq!();
+    }
+
+    @attr:
 
     static if (summation != Summation.pairwise)
         @disable this();
@@ -560,20 +573,34 @@ public:
         static if (summation == Summation.kb2)
         {
             s = n;
-            cs = 0.0;
-            ccs = 0.0;
+            static if (isComplex!T)
+            {
+                cs = 0 + 0fi;
+                ccs = 0 + 0fi;
+            }
+            else
+            {
+                cs = 0.0;
+                ccs = 0.0;
+            }
         }
         else
         static if (summation == Summation.kbn)
         {
             s = n;
-            c = 0.0;
+            static if (isComplex!T)
+                c = 0 + 0fi;
+            else
+                c = 0.0;
         }
         else
         static if (summation == Summation.kahan)
         {
             s = n;
-            c = 0.0;
+            static if (isComplex!T)
+                c = 0 + 0fi;
+            else
+                c = 0.0;
         }
         else
         static if (summation == Summation.pairwise)
@@ -719,29 +746,33 @@ public:
                 F t = s + x;
                 if (fabs(s.re) < fabs(x.re))
                 {
-                    auto t_re = s.re;
-                    s.re = x.re;
-                    x.re = t_re;
+                    auto s_re = s.re;
+                    auto x_re = x.re;
+                    s = x_re + s.im * 1fi;
+                    x = s_re + x.im * 1fi;
                 }
                 if (fabs(s.im) < fabs(x.im))
                 {
-                    auto t_im = s.im;
-                    s.im = x.im;
-                    x.im = t_im;
+                    auto s_im = s.im;
+                    auto x_im = x.im;
+                    s = s.re + x_im * 1fi;
+                    x = x.re + s_im * 1fi;
                 }
                 F c = (s-t)+x;
                 s = t;
                 if (fabs(cs.re) < fabs(c.re))
                 {
-                    auto t_re = cs.re;
-                    cs.re = c.re;
-                    c.re = t_re;
+                    auto c_re = c.re;
+                    auto cs_re = cs.re;
+                    c = cs_re + c.im * 1fi;
+                    cs = c_re + cs.im * 1fi;
                 }
                 if (fabs(cs.im) < fabs(c.im))
                 {
-                    auto t_im = cs.im;
-                    cs.im = c.im;
-                    c.im = t_im;
+                    auto c_im = c.im;
+                    auto cs_im = cs.im;
+                    c = c.re + cs_im * 1fi;
+                    cs = cs.re + c_im * 1fi;
                 }
                 F d = cs - t;
                 d += c;
@@ -774,15 +805,17 @@ public:
                 F t = s + x;
                 if (fabs(s.re) < fabs(x.re))
                 {
-                    auto t_re = s.re;
-                    s.re = x.re;
-                    x.re = t_re;
+                    auto s_re = s.re;
+                    auto x_re = x.re;
+                    s = x_re + s.im * 1fi;
+                    x = s_re + x.im * 1fi;
                 }
                 if (fabs(s.im) < fabs(x.im))
                 {
-                    auto t_im = s.im;
-                    s.im = x.im;
-                    x.im = t_im;
+                    auto s_im = s.im;
+                    auto x_im = x.im;
+                    s = s.re + x_im * 1fi;
+                    x = x.re + s_im * 1fi;
                 }
                 F d = s - t;
                 d += x;
@@ -1462,20 +1495,34 @@ public:
         static if (summation == Summation.kb2)
         {
             s = rhs;
-            cs = 0.0;
-            ccs = 0.0;
+            static if (isComplex!T)
+            {
+                cs = 0 + 0fi;
+                ccs = 0 + 0fi;
+            }
+            else
+            {
+                cs = 0.0;
+                ccs = 0.0;
+            }
         }
         else
         static if (summation == Summation.kbn)
         {
             s = rhs;
-            c = 0.0;
+            static if (isComplex!T)
+                c = 0 + 0fi;
+            else
+                c = 0.0;
         }
         else
         static if (summation == Summation.kahan)
         {
             s = rhs;
-            c = 0.0;
+            static if (isComplex!T)
+                c = 0 + 0fi;
+            else
+                c = 0.0;
         }
         else
         static if (summation == Summation.pairwise)
@@ -1816,33 +1863,10 @@ unittest
         foreach (t; test[0]) summator.put(t);
         auto r = test[1];
         auto s = summator.sum;
-        import core.exception: AssertError;
-        try
-        {
-            version(X86)
-            {
-                import std.math: nextDown, nextUp;
-                assert(summator.isNaN() == r.isNaN());
-                assert(summator.isFinite() == r.isFinite() || r == -double.max
-                       && s == -double.infinity || r == double.max && s == double.infinity);
-                assert(summator.isInfinity() == r.isInfinity() || r == -double.max
-                       && s == -double.infinity || r == double.max && s == double.infinity);
-                assert(nextDown(s) <= r && r <= nextUp(s) || s.isNaN && r.isNaN);
-            }
-            else
-            {
-                assert(summator.isNaN() == r.isNaN());
-                assert(summator.isFinite() == r.isFinite());
-                assert(summator.isInfinity() == r.isInfinity());
-                assert(s == r || s.isNaN && r.isNaN);
-            }
-        }
-        catch(AssertError e)
-        {
-            import std.stdio;
-            stderr.writefln("i = %s, result = %s (%A), target = %s (%A)", i, s, s, r, r);
-            throw e;
-        }
+        assert(summator.isNaN() == r.isNaN());
+        assert(summator.isFinite() == r.isFinite());
+        assert(summator.isInfinity() == r.isInfinity());
+        assert(s == r || s.isNaN && r.isNaN);
     }
 }
 
@@ -2030,7 +2054,7 @@ unittest
 /++
 Precise summation.
 +/
-private F sumPrecise(Range, F)(Range r, F seed = 0.0)
+private F sumPrecise(Range, F)(Range r, F seed = summationInitValue!F)
     if (isFloatingPoint!F || isComplex!F)
 {
     static if (isFloatingPoint!F)
@@ -2053,7 +2077,7 @@ private F sumPrecise(Range, F)(Range r, F seed = 0.0)
             sumRe.put(e.re);
             sumIm.put(e.im);
         }
-        return F(sumRe.sum, sumIm.sum);
+        return sumRe.sum + sumIm.sum * 1fi;
     }
 }
 
@@ -2104,10 +2128,15 @@ private T summationInitValue(T)()
         return a;
     }
     else
+    static if (__traits(compiles, {T a = 0 + 0fi;}))
+    {
+        T a = 0 + 0fi;
+        return a;
+    }
+    else
     {
         return T.init;
     }
-
 }
 
 private template sumType(Range)
@@ -2145,12 +2174,6 @@ unittest
 {
     import std.range: iota;
     static assert(isSummable!(typeof(iota(ulong.init, ulong.init, ulong.init)), double));
-}
-
-template isComplex(C)
-{
-    import std.complex : Complex;
-    enum bool isComplex = is(C : Complex!F, F);
 }
 
 private enum bool isCompesatorAlgorithm(Summation summation) =

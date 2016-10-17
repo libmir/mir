@@ -10,53 +10,6 @@ Authors: Ilya Yaroshenko
 module mir.glas.common;
 
 /++
-GLAS Context
-
-Note: `GlasContext` is single thread for now.
-+/
-struct GlasContext
-{
-    import mir.internal.memory;
-    import mir.glas.internal.context;
-    static import cpuid.unified;
-    import core.sync.mutex;
-
-    private
-    {
-        void[] _memory;
-    }
-
-nothrow @nogc:
-
-    ~this()
-    {
-        release;
-    }
-
-    /// Returns: reused unaligned memory chunk
-    nothrow @nogc void[] memory(size_t size)
-    {
-        if (_memory.length < size)
-        {
-            auto f = _memory.length << 1;
-            if (f > size)
-                size = f;
-            if (_memory !is null)
-                deallocate(_memory);
-            _memory = alignedAllocate(size, 4096);
-        }
-        return _memory[0 .. size];
-    }
-
-    /// Releases memory.
-    void release()
-    {
-        if (_memory !is null)
-            deallocate(_memory);
-    }
-}
-
-/++
 Uplo specifies whether a matrix is an upper or lower triangular matrix.
 +/
 enum Uplo
@@ -153,10 +106,7 @@ package mixin template prefix3()
     enum PB = CB ? 2 : 1;
     enum PC = CC ? 2 : 1;
 
-    static if (is(C : Complex!F, F))
-        alias T = F;
-    else
-        alias T = C;
+    alias T = realType!C;
     static assert(!isComplex!T);
 }
 
