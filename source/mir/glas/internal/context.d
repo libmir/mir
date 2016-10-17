@@ -86,6 +86,6 @@ shared static this()
 
     c1 <<= 10;
     c2 <<= 10;
-    if(line == 0)
+    if (line == 0)
         line = 64;
 }
