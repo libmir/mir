@@ -22,17 +22,18 @@ enum isSimpleSlice(S) = is(S : Slice!(N1, T1[]), size_t N1,T1) || is(S : Slice!(
 
 template realType(C)
 {
-    import std.complex : Complex;
-    static if (is(C : Complex!F, F))
-        alias realType = Unqual!F;
+    static if (isComplex!C)
+        alias realType = typeof(Unqual!C.init.re);
     else
         alias realType = Unqual!C;
 }
 
 template isComplex(C)
 {
-    import std.complex : Complex;
-    enum bool isComplex = is(C : Complex!F, F);
+    enum bool isComplex
+     = is(Unqual!C == creal)
+    || is(Unqual!C == cdouble)
+    || is(Unqual!C == cfloat);
 }
 
 //enum isSIMDVector(V) = is(V : __vector(F[N]), F, size_t N);
