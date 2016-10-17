@@ -2,7 +2,6 @@ module mir.glas.internal.copy;
 
 import std.traits;
 import std.meta;
-import std.complex : Complex;
 import mir.ndslice.slice : Slice;
 import mir.internal.utility;
 import mir.glas.internal.config;
@@ -455,7 +454,6 @@ void load_simd(size_t mr, size_t P, T)(T* to, const(T[P])* from)
 //void pack_b(size_t PA, size_t PB, size_t PC, T, C)(Slice!(2, C*) sl, T* b)
 //{
 //    import mir.ndslice.iteration: transposed;
-//    import std.complex: Complex;
 //    mixin RegisterConfig!(PC, PA, PB, T);
 //    if (sl.stride!0 == 1)
 //    {

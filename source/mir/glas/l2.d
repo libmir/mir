@@ -30,7 +30,6 @@ public import mir.glas.common;
 
 import std.traits;
 import std.meta;
-import std.complex : Complex, conj;
 import std.typecons: Flag, Yes, No;
 
 import mir.internal.math;

@@ -2,7 +2,6 @@ module mir.glas.internal.test;
 
 import std.traits;
 import std.meta;
-import std.complex;
 import std.algorithm: min, max;
 import mir.ndslice;
 import mir.glas;

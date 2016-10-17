@@ -2,7 +2,6 @@ module mir.glas.internal.config;
 
 import std.traits;
 import std.meta;
-import std.complex: Complex;
 import mir.internal.utility;
 
 template RegisterConfig(size_t PS, size_t PB, size_t PR, T)

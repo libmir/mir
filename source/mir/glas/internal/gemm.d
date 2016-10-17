@@ -1,7 +1,6 @@
 module mir.glas.internal.gemm;
 
 import std.traits;
-import std.complex;
 import std.meta;
 
 public import mir.glas.common;

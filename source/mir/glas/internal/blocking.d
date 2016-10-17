@@ -1,7 +1,6 @@
 module mir.glas.internal.blocking;
 
 import core.sync.mutex;
-import std.complex : Complex;
 import std.meta;
 import std.traits;
 import mir.glas.common;
