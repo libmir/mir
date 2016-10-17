@@ -106,10 +106,7 @@ package mixin template prefix3()
     enum PB = CB ? 2 : 1;
     enum PC = CC ? 2 : 1;
 
-    static if (is(C : Complex!F, F))
-        alias T = F;
-    else
-        alias T = C;
+    alias T = realType!C;
     static assert(!isComplex!T);
 }
 

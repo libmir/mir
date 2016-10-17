@@ -80,7 +80,6 @@ unittest
 
 import std.traits;
 import std.meta;
-import std.complex : Complex, conj;
 import std.typecons: Flag, Yes, No;
 
 import mir.internal.math;
@@ -100,11 +99,15 @@ template _rot(alias c, alias s)
         auto y = yr;
         auto t1 = c * x + s * y;
         static if (isComplex!(typeof(c)))
-            auto t2 = conj(c) * y;
+        {
+            auto t2 = (c.re - c.im * 1fi) * y;
+        }
         else
             auto t2 = c * y;
         static if (isComplex!(typeof(s)))
-            t2 -= conj(s) * x;
+        {
+            t2 -= (s.re - s.im * 1fi) * x;
+        }
         else
             t2 -= s * x;
         xr = t1;
@@ -130,7 +133,7 @@ A _fmuladdc(A, B, C)(A a, in B b, in C c)
 {
     static if (isComplex!B)
     {
-        return a + conj(b) * c;
+        return a + (b.re - b.im * 1fi) * c;
     }
     else
         return a + b * c;
@@ -263,16 +266,14 @@ unittest
 unittest
 {
     import mir.ndslice.slice: slice;
-    import std.complex;
-    alias cd = Complex!double;
 
-    auto a = cd(3, 4);
-    auto x = slice!cd(2);
-    auto y = slice!cd(2);
-    x[] = [cd(0, 1), cd(2, 3)];
-    y[] = [cd(4, 5), cd(6, 7)];
+    auto a = 3 + 4i;
+    auto x = slice!cdouble(2);
+    auto y = slice!cdouble(2);
+    x[] = [0 + 1i, 2 + 3i];
+    y[] = [4 + 5i, 6 + 7i];
     axpy(a, x, y);
-    assert(y == [a * cd(0, 1) + cd(4, 5), a * cd(2, 3) + cd(6, 7)]);
+    assert(y == [a * (0 + 1i) + (4 + 5i), a * (2 + 3i) + (6 + 7i)]);
 }
 
 /++
@@ -295,7 +296,7 @@ F dot(F, size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
     {
         assert(x.shape == y.shape, "constraints: x and y must have equal shapes");
         pragma(inline, false);
-        return ndReduce!(_fmuladd, Yes.vectorized)(F(0), x, y);
+        return ndReduce!(_fmuladd, Yes.vectorized)(cast(F)(0), x, y);
     }
 }
 
@@ -342,14 +343,12 @@ unittest
 unittest
 {
     import mir.ndslice.slice: slice;
-    import std.complex;
-    alias cd = Complex!double;
 
-    auto x = slice!cd(2);
-    auto y = slice!cd(2);
-    x[] = [cd(0, 1), cd(2, 3)];
-    y[] = [cd(4, 5), cd(6, 7)];
-    assert(dot(x, y) == cd(0, 1) * cd(4, 5) + cd(2, 3) * cd(6, 7));
+    auto x = slice!cdouble(2);
+    auto y = slice!cdouble(2);
+    x[] = [0 + 1i, 2 + 3i];
+    y[] = [4 + 5i, 6 + 7i];
+    assert(dot(x, y) == (0 + 1i) * (4 + 5i) + (2 + 3i) * (6 + 7i));
 }
 
 /++
@@ -373,7 +372,7 @@ F dotc(F, size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
     {
         assert(x.shape == y.shape, "constraints: x and y must have equal shapes");
         pragma(inline, false);
-        return ndReduce!(_fmuladdc, Yes.vectorized)(F(0), x, y);
+        return ndReduce!(_fmuladdc, Yes.vectorized)(cast(F)(0), x, y);
     }
 }
 
@@ -387,14 +386,12 @@ auto dotc(size_t N, R1, R2)(Slice!(N, R1) x, Slice!(N, R2) y)
 unittest
 {
     import mir.ndslice.slice: slice;
-    import std.complex;
-    alias cd = Complex!double;
 
-    auto x = slice!cd(2);
-    auto y = slice!cd(2);
-    x[] = [cd(0, 1), cd(2, 3)];
-    y[] = [cd(4, 5), cd(6, 7)];
-    assert(dotc(x, y) == cd(0, -1) * cd(4, 5) + cd(2, -3) * cd(6, 7));
+    auto x = slice!cdouble(2);
+    auto y = slice!cdouble(2);
+    x[] = [0 + 1i, 2 + 3i];
+    y[] = [4 + 5i, 6 + 7i];
+    assert(dotc(x, y) == (0 + -1i) * (4 + 5i) + (2 + -3i) * (6 + 7i));
 }
 
 /++
@@ -435,11 +432,9 @@ unittest
 {
     import mir.ndslice.slice: slice;
     import std.math: sqrt, approxEqual;
-    import std.complex;
-    alias cd = Complex!double;
 
-    auto x = slice!cd(2);
-    x[] = [cd(0, 1), cd(2, 3)];
+    auto x = slice!cdouble(2);
+    x[] = [0 + 1i, 2 + 3i];
 
     assert(nrm2(x).approxEqual(sqrt(1.0 + 4 + 9)));
 }
@@ -484,11 +479,9 @@ unittest
 unittest
 {
     import mir.ndslice.slice: slice;
-    import std.complex;
-    alias cd = Complex!double;
 
-    auto x = slice!cd(2);
-    x[] = [cd(0, 1), cd(2, 3)];
+    auto x = slice!cdouble(2);
+    x[] = [0 + 1i, 2 + 3i];
 
     assert(sqnrm2(x) == 1.0 + 4 + 9);
 }
@@ -535,11 +528,9 @@ unittest
 unittest
 {
     import mir.ndslice.slice: slice;
-    import std.complex;
-    alias cd = Complex!double;
 
-    auto x = slice!cd(2);
-    x[] = [cd(0, -1), cd(-2, 3)];
+    auto x = slice!cdouble(2);
+    x[] = [0 - 1i, -2 + 3i];
 
     assert(asum(x) == 1 + 2 + 3);
 }
@@ -619,12 +610,10 @@ unittest
 unittest
 {
     import mir.ndslice.slice: slice;
-    import std.complex;
-    alias cd = Complex!double;
 
-    auto x = slice!cd(4);
+    auto x = slice!cdouble(4);
     //        0          1          2         3
-    x[] = [cd(0, -1), cd(-2, 3), cd(2, 3), cd(2, 2)];
+    x[] = [0 + -1i, -2 + 3i, 2 + 3i, 2 + 2i];
 
     assert(iamax(x) == 1);
     // -1 for empty vectors
@@ -670,11 +659,9 @@ unittest
 unittest
 {
     import mir.ndslice.slice: slice;
-    import std.complex;
-    alias cd = Complex!double;
 
-    auto x = slice!cd(4);
-    x[] = [cd(0, -1), cd(-7, 3), cd(2, 3), cd(2, 2)];
+    auto x = slice!cdouble(4);
+    x[] = [0 + -1i, -7 + 3i, 2 + 3i, 2 + 2i];
 
     assert(amax(x) == 10);
     // 0 for empty vectors

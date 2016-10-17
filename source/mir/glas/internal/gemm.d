@@ -425,9 +425,8 @@ void scale_nano(size_t M, size_t P, size_t N, V, F)(ref const F[P] alpha, ref V[
 pragma(inline, true)
 ref auto castByRef(C)(return ref C val)
 {
-    import std.complex: Complex;
-    static if (is(C : Complex!T, T))
-        alias R = T[2];
+    static if (isComplex!C)
+        alias R = typeof(val.re)[2];
     else
         alias R = C[1];
     return *cast(R*) &val;

@@ -32,7 +32,6 @@ public import mir.glas.common;
 
 import std.traits;
 import std.meta;
-import std.complex: Complex;
 import mir.ndslice.slice;
 import mir.internal.utility;
 
@@ -272,28 +271,26 @@ unittest
 unittest
 {
     import mir.ndslice;
-    import std.complex;
-    alias cd = Complex!double;
 
-    auto a = slice!cd(3, 3);
+    auto a = slice!cdouble(3, 3);
     a[] =
-        [[cd(-2, 0),   cd.init,   cd.init],
-         [cd(+3, 2), cd(-5, 0),   cd.init],
-         [cd(-4, 7), cd(-2, 3), cd(-3, 0)]];
+        [[-2 + 0i, cdouble.init, cdouble.init],
+         [+3 + 2i, -5 + 0i, cdouble.init],
+         [-4 + 7i, -2 + 3i, -3 + 0i]];
 
-    auto b = slice!cd(3, 4);
+    auto b = slice!cdouble(3, 4);
     b[] =
-        [[cd(-5, 3), cd(-3, 9), cd( 3, 2), cd(1, 2)],
-         [cd( 4, 5), cd( 3, 4), cd( 6, 5), cd(4, 9)],
-         [cd(-4, 2), cd(-2, 2), cd(-2, 7), cd(2, 6)]];
+        [[-5 + 3i, -3 + 9i,  3 + 2i, 1 + 2i],
+         [ 4 + 5i,  3 + 4i,  6 + 5i, 4 + 9i],
+         [-4 + 2i, -2 + 2i, -2 + 7i, 2 + 6i]];
 
-    auto c = slice!cd(3, 4);
-    auto d = slice!cd(3, 4);
+    auto c = slice!cdouble(3, 4);
+    auto d = slice!cdouble(3, 4);
 
-    symm(Side.left, Uplo.lower, cd(1.0), a, b, cd(0.0), c, Conjugated.yes);
+    symm(Side.left, Uplo.lower, 1 + 0i, a, b, 0 + 0i, c, Conjugated.yes);
 
-    ndEach!((ref a, ref b){a = conj(b);}, Select.triangular)(a, a.transposed);
-    gemm(cd(1.0), a, b, cd(0.0), d);
+    ndEach!((ref a, ref b){a = (b.re - b.im * 1fi);}, Select.triangular)(a, a.transposed);
+    gemm(1 + 0i, a, b, 0 + 0i, d);
 
     assert(c == d);
 }
