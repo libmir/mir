@@ -1,5 +1,13 @@
 module mir.internal.memory;
 
+version(LDC)
+{
+    version(unittest) {} else
+    {
+        pragma(LDC_no_moduleinfo);
+    }
+}
+
 enum uint platformAlignment = double.alignof > real.alignof ? double.alignof : real.alignof;
 
 
@@ -202,9 +210,8 @@ version (Windows)
 @nogc nothrow
 unittest
 {
-    auto buffer = alignedAllocate(1024 * 1024 * 4,
-        128);
-    scope(exit) deallocate(buffer);
+    auto buffer = alignedAllocate(1024 * 1024 * 4, 128);
+    deallocate(buffer);
     //...
 }
 

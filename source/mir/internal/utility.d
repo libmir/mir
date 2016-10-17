@@ -5,7 +5,11 @@ import std.meta;
 
 import mir.ndslice.slice;
 
-package(mir):
+version(LDC)
+{
+    pragma(LDC_no_moduleinfo);
+}
+
 
 alias Iota(size_t j) = Iota!(0, j);
 

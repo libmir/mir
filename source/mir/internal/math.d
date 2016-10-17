@@ -1,5 +1,11 @@
 module mir.internal.math;
 
+version(LDC)
+{
+    pragma(LDC_no_moduleinfo);
+}
+
+
 import ldc.intrinsics;
 
 alias sqrt = llvm_sqrt;
