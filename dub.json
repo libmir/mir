@@ -12,20 +12,27 @@
     },
     "configurations": [
         {
-            "name": "source",
-            "targetType": "sourceLibrary",
+            "name": "library",
+            "targetType": "library"
         },
         {
             "name": "static",
-            "targetType": "staticLibrary",
+            "targetType": "staticLibrary"
         },
         {
             "name": "dynamic",
-            "targetType": "dynamicLibrary",
+            "targetType": "dynamicLibrary"
+        },
+        {
+            "name": "source",
+            "targetType": "sourceLibrary"
         },
         {
             "name": "unittest",
-            "versions": ["to_be_filled"],
+            "targetType": "sourceLibrary",
+            "versions": [
+                "to_be_filled"
+            ]
         }
     ],
     "dependencies": {
