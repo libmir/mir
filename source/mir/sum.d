@@ -1,13 +1,16 @@
 /**
 This module contains summation algorithms.
 
+Project:
+    $(LINK2 http://mir.dlang.io, Mir)
+
 License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
 
 Authors: Ilya Yaroshenko
+
+Copyright: Copyright © 2015-, Ilya Yaroshenko
 */
 module mir.sum;
-
-import ldc.attributes: fastmath;
 
 ///
 unittest
@@ -225,8 +228,11 @@ version(X86)
 version(X86_64)
     version = X86_Any;
 
-/// SIMD Vectors
-version(none)
+/++
+SIMD Vectors
+Bugs: ICE 1662 (dmd only)
++/
+version(LDC)
 version(X86_Any)
 unittest
 {
@@ -235,9 +241,9 @@ unittest
     double2 a = 1, b = 2, c = 3, d = 6;
     with(Summation)
     {
-        foreach (algo; AliasSeq!(pairwise))
+        foreach (algo; AliasSeq!(pairwise, kahan))
         {
-            //assert([a, b, c].sum!algo.array == d.array);
+            assert([a, b, c].sum!algo.array == d.array);
             assert([a, b].sum!algo(c).array == d.array);
         }
     }
@@ -247,7 +253,14 @@ import std.traits;
 import std.typecons;
 import std.range.primitives;
 import std.math: isInfinity, isFinite, isNaN, signbit;
-import mir.internal.utility: isComplex;
+
+private template isComplex(C)
+{
+    enum bool isComplex
+     = is(Unqual!C == creal)
+    || is(Unqual!C == cdouble)
+    || is(Unqual!C == cfloat);
+}
 
 
 /++
@@ -374,7 +387,18 @@ struct Summator(T, Summation summation)
     //import mir.internal.math: fabs;
 
     static if (summation == Summation.fast)
-        alias attr = fastmath;
+    {
+        version (LDC)
+        {
+            import ldc.attributes: fastmath;
+            alias attr = fastmath;
+        }
+        else
+        {
+            import std.meta: AliasSeq;
+            alias attr = AliasSeq!();
+        }
+    }
     else
     {
         import std.meta: AliasSeq;
@@ -869,7 +893,10 @@ public:
             static if (fastPairwise && isRandomAccessRange!Range && hasLength!Range)
             {
                 import core.bitop: bsf;
-                enum SIMDOptimization = is(Unqual!Range : F[]) && (is(F == double) || is(F == float));
+                version (LDC)
+                    enum SIMDOptimization = is(Unqual!Range : F[]) && (is(F == double) || is(F == float));
+                else
+                    enum SIMDOptimization = false;
                 static if (SIMDOptimization)
                     F[0x20] v = void;
                 else
@@ -1346,7 +1373,7 @@ public:
             foreach_reverse (ref e; partials[0 .. index])
             {
                 static if (is(F : __vector(W[N]), W, size_t N))
-                    s += cast(Unqual!F) e; //DRuntime bug workaround
+                    s += cast(Unqual!F) e; //DMD bug workaround
                 else
                     s += e;
             }
