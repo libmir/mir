@@ -10,7 +10,7 @@ Authors: Ilya Yaroshenko
 
 Copyright: Copyright © 2015-, Ilya Yaroshenko
 */
-module mir.sum;
+module std.experimental.numeric.sum;
 
 ///
 unittest
@@ -183,7 +183,7 @@ nothrow @nogc unittest
 unittest
 {
     import std.range;
-    import mir.sum;
+    import std.experimental.numeric.sum;
 
     class MovingAverage
     {
@@ -401,8 +401,14 @@ Output range for summation.
 struct Summator(T, Summation summation)
     if (isMutable!T)
 {
-    import std.math: fabs;
-    //import mir.internal.math: fabs;
+    version (LDC)
+        import ldc.intrinsics: fabs = llvm_fabs;
+    else
+        import std.math: fabs;
+    static if (is(T == class) || is(T == interface) || hasElaborateAssign!T)
+        static assert (summation == Summation.naive,
+            "Classes, interfaces, and structures with "
+            ~ "elaborate constructor support only naive summation.");
 
     static if (summation == Summation.fast)
     {
@@ -912,7 +918,6 @@ public:
                 F[registersCount] v = void;
                 foreach (i, n; chainSeq!registersCount)
                 {
-                    //pragma(msg, n);
                     if (r.length >= n * 2) do
                     {
                         foreach (j; Iota!n)
@@ -924,8 +929,6 @@ public:
                                 v[j] += v[m + j];
                         put(v[0]);
                         r.popFrontExactly(n * 2);
-                        //import core.stdc.stdio;
-                        //printf("%d",r.length);
                     }
                     while (!i && r.length >= n * 2);
                 }
@@ -1663,7 +1666,7 @@ Returns:
 
 See_Also: $(XREFMODULE, numeric_summation) contains detailed documentation and examples about available summation algorithms.
  */
-template sum(F, Summation summation = Summation.pairwise)
+template sum(F, Summation summation = Summation.appropriate)
     if (isFloatingPoint!F && isMutable!F)
 {
     template sum(Range)
@@ -1681,7 +1684,7 @@ template sum(F, Summation summation = Summation.pairwise)
 }
 
 ///ditto
-template sum(Summation summation = Summation.pairwise)
+template sum(Summation summation = Summation.appropriate)
 {
     auto sum(Range)(Range r)
     {
@@ -1780,6 +1783,8 @@ unittest
     }
 }
 
+version(LDC)
+version(X86_Any)
 unittest
 {
     import core.simd;
@@ -1799,6 +1804,9 @@ unittest
         }
     }
 }
+
+version(LDC)
+version(X86_Any)
 unittest
 {
     import core.simd;
@@ -1863,6 +1871,9 @@ private template SummationAlgo(Summation summation, Range, F)
     {
         static if (isSummable!(Range, F))
             alias SummationAlgo = SummationAlgo!(Summation.pairwise, Range, F);
+        else
+        static if (is(F == class) || is(F == struct) || is(F == interface))
+            alias SummationAlgo = SummationAlgo!(Summation.naive, Range, F);
         else
             alias SummationAlgo = SummationAlgo!(Summation.fast, Range, F);
     }
