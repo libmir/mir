@@ -10,7 +10,7 @@ Authors: Ilya Yaroshenko
 
 Copyright: Copyright © 2015-, Ilya Yaroshenko
 */
-module std.experimental.numeric.sum;
+module mir.sum;
 
 ///
 unittest
@@ -183,7 +183,7 @@ nothrow @nogc unittest
 unittest
 {
     import std.range;
-    import std.experimental.numeric.sum;
+    import mir.sum;
 
     class MovingAverage
     {
