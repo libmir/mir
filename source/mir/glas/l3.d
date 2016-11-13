@@ -61,6 +61,7 @@ BLAS: SGEMM, DGEMM, CGEMM, ZGEMM
 
 See_also: $(SUBREF common, Conjugated).
 +/
+deprecated("use mir-glas package instead")
 pragma(inline, true)
 nothrow @nogc
 void gemm(A, B, C)
@@ -187,6 +188,7 @@ BLAS: SSYMM, DSYMM, CSYMM, ZSYMM, SHEMM, DHEMM, CHEMM, ZHEMM
 
 See_also: $(SUBREF common, Conjugated), $(SUBREF common, Side), $(SUBREF common, Uplo).
 +/
+deprecated("use mir-glas package instead")
 pragma(inline, true)
 nothrow @nogc
 void symm(A, B, C)
