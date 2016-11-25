@@ -16,8 +16,14 @@ Mir
 ======
 Generic Numerical Library for Science and Machine Learning.
 
+##### Other Mir Projects
+- [Mir Random](https://github.com/libmir/mir-random) - Professional Random Number Generators
+- [Mir GLAS](https://github.com/libmir/mir-glas) - Linear Algebra Library
+- [Mir CPUID](https://github.com/libmir/mir-cpuid) - CPU identification
+
+
 ##### Open Source Projects based on Mir
-- [Computer Vision Library for D Programming Language](https://github.com/ljubobratovicrelja/dcv)
+- [Computer Vision Library for D Programming Language](https://github.com/libmir/dcv)
 
 Documentation
 -------------
