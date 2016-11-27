@@ -24,7 +24,7 @@ $(BOOKTABLE ,
         $(TD matrix-vector operations %3 done, partially optimized for now)
     )
     $(TR
-        $(TDNW l3 was moved to $(HTTP https://github.com/libmir/mir-glas, mir-glas))
+        $(TDNW l3 was moved to $(HTTP github.com/libmir/mir-glas, mir-glas))
         $(TD matrix-matrix operations 50% done)
     )
 )

@@ -11,29 +11,24 @@ $(BOOKTABLE ,
         $(TH Modules)
         $(TH Description)
     )
-    $(LEADINGROW Linear Algebra)
+    $(LEADINGROW Sparse)
     $(TR
-        $(TDNW $(LINK2 mir_glas.html, mir.glas))
-        $(TD Generic Linear Algebra Subroutines (BLAS implementation))
+        $(TDNW $(LINK2 mir_sparse.html, mir.sparse))
+        $(TD Sparse Tensors)
     )
     $(LEADINGROW Models)
     $(TR
         $(TDNW $(LINK2 mir_model_lda_hoffman.html, mir.model.lda.hoffman))
         $(TD Online variational Bayes for latent Dirichlet allocation (Online VB LDA) for sparse documents. LDA is used for topic modeling)
     )
-    $(LEADINGROW Sparse)
+    $(LEADINGROW Linear Algebra)
     $(TR
-        $(TDNW $(LINK2 mir_sparse.html, mir.sparse))
-        $(TD Sparse Tensors)
+        $(TDNW $(LINK2 mir_glas.html, mir.glas))
+        $(TD Generic Linear Algebra Subroutines (BLAS implementation))
     )
     $(TR
         $(TDNW $(LINK2 mir_sparse_blas.html, mir.sparse.blas))
         $(TD Sparse BLAS for CompressedTensor)
-    )
-    $(LEADINGROW Random)
-    $(TR
-        $(TDNW $(LINK2 mir_random_flex.html, mir.random.flex))
-        $(TD Sample from arbitrary distribution with the Flex algorithm)
     )
     $(LEADINGROW Other)
     $(TR
