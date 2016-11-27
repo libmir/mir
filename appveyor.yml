@@ -51,6 +51,9 @@ before_build:
   - ps: $env:compilersetup = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall";
   - '"%compilersetup%" %compilersetupargs%'
 
+build_script:
+ - echo dummy build script - dont remove me
+
 test_script:
  - echo %PLATFORM%
  - echo %Darch%
