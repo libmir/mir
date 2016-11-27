@@ -29,6 +29,8 @@
         }
     ],
     "dependencies": {
-        "mir-random": "~>0.0.1-beta2"
+        "mir-random": "~>0.0.1-beta2",
+        "mir-math": "~>0.0.1",
+        "mir-internal": "~>0.0.1"
     }
 }

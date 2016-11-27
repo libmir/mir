@@ -22,7 +22,7 @@ struct LdaHoffman(F)
 
     import mir.ndslice.slice;
 
-    import mir.internal.math;
+    import mir.math.internal;
     import mir.sparse;
 
     private alias Vector = Slice!(1, F*);
@@ -219,8 +219,8 @@ struct LdaHoffman(F)
     private static void unparameterize(Vector param, Vector posterior)
     {
         assert(param.structure == posterior.structure);
-        import mir.math: expDigamma;
-        import mir.sum: sum;
+        import mir.math.func.expdigamma;
+        import mir.math.sum: sum;
         immutable c = 1 / expDigamma(sum(param));
         foreach (e; assumeSameStructure!("param", "posterior")(param, posterior))
             e.posterior = c * expDigamma(e.param);

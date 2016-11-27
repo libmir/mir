@@ -39,10 +39,6 @@ $(BOOKTABLE ,
         $(TDNW $(LINK2 mir_combinatorics.html, mir.combinatorics))
         $(TD Combinations, combinations with repeats, cartesian power, permutations)
     )
-    $(TR
-        $(TDNW $(LINK2 mir_sum.html, mir.sum))
-        $(TD Functions and Output Ranges for Summation Algorithms)
-    )
 )
 
 Macros:

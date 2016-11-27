@@ -845,10 +845,10 @@ template ndReduce(alias fun, Select select, Flag!"vectorized" vec = No.vectorize
                 if (tensor.unpack.structure.strides[$-1] != 1)
                     goto CommonL;
             alias implVec = implement!(Iteration.reduce, fun, Yes.vectorized, fm);
-            return implVec!(Args[0].N, select, staticMap!(Unqual, S))(seed, tensors);
+            return implVec!(tensors[0].shape.length, select, staticMap!(Unqual, S))(seed, tensors);
             CommonL:
         }
-        return impl!(Args[0].N, select, staticMap!(Unqual, S))(seed, tensors);
+        return impl!(tensors[0].shape.length, select, staticMap!(Unqual, S))(seed, tensors);
     }
 }
 

@@ -21,7 +21,6 @@ import std.stdio;
 import mir.sparse;
 import mir.model.lda.hoffman;
 
-
 void main(string[] args)
 {
     string curFolder;
