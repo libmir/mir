@@ -32,7 +32,7 @@ MIR_PACKAGES = mir $(addprefix mir/,\
 			   glas combinatorics model/lda ndslice \
 			   sparse sparse/blas utility)
 
-PACKAGE_mir = math sum
+PACKAGE_mir =
 PACKAGE_mir_glas = package l1 l2
 PACKAGE_mir_combinatorics = package
 PACKAGE_mir_model_lda = hoffman
