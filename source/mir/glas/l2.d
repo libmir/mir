@@ -26,7 +26,6 @@ SUBREF = $(REF_ALTTEXT $(TT $2), $2, mir, glas, $1)$(NBSP)
 NDSLICEREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 +/
 module mir.glas.l2;
-public import mir.glas.common;
 
 import std.traits;
 import std.meta;
@@ -62,8 +61,6 @@ Note:
     to perform zero cost `Slice` transposition.
 
 BLAS: SGEMV, DGEMV, (CGEMV, ZGEMV are not implemented for now)
-
-See_also: $(SUBREF common, Conjugated).
 +/
 nothrow @nogc @system
 void gemv(A, B, C)
@@ -73,7 +70,6 @@ void gemv(A, B, C)
         Slice!(1, const(B)*) xsl,
     C beta,
         Slice!(1, C*) ysl,
-    Conjugated conja = Conjugated.no,
 )
     if (allSatisfy!(isNumeric, A, B, C))
 in
