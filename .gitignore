@@ -5,6 +5,7 @@ __test__unittest__
 *.obj
 *.a
 *.lst
+*.so
 .dub
 dub.selections.json
 docs.json
