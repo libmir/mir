@@ -1,6 +1,6 @@
 machine:
   environment:
-    DMD: 2.071.2 # for rdmd
+    DMD: 2.072.0 # for rdmd
     LDC: 1.1.0-beta2
     DUB: 1.0.0
     PATH: "${HOME}/dmd2/linux/bin64:${HOME}/ldc2-$LDC-linux-x86_64/bin:${PATH}"
@@ -25,7 +25,6 @@ test:
     # - dscanResult=$(./dscanner --config .dscanner.ini --styleCheck source 2> /dev/null ) ; if [ -z "${dscanResult}" ] ; then echo "No warnings found" ; else echo $dscanResult && $(exit 1); fi
     - grep -nE "(for|foreach|foreach_reverse|if|while)\(" $(find source -name '*.d'); test $? -eq 1
     - ldmd2 -O -release -run ./checkwhitespace.d $(find source -name '*.d')
-    - dub fetch mir-cpuid && dub build --compiler=ldmd2 mir-cpuid
     - dub fetch mir-random && dub build --compiler=ldmd2 mir-random
     - dub test --compiler=ldmd2
     - dub test --compiler=ldmd2 --build=unittest-release
@@ -34,8 +33,6 @@ test:
     - dub fetch imageformats --version=6.1.0 && dub build --compiler=ldmd2 imageformats
     - dub build --compiler=ldmd2 --single examples/median_filter.d
     - dub build --compiler=ldmd2 --single examples/means_of_columns.d
-    - dub build --compiler=ldmd2 --root=examples/flex_plot
-    - dub build --compiler=ldmd2 --root=examples/flex_plot/flex_common_pack
 deployment:
   aws:
     branch: master

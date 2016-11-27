@@ -71,8 +71,6 @@ test_script:
  - dub fetch imageformats --version 6.1.0 && dub build --arch %Darch% imageformats
  - dub build --single --arch %Darch% examples/median_filter.d
  - dub build --single --arch %Darch% examples/means_of_columns.d
- - dub build --root=examples/flex_plot --arch %Darch%
- - dub build --root=examples/flex_plot/flex_common_pack --arch %Darch%
 
 notifications:
  - provider: Webhook
