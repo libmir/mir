@@ -24,7 +24,7 @@ $(BOOKTABLE ,
         $(TD matrix-vector operations %3 done, partially optimized for now)
     )
     $(TR
-        $(TDNW $(SUBMODULE l3))
+        $(TDNW l3 was moved to $(HTTP https://github.com/libmir/mir-glas, mir-glas))
         $(TD matrix-matrix operations 50% done)
     )
 )
@@ -65,4 +65,3 @@ module mir.glas;
 
 public import mir.glas.l1;
 public import mir.glas.l2;
-public import mir.glas.l3;
