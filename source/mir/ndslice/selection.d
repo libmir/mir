@@ -55,6 +55,13 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
 module mir.ndslice.selection;
 
+static if (__VERSION__ >= 2072)
+{
+    public import std.experimental.ndslice.selection;
+}
+else
+{
+
 import std.traits;
 import std.meta; //: allSatisfy;
 
@@ -2131,4 +2138,6 @@ pure nothrow unittest
 
     alias stringize = mapSlice!(to!string);
     assert(stringize(iotaSlice(2, 3)) == [["0", "1", "2"], ["3", "4", "5"]]);
+}
+
 }

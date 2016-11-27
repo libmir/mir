@@ -38,7 +38,11 @@ import mir.ndslice.algorithm : ndReduce;
 
 import mir.glas.l1;
 
-import ldc.attributes : fastmath;
+version(LDC)
+    import ldc.attributes : fastmath;
+else
+    enum fastmath;
+
 @fastmath:
 
 /++

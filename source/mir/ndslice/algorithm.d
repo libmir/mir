@@ -95,14 +95,15 @@ private void checkShapesMatch(bool seed, Select select, Args...)(Args tensors)
             {
                 static assert (tensors[i].NSeq[0 .. 2] == tensors[0].NSeq[0 .. 2], msgShape);
                 enum M = tensors[0].NSeq[0] + tensors[0].NSeq[1] - 1;
-                assert(tensors[i]._lengths[0 .. M] == tensors[0]._lengths[0 .. M], msgShape);
+                import mir.ndslice.selection: unpack;
+                assert(tensors[i].unpack.shape[0 .. M] == tensors[0].unpack.shape[0 .. M], msgShape);
             }
         }
         else
         {
             static if (i)
             {
-                static assert (tensors[i].N == tensors[0].N, msgShape);
+                static assert (tensors[i].shape.length == tensors[0].shape.length, msgShape);
                 assert(tensors[i].shape == tensors[0].shape, msgShape);
             }
         }
@@ -113,7 +114,10 @@ private bool anyEmpty(Select select, size_t N, Range)(ref Slice!(N, Range) slice
 {
     static if (select == Select.halfPacked || select == Select.triangularPacked)
         static if (is(Range : Slice!(M, IRange), size_t M, IRange))
-            return Slice!(N + M - 1, IRange)(slice._lengths, slice._strides, slice._ptr).anyEmpty;
+        {
+            import mir.ndslice.selection : unpack, IotaMap;
+            return Slice!(N + M - 1, IotaMap!())(slice.unpack.shape, slice.unpack.structure.strides, IotaMap!()()).anyEmpty;
+        }
         else static assert(0);
     else
         return slice.anyEmpty;
@@ -138,9 +142,6 @@ private template naryFun(bool hasSeed, size_t argCount, alias fun)
     }
 }
 
-deprecated("please use mir.ndslice.selection.mapSlice instead.")
-alias ndMap = mapSlice;
-
 /++
 Implements the homonym function (also known as `transform`) present
 in many languages of functional flavor. The call `mapSlice!(fun)(tensor)`
@@ -161,6 +162,7 @@ See_Also:
     $(REF map, std,algorithm,iteration)
     $(HTTP en.wikipedia.org/wiki/Map_(higher-order_function), Map (higher-order function))
 +/
+static if (__VERSION__ < 2072)
 template mapSlice(fun...)
     if (fun.length)
 {
@@ -230,6 +232,20 @@ pure nothrow unittest
     import mir.ndslice.selection : iotaSlice;
 
     assert(iotaSlice(2, 3).slice.mapSlice!"a * 2" == [[0, 2, 4], [6, 8, 10]]);
+}
+
+static if (__VERSION__ < 2072)
+{
+    deprecated("please use mir.ndslice.selection.mapSlice instead.")
+    alias ndMap = mapSlice;
+}
+else
+{
+    deprecated("please use std.experimental.ndslice.selection.mapSlice instead.")
+    alias ndMap = mapSlice;
+
+    deprecated("please use std.experimental.ndslice.selection.mapSlice instead.")
+    public import std.experimental.ndslice.selection : mapSlice;
 }
 
 /// Packed tensors.
@@ -391,10 +407,11 @@ void prepareTensors(Select select, Args...)(ref Args tensors)
             enum I = Iota!(tensors[0].N, tensors[0].N + tensors[0].front.N - 1);
         else
             enum I = Iota!(0, tensors[0].N - 1);
+        import mir.ndslice.selection : unpack;
         foreach_reverse (i; I)
-            if (tensors[0]._lengths[i] > tensors[0]._lengths[i + 1])
+            if (tensors[0].unpack.shape[i] > tensors[0].unpack.shape[i + 1])
                 foreach (ref tensor; tensors)
-                    tensor._lengths[i] = tensors[0]._lengths[i + 1];
+                    (cast(size_t*)&tensor)[i] = (cast(size_t*)&tensors[0])[i + 1];
     }
 }
 
@@ -426,9 +443,9 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
         }
         static if (select == Select.half)
         {
-            immutable lengthSave = tensors[0]._lengths[0];
-            tensors[0]._lengths[0] >>= 1;
-            if (tensors[0]._lengths[0] == 0)
+            immutable lengthSave = tensors[0].length;
+            tensors[0].popBackExactly(tensors[0].length / 2 + tensors[0].length % 2);
+            if (tensors[0].length == 0)
                 goto End;
         }
         static if (select == Select.halfPacked)
@@ -455,7 +472,7 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
         else
             alias popSeq = AliasSeq!(size_t(0));
         static if (N == 1 && (select == Select.halfPacked || select == Select.triangularPacked))
-            enum M = tensors[0].front.N;
+            enum M = tensors[0].front.shape.length;
         else
             enum M = N - 1;
         static if (iteration == Iteration.reduce)
@@ -490,7 +507,7 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
                     auto val = backwardIndex[$ - 1];
                 if (val)
                 {
-                    backwardIndex[0] = tensors[0]._lengths[0];
+                    backwardIndex[0] = tensors[0].length;
                     static if (select == Select.half)
                         backwardIndex[0] += lengthSave - (lengthSave >> 1);
                     return;
@@ -511,7 +528,7 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
             {
                 foreach (d; popSeq)
                 {
-                    static if (d == M && vec)
+                    static if (d == M && vec && __VERSION__ < 2072)
                     {
                         ++tensor._ptr;
                         static if (t == 0)
@@ -524,7 +541,7 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
                 }
             }
         }
-        while (tensors[0]._lengths[0]);
+        while (tensors[0].length);
         End:
         static if (select == Select.half && N > 1)
         {
@@ -543,7 +560,7 @@ private template implement(Iteration iteration, alias fun, Flag!"vectorized" vec
             static assert(0);
             if (lengthSave & 1)
             {
-                tensors[0]._lengths[0] = 1;
+                tensors[0].popBackN(tensors[0].length - 1);
                 mixin(computeHalf);
                 mixin(breakStr);
             }
@@ -734,7 +751,7 @@ template ndFold(fun...)
                 seed = ndFoldImpl!(N - 1, Range, S)(tensor.front, seed).expand;
             tensor.popFront;
         }
-        while (tensor._lengths[0]);
+        while (tensor.length);
 
         static if (S.length == 1)
             return seed[0];
@@ -914,8 +931,9 @@ template ndReduce(alias fun, Select select, Flag!"vectorized" vec = No.vectorize
         alias impl = implement!(Iteration.reduce, fun, No.vectorized, fm);
         static if (vec && allSatisfy!(isMemory, staticMap!(RangeOf, Args)))
         {
+            import mir.ndslice.selection: unpack;
             foreach (ref tensor; tensors)
-                if (tensor._strides[$-1] != 1)
+                if (tensor.unpack.structure.strides[$-1] != 1)
                     goto CommonL;
             alias implVec = implement!(Iteration.reduce, fun, Yes.vectorized, fm);
             return implVec!(Args[0].N, select, staticMap!(Unqual, S))(seed, tensors);
@@ -1118,16 +1136,17 @@ template ndEach(alias fun, Select select, Flag!"vectorized" vec = No.vectorized,
         alias impl = implement!(Iteration.each, fun, No.vectorized, fm);
         static if (vec && allSatisfy!(isMemory, staticMap!(RangeOf, Args)))
         {
+            import mir.ndslice.selection: unpack;
             foreach (ref tensor; tensors)
-                if (tensor._strides[$-1] != 1)
+                if (tensor.unpack.structure.strides[$-1] != 1)
                     goto CommonL;
             alias implVec = implement!(Iteration.each, fun, Yes.vectorized, fm);
-            implVec!(Args[0].N, select)(tensors);
+            implVec!(tensors[0].shape.length, select)(tensors);
             return;
 
             CommonL:
         }
-        impl!(Args[0].N, select)(tensors);
+        impl!(tensors[0].shape.length, select)(tensors);
     }
 }
 
@@ -1691,7 +1710,7 @@ template ndEqual(alias pred, Select select = Select.full)
             {
                 static assert (tensors[i].N == tensors[0].N, msgShape);
                 foreach (j; Iota!(0, tensors[0].N))
-                    if (tensors[i]._lengths[j] != tensors[0]._lengths[j])
+                    if (tensors[i].shape[j] != tensors[0].shape[j])
                         goto False;
             }
         }
@@ -1779,10 +1798,10 @@ template ndCmp(alias pred = "a < b")
             if (!b)
                 return -1;
             foreach (i; Iota!(0, N))
-                if (sl1._lengths[i] < sl2._lengths[i])
+                if (sl1.length!i < sl2.length!i)
                     return -1;
                 else
-                if (sl1._lengths[i] > sl2._lengths[i])
+                if (sl1.length!i > sl2.length!i)
                     return 1;
             return 0;
         }

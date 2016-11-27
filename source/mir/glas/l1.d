@@ -87,7 +87,11 @@ import mir.internal.utility;
 import mir.ndslice.slice;
 import mir.ndslice.algorithm : ndReduce, ndEach;
 
-import ldc.attributes : fastmath;
+version(LDC)
+    import ldc.attributes : fastmath;
+else
+    enum fastmath;
+
 @fastmath:
 
 template _rot(alias c, alias s)
@@ -348,6 +352,7 @@ unittest
     auto y = slice!cdouble(2);
     x[] = [0 + 1i, 2 + 3i];
     y[] = [4 + 5i, 6 + 7i];
+    version(LDC) // DMD Internal error: backend/cgxmm.c 628
     assert(dot(x, y) == (0 + 1i) * (4 + 5i) + (2 + 3i) * (6 + 7i));
 }
 
@@ -391,6 +396,7 @@ unittest
     auto y = slice!cdouble(2);
     x[] = [0 + 1i, 2 + 3i];
     y[] = [4 + 5i, 6 + 7i];
+    version(LDC) // DMD Internal error: backend/cgxmm.c 628
     assert(dotc(x, y) == (0 + -1i) * (4 + 5i) + (2 + -3i) * (6 + 7i));
 }
 

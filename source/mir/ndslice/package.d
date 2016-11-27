@@ -321,6 +321,13 @@ TDNW2 = <td class="donthyphenate nobr" rowspan="2">$0</td>
 */
 module mir.ndslice;
 
+static if (__VERSION__ >= 2072)
+{
+    public import std.experimental.ndslice;
+}
+else
+{
+
 public import mir.ndslice.slice;
 public import mir.ndslice.iteration;
 public import mir.ndslice.selection;
@@ -591,4 +598,6 @@ pure nothrow unittest
     assert(tensor[0, 1, 2] == 10);
     assert(matrix[0, 2] == tensor[0, 1, 2]);
     assert(&matrix[0, 2] is &tensor[0, 1, 2]);
+}
+
 }
