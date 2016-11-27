@@ -62,7 +62,7 @@ Slice!(3, C*) movingWindowByChannel(alias filter, C)
         // Packs the last two dimensions.
         .pack!2
         // 2D to pixel lazy conversion.
-        .ndMap!filter
+        .mapSlice!filter
         // Creates the new image. The only memory allocation in this function.
         .slice;
 }

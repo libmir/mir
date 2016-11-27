@@ -5,18 +5,19 @@ os:
 language: d
 d:
  - ldc-1.1.0-beta2
+ - dmd
 env:
  - ARCH="x86_64"
 matrix:
   include:
     - {os: linux, d: ldc-1.1.0-beta2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: dmd, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
 branches:
   only:
     - master
 script:
  - echo "$ARCH"
  - dub test --arch "$ARCH" --build=unittest-cov
- - dub test --arch "$ARCH" --build=unittest-release
  - dub build --single --arch "$ARCH" examples/lda_hoffman_sparse.d
  - dub fetch imageformats --version 6.1.0 && dub build --arch "$ARCH" imageformats
  - dub build --single --arch "$ARCH" examples/median_filter.d

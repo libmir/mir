@@ -1,5 +1,12 @@
 module mir.ndslice.internal;
 
+static if (__VERSION__ >= 2072)
+{
+    public import std.experimental.ndslice.internal;
+}
+else
+{
+
 import std.range.primitives;
 import std.traits;
 import std.meta;
@@ -517,3 +524,6 @@ pure nothrow unittest
 }
 
 struct _Slice { size_t i, j; }
+
+}
+

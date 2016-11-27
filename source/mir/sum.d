@@ -101,8 +101,11 @@ unittest
     assert(r == ar.sum!(Summation.naive));
     assert(r == ar.sum!(Summation.pairwise));
     assert(r == ar.sum!(Summation.kahan));
-    assert(r == ar.sum!(Summation.kbn));
-    assert(r == ar.sum!(Summation.kb2));
+    version(LDC) // DMD Internal error: backend/cgxmm.c 628
+    {
+        assert(r == ar.sum!(Summation.kbn));
+        assert(r == ar.sum!(Summation.kb2));
+    }
     assert(r == ar.sum!(Summation.precise));
 }
 

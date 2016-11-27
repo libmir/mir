@@ -98,6 +98,13 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
 module mir.ndslice.iteration;
 
+static if (__VERSION__ >= 2072)
+{
+    public import std.experimental.ndslice.iteration;
+}
+else
+{
+
 import std.traits;
 import std.meta;
 
@@ -1204,4 +1211,6 @@ body
     assert(iotaSlice(5, 3, 6, 7)
         .dropToHypercube
         .shape == cast(size_t[4])[3, 3, 3, 3]);
+}
+
 }

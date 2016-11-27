@@ -15,6 +15,13 @@ STD = $(TD $(SMALL $0))
 */
 module mir.ndslice.slice;
 
+static if (__VERSION__ >= 2072)
+{
+    public import std.experimental.ndslice.slice;
+}
+else
+{
+
 import std.traits;
 import std.meta;
 import std.typecons; //: Flag, Yes, No;
@@ -3335,4 +3342,6 @@ private bool _checkAssignLengths(size_t NL, RangeL, size_t NR, RangeR)(Slice!(NL
     assert(!_checkAssignLengths(iotaSlice(2, 2), iotaSlice(2, 3)));
     assert(!_checkAssignLengths(iotaSlice(2, 2), iotaSlice(3, 2)));
     assert(!_checkAssignLengths(iotaSlice(2, 2), iotaSlice(3, 3)));
+}
+
 }
