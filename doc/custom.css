@@ -11,6 +11,16 @@ custom color for mir
     border-bottom: 1px #000 solid;
 }
 
+#top #cssmenu > ul > li > ul
+{
+    background: #222;
+    border: 1px solid #222;
+}
+
+a:hover, .question:hover, .expand-toggle:hover {
+    color: #223;
+}
+
 #top a:hover, #top #cssmenu li.open > a, #top #cssmenu li.active > a {
     background: #000;
 }
