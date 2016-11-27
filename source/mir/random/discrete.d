@@ -270,7 +270,7 @@ struct NaiveDiscrete(T)
         if (isRandomEngine!RNG)
     {
         import std.range : assumeSorted;
-        static if(isFloatingPoint!T)
+        static if (isFloatingPoint!T)
             T v = gen.rand!T.fabs * cdPoints[$-1];
         else
             T v = gen.randIndex!(Unsigned!T)(cdPoints[$-1]);
