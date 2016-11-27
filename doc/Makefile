@@ -16,7 +16,7 @@ DOC_SOURCE_DIR=doc
 GENERATED=.generated
 MIR_DIR=source
 CPUID_DIR=~/.dub/packages/mir-cpuid-0.4.0/mir-cpuid/source
-CPUID_DIR=~/.dub/packages/mir-random-0.0.1*/mir-random/source
+RANDOM_DIR=~/.dub/packages/mir-random-0.0.1*/mir-random/source
 DLANGORG_DIR=$(DOC_SOURCE_DIR)/dlang.org
 ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 
@@ -89,7 +89,7 @@ ADDSOURCE=$(if $(subst index.d,,$1),$(MIR_DIR)/$1,$1)
 # ../web/phobos/std_conv.html : std/conv.d $(STDDOC) ; ...
 $(foreach p,$(SRC_DOCUMENTABLES),$(eval \
 $(DOC_OUTPUT_DIR)/$(call D2HTML,$p) : $(call ADDSOURCE,$p) $(STDDOC) ;\
-  $(DDOC) $(STDDOC) -I$(MIR_DIR) -I$(CPUID_DIR) -Df$$@ $$<))
+  $(DDOC) $(STDDOC) -I$(MIR_DIR) -I$(CPUID_DIR) -I$(RANDOM_DIR) -Df$$@ $$<))
 
 ###########################################################
 # Setup all other resources needed by dlang.org
