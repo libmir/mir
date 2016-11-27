@@ -53,10 +53,6 @@ before_build:
 
 build_script:
  - echo dummy build script - dont remove me
- #- sed 's/"to_be_filled"/"Flex_logging", "Flex_logging_hex"/' -i dub.json
- # For now only python 3.4 is supported with pyd
- - sed 's/python35/python34/' -i examples/flex_plot.d
- - sed 's/python35/python34/' -i examples/flex_plot/flex_common_pack/dub.json
 
 test_script:
  - echo %PLATFORM%
@@ -71,8 +67,6 @@ test_script:
  - dub fetch imageformats --version 6.1.0 && dub build --arch %Darch% imageformats
  - dub build --single --arch %Darch% examples/median_filter.d
  - dub build --single --arch %Darch% examples/means_of_columns.d
- - dub build --root=examples/flex_plot --arch %Darch%
- - dub build --root=examples/flex_plot/flex_common_pack --arch %Darch%
 
 notifications:
  - provider: Webhook

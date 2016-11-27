@@ -91,11 +91,22 @@ _=
 
 NAVIGATION=
 $(DIVID cssmenu, $(UL
-    $(MENU https://dlang.org, Dlang)
     $(MENU https://github.com/libmir/mir, Github)
     $(MENU https://github.com/libmir/mir/issues, Issues)
     $(MENU https://gitter.im/libmir/public , Chat)
+    $(MENU_W_SUBMENU_LINK $(ROOT_DIR)mir.html, Mir Projects)
+      $(MIR_PROJECTS)
+    $(MENU https://dlang.org, Dlang)
 ))
+_=
+
+MIR_PROJECTS=
+$(SUBMENU_MANUAL
+    $(SUBMENU_LINK http://docs.mir.dlang.io, Mir)
+    $(SUBMENU_LINK http://docs.cpuid.dlang.io, CPUID)
+    $(SUBMENU_LINK http://docs.glas.dlang.io, GLAS)
+    $(SUBMENU_LINK http://docs.random.dlang.io, Random Numbers Generators)
+)
 _=
 
 COMMON_HEADERS_DLANG=
