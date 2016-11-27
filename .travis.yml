@@ -18,7 +18,6 @@ branches:
 script:
  - echo "$ARCH"
  - dub test --arch "$ARCH" --build=unittest-cov
- - dub test --arch "$ARCH" --build=unittest-release
  - dub build --single --arch "$ARCH" examples/lda_hoffman_sparse.d
  - dub fetch imageformats --version 6.1.0 && dub build --arch "$ARCH" imageformats
  - dub build --single --arch "$ARCH" examples/median_filter.d
