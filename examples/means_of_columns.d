@@ -39,7 +39,7 @@ __gshared Slice!(1, double*) means;
 Slice!(2, int*) sl;
 
 void main() {
-    sl = iotaSlice(100, 1000).ndMap!(to!int).slice;
+    sl = iotaSlice(100, 1000).mapSlice!(to!int).slice;
     auto r = benchmark!({
     	means = sl
         .transposed
