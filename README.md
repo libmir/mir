@@ -51,10 +51,11 @@ Contents
 Compatibility
 -------------
 ##### LDC (LLVM D Compiler)
-	- >=`1.1.0-beta4`
-	- `1.1.0-beta2`
+ - >=`1.1.0-beta4`
+ - `1.1.0-beta2`
+
 ##### DMD
-	- >=2.072
+ - >=2.072
 
 |           | Linux | Mac OS X | Windows |
 |-----------|-------|----------|---------|
