@@ -142,108 +142,17 @@ private template naryFun(bool hasSeed, size_t argCount, alias fun)
     }
 }
 
-/++
-Implements the homonym function (also known as `transform`) present
-in many languages of functional flavor. The call `mapSlice!(fun)(tensor)`
-returns a tensor of which elements are obtained by applying `fun`
-for all elements in `tensor`. The original tensors are
-not changed. Evaluation is done lazily.
-
-Note:
-    $(SUBREF iteration, transposed) and
-    $(SUBREF selection, pack) can be used to specify dimensions.
-Params:
-    fun = One or more functions.
-    tensor = An input tensor.
-Returns:
-    a tensor with each fun applied to all the elements. If there is more than one
-    fun, the element type will be `Tuple` containing one element for each fun.
-See_Also:
-    $(REF map, std,algorithm,iteration)
-    $(HTTP en.wikipedia.org/wiki/Map_(higher-order_function), Map (higher-order function))
-+/
-static if (__VERSION__ < 2072)
-template mapSlice(fun...)
-    if (fun.length)
-{
-    ///
-    auto mapSlice(size_t N, Range)
-        (Slice!(N, Range) tensor)
-    {
-        // this static if-else block
-        // may be unified with std.algorithms.iteration.map
-        // after ndslice be removed from the Mir library.
-        static if (fun.length > 1)
-        {
-            import std.functional : adjoin, unaryFun;
-
-            alias _funs = staticMap!(unaryFun, fun);
-            alias _fun = adjoin!_funs;
-
-            // Once DMD issue #5710 is fixed, this validation loop can be moved into a template.
-            foreach (f; _funs)
-            {
-                static assert(!is(typeof(f(RE.init)) == void),
-                    "Mapping function(s) must not return void: " ~ _funs.stringof);
-            }
-        }
-        else
-        {
-            import std.functional : unaryFun;
-
-            alias _fun = unaryFun!fun;
-            alias _funs = AliasSeq!(_fun);
-
-            // Do the validation separately for single parameters due to DMD issue #15777.
-            static assert(!is(typeof(_fun(RE.init)) == void),
-                "Mapping function(s) must not return void: " ~ _funs.stringof);
-        }
-
-        // Specialization for packed tensors (tensors composed of tensors).
-        static if (is(Range : Slice!(NI, RangeI), size_t NI, RangeI))
-        {
-            alias Ptr = Pack!(NI - 1, RangeI);
-            alias M = Map!(Ptr, _fun);
-            alias R = Slice!(N, M);
-            return R(tensor._lengths[0 .. N], tensor._strides[0 .. N],
-                M(Ptr(tensor._lengths[N .. $], tensor._strides[N .. $], tensor._ptr)));
-        }
-        else
-        {
-            alias M = Map!(SlicePtr!Range, _fun);
-            alias R = Slice!(N, M);
-            with(tensor) return R(_lengths, _strides, M(_ptr));
-        }
-    }
-}
-
-///
-pure nothrow unittest
-{
-    import mir.ndslice.selection : iotaSlice;
-
-    auto s = iotaSlice(2, 3).mapSlice!(a => a * 3);
-    assert(s == [[ 0,  3,  6],
-                 [ 9, 12, 15]]);
-}
-
-pure nothrow unittest
-{
-    import mir.ndslice.selection : iotaSlice;
-
-    assert(iotaSlice(2, 3).slice.mapSlice!"a * 2" == [[0, 2, 4], [6, 8, 10]]);
-}
-
 static if (__VERSION__ < 2072)
 {
     deprecated("please use mir.ndslice.selection.mapSlice instead.")
-    alias ndMap = mapSlice;
+    import mir.ndslice.selection : mapSlice;
+    deprecated("please use mir.ndslice.selection.mapSlice instead.")
+    public alias ndMap = mapSlice;
 }
 else
 {
     deprecated("please use std.experimental.ndslice.selection.mapSlice instead.")
-    public import std.experimental.ndslice.selection : mapSlice;
-
+    import std.experimental.ndslice.selection : mapSlice;
     deprecated("please use std.experimental.ndslice.selection.mapSlice instead.")
     public alias ndMap = mapSlice;
 }
