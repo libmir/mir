@@ -4,9 +4,7 @@
     "name": "bench_flex_normal",
     "dependencies": {
         "mir": {"path":"../.."},
-        "hap": "1.0.0-rc.2.1",
-        "dstats": "1.0.3",
-        "atmosphere": "0.1.7"
+        "mir-random": "~>0.0.1-beta2"
     },
     "dflags-ldc": ["-mcpu=native"]
 }
@@ -22,10 +20,7 @@ LDC - the LLVM D compiler (798cda):
 
 $ dub run --build=release-nobounds --compiler=ldmd2-git --single benchmarks/flex/normal_dist.d
 
-boxMueller.naive   =   850 ms, stddev:  82 ms
-boxMueller.hap     =  3618 ms, stddev:   4 ms
-boxMueller.dstats  =   801 ms, stddev:   2 ms
-boxMueller.atmos   =   934 ms, stddev:   2 ms
+mir.random         =   ??? ms, stddev:   ? ms
 flexNormal.slow    =  1406 ms, stddev:   4 ms
 flexNormal.medium  =  1206 ms, stddev:   1 ms
 flexNormal.fast    =  1124 ms, stddev:   0 ms
@@ -33,42 +28,6 @@ ziggurat           =   357 ms, stddev:   5 ms
 +/
 
 import mir.random.flex;
-
-/*
-$(LINK2 https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform, Box Muller-transform)
-References:
-    Butcher, J. C. "Random sampling from the normal distribution."
-    The Computer Journal 3.4 (1961): 251-253.
-    http://comjnl.oxfordjournals.org/content/3/4/251.full.pdf
-*/
-auto boxMueller(S, RNG)(S mu, S sigma, ref RNG gen)
-{
-    import mir.internal.math : log, cos, sin, sqrt;
-    import std.math : PI;
-    import std.random : uniform;
-
-    static S epsilon = S.min_normal;
-    static S two_pi = 2.0 * PI;
-
-    static S z0, z1;
-    static bool generate;
-    generate = !generate;
-
-    if (!generate)
-       return z1 * sigma + mu;
-
-    S u1, u2;
-    do
-    {
-       u1 = uniform(0.0L, 1.0L, gen);
-       u2 = uniform(0.0L, 1.0L, gen);
-    }
-    while (u1 <= epsilon);
-
-    z0 = sqrt(-2.0 * log(u1)) * cos(two_pi * u2);
-    z1 = sqrt(-2.0 * log(u1)) * sin(two_pi * u2);
-    return z0 * sigma + mu;
-}
 
 auto genNormal(S)(S rho = 1.1)
 {
@@ -102,14 +61,15 @@ void main()
     //auto zigguratNormal = normal!(S, uint)();
 
     // just pick any rng gen, it will have the same speed for all algorithms
-    import std.random : Mt19937;
-    auto gen = Mt19937(42);
+    import mir.random;
+    import mir.random.variable;
+    auto gen = Random(42);
+    auto boxMueller = NormalVariable!S(0, 1);
 
     import hap.random.distribution : normalDistribution;
     auto hapNormal = normalDistribution(S(0), S(1), gen);
 
-    enum names = ["boxMueller.naive", "boxMueller.hap", "boxMueller.dstats",
-                  "boxMueller.atmos",
+    enum names = ["mir.random",
                   "flexNormal.slow", "flexNormal.medium",
                   "flexNormal.fast", /*"ziggurat"*/];
 
@@ -117,19 +77,7 @@ void main()
     foreach (i; 0..nrRuns)
     {
         auto bench = benchmark!(
-            { r += boxMueller!S(0, 1, gen); },
-            {
-                r += hapNormal.front;
-                hapNormal.popFront();
-            },
-            {
-                import dstats.random : rNorm;
-                r += rNorm(S(0), S(1), gen);
-            },
-            {
-                import atmosphere.random : rNormal;
-                r += rNormal!S(gen);
-            },
+            { r += boxMueller(gen); },
             { r += flexNormalSlow(gen); },
             { r += flexNormalMedium(gen); },
             { r += flexNormalFast(gen); },

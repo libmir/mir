@@ -81,7 +81,7 @@ struct CFlex(S)
         import std.format : format;
         import std.math : exp;
         import std.path : buildPath;
-        import std.random : Mt19937;
+        import mir.random : Random;
         import std.file : exists, mkdir;
 
         import flex_common.hist;
@@ -112,7 +112,7 @@ struct CFlex(S)
 
         if (needsSamples)
         {
-            auto gen = Mt19937(42);
+            auto gen = Random(42);
             S[] values = new S[numSamples];
             foreach (ref v; values)
                 v = tf(gen);

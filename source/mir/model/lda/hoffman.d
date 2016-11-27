@@ -60,7 +60,7 @@ struct LdaHoffman(F)
     +/
     this(size_t K, size_t W, size_t D, F alpha, F eta, F tau0, F kappa, F eps = 1e-5, TaskPool tp = taskPool())
     {
-        import std.random: uniform;
+        import mir.random;
 
         this.D = D;
         this.alpha = alpha;
@@ -74,9 +74,11 @@ struct LdaHoffman(F)
         _beta = slice!F(K, W);
         _lambdaTemp = new F[][](tp.size + 1, W);
 
-        foreach (r; tp.parallel(_lambda))
+        import std.math: fabs;
+        auto gen = Random(unpredictableSeed);
+        foreach (r; _lambda)
             foreach (ref e; r)
-                e = uniform(F(0.9), F(1));
+                e = (gen.rand!F.fabs + 0.9) / 1.901;
 
         updateBeta();
     }

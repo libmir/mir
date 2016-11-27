@@ -26,6 +26,7 @@ test:
     - grep -nE "(for|foreach|foreach_reverse|if|while)\(" $(find source -name '*.d'); test $? -eq 1
     - ldmd2 -O -release -run ./checkwhitespace.d $(find source -name '*.d')
     - dub fetch mir-cpuid && dub build --compiler=ldmd2 mir-cpuid
+    - dub fetch mir-random && dub build --compiler=ldmd2 mir-random
     - dub test --compiler=ldmd2
     - dub test --compiler=ldmd2 --build=unittest-release
     - make -f doc/Makefile html
