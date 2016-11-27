@@ -4,7 +4,6 @@ environment:
   - DC: ldc
     DVersion: 1.1.0-beta4
     arch: x64
-  - DC: 
 
 skip_tags: true
 branches:
