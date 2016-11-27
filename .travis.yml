@@ -4,13 +4,13 @@ os:
  - osx
 language: d
 d:
- - ldc-1.1.0-beta2
+ - ldc-1.1.0-beta4
  - dmd
 env:
  - ARCH="x86_64"
 matrix:
   include:
-    - {os: linux, d: ldc-1.1.0-beta2, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: ldc-1.1.0-beta4, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
     - {os: linux, d: dmd, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
 branches:
   only:
