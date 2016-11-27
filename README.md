@@ -43,8 +43,7 @@ Contents
 - `mir.sparse.blas` - Sparse BLAS for `CompressedTensor`
 - `mir.model.lda.hoffman` - Online variational Bayes for latent Dirichlet allocation (Online VB LDA) for sparse documents. LDA is used for topic modeling.
 - `mir.combinatorics` Combinations, combinations with repeats, cartesian power, permutations.
-- `mir.random.flex` - Tinfex non-uniform RNG implementation.
-- `mir.las.sum` Functions and Output Ranges for Summation Algorithms. Works with user-defined types.
+- `mir.sum` Functions and Output Ranges for Summation Algorithms. Works with user-defined types.
  - Precise algorithm: improved analog of Python's `fsum`
  - Pairwise algorithm: fast version for Input Ranges
  - Kahan, KBN, and KB2 algorithms
