@@ -242,10 +242,10 @@ static if (__VERSION__ < 2072)
 else
 {
     deprecated("please use std.experimental.ndslice.selection.mapSlice instead.")
-    alias ndMap = mapSlice;
+    public import std.experimental.ndslice.selection : mapSlice;
 
     deprecated("please use std.experimental.ndslice.selection.mapSlice instead.")
-    public import std.experimental.ndslice.selection : mapSlice;
+    public alias ndMap = mapSlice;
 }
 
 /// Packed tensors.

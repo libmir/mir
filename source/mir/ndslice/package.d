@@ -324,6 +324,7 @@ module mir.ndslice;
 static if (__VERSION__ >= 2072)
 {
     public import std.experimental.ndslice;
+    public import mir.ndslice.algorithm;
 }
 else
 {
