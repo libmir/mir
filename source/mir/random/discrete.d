@@ -278,6 +278,12 @@ struct NaiveDiscrete(T)
         cdPoints = cumulative density points
     */
     this(const(T)[] cdPoints)
+    in
+    {
+        import std.algorithm.searching : all;
+        assert(cdPoints.all!(x => x >= size_t(0)), "Only positive values allowed");
+    }
+    body
     {
         this.cdPoints = cdPoints;
     }
@@ -291,6 +297,11 @@ struct NaiveDiscrete(T)
 
     /// Samples a value from the discrete distribution using a custom random generator
     size_t opCall(RNG)(ref RNG gen) const
+    out (result)
+    {
+        assert(size_t(0) <= result && result < cdPoints.length, "Invalid value sampled");
+    }
+    body
     {
         import std.random : uniform;
         import std.range : assumeSorted;
