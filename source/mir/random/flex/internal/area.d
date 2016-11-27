@@ -71,9 +71,7 @@ void determineSqueezeAndHat(S)(ref Interval!S iv)
     import mir.random.flex.internal.types : determineType, FunType;
 
     // y (aka x0) is defined to be the maximal point of the boundary points
-    enum sec = `(iv.ltx >= iv.rtx) ?
-                linearFun!S((iv.rtx - iv.ltx) / (iv.rx - iv.lx), iv.lx, iv.ltx) :
-                linearFun!S((iv.rtx - iv.ltx) / (iv.rx - iv.lx), iv.rx, iv.rtx)`;
+    enum sec = `linearFun!S((iv.rtx - iv.ltx) / (iv.rx - iv.lx), iv.lx, iv.ltx)`;
 
     enum t_l = "linearFun!S(iv.lt1x, iv.lx, iv.ltx)";
     enum t_r = "linearFun!S(iv.rt1x, iv.rx, iv.rtx)";
