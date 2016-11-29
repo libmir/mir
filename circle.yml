@@ -1,8 +1,8 @@
 machine:
   environment:
     DMD: 2.072.0 # for rdmd
-    LDC: 1.1.0-beta4
-    DUB: 1.0.0
+    LDC: 1.1.0-beta5
+    DUB: 1.1.0
     PATH: "${HOME}/dmd2/linux/bin64:${HOME}/ldc2-$LDC-linux-x86_64/bin:${PATH}"
     LD_LIBRARY_PATH: "${HOME}/dmd2/linux/lib64:${HOME}/ldc2-$LDC-linux-x86_64/lib:${LD_LIBRARY_PATH}"
 checkout:
@@ -25,9 +25,11 @@ test:
     # - dscanResult=$(./dscanner --config .dscanner.ini --styleCheck source 2> /dev/null ) ; if [ -z "${dscanResult}" ] ; then echo "No warnings found" ; else echo $dscanResult && $(exit 1); fi
     - grep -nE "(for|foreach|foreach_reverse|if|while)\(" $(find source -name '*.d'); test $? -eq 1
     - ldmd2 -O -release -run ./checkwhitespace.d $(find source -name '*.d')
-    - dub fetch mir-random && dub build --compiler=ldmd2 mir-random
     - dub test --compiler=ldmd2
     - dub test --compiler=ldmd2 --build=unittest-release
+    - git clone https://github.com/libmir/mir-math
+    - git clone https://github.com/libmir/mir-random
+    - git clone https://github.com/libmir/mir-internal
     - make -f doc/Makefile html
     - dub build --compiler=ldmd2 --single examples/lda_hoffman_sparse.d
     - dub fetch imageformats --version=6.1.0 && dub build --compiler=ldmd2 imageformats

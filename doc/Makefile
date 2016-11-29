@@ -15,9 +15,9 @@ DOC_OUTPUT_DIR=web
 DOC_SOURCE_DIR=doc
 GENERATED=.generated
 MIR_DIR=source
-RANDOM_DIR=~/.dub/packages/mir-random*/mir-random/source
-INTERNAL_DIR=~/.dub/packages/mir-internal*/mir-internal/source
-MATH_DIR=~/.dub/packages/mir-math*/mir-math/source
+RANDOM_DIR=mir-random/source
+INTERNAL_DIR=mir-internal/source
+MATH_DIR=mir-math/source
 DLANGORG_DIR=$(DOC_SOURCE_DIR)/dlang.org
 ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 
