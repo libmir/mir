@@ -1,7 +1,7 @@
 #!/usr/bin/env dub
 /+ dub.json:
 {
-    "name": "dot_product",
+    "name": "convolution",
     "dependencies": {"mir": {"path":"../.."}},
     "dflags-ldc": ["-mcpu=native"]
 }
