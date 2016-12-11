@@ -35,6 +35,8 @@ test:
     - dub fetch imageformats --version=6.1.0 && dub build --compiler=ldmd2 imageformats
     - dub build --compiler=ldmd2 --single examples/median_filter.d
     - dub build --compiler=ldmd2 --single examples/means_of_columns.d
+    - dub build --compiler=ldmd2 --single benchmarks/ndslice/binarization.d
+    - dub build --compiler=ldmd2 --single benchmarks/ndslice/convolution.d
 deployment:
   aws:
     branch: master
