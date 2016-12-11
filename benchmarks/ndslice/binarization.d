@@ -30,22 +30,22 @@ import mir.ndslice.internal : fastmath;
 
 alias F = float;
 
-void binarizationLockstep(Slice!(2, F*) input, F binarization, Slice!(2, F*) output)
+void binarizationLockstep(Slice!(2, F*) input, F threshold, Slice!(2, F*) output)
 {
     import std.range : lockstep;
     foreach(i, ref o; lockstep(input.byElement, output.byElement))
     {
-        o = (i > binarization) ? F(1) : F(0);
+        o = (i > threshold) ? F(1) : F(0);
     }
 }
 
-void binarizationAssumeSameStructure(Slice!(2, F*) input, F binarization, Slice!(2, F*) output)
+void binarizationAssumeSameStructure(Slice!(2, F*) input, F threshold, Slice!(2, F*) output)
 {
     import mir.ndslice.algorithm : ndEach;
     import mir.ndslice.slice : assumeSameStructure;
 
     assumeSameStructure!("input", "output")(input, output).ndEach!( (p) {
-        p.output = (p.input > binarization) ? F(1) : F(0);
+        p.output = (p.input > threshold) ? F(1) : F(0);
     });
 }
 
@@ -53,7 +53,7 @@ void binarizationAssumeSameStructure(Slice!(2, F*) input, F binarization, Slice!
 __gshared n = 256; // image size
 __gshared Slice!(2, F*) a;
 __gshared Slice!(2, F*) b;
-__gshared F t; // binarization
+__gshared F t; // threshold
 
 void main()
 {
