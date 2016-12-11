@@ -28,7 +28,7 @@ import std.algorithm.comparison : min;
 import mir.ndslice;
 import mir.ndslice.internal : fastmath;
 
-alias F = float;
+alias F = double;
 
 @fastmath void convLoop(Slice!(2, F*) input, Slice!(2, F*) output, Slice!(2, F*) kernel)
 {

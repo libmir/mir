@@ -28,7 +28,7 @@ import std.algorithm.comparison : min;
 import mir.ndslice;
 import mir.ndslice.internal : fastmath;
 
-alias F = float;
+alias F = double;
 
 void binarizationLockstep(Slice!(2, F*) input, F threshold, Slice!(2, F*) output)
 {
