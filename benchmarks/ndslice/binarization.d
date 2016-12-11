@@ -57,11 +57,9 @@ __gshared F t; // threshold
 
 void main()
 {
-    import std.random : uniform;
-
-    a = iotaSlice(n, n).mapSlice!(v => v.to!F).slice;
+    a = iotaSlice(n, n).as!F.slice;
     b = a.slice;
-    t = uniform(F(0), F(n*n));
+    t = n * n / 2;
 
     Duration[2] bestBench = Duration.max;
 
