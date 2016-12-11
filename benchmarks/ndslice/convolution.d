@@ -78,7 +78,7 @@ __gshared Slice!(2, F*) k;
 
 void main()
 {
-    a = iotaSlice(n, n).mapSlice!(v => v.to!F).slice;
+    a = iotaSlice(n, n).as!F.slice;
     b = a.slice;
     k = iotaSlice(m, m).mapSlice!(v => F(1) / F(m * m)).slice;
 
