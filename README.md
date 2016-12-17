@@ -10,7 +10,7 @@
 
 [![Benchmarks](http://blog.mir.dlang.io/images/bench_csingle.svg)](http://blog.mir.dlang.io/glas/benchmark/openblas/2016/09/23/glas-gemm-benchmark.html)
 
-#### ❗️ Mir GLAS was moved to https://github.com/libmir/mir-glas. GLAS implementation in current repository is deprecated and will be removed soon.
+#### ❗️ Mir GLAS was moved to https://github.com/libmir/mir-glas.
 
 Mir
 ======
