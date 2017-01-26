@@ -98,7 +98,7 @@ T4=$(TR $(TDNW $(LREF $1)) $(TD $2) $(TD $3) $(TD $4))
 */
 module mir.ndslice.iteration;
 
-static if (__VERSION__ >= 2072)
+static if (__VERSION__ == 2072)
 {
     public import std.experimental.ndslice.iteration;
 }

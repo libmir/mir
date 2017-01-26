@@ -142,18 +142,18 @@ private template naryFun(bool hasSeed, size_t argCount, alias fun)
     }
 }
 
-static if (__VERSION__ < 2072)
-{
-    deprecated("please use mir.ndslice.selection.mapSlice instead.")
-    import mir.ndslice.selection : mapSlice;
-    deprecated("please use mir.ndslice.selection.mapSlice instead.")
-    public alias ndMap = mapSlice;
-}
-else
+static if (__VERSION__ == 2072)
 {
     deprecated("please use std.experimental.ndslice.selection.mapSlice instead.")
     import std.experimental.ndslice.selection : mapSlice;
     deprecated("please use std.experimental.ndslice.selection.mapSlice instead.")
+    public alias ndMap = mapSlice;
+}
+else // (__VERSION__ < 2072)
+{
+    deprecated("please use mir.ndslice.selection.mapSlice instead.")
+    import mir.ndslice.selection : mapSlice;
+    deprecated("please use mir.ndslice.selection.mapSlice instead.")
     public alias ndMap = mapSlice;
 }
 

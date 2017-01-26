@@ -321,7 +321,7 @@ TDNW2 = <td class="donthyphenate nobr" rowspan="2">$0</td>
 */
 module mir.ndslice;
 
-static if (__VERSION__ >= 2072)
+static if (__VERSION__ == 2072)
 {
     public import std.experimental.ndslice;
     public import mir.ndslice.algorithm;
