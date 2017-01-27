@@ -15,7 +15,7 @@ STD = $(TD $(SMALL $0))
 */
 module mir.ndslice.slice;
 
-static if (__VERSION__ >= 2072)
+static if (__VERSION__ == 2072)
 {
     public import std.experimental.ndslice.slice;
 }

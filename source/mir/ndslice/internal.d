@@ -1,6 +1,6 @@
 module mir.ndslice.internal;
 
-static if (__VERSION__ >= 2072)
+static if (__VERSION__ == 2072)
 {
     public import std.experimental.ndslice.internal;
 }
