@@ -15,9 +15,9 @@ $(TR $(TH Function Name) $(TH Description))
 $(T2 gemv, general matrix-vector multiplication, $(RED partially optimized))
 )
 
-License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
-
-Authors: Ilya Yaroshenko
+License:   $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
+Copyright: Copyright © 2016-, Ilya Yaroshenko
+Authors:   Ilya Yaroshenko
 
 Macros:
 T2=$(TR $(TDNW $(LREF $1)) $(TD $+))
@@ -34,7 +34,6 @@ import std.typecons: Flag, Yes, No;
 import mir.math.internal;
 import mir.internal.utility;
 import mir.ndslice.slice;
-import mir.ndslice.algorithm : ndReduce;
 
 import mir.glas.l1;
 
@@ -67,13 +66,17 @@ Note:
 BLAS: SGEMV, DGEMV, (CGEMV, ZGEMV are not implemented for now)
 +/
 nothrow @nogc @system
-void gemv(A, B, C)
+void gemv(A, B, C,
+    SliceKind kindA,
+    SliceKind kindB,
+    SliceKind kindC,
+    )
 (
     C alpha,
-        Slice!(2, const(A)*) asl,
-        Slice!(1, const(B)*) xsl,
+        Slice!(kindA, [2], const(A)*) asl,
+        Slice!(kindB, [1], const(B)*) xsl,
     C beta,
-        Slice!(1, C*) ysl,
+        Slice!(kindC, [1], C*) ysl,
 )
     if (allSatisfy!(isNumeric, A, B, C))
 in
@@ -83,18 +86,8 @@ in
 }
 body
 {
-    import mir.ndslice.iteration: reversed, transposed;
+    import mir.ndslice.dynamic: reversed;
     static assert(is(Unqual!C == C), msgWrongType);
-    if (asl.stride!0 < 0)
-    {
-        asl = asl.reversed!0;
-        ysl = ysl.reversed;
-    }
-    if (asl.stride!1 < 0)
-    {
-        asl = asl.reversed!1;
-        xsl = xsl.reversed;
-    }
     if (ysl.empty)
         return;
     if (beta == 0)

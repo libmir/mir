@@ -11,12 +11,14 @@
 [![Benchmarks](http://blog.mir.dlang.io/images/bench_csingle.svg)](http://blog.mir.dlang.io/glas/benchmark/openblas/2016/09/23/glas-gemm-benchmark.html)
 
 #### ❗️ Mir GLAS was moved to https://github.com/libmir/mir-glas.
+#### ❗❗❗️ ndslice was reworked and moved to https://github.com/libmir/mir-algorithm. The last Mir version with old ndslice is `v0.22.1`.
 
 Mir
 ======
 Generic Numerical Library for Science and Machine Learning.
 
-##### Other Mir Projects
+##### Separated Mir Projects
+- [Mir Algorithm](https://github.com/libmir/mir-algorithm) - Multidimensional arrays (ndslice), iterators, algorithms.
 - [Mir Random](https://github.com/libmir/mir-random) - Professional Random Number Generators
 - [Mir GLAS](https://github.com/libmir/mir-glas) - Linear Algebra Library
 - [Mir CPUID](https://github.com/libmir/mir-cpuid) - CPU identification
@@ -35,7 +37,6 @@ Contents
 --------
 
 - `mir.glas` - Generic Linear Algebra Subroutines
-- `mir.ndslice` Multidimensional Random Access Ranges and Arrays
 - `mir.sparse` Sparse Tensors
  - `Sparse` - DOK format
  - Different ranges for COO format
@@ -47,7 +48,7 @@ Contents
 Compatibility
 -------------
 ##### LDC (LLVM D Compiler)
- - >=`1.1.0-beta6`
+ - >=`1.1.0`
 
 ##### DMD
  - >=2.072

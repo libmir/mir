@@ -1,13 +1,14 @@
-/**
-License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
-
-Authors: Ilya Yaroshenko
-*/
+/++
+License:   $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
+Copyright: Copyright © 2016-, Ilya Yaroshenko
+Authors:   Ilya Yaroshenko
++/
 module mir.sparse.blas.gemv;
 
 
 import std.traits;
 import mir.ndslice.slice;
+import mir.ndslice.iterator;
 import mir.internal.utility;
 import mir.sparse;
 
@@ -26,26 +27,19 @@ Returns:
 void gemv(
     CR,
     CL,
-    M1 : Slice!(1, V1),
-    V1 : CompressedMap!(T1, I1, J1),
-    T1, I1, J1, V2, V3)
-(in CR alpha, M1 a, V2 x, in CL beta, V3 y)
-    if ((isDynamicArray!V2 || is(V2 : Slice!(1, V2R), V2R)) &&
-        (isDynamicArray!V3 || is(V3 : Slice!(1, V3R), V3R)))
+    SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
+(
+    in CR alpha,
+    Slice!(kind1, [1], FieldIterator!(CompressedField!(T1, I1, J1))) a,
+    Slice!(kind2, [1], Iterator2) x,
+    in CL beta,
+    Slice!(kind3, [1], Iterator3)  y)
 in
 {
     assert(a.length == y.length);
 }
 body
 {
-    static if (isSimpleSlice!V2)
-    {
-        if (x.stride == 1)
-        {
-            gemv(alpha, a, x.toDense, beta, y);
-            return;
-        }
-    }
     if (beta)
     {
         foreach (ref e; y)
@@ -76,37 +70,19 @@ unittest
          [ 6.0, 0.0, 30.0, 8.0, 0.0]];
     auto alpha = 3.0;
     auto a = slice.compress;
-    auto x =  [ 17.0, 19, 31, 3, 5];
-    auto beta = 2.0;
-    auto y = [1.0, 2, 3];
-    auto t = [131.0, 1056.0, 1056.0];
-    t[] *= alpha;
-    t[] += y[] * beta;
-    gemv(alpha, a, x, beta, y);
-    assert(t == y);
-}
-
-unittest
-{
-    auto slice = sparse!double(3, 5);
-    slice[] =
-        [[ 0.0, 2.0,  3.0, 0.0, 0.0],
-         [ 6.0, 0.0, 30.0, 8.0, 0.0],
-         [ 6.0, 0.0, 30.0, 8.0, 0.0]];
-    auto alpha = 3.0;
-    auto a = slice.compress;
     auto x =  [ 17.0, 19, 31, 3, 5].sliced;
     auto beta = 2.0;
-    auto y = [1.0, 2, 3];
-    auto t = [131.0, 1056.0, 1056.0];
+    auto y = [1.0, 2, 3].sliced;
+    auto t = [131.0, 1056.0, 1056.0].sliced;
     t[] *= alpha;
-    t[] += y[] * beta;
+    import mir.glas.l1: axpy;
+    axpy(beta, y, t);
     gemv(alpha, a, x, beta, y);
     assert(t == y);
 }
 
 /++
-General matrix-vector multiplication with transformation.
+General matrix-vector multiplication with transposition.
 
 Params:
     alpha = scalar
@@ -120,28 +96,20 @@ Returns:
 void gemtv(
     CR,
     CL,
-    M1 : Slice!(1, V1),
-    V1 : CompressedMap!(T1, I1, J1),
-    T1, I1, J1, V2, V3)
-(in CR alpha, M1 a, V2 x, in CL beta, V3 y)
-    if ((isDynamicArray!V2 || is(V2 : Slice!(1, V2R), V2R)) &&
-        (isDynamicArray!V3 || is(V3 : Slice!(1, V3R), V3R)))
+    SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
+(
+    in CR alpha,
+    Slice!(kind1, [1], FieldIterator!(CompressedField!(T1, I1, J1))) a,
+    Slice!(kind2, [1], Iterator2) x,
+    in CL beta,
+    Slice!(kind3, [1], Iterator3)  y)
 in
 {
     assert(a.length == x.length);
 }
 body
 {
-    alias T3 = Unqual!(ForeachType!V3);
-
-    static if (isSimpleSlice!V3)
-    {
-        if (y.stride == 1)
-        {
-            gemtv(alpha, a, x, T3(beta), y.toDense);
-            return;
-        }
-    }
+    alias T3 = Unqual!(DeepElementType!(Slice!(kind3, [1], Iterator3)));
 
     if (beta == 0)
     {
@@ -174,34 +142,13 @@ unittest
          [0.0,  0.0,  0.0]];
     auto alpha = 3.0;
     auto a = slice.compress;
-    auto x =  [ 17.0, 19, 31, 3, 5];
-    auto beta = 2.0;
-    auto y = [1.0, 2, 3];
-    auto t = [131.0, 1056.0, 1056.0];
-    t[] *= alpha;
-    t[] += y[] * beta;
-    gemtv(alpha, a, x, beta, y);
-    assert(t == y);
-}
-
-unittest
-{
-    auto slice = sparse!double(5, 3);
-    slice[] =
-        [[0.0,  6.0,  6.0],
-         [2.0,  0.0,  0.0],
-         [3.0, 30.0, 30.0],
-         [0.0,  8.0,  8.0],
-         [0.0,  0.0,  0.0]];
-    auto alpha = 3.0;
-    auto a = slice.compress;
-    auto x =  [ 17.0, 19, 31, 3, 5];
+    auto x =  [ 17.0, 19, 31, 3, 5].sliced;
     auto beta = 2.0;
     auto y = [1.0, 2, 3].sliced;
-    auto t = [131.0, 1056.0, 1056.0];
+    auto t = [131.0, 1056.0, 1056.0].sliced;
     t[] *= alpha;
-    foreach (i, ref e; t)
-        e += y[i] * beta;
+    import mir.glas.l1: axpy;
+    axpy(beta, y, t);
     gemtv(alpha, a, x, beta, y);
     assert(t == y);
 }
@@ -221,25 +168,17 @@ Returns:
 void gemv(
     CR,
     CL,
-    M1 : Slice!(2, V1), V1,
-    V2 : CompressedArray!(T2, I2),
-    T2, I2, V3)
-(in CR alpha, M1 a, V2 x, in CL beta, V3 y)
-    if (isDynamicArray!V3 || is(V3 : Slice!(1, V3R), V3R))
+    SliceKind kind1, Iterator1,
+    T2, I2,
+    SliceKind kind3, Iterator3,
+    )
+(in CR alpha, Slice!(kind1, [2], Iterator1) a, CompressedArray!(T2, I2) x, in CL beta, Slice!(kind3, [1], Iterator3) y)
 in
 {
     assert(a.length == y.length);
 }
 body
 {
-    static if (isSimpleSlice!V3)
-    {
-        if (y.stride == 1)
-        {
-            gemv(alpha, a, x, beta, y.toDense);
-            return;
-        }
-    }
     if (beta)
     {
         foreach (ref e; y)
@@ -270,12 +209,13 @@ unittest
          [ 6.0, 0.0, 30.0, 8.0, 0.0]];
     auto alpha = 3.0;
     auto a = slice.compress;
-    auto x =  [ 17.0, 19, 31, 3, 5];
+    auto x =  [ 17.0, 19, 31, 3, 5].sliced;
     auto beta = 2.0;
-    auto y = [1.0, 2, 3];
-    auto t = [131.0, 1056.0, 1056.0];
+    auto y = [1.0, 2, 3].sliced;
+    auto t = [131.0, 1056.0, 1056.0].sliced;
     t[] *= alpha;
-    t[] += y[] * beta;
+    import mir.glas.l1: axpy;
+    axpy(beta, y, t);
     gemv(alpha, a, x, beta, y);
     assert(t == y);
 }
@@ -290,8 +230,8 @@ Params:
 Returns:
     `y[available indexes] <op>= (alpha * a × x)[available indexes]`.
 +/
-void selectiveGemv(string op = "", T, V3 : CompressedArray!(T3, I3), T3, I3)
-(Slice!(2, T*) a, Slice!(1, T*) x, V3 y)
+void selectiveGemv(string op = "", SliceKind kind1, SliceKind kind2, T, T3, I3)
+(Slice!(kind1, [2], T*) a, Slice!(kind2, [1], T*) x, CompressedArray!(T3, I3) y)
 in
 {
     assert(a.length!1 == x.length);
@@ -300,7 +240,7 @@ in
 }
 body
 {
-    import mir.ndslice.iteration: transposed;
+    import mir.ndslice.dynamic: transposed;
 
     foreach (i, j; y.indexes)
     {

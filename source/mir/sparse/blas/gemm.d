@@ -1,12 +1,14 @@
-/**
-License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
-
-Authors: Ilya Yaroshenko
-*/
+/++
+License:   $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
+Copyright: Copyright © 2016-, Ilya Yaroshenko
+Authors:   Ilya Yaroshenko
++/
 module mir.sparse.blas.gemm;
 
 import std.traits;
 import mir.ndslice.slice;
+import mir.ndslice.iterator;
+import mir.ndslice.allocation: slice;
 import mir.sparse;
 
 /++
@@ -24,12 +26,13 @@ Returns:
 void gemm(
     CR,
     CL,
-    M1 : Slice!(1, V1),
-        V1 : CompressedMap!(T1, I1, J1),
-            T1, I1, J1,
-    M2 : Slice!(2, V2R), V2R,
-    M3 : Slice!(2, V3R), V3R)
-(in CR alpha, M1 a, M2 b, in CL beta, M3 c)
+    SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
+(
+    in CR alpha,
+    Slice!(kind1, [1], FieldIterator!(CompressedField!(T1, I1, J1))) a,
+    Slice!(kind2, [2], Iterator2) b,
+    in CL beta,
+    Slice!(kind3, [2], Iterator3)  c)
 in
 {
     assert(a.length!0 == c.length!0);
@@ -37,14 +40,14 @@ in
 }
 body
 {
-    import mir.ndslice.iteration: transposed;
-    b = b.transposed;
-    c = c.transposed;
-    foreach (x; b)
+    import mir.ndslice.topology: universal;
+    import mir.ndslice.dynamic: transposed;
+    auto ct = c.universal.transposed;
+    foreach (x; b.universal.transposed)
     {
         import mir.sparse.blas.gemv: gemv;
-        gemv(alpha, a, x, beta, c.front);
-        c.popFront;
+        gemv(alpha, a, x, beta, ct.front);
+        ct.popFront;
     }
 }
 
@@ -93,12 +96,13 @@ Returns:
 void gemtm(
     CR,
     CL,
-    M1 : Slice!(1, V1),
-        V1 : CompressedMap!(T1, I1, J1),
-            T1, I1, J1,
-    M2 : Slice!(2, V2R), V2R,
-    M3 : Slice!(2, V3R), V3R)
-(in CR alpha, M1 a, M2 b, in CL beta, M3 c)
+    SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
+(
+    in CR alpha,
+    Slice!(kind1, [1], FieldIterator!(CompressedField!(T1, I1, J1))) a,
+    Slice!(kind2, [2], Iterator2) b,
+    in CL beta,
+    Slice!(kind3, [2], Iterator3)  c)
 in
 {
     assert(a.length!0 == b.length!0);
@@ -106,14 +110,14 @@ in
 }
 body
 {
-    import mir.ndslice.iteration: transposed;
-    b = b.transposed;
-    c = c.transposed;
-    foreach (x; b)
+    import mir.ndslice.topology: universal;
+    import mir.ndslice.dynamic: transposed;
+    auto ct = c.universal.transposed;
+    foreach (x; b.universal.transposed)
     {
         import mir.sparse.blas.gemv: gemtv;
-        gemtv(alpha, a, x, beta, c.front);
-        c.popFront;
+        gemtv(alpha, a, x, beta, ct.front);
+        ct.popFront;
     }
 }
 
@@ -158,12 +162,8 @@ Params:
 Returns:
     `c[available indexes] <op>= (a × b)[available indexes]`.
 +/
-void selectiveGemm(string op = "", T,
-    M3 : Slice!(1, V3),
-        V3 : CompressedMap!(T3, I3, J3),
-            T3, I3, J3,
-    )
-(Slice!(2, T*) a, Slice!(2, T*) b, M3 c)
+void selectiveGemm(string op = "", SliceKind kind1, SliceKind kind2, SliceKind kind3, T, T3, I3, J3)
+(Slice!(kind1, [2], T*) a, Slice!(kind2, [2], T*) b, Slice!(kind3, [1], FieldIterator!(CompressedField!(T3, I3, J3))) c)
 in
 {
     assert(a.length!1 == b.length!0);
@@ -174,13 +174,14 @@ in
 }
 body
 {
-    import mir.ndslice.iteration: transposed;
+    import mir.ndslice.topology: universal;
+    import mir.ndslice.dynamic: transposed;
     import mir.sparse.blas.gemv: selectiveGemv;
 
-    b = b.transposed;
+    auto bt = b.universal.transposed;
     foreach (r; c)
     {
-        selectiveGemv!op(b, a.front, r);
+        selectiveGemv!op(bt, a.front, r);
         a.popFront;
     }
 }

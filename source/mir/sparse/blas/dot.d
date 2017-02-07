@@ -125,7 +125,7 @@ Unqual!(CommonType!(T1, ForeachType!V2)) dot(
     V1 : CompressedArray!(T1, I1),
     T1, I1, V2)
 (V1 x, V2 y)
-    if (isDynamicArray!V2 || is(V2 : Slice!(1, V2R), V2R))
+    if (isDynamicArray!V2 || isSlice!V2 == [1])
 {
     return dot!(typeof(return))(x, y);
 }
@@ -136,7 +136,7 @@ D dot(
     V1 : CompressedArray!(T1, I1),
     T1, I1, V2)
 (V1 x, V2 y)
-    if (isDynamicArray!V2 || is(V2 : Slice!(1, V2R), V2R))
+    if (isDynamicArray!V2 || isSlice!V2 == [1])
 in
 {
     if (x.indexes.length)
@@ -177,5 +177,5 @@ unittest
     auto r = 0 + 3 * 3 + 4 * 5 + 9 * 9 + 13 * 10;
     assert(dot(x, y) == r);
     assert(dot(x, y.sliced) == r);
-    assert(dot(x, y.sliced!(No.replaceArrayWithPointer)) == r);
+    assert(dot(x, y.slicedField) == r);
 }

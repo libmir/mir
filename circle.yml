@@ -1,7 +1,7 @@
 machine:
   environment:
-    DMD: 2.072.0 # for rdmd
-    LDC: 1.1.0-beta5
+    DMD: 2.073.0 # for rdmd
+    LDC: 1.1.0
     DUB: 1.1.0
     PATH: "${HOME}/dmd2/linux/bin64:${HOME}/ldc2-$LDC-linux-x86_64/bin:${PATH}"
     LD_LIBRARY_PATH: "${HOME}/dmd2/linux/lib64:${HOME}/ldc2-$LDC-linux-x86_64/lib:${LD_LIBRARY_PATH}"
@@ -30,13 +30,16 @@ test:
     - git clone https://github.com/libmir/mir-math
     - git clone https://github.com/libmir/mir-random
     - git clone https://github.com/libmir/mir-internal
+    - git clone https://github.com/libmir/mir-algorithm
     - make -f doc/Makefile html
-    - dub build --compiler=ldmd2 --single examples/lda_hoffman_sparse.d
     - dub fetch imageformats --version=6.1.0 && dub build --compiler=ldmd2 imageformats
-    - dub build --compiler=ldmd2 --single examples/median_filter.d
+    - dub build --compiler=ldmd2 --single examples/lda_hoffman_sparse.d
+    - dub build --compiler=dmd --single examples/median_filter.d
     - dub build --compiler=ldmd2 --single examples/means_of_columns.d
     - dub build --compiler=ldmd2 --single benchmarks/ndslice/binarization.d
-    - dub build --compiler=ldmd2 --single benchmarks/ndslice/convolution.d
+    - dub build --compiler=dmd --single benchmarks/ndslice/convolution.d
+    - dub build --compiler=ldmd2 --single benchmarks/ndslice/dot_product.d
+    - dub build --compiler=ldmd2 --single benchmarks/ndslice/euclidean_distance.d
 deployment:
   aws:
     branch: master

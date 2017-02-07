@@ -4,7 +4,7 @@ os:
  - osx
 language: d
 d:
- - ldc-1.1.0-beta5
+ - ldc-1.1.0
  - dmd
 env:
  - ARCH="x86_64"
@@ -20,7 +20,7 @@ script:
  - dub test --arch "$ARCH" --build=unittest-cov
  - dub build --single --arch "$ARCH" examples/lda_hoffman_sparse.d
  - dub fetch imageformats --version 6.1.0 && dub build --arch "$ARCH" imageformats
- - dub build --single --arch "$ARCH" examples/median_filter.d
+ # - dub build --single --arch "$ARCH" examples/median_filter.d
  - dub build --single --arch "$ARCH" examples/means_of_columns.d
 after_success:
  - bash <(curl -s https://codecov.io/bash)

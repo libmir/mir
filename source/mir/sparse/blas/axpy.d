@@ -24,7 +24,7 @@ void axpy(
     V1 : CompressedArray!(T1, I1),
     T1, I1, V2)
 (in CR alpha, V1 x, V2 y)
-    if (isDynamicArray!V2 || is(V2 : Slice!(1, V2R), V2R))
+    if (isDynamicArray!V2 || isSlice!V2 == [1])
 in
 {
     if (x.indexes.length)
@@ -71,6 +71,6 @@ unittest
     import std.typecons: No;
     auto x = CompressedArray!(double, uint)([1.0, 3, 4, 9, 13], [0, 3, 5, 9, 10]);
     auto y = [0.0, 1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-    axpy(2.0, x, y.sliced!(No.replaceArrayWithPointer));
+    axpy(2.0, x, y.slicedField);
     assert(y == [2.0, 1.0, 2, 9, 4, 13, 6, 7, 8, 27, 36, 11, 12]);
 }

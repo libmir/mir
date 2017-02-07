@@ -28,23 +28,23 @@
 * faster than the numpy version.
 */
 
-import std.algorithm;
 import std.datetime;
 import std.conv : to;
 import std.stdio;
 import mir.ndslice;
 
 enum testCount = 10_000;
-__gshared Slice!(1, double*) means;
-Slice!(2, int*) sl;
+__gshared Slice!(Contiguous, [1], double*) means;
+Slice!(Contiguous, [2], int*) sl;
 
 void main() {
-    sl = iotaSlice(100, 1000).mapSlice!(to!int).slice;
+    sl = iota!int(100, 1000).slice;
     auto r = benchmark!({
     	means = sl
+        .universal
         .transposed
         .pack!1
-        .ndMap!(col => ndReduce!"a + b"(0L, col) / double(col.length))
+        .map!(col => reduce!"a + b"(0L, col) / double(col.length))
         .slice;
         })(testCount)[0].to!Duration / testCount;
     r.writeln;
