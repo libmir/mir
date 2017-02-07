@@ -18,6 +18,7 @@ MIR_DIR=source
 RANDOM_DIR=mir-random/source
 INTERNAL_DIR=mir-internal/source
 MATH_DIR=mir-math/source
+ALOGORITHM_DIR=mir-algorithm/source
 DLANGORG_DIR=$(DOC_SOURCE_DIR)/dlang.org
 ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 
@@ -29,19 +30,17 @@ ARTWORK_DIR=$(DOC_SOURCE_DIR)/artwork
 # xy/zz is in variable PACKAGE_xy_zz. This allows automation in iterating
 # packages and their modules.
 MIR_PACKAGES = mir $(addprefix mir/,\
-			   glas combinatorics model/lda ndslice \
+			   glas combinatorics model/lda \
 			   sparse sparse/blas utility)
 
 PACKAGE_mir =
 PACKAGE_mir_glas = package l1 l2
 PACKAGE_mir_combinatorics = package
 PACKAGE_mir_model_lda = hoffman
-PACKAGE_mir_ndslice = package algorithm iteration selection slice
 PACKAGE_mir_sparse = package
 PACKAGE_mir_sparse_blas = package axpy dot gemm gemv
-PACKAGE_mir_utility = linearfun
 
-MOD_EXCLUDES=$(addprefix --ex=, mir.ndslice.internal mir.internal. mir.glas.)
+MOD_EXCLUDES=$(addprefix --ex=, mir.glas.)
 
 ###########################################################
 # Setup macros + generate dynamic info needed
@@ -87,7 +86,7 @@ ADDSOURCE=$(if $(subst index.d,,$1),$(MIR_DIR)/$1,$1)
 # ../web/phobos/std_conv.html : std/conv.d $(STDDOC) ; ...
 $(foreach p,$(SRC_DOCUMENTABLES),$(eval \
 $(DOC_OUTPUT_DIR)/$(call D2HTML,$p) : $(call ADDSOURCE,$p) $(STDDOC) ;\
-  $(DDOC) $(STDDOC) -I$(MIR_DIR) -I$(RANDOM_DIR) -I$(INTERNAL_DIR) -I$(MATH_DIR) -Df$$@ $$<))
+  $(DDOC) $(STDDOC) -I$(MIR_DIR) -I$(RANDOM_DIR) -I$(INTERNAL_DIR) -I$(MATH_DIR) -I$(ALOGORITHM_DIR) -Df$$@ $$<))
 
 ###########################################################
 # Setup all other resources needed by dlang.org
