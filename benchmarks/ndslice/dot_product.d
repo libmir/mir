@@ -28,14 +28,8 @@ import std.algorithm: std_reduce = reduce;
 
 import mir.ndslice;
 import mir.utility;
-import mir.ndslice.internal : fastmath;
 
 alias F = float;
-
-static @fastmath F fmuladd(F a, F b, F c) @safe pure nothrow @nogc
-{
-    return a + b * c;
-}
 
 // __gshared is used to prevent specialized optimization for input data
 __gshared F result;
@@ -52,22 +46,22 @@ void main()
     asl = a.sliced;
     bsl = b.sliced;
 
-    Duration[5] bestBench = Duration.max;
+    Duration[4] bestBench = Duration.max;
 
     foreach(_; 0 .. 10)
     {
         auto bench = benchmark!(
-            { result = reduce!fmuladd(F(0), asl, bsl); },
+            { result = reduce!"a + b * c"(F(0), asl, bsl); },
             { result = dotProduct(a, b); },
-            { result = dotProduct(a.sliced, b.sliced); },
+            { result = dotProduct(asl, bsl); },
             { result = std_reduce!"a + b[0] * b[1]"(F(0), std_zip(a, b)); },
         )(2000);
         foreach(i, ref b; bestBench)
             b = min(bench[i].to!Duration, b);
     }
 
-    writefln("%26s = %s", "Mir: reduce", bestBench[1]);
-    writefln("%26s = %s", "numeric.dotProduct, arrays", bestBench[2]);
-    writefln("%26s = %s", "numeric.dotProduct, slices", bestBench[3]);
-    writefln("%26s = %s", "zip & reduce", bestBench[4]);
+    writefln("%26s = %s", "Mir: reduce", bestBench[0]);
+    writefln("%26s = %s", "numeric.dotProduct, arrays", bestBench[1]);
+    writefln("%26s = %s", "numeric.dotProduct, slices", bestBench[2]);
+    writefln("%26s = %s", "zip & reduce", bestBench[3]);
 }
