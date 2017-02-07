@@ -11,7 +11,7 @@
 [![Benchmarks](http://blog.mir.dlang.io/images/bench_csingle.svg)](http://blog.mir.dlang.io/glas/benchmark/openblas/2016/09/23/glas-gemm-benchmark.html)
 
 #### ❗️ Mir GLAS was moved to https://github.com/libmir/mir-glas.
-#### ❗❗❗️ ndslice was reworked and moved to https://github.com/libmir/mir-algorithm.
+#### ❗❗❗️ ndslice was reworked and moved to https://github.com/libmir/mir-algorithm. The last Mir version with old ndslice is `v0.22.1`.
 
 Mir
 ======
