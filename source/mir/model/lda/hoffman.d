@@ -22,7 +22,8 @@ struct LdaHoffman(F)
     if (isFloatingPoint!F)
 {
     import std.parallelism;
-    import std.range: iota;
+    import mir.ndslice.iterator: FieldIterator;
+    import mir.ndslice.topology: iota;
 
     import mir.ndslice.slice;
     import mir.ndslice.allocation: slice;
@@ -136,7 +137,7 @@ struct LdaHoffman(F)
         n = mini-batch, a collection of compressed documents.
         maxIterations = maximal number of iterations for single document in a batch for E-step.
     +/
-    size_t putBatch(S : Slice!(1, R), R : CompressedMap!(C, I, J), C, I, J)(S n, size_t maxIterations)
+    size_t putBatch(SliceKind kind, C, I, J)(Slice!(kind, [1], FieldIterator!(CompressedField!(C, I, J))) n, size_t maxIterations)
     {
         return putBatchImpl(n.recompress!F, maxIterations);
     }

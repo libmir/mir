@@ -30,7 +30,7 @@ import mir.ndslice.internal : fastmath;
 
 alias F = double;
 
-@fastmath void convLoop(Slice!(2, F*) input, Slice!(2, F*) output, Slice!(2, F*) kernel)
+@fastmath void convLoop(Slice!(Contiguous, [2], F*) input, Slice!(Contiguous, [2], F*) output, Slice!(Contiguous, [2], F*) kernel)
 {
     auto kr = kernel.length!0; // kernel row size
     auto kc = kernel.length!1; // kernel column size
@@ -38,7 +38,7 @@ alias F = double;
         foreach (c; 0 .. output.length!1)
         {
             // take window to input at given pixel coordinate
-            Slice!(2, F*) window = input[r .. r + kr, c .. c + kc];
+            Slice!(Canonical, [2], F*) window = input[r .. r + kr, c .. c + kc];
 
             // calculate result for current pixel
             F v = 0.0f;
@@ -54,16 +54,16 @@ static @fastmath F kapply(F v, F e, F k) @safe @nogc nothrow pure
     return v + (e * k);
 }
 
-void convAlgorithm(Slice!(2, F*) input, Slice!(2, F*) output, Slice!(2, F*) kernel)
+void convAlgorithm(Slice!(Contiguous, [2], F*) input, Slice!(Contiguous, [2], F*) output, Slice!(Contiguous, [2], F*) kernel)
 {
-    import mir.ndslice.algorithm : ndReduce, Yes;
-    import mir.ndslice.selection : windows, mapSlice;
+    import mir.ndslice.algorithm : reduce;
+    import mir.ndslice.topology : windows, map;
 
     auto mapping = input
         // look at each pixel through kernel-sized window
         .windows(kernel.shape)
         // map each window to resulting pixel using convolution function
-        .mapSlice!((window) { return ndReduce!(kapply, Yes.vectorized)(0.0f, window, kernel); });
+        .map!((window) { return reduce!kapply(0.0f, window, kernel); });
 
     // assign mapped results to the output buffer.
     output[] = mapping[];
@@ -72,15 +72,15 @@ void convAlgorithm(Slice!(2, F*) input, Slice!(2, F*) output, Slice!(2, F*) kern
 // __gshared is used to prevent specialized optimization for input data
 __gshared n = 256; // image size
 __gshared m = 5; // kernel size
-__gshared Slice!(2, F*) a;
-__gshared Slice!(2, F*) b;
-__gshared Slice!(2, F*) k;
+__gshared Slice!(Contiguous, [2], F*) a;
+__gshared Slice!(Contiguous, [2], F*) b;
+__gshared Slice!(Contiguous, [2], F*) k;
 
 void main()
 {
-    a = iotaSlice(n, n).as!F.slice;
+    a = iota(n, n).as!F.slice;
     b = a.slice;
-    k = iotaSlice(m, m).mapSlice!(v => F(1) / F(m * m)).slice;
+    k = iota(m, m).map!(v => F(1) / F(m * m)).slice;
 
     Duration[2] bestBench = Duration.max;
 

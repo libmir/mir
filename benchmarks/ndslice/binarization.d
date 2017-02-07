@@ -7,7 +7,7 @@
 }
 +/
 /+
-Benchmark demonstrates performance superiority of using mir.ndslice.slice.assumeSameStructure over
+Benchmark demonstrates performance superiority of using mir.ndslice.topology.zip over
 std.range.lockstep, for multidimensional processing with ndslice package.
 
 $ ldc2 --version
@@ -30,34 +30,34 @@ import mir.ndslice.internal : fastmath;
 
 alias F = double;
 
-void binarizationLockstep(Slice!(2, F*) input, F threshold, Slice!(2, F*) output)
+void binarizationLockstep(Slice!(Contiguous, [2], F*) input, F threshold, Slice!(Contiguous, [2], F*) output)
 {
     import std.range : lockstep;
-    foreach(i, ref o; lockstep(input.byElement, output.byElement))
+    foreach(i, ref o; lockstep(input.flattened, output.flattened))
     {
         o = (i > threshold) ? F(1) : F(0);
     }
 }
 
-void binarizationAssumeSameStructure(Slice!(2, F*) input, F threshold, Slice!(2, F*) output)
+void binarizationAssumeSameStructure(Slice!(Contiguous, [2], F*) input, F threshold, Slice!(Contiguous, [2], F*) output)
 {
-    import mir.ndslice.algorithm : ndEach;
-    import mir.ndslice.slice : assumeSameStructure;
+    import mir.ndslice.algorithm : each;
+    import mir.ndslice.topology : zip;
 
-    assumeSameStructure!("input", "output")(input, output).ndEach!( (p) {
-        p.output = (p.input > threshold) ? F(1) : F(0);
+    zip(input, output).each!( (p) {
+        p.b = (p.a > threshold) ? F(1) : F(0);
     });
 }
 
 // __gshared is used to prevent specialized optimization for input data
 __gshared n = 256; // image size
-__gshared Slice!(2, F*) a;
-__gshared Slice!(2, F*) b;
+__gshared Slice!(Contiguous, [2], F*) a;
+__gshared Slice!(Contiguous, [2], F*) b;
 __gshared F t; // threshold
 
 void main()
 {
-    a = iotaSlice(n, n).as!F.slice;
+    a = iota(n, n).as!F.slice;
     b = a.slice;
     t = n * n / 2;
 
@@ -74,5 +74,5 @@ void main()
     }
 
     writefln("%26s = %s", "lockstep", bestBench[0]);
-    writefln("%26s = %s", "assumeSameStructure", bestBench[1]);
+    writefln("%26s = %s", "zip", bestBench[1]);
 }

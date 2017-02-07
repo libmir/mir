@@ -40,8 +40,8 @@ Returns:
         Dense data layout is guaranteed.
 +/
 
-Slice!(3, C*) movingWindowByChannel(alias filter, C)
-(Slice!(3, C*) image, size_t nr, size_t nc)
+Slice!(Contiguous, [3], C*) movingWindowByChannel(alias filter, C)
+(Slice!(Universal, [3], C*) image, size_t nr, size_t nc)
 {
         // 0. 3D
         // The last dimension represents the color channel.
@@ -62,7 +62,7 @@ Slice!(3, C*) movingWindowByChannel(alias filter, C)
         // Packs the last two dimensions.
         .pack!2
         // 2D to pixel lazy conversion.
-        .mapSlice!filter
+        .map!filter
         // Creates the new image. The only memory allocation in this function.
         .slice;
 }
@@ -74,16 +74,15 @@ Params:
 Returns:
     median value over the range `r`
 +/
-T median(Range, T)(Slice!(2, Range) sl, T[] buf)
+T median(SliceKind kind, Iterator, T)(Slice!(kind, [2], Iterator) sl, T[] buf)
 {
     import std.algorithm.sorting : topN;
-    import mir.ndslice.algorithm : ndFold;
     // copy sl to the buffer
-    auto retPtr = sl.ndFold!(
+    auto retPtr = reduce!(
         (ptr, elem) {
             *ptr = elem;
             return ptr + 1;
-        } )(buf.ptr);
+        } )(buf.ptr, sl);
     auto n = retPtr - buf.ptr;
     buf[0 .. n].topN(n / 2);
     return buf[n / 2];
@@ -128,6 +127,7 @@ void main(string[] args)
 
         auto ret = image.pixels
             .sliced(cast(size_t)image.h, cast(size_t)image.w, cast(size_t)image.c)
+            .universal
             .movingWindowByChannel
                 !(window => median(window, buf))
                  (nr, nc);
