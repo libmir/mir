@@ -6,6 +6,10 @@ References:
     Hoffman, Matthew D., Blei, David M. and Bach, Francis R..
     "Online Learning for Latent Dirichlet Allocation.."
     Paper presented at the meeting of the NIPS, 2010.
+
+License:   $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
+Copyright: Copyright © 2016-, Ilya Yaroshenko
+Authors:   Ilya Yaroshenko
 +/
 module mir.model.lda.hoffman;
 
@@ -21,12 +25,13 @@ struct LdaHoffman(F)
     import std.range: iota;
 
     import mir.ndslice.slice;
+    import mir.ndslice.allocation: slice;
 
     import mir.math.internal;
     import mir.sparse;
 
-    private alias Vector = Slice!(1, F*);
-    private alias Matrix = Slice!(2, F*);
+    private alias Vector = Slice!(Contiguous, [1], F*);
+    private alias Matrix = Slice!(Contiguous, [2], F*);
 
     private size_t D;
     private F alpha;
@@ -93,7 +98,7 @@ struct LdaHoffman(F)
     /++
     Posterior over the topics
     +/
-    Slice!(2, F*) beta() @property
+    Slice!(Contiguous, [2], F*) beta() @property
     {
         return _beta;
     }
@@ -101,7 +106,7 @@ struct LdaHoffman(F)
     /++
     Parameterized posterior over the topics.
     +/
-    Slice!(2, F*) lambda() @property
+    Slice!(Contiguous, [2], F*) lambda() @property
     {
         return _lambda;
     }
@@ -139,9 +144,10 @@ struct LdaHoffman(F)
     private size_t putBatchImpl(CompressedTensor!(2, F) n, size_t maxIterations)
     {
         import std.math: isFinite;
-         import mir.sparse.blas.dot;
-         import mir.sparse.blas.gemv;
-        import mir.ndslice.iteration: transposed;
+        import mir.sparse.blas.dot;
+        import mir.sparse.blas.gemv;
+        import mir.ndslice.dynamic: transposed;
+        import mir.ndslice.topology: universal;
         import mir.internal.utility;
 
         immutable S = n.length;
@@ -152,21 +158,21 @@ struct LdaHoffman(F)
         auto nsave = saveN(n);
 
         immutable rho = pow!F(F(tau), -kappa);
-        auto thetat = theta.transposed;
+        auto thetat = theta.universal.transposed;
         auto _gamma = slice!F(tp.size + 1, K);
         shared size_t ret;
         // E step
         foreach (d; tp.parallel(S.iota))
         {
             auto gamma = _gamma[tp.workerIndex];
-            gamma.toDense[] = 1;
+            gamma[] = 1;
             auto nd = n[d];
             auto thetad = theta[d];
             for (size_t c; ;c++)
             {
                 unparameterize(gamma, thetad);
 
-                selectiveGemv!"/"(_beta.transposed, thetad, nd);
+                selectiveGemv!"/"(_beta.universal.transposed, thetad, nd);
                 F sum = 0;
                 {
                     auto beta = _beta;
@@ -196,10 +202,10 @@ struct LdaHoffman(F)
         foreach (k; tp.parallel(K.iota))
         {
             auto lambdaTemp = _lambdaTemp[tp.workerIndex];
-            gemtv!F(F(1), n, thetat[k], F(0), lambdaTemp);
-            auto l = _lambda[k].toDense;
-            l[] = (1 - rho) * l[] +
-                rho * (eta + (F(D) / F(S)) * _beta[k].toDense[] * lambdaTemp[]);
+            gemtv!F(F(1), n, thetat[k], F(0), lambdaTemp.sliced);
+            import mir.ndslice.algorithm: each;
+            each!((ref l, bk, lt) {l = (1 - rho) * l +
+                rho * (eta + (F(D) / F(S)) * bk * lt);})(_lambda[k], _beta[k],lambdaTemp.sliced);
             unparameterize(_lambda[k], _beta[k]);
         }
         return ret;
@@ -207,23 +213,25 @@ struct LdaHoffman(F)
 
     private auto saveN(CompressedTensor!(2, F) n)
     {
+        import mir.ndslice.topology: universal;
         return
-            CompressedMap!(F)(
-                n.ptr.range.compressedLength,
-                n.ptr.range.values.dup,
-                n.ptr.range.indexes,
-                n.ptr.range.pointers)
-            .sliced(n.length);
+            CompressedField!(F)(
+                n.iterator._field.compressedLength,
+                n.iterator._field.values.dup,
+                n.iterator._field.indexes,
+                n.iterator._field.pointers)
+            .slicedField(n.length).universal;
     }
 
     private static void unparameterize(Vector param, Vector posterior)
     {
         assert(param.structure == posterior.structure);
+        import mir.ndslice.topology: zip;
         import mir.math.func.expdigamma;
         import mir.math.sum: sum;
         immutable c = 1 / expDigamma(sum(param));
-        foreach (e; assumeSameStructure!("param", "posterior")(param, posterior))
-            e.posterior = c * expDigamma(e.param);
+        foreach (e; zip(param, posterior))
+            e.b = c * expDigamma(e.a);
     }
 }
 

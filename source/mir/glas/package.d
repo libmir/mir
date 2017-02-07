@@ -53,9 +53,9 @@ $(H2 Optimization notes)
 
 GLAS requires recent $(LINK2 https://github.com/ldc-developers/ldc, LDC) >= 1.1.0-beta2.
 
-License: $(LINK2 http://boost.org/LICENSE_1_0.txt, Boost License 1.0).
-
-Authors: Ilya Yaroshenko
+License:   $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
+Copyright: Copyright © 2016-, Ilya Yaroshenko
+Authors:   Ilya Yaroshenko
 
 Macros:
 SUBMODULE = $(MREF_ALTTEXT $1, mir, glas, $1)
