@@ -32,6 +32,6 @@
         "mir-random": "~>0.1.2",
         "mir-math": "~>0.0.1",
         "mir-internal": "~>0.0.2",
-        "mir-algorithm": {"path": "../mir-algorithm"}
+        "mir-algorithm": "~>0.0.19"}
     }
 }
