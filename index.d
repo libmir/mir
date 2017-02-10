@@ -13,10 +13,6 @@ $(BOOKTABLE ,
     )
     $(LEADINGROW Tensors)
     $(TR
-        $(TDNW $(LINK2 mir_ndslice_algorithm.html, mir.ndslice.algorithms))
-        $(TD Generic algorithms for tensors)
-    )
-    $(TR
         $(TDNW $(LINK2 mir_sparse.html, mir.sparse))
         $(TD Sparse Tensors)
     )
