@@ -1,3 +1,8 @@
+
+### ❗❗❗️ ndslice was reworked and moved to [Mir-Algorithm](https://github.com/libmir/mir-algorithm).
+The last Mir version with old ndslice is `v0.22.1`.
+#### ❗️ Mir GLAS was moved to https://github.com/libmir/mir-glas.
+
 [![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
 [![License](https://img.shields.io/dub/l/mir.svg)](http://code.dlang.org/packages/mir)
 [![Bountysource](https://www.bountysource.com/badge/team?team_id=145399&style=bounties_received)](https://www.bountysource.com/teams/libmir)
@@ -10,8 +15,6 @@
 
 [![Benchmarks](http://blog.mir.dlang.io/images/bench_csingle.svg)](http://blog.mir.dlang.io/glas/benchmark/openblas/2016/09/23/glas-gemm-benchmark.html)
 
-#### ❗️ Mir GLAS was moved to https://github.com/libmir/mir-glas.
-#### ❗❗❗️ ndslice was reworked and moved to https://github.com/libmir/mir-algorithm. The last Mir version with old ndslice is `v0.22.1`.
 
 Mir
 ======
