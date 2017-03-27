@@ -1,5 +1,5 @@
 
-### ❗ ndslice was reworked and moved to [Mir-Algorithm](https://github.com/libmir/mir-algorithm).
+#### ❗ ndslice was reworked and moved to [Mir-Algorithm](https://github.com/libmir/mir-algorithm).
 The last Mir version with old ndslice is `v0.22.1`.
 #### ❗️ Mir GLAS was moved to https://github.com/libmir/mir-glas.
 
