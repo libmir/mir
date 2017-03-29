@@ -28,7 +28,7 @@ struct LdaHoffman(F)
     import mir.ndslice.slice;
     import mir.ndslice.allocation: slice;
 
-    import mir.math.internal;
+    import mir.math.common;
     import mir.sparse;
 
     private alias Vector = Slice!(Contiguous, [1], F*);

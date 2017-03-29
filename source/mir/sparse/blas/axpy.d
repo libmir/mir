@@ -33,14 +33,6 @@ in
 body
 {
     import mir.internal.utility;
-    static if (isSimpleSlice!V2)
-    {
-        if (y.stride == 1)
-        {
-            axpy(alpha, x, y.toDense);
-            return;
-        }
-    }
 
     foreach (size_t i; 0 .. x.indexes.length)
     {

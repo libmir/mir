@@ -29,9 +29,8 @@ module mir.glas.l2;
 
 import std.traits;
 import std.meta;
-import std.typecons: Flag, Yes, No;
 
-import mir.math.internal;
+import mir.math.common;
 import mir.internal.utility;
 import mir.ndslice.slice;
 

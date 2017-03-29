@@ -27,9 +27,7 @@ test:
     - ldmd2 -O -release -run ./checkwhitespace.d $(find source -name '*.d')
     - dub test --compiler=ldmd2
     - dub test --compiler=ldmd2 --build=unittest-release
-    - git clone https://github.com/libmir/mir-math
     - git clone https://github.com/libmir/mir-random
-    - git clone https://github.com/libmir/mir-internal
     - git clone https://github.com/libmir/mir-algorithm
     - make -f doc/Makefile html
     - dub fetch imageformats --version=6.1.0 && dub build --compiler=ldmd2 imageformats

@@ -146,13 +146,6 @@ body
 {
 
     import mir.internal.utility;
-    static if (isSimpleSlice!V2)
-    {
-        if (y.stride == 1)
-        {
-            return dot(x, y.toDense);
-        }
-    }
 
     alias T2 = ForeachType!V2;
 

@@ -46,3 +46,5 @@ checkwhitespace.d
 benchmarks/glas/gemm_report
 
 *.dylib
+
+mir-test-unittest
