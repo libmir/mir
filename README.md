@@ -51,7 +51,7 @@ Contents
 Compatibility
 -------------
 ##### LDC (LLVM D Compiler)
- - >=`1.1.0`
+ - >=`1.2.0-beta2`
 
 ##### DMD
  - >=2.072
