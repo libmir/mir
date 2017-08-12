@@ -102,10 +102,11 @@ _=
 
 MIR_PROJECTS=
 $(SUBMENU_MANUAL
-    $(SUBMENU_LINK http://docs.mir.dlang.io, Mir)
-    $(SUBMENU_LINK http://docs.cpuid.dlang.io, CPUID)
-    $(SUBMENU_LINK http://docs.glas.dlang.io, GLAS)
+    $(SUBMENU_LINK http://docs.algorithm.dlang.io, Mir Algorithm)
     $(SUBMENU_LINK http://docs.random.dlang.io, Random Numbers Generators)
+    $(SUBMENU_LINK http://docs.cpuid.dlang.io, CPUID)
+    $(SUBMENU_LINK http://docs.mir.dlang.io, Mir)
+    $(SUBMENU_LINK http://docs.glas.dlang.io, GLAS)
 )
 _=
 
