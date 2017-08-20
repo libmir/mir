@@ -4,13 +4,13 @@ os:
  - osx
 language: d
 d:
- - ldc-1.2.0-beta1
+ - ldc
  - dmd
 env:
  - ARCH="x86_64"
 matrix:
   include:
-    - {os: linux, d: ldc-1.2.0-beta1, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
+    - {os: linux, d: ldc, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
     - {os: linux, d: dmd, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
   allow_failures:
     - {d: dmd, env: ARCH="x86"}
