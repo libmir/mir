@@ -61,6 +61,23 @@ Compatibility
 | 64-bit | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | [![Build status](https://ci.appveyor.com/api/projects/status/f2n4dih5s4c32q7u/branch/master?svg=true)](https://ci.appveyor.com/project/9il/mir/branch/master) |
 | 32-bit | [![Build Status](https://travis-ci.org/libmir/mir.svg?branch=master)](https://travis-ci.org/libmir/mir) | N/A | N/A |
 
+Example
+--------
+
+```d
+/+dub.sdl:
+dependency "mir" version="~>1.1.1"
++/
+import std.stdio;
+import mir.combinatorics;
+void main(string[] args)
+{
+    writeln([1, 2].combinations);
+}
+```
+
+[![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/FIc6rd)
+
 Fast setup with the dub package manager
 ------------
 
