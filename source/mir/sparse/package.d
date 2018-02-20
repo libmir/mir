@@ -85,13 +85,25 @@ struct SparseField(T)
     T[size_t] table;
 
     ///
-    auto save() @property
+    auto lightConst()() const @trusted
+    {
+        return SparseField!(const T)(cast(const(T)[size_t])table);
+    }
+
+    ///
+    auto lightImmutable()() immutable @trusted
+    {
+        return SparseField!(immutable T)(cast(immutable(T)[size_t])table);
+    }
+
+    ///
+    auto save()() @property
     {
         return this;
     }
 
     ///
-    T opIndex(size_t index)
+    T opIndex()(size_t index)
     {
         static if (isScalarType!T)
             return table.get(index, cast(T)0);
@@ -100,7 +112,7 @@ struct SparseField(T)
     }
 
     ///
-    T opIndexAssign(T value, size_t index)
+    T opIndexAssign()(T value, size_t index)
     {
         static if (isScalarType!T)
         {
@@ -650,6 +662,20 @@ struct CompressedArray(T, I = uint)
 struct CompressedField(T, I = uint, J = size_t)
     if (is(I : size_t) && isUnsigned!I && is(J : size_t) && isUnsigned!J && I.sizeof <= J.sizeof)
 {
+    ///
+    auto lightConst()() const @trusted
+    {
+        return CompressedField!(const T, const I, const J)
+            (compressedLength, values, indexes, pointers);
+    }
+
+    ///
+    auto lightImmutable()() immutable @trusted
+    {
+        return CompressedField!(immutable T, immutable I, immutable J)
+            (compressedLength, values, indexes, pointers);
+    }
+
     /++
     +/
     size_t compressedLength;
