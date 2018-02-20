@@ -2,7 +2,7 @@ platform: x64
 environment:
  matrix:
   - DC: ldc
-    DVersion: 1.4.0
+    DVersion: 1.7.0
     arch: x64
 
 skip_tags: true
@@ -23,14 +23,14 @@ install:
           }
           $env:toolchain = "msvc";
           $version = $env:DVersion;
-          Invoke-WebRequest "https://github.com/ldc-developers/ldc/releases/download/v$($version)/ldc2-$($version)-win64-msvc.zip" -OutFile "c:\ldc.zip";
+          Invoke-WebRequest "http://downloads.dlang.org/releases/2.x/$($version)/dmd.$($version).windows.7z" -OutFile "c:\dmd.7z";
           echo "finished.";
           pushd c:\\;
           7z x ldc.zip > $null;
           popd;
         }
   - ps: SetUpDCompiler
-  - powershell -Command Invoke-WebRequest https://code.dlang.org/files/dub-1.0.0-windows-x86.zip -OutFile dub.zip
+  - powershell -Command Invoke-WebRequest https://code.dlang.org/files/dub-1.7.2-windows-x86.zip -OutFile dub.zip
   - 7z x dub.zip -odub > nul
   - set PATH=%CD%\%binpath%;%CD%\dub;%PATH%
   - dub --version
