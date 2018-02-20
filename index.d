@@ -30,11 +30,6 @@ $(BOOKTABLE ,
         $(TDNW $(LINK2 mir_sparse_blas.html, mir.sparse.blas))
         $(TD Sparse BLAS for CompressedTensor)
     )
-    $(LEADINGROW Other)
-    $(TR
-        $(TDNW $(LINK2 mir_combinatorics.html, mir.combinatorics))
-        $(TD Combinations, combinations with repeats, cartesian power, permutations)
-    )
 )
 
 Macros:
