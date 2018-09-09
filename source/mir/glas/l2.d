@@ -52,7 +52,6 @@ Params:
     xsl = `n ⨉ 1` vector
     beta = scalar. When  `beta`  is supplied as zero then the vector `ysl` need not be set on input.
     ysl = `m ⨉ 1` vector
-    conja = specifies if the matrix `asl` stores conjugated elements.
 
 Note:
     GLAS does not require transposition parameters.
