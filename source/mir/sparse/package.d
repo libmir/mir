@@ -490,7 +490,7 @@ CompressedTensor!(V, N, I, J)
         .sliced
         .sort!((a, b) => a.key < b.key);
     auto inv = iota(slice.shape[0 .. N - 1]);
-    auto count = inv.elementsCount;
+    auto count = inv.elementCount;
     auto map = CompressedField!(V, I, J)(
         slice.length!(N - 1),
         new V[data.length],
@@ -532,7 +532,7 @@ CompressedTensor!(V, N, I, J)
     auto vapp = appender!(V[]);
     auto iapp = appender!(I[]);
     auto psl = slice.pack!1;
-    auto count = psl.elementsCount;
+    auto count = psl.elementCount;
     auto pointers = new J[count + 1];
 
     pointers[0] = 0;
@@ -579,7 +579,7 @@ CompressedTensor!(V, N + 1, I, J)
     import mir.ndslice. topology: pack, flattened;
     auto vapp = appender!(V[]);
     auto iapp = appender!(I[]);
-    auto count = slice.elementsCount;
+    auto count = slice.elementCount;
     auto pointers = new J[count + 1];
 
     pointers[0] = 0;
