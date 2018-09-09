@@ -7,7 +7,7 @@
 }
 +/
 /+
-Benchmark demonstrates performance superiority of using mir.ndslice.algorithm over looped code, for
+Benchmark demonstrates performance superiority of using mir.algorithm.iteration over looped code, for
 multidimensional processing with ndslice package.
 
 $ ldc2 --version
@@ -20,17 +20,17 @@ LDC - the LLVM D compiler (918073):
 
 $ dub run --build=release-nobounds --compiler=ldmd2 --single convolution.d
 +/
-import std.datetime : benchmark, Duration;
+import std.datetime.stopwatch : benchmark, Duration;
 import std.stdio : writefln;
 import std.conv : to;
-import std.algorithm.comparison : min;
+import mir.utility : min;
 
 import mir.ndslice;
-import mir.ndslice.internal : fastmath;
+import mir.math.common : fastmath;
 
 alias F = double;
 
-@fastmath void convLoop(Slice!(Contiguous, [2], F*) input, Slice!(Contiguous, [2], F*) output, Slice!(Contiguous, [2], F*) kernel)
+@fastmath void convLoop(Slice!(F*, 2) input, Slice!(F*, 2) output, Slice!(F*, 2) kernel)
 {
     auto kr = kernel.length!0; // kernel row size
     auto kc = kernel.length!1; // kernel column size
@@ -38,7 +38,7 @@ alias F = double;
         foreach (c; 0 .. output.length!1)
         {
             // take window to input at given pixel coordinate
-            Slice!(Canonical, [2], F*) window = input[r .. r + kr, c .. c + kc];
+            Slice!(F*, 2, Canonical) window = input[r .. r + kr, c .. c + kc];
 
             // calculate result for current pixel
             F v = 0.0f;
@@ -54,9 +54,9 @@ static @fastmath F kapply(F v, F e, F k) @safe @nogc nothrow pure
     return v + (e * k);
 }
 
-void convAlgorithm(Slice!(Contiguous, [2], F*) input, Slice!(Contiguous, [2], F*) output, Slice!(Contiguous, [2], F*) kernel)
+void convAlgorithm(Slice!(F*, 2) input, Slice!(F*, 2) output, Slice!(F*, 2) kernel)
 {
-    import mir.ndslice.algorithm : reduce;
+    import mir.algorithm.iteration : reduce;
     import mir.ndslice.topology : windows, map;
 
     auto mapping = input
@@ -72,9 +72,9 @@ void convAlgorithm(Slice!(Contiguous, [2], F*) input, Slice!(Contiguous, [2], F*
 // __gshared is used to prevent specialized optimization for input data
 __gshared n = 256; // image size
 __gshared m = 5; // kernel size
-__gshared Slice!(Contiguous, [2], F*) a;
-__gshared Slice!(Contiguous, [2], F*) b;
-__gshared Slice!(Contiguous, [2], F*) k;
+__gshared Slice!(F*, 2) a;
+__gshared Slice!(F*, 2) b;
+__gshared Slice!(F*, 2) k;
 
 void main()
 {
@@ -95,5 +95,5 @@ void main()
     }
 
     writefln("%26s = %s", "loops", bestBench[0]);
-    writefln("%26s = %s", "mir.ndslice.algorithm", bestBench[1]);
+    writefln("%26s = %s", "mir.algorithm.iteration", bestBench[1]);
 }

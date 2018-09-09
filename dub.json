@@ -29,7 +29,7 @@
         }
     ],
     "dependencies": {
-        "mir-random": ">0.3.0 <1.0.0",
-        "mir-algorithm": ">0.8.0 <2.0.0"
+        "mir-random": ">=1.0.0 <2.0.0",
+        "mir-algorithm": ">=2.0.0 <2.5.0"
     }
 }

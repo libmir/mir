@@ -18,18 +18,16 @@ LDC - the LLVM D compiler (918073):
 $ dub run --build=release-nobounds --compiler=ldmd2 --single dot_product.d
 +/
 import std.numeric : euclideanDistance;
-import std.array;
-import std.typecons;
-import std.datetime;
+import std.datetime.stopwatch : benchmark, Duration;
 import std.stdio;
-import std.conv;
+import std.conv: to;
 import std.range: std_zip = zip;
 import std.algorithm: std_reduce = reduce;
-import std.math : sqrt;
 
+import mir.array.allocation;
 import mir.ndslice;
 import mir.utility;
-import mir.ndslice.internal : fastmath;
+import mir.math.common : sqrt, fastmath;
 
 alias F = double;
 
@@ -44,8 +42,8 @@ __gshared F result;
 __gshared n = 8000;
 __gshared F[] a;
 __gshared F[] b;
-__gshared Slice!(Contiguous, [1], F*) asl;
-__gshared Slice!(Contiguous, [1], F*) bsl;
+__gshared Slice!(F*) asl;
+__gshared Slice!(F*) bsl;
 
 void main()
 {

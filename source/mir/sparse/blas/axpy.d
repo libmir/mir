@@ -24,7 +24,7 @@ void axpy(
     V1 : CompressedArray!(T1, I1),
     T1, I1, V2)
 (in CR alpha, V1 x, V2 y)
-    if (isDynamicArray!V2 || isSlice!V2 == [1])
+    if (isDynamicArray!V2 || isSlice!V2)
 in
 {
     if (x.indexes.length)

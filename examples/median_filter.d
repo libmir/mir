@@ -2,7 +2,7 @@
 /+ dub.json:
 {
     "name": "median_filter",
-    "dependencies": {"mir": {"path": ".."}, "imageformats": "==6.1.0"},
+    "dependencies": {"mir": {"path": ".."}, "imageformats": "==7.0.0"},
 }
 +/
 
@@ -40,8 +40,8 @@ Returns:
         Dense data layout is guaranteed.
 +/
 
-Slice!(Contiguous, [3], C*) movingWindowByChannel(alias filter, C)
-(Slice!(Universal, [3], C*) image, size_t nr, size_t nc)
+Slice!(C*, 3) movingWindowByChannel(alias filter, C)
+(Slice!(C*, 3, Universal) image, size_t nr, size_t nc)
 {
         // 0. 3D
         // The last dimension represents the color channel.
@@ -54,7 +54,7 @@ Slice!(Contiguous, [3], C*) movingWindowByChannel(alias filter, C)
         .windows(nr, nc)
         // 3. 5D
         // Unpacks the windows.
-        .unpack
+        .unpack.unpack
         // 4. 5D
         // Brings the color channel dimension to the third position.
         .transposed!(0, 1, 4)
@@ -74,7 +74,7 @@ Params:
 Returns:
     median value over the range `r`
 +/
-T median(SliceKind kind, Iterator, T)(Slice!(kind, [2], Iterator) sl, T[] buf)
+T median(Iterator, SliceKind kind, T)(Slice!(Iterator, 2, kind) sl, T[] buf)
 {
     import std.algorithm.sorting : topN;
     // copy sl to the buffer

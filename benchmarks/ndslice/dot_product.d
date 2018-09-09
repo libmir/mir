@@ -20,7 +20,7 @@ $ dub run --build=release-nobounds --compiler=ldmd2 --single dot_product.d
 import std.numeric : dotProduct;
 import std.array;
 import std.typecons;
-import std.datetime;
+import std.datetime.stopwatch : benchmark, Duration;
 import std.stdio;
 import std.conv;
 import std.range: std_zip = zip;
@@ -36,8 +36,8 @@ __gshared F result;
 __gshared n = 8000;
 __gshared F[] a;
 __gshared F[] b;
-__gshared Slice!(Contiguous, [1], F*) asl;
-__gshared Slice!(Contiguous, [1], F*) bsl;
+__gshared Slice!(F*) asl;
+__gshared Slice!(F*) bsl;
 
 void main()
 {

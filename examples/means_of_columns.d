@@ -28,14 +28,14 @@
 * faster than the numpy version.
 */
 
-import std.datetime;
+import std.datetime.stopwatch;
 import std.conv : to;
 import std.stdio;
 import mir.ndslice;
 
 enum testCount = 10_000;
-__gshared Slice!(Contiguous, [1], double*) means;
-Slice!(Contiguous, [2], int*) sl;
+__gshared Slice!(double*) means;
+Slice!(int*, 2) sl;
 
 void main() {
     sl = iota!int(100, 1000).slice;

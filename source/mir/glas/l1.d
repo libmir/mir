@@ -45,7 +45,7 @@ unittest
 {
     import std.algorithm.mutation: swap;
     import mir.ndslice.allocation: slice;
-    import mir.ndslice.algorithm: each;
+    import mir.algorithm.iteration: each;
     import std.typecons: Yes;
     auto x = slice!double(4);
     auto y = slice!double(4);
@@ -78,18 +78,14 @@ unittest
     assert(y == [0, 1, 2, 3]);
 }
 
-import std.traits;
-import std.meta;
-
 import mir.math.common;
 import mir.internal.utility;
 import mir.ndslice.slice;
-import mir.ndslice.algorithm : reduce, each;
+import mir.algorithm.iteration : reduce, each;
+import mir.math.common: fastmath;
 
-version(LDC)
-    import ldc.attributes : fastmath;
-else
-    enum fastmath;
+import std.traits: Unqual, isPointer;
+import std.meta: allSatisfy;
 
 @fastmath:
 
@@ -201,7 +197,7 @@ Params:
     y = second n-dimensional tensor
 BLAS: SROT, DROT, CROT, ZROT, CSROT, ZDROTF
 +/
-void rot(C, S, SliceKind kind1, SliceKind kind2, size_t[] packs, Iterator1, Iterator2)(in C c, in S s, Slice!(kind1, packs, Iterator1) x, Slice!(kind2, packs, Iterator2) y)
+void rot(C, S, SliceKind kind1, SliceKind kind2, size_t N, Iterator1, Iterator2)(in C c, in S s, Slice!(Iterator1, N, kind1) x, Slice!(Iterator2, N, kind2) y)
 {
     assert(x.shape == y.shape, "constraints: x and y must have equal shapes");
     pragma(inline, false);
@@ -239,7 +235,7 @@ Params:
     y = second n-dimensional tensor
 BLAS: SAXPY, DAXPY, CAXPY, ZAXPY
 +/
-void axpy(A, SliceKind kind1, SliceKind kind2, size_t[] packs, Iterator1, Iterator2)(in A a, Slice!(kind1, packs, Iterator1) x, Slice!(kind2, packs, Iterator2) y)
+void axpy(A, SliceKind kind1, SliceKind kind2, size_t N, Iterator1, Iterator2)(in A a, Slice!(Iterator1, N, kind1) x, Slice!(Iterator2, N, kind2) y)
 {
     static if (_shouldBeCastedToUnqual!Iterator2)
     {
@@ -289,11 +285,11 @@ Params:
     y = second n-dimensional tensor
 BLAS: SDOT, DDOT, SDSDOT, DSDOT, CDOTC, ZDOTC
 +/
-F dot(F, SliceKind kind1, SliceKind kind2, size_t[] packs, Iterator1, Iterator2)(Slice!(kind1, packs, Iterator1) x, Slice!(kind2, packs, Iterator2) y)
+F dot(F, SliceKind kind1, SliceKind kind2, size_t N, Iterator1, Iterator2)(Slice!(Iterator1, N, kind1) x, Slice!(Iterator2, N, kind2) y)
 {
     static if (allSatisfy!(_shouldBeCastedToUnqual, Iterator1, Iterator2))
     {
-        return .dot!F(cast(Slice!(kind1, packs, Unqual!Iterator1))x, cast(Slice!(kind2, packs, Unqual!Iterator2))y);
+        return .dot!F(cast(Slice!(Unqual!Iterator1, N, kind1))x, cast(Slice!(Unqual!Iterator2, N, kind2))y);
     }
     else
     {
@@ -315,7 +311,7 @@ unittest
 }
 
 /// ditto
-auto dot(SliceKind kind1, SliceKind kind2, size_t[] packs, Iterator1, Iterator2)(Slice!(kind1, packs, Iterator1) x, Slice!(kind2, packs, Iterator2) y)
+auto dot(SliceKind kind1, SliceKind kind2, size_t N, Iterator1, Iterator2)(Slice!(Iterator1, N, kind1) x, Slice!(Iterator2, N, kind2) y)
 {
     return .dot!(Unqual!(typeof(x[0] * y[0])))(x, y);
 }
@@ -365,7 +361,7 @@ Params:
     y = second n-dimensional tensor
 BLAS: CDOTU, ZDOTU
 +/
-F dotc(F, SliceKind kind1, SliceKind kind2, size_t[] packs, Iterator1, Iterator2)(Slice!(kind1, packs, Iterator1) x, Slice!(kind2, packs, Iterator2) y)
+F dotc(F, SliceKind kind1, SliceKind kind2, size_t N, Iterator1, Iterator2)(Slice!(Iterator1, N, kind1) x, Slice!(Iterator2, N, kind2) y)
     if (isComplex!(DeepElementType!(typeof(x))) && isComplex!(DeepElementType!(typeof(y))))
 {
     static if (allSatisfy!(_shouldBeCastedToUnqual, Iterator1, Iterator2))
@@ -381,7 +377,7 @@ F dotc(F, SliceKind kind1, SliceKind kind2, size_t[] packs, Iterator1, Iterator2
 }
 
 /// ditto
-auto dotc(SliceKind kind1, SliceKind kind2, size_t[] packs, Iterator1, Iterator2)(Slice!(kind1, packs, Iterator1) x, Slice!(kind2, packs, Iterator2) y)
+auto dotc(SliceKind kind1, SliceKind kind2, size_t N, Iterator1, Iterator2)(Slice!(Iterator1, N, kind1) x, Slice!(Iterator2, N, kind2) y)
 {
     return .dotc!(Unqual!(typeof(x[x.shape.init] * y[y.shape.init])))(x, y);
 }
@@ -408,7 +404,7 @@ Params:
     x = n-dimensional tensor
 BLAS: SNRM2, DNRM2, SCNRM2, DZNRM2
 +/
-F nrm2(F, SliceKind kind, size_t[] packs, Iterator)(Slice!(kind, packs, Iterator) x)
+F nrm2(F, SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) x)
 {
     static if (_shouldBeCastedToUnqual!Iterator)
         return .sqnrm2!F(cast(Slice!(N, Unqual!R))x).sqrt;
@@ -417,7 +413,7 @@ F nrm2(F, SliceKind kind, size_t[] packs, Iterator)(Slice!(kind, packs, Iterator
 }
 
 /// ditto
-auto nrm2(SliceKind kind, size_t[] packs, Iterator)(Slice!(kind, packs, Iterator) x)
+auto nrm2(SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) x)
 {
     return .nrm2!(realType!(typeof(x[x.shape.init] * x[x.shape.init])))(x);
 }
@@ -452,7 +448,7 @@ Params:
     F = type for summation (optional template parameter)
     x = n-dimensional tensor
 +/
-F sqnrm2(F, SliceKind kind, size_t[] packs, Iterator)(Slice!(kind, packs, Iterator) x)
+F sqnrm2(F, SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) x)
 {
     static if (_shouldBeCastedToUnqual!Iterator)
     {
@@ -466,7 +462,7 @@ F sqnrm2(F, SliceKind kind, size_t[] packs, Iterator)(Slice!(kind, packs, Iterat
 }
 
 /// ditto
-auto sqnrm2(SliceKind kind, size_t[] packs, Iterator)(Slice!(kind, packs, Iterator) x)
+auto sqnrm2(SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) x)
 {
     return .sqnrm2!(realType!(typeof(x[x.shape.init] * x[x.shape.init])))(x);
 }
@@ -500,7 +496,7 @@ Params:
     x = n-dimensional tensor
 BLAS: SASUM, DASUM, SCASUM, DZASUM
 +/
-F asum(F, SliceKind kind, size_t[] packs, Iterator)(Slice!(kind, packs, Iterator) x)
+F asum(F, SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) x)
 {
     static if (_shouldBeCastedToUnqual!Iterator)
     {
@@ -514,7 +510,7 @@ F asum(F, SliceKind kind, size_t[] packs, Iterator)(Slice!(kind, packs, Iterator
 }
 
 /// ditto
-auto asum(SliceKind kind, size_t[] packs, Iterator)(Slice!(kind, packs, Iterator) x)
+auto asum(SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) x)
 {
     alias T = DeepElementType!(typeof(x));
     return .asum!(realType!T)(x);
@@ -546,7 +542,7 @@ Return: index of the first element having maximum `|Re(.)| + |Im(.)|`
 Params: x = 1-dimensional tensor
 BLAS: ISAMAX, IDAMAX, ICAMAX, IZAMAX
 +/
-sizediff_t iamax(SliceKind kind, Iterator)(Slice!(kind, [1], Iterator) x)
+sizediff_t iamax(Iterator, SliceKind kind)(Slice!(Iterator, 1, kind) x)
 {
     static if (_shouldBeCastedToUnqual!Iterator)
     {
@@ -630,11 +626,10 @@ Takes the sum of the `|Re(.)| + |Im(.)|`'s of a vector and
     returns a single precision result.
 Returns: sum of the `|Re(.)| + |Im(.)|`'s
 Params:
-    F = type for summation (optional template parameter)
     x = n-dimensional tensor
 BLAS: SASUM, DASUM, SCASUM, DZASUM
 +/
-auto amax(SliceKind kind, size_t[] packs, Iterator)(Slice!(kind, packs, Iterator) x)
+auto amax(SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) x)
 {
     static if (_shouldBeCastedToUnqual!Iterator)
     {
