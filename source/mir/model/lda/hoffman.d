@@ -59,7 +59,7 @@ struct LdaHoffman(F)
         alpha = Dirichlet document-topic prior (0.1)
         eta = Dirichlet word-topic prior (0.1)
         tau0 = 𝞽0 ≧ 0 slows down the early iterations of the algorithm.
-        kappa = `𝞳 ∈ (0.5, 1]`, controls the rate at which old values of 𝝺 are forgotten.
+        kappa = `𝞳 ∈ $(LPAREN)0.5, 1]`, controls the rate at which old values of 𝝺 are forgotten.
             `𝝺 = (1 - 𝞀(𝞽)) 𝝺 + 𝞀 𝝺',  𝞀(𝞽) = (𝞽0 + 𝞽)^(-𝞳)`. Use `𝞳 = 0` for Batch variational Bayes LDA.
         eps = Stop iterations if `||𝝺 - 𝝺'||_l1 < s * eps`, where `s` is a documents count in a batch.
         tp = task pool
