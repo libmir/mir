@@ -20,13 +20,13 @@ LDC - the LLVM D compiler (918073):
 
 $ dub run --build=release-nobounds --compiler=ldmd2 --single convolution.d
 +/
-import std.datetime : benchmark, Duration;
+import std.datetime.stopwatch : benchmark, Duration;
 import std.stdio : writefln;
 import std.conv : to;
-import std.algorithm.comparison : min;
+import mir.utility : min;
 
 import mir.ndslice;
-import mir.ndslice.internal : fastmath;
+import mir.math.common : fastmath;
 
 alias F = double;
 
@@ -38,7 +38,7 @@ alias F = double;
         foreach (c; 0 .. output.length!1)
         {
             // take window to input at given pixel coordinate
-            Slice!(Canonical, [2], F*) window = input[r .. r + kr, c .. c + kc];
+            Slice!(F*, 2, Canonical) window = input[r .. r + kr, c .. c + kc];
 
             // calculate result for current pixel
             F v = 0.0f;

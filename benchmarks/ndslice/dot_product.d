@@ -20,7 +20,7 @@ $ dub run --build=release-nobounds --compiler=ldmd2 --single dot_product.d
 import std.numeric : dotProduct;
 import std.array;
 import std.typecons;
-import std.datetime;
+import std.datetime.stopwatch : benchmark, Duration;
 import std.stdio;
 import std.conv;
 import std.range: std_zip = zip;

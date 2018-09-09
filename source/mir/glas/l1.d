@@ -626,7 +626,6 @@ Takes the sum of the `|Re(.)| + |Im(.)|`'s of a vector and
     returns a single precision result.
 Returns: sum of the `|Re(.)| + |Im(.)|`'s
 Params:
-    F = type for summation (optional template parameter)
     x = n-dimensional tensor
 BLAS: SASUM, DASUM, SCASUM, DZASUM
 +/

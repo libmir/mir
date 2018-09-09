@@ -20,13 +20,13 @@ LDC - the LLVM D compiler (918073):
 
 $ dub run --build=release-nobounds --compiler=ldmd2 --single binarization.d
 +/
-import std.datetime : benchmark, Duration;
+import std.datetime.stopwatch : benchmark, Duration;
 import std.stdio : writefln;
 import std.conv : to;
-import std.algorithm.comparison : min;
+import mir.utility : min;
 
 import mir.ndslice;
-import mir.ndslice.internal : fastmath;
+import mir.math.common : fastmath;
 
 alias F = double;
 

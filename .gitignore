@@ -49,3 +49,6 @@ benchmarks/glas/gemm_report
 
 mir-test-unittest
 examples/lda_hoffman_sparse
+benchmarks/ndslice/binarization
+benchmarks/ndslice/convolution
+benchmarks/ndslice/euclidean_distance
