@@ -29,10 +29,10 @@ void gemm(
     SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
 (
     in CR alpha,
-    Slice!(kind1, [1], FieldIterator!(CompressedField!(T1, I1, J1))) a,
-    Slice!(kind2, [2], Iterator2) b,
+    Slice!(FieldIterator!(CompressedField!(T1, I1, J1)), 1, kind1) a,
+    Slice!(Iterator2, 2, kind2) b,
     in CL beta,
-    Slice!(kind3, [2], Iterator3)  c)
+    Slice!(Iterator3, 2, kind3)  c)
 in
 {
     assert(a.length!0 == c.length!0);
@@ -99,10 +99,10 @@ void gemtm(
     SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
 (
     in CR alpha,
-    Slice!(kind1, [1], FieldIterator!(CompressedField!(T1, I1, J1))) a,
-    Slice!(kind2, [2], Iterator2) b,
+    Slice!(FieldIterator!(CompressedField!(T1, I1, J1)), 1, kind1) a,
+    Slice!(Iterator2, 2, kind2) b,
     in CL beta,
-    Slice!(kind3, [2], Iterator3)  c)
+    Slice!(Iterator3, 2, kind3)  c)
 in
 {
     assert(a.length!0 == b.length!0);
@@ -163,7 +163,7 @@ Returns:
     `c[available indexes] <op>= (a × b)[available indexes]`.
 +/
 void selectiveGemm(string op = "", SliceKind kind1, SliceKind kind2, SliceKind kind3, T, T3, I3, J3)
-(Slice!(kind1, [2], T*) a, Slice!(kind2, [2], T*) b, Slice!(kind3, [1], FieldIterator!(CompressedField!(T3, I3, J3))) c)
+(Slice!(T*, 2, kind1) a, Slice!(T*, 2, kind2) b, Slice!(FieldIterator!(CompressedField!(T3, I3, J3)), 1, kind3) c)
 in
 {
     assert(a.length!1 == b.length!0);

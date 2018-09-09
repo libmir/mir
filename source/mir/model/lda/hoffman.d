@@ -31,8 +31,8 @@ struct LdaHoffman(F)
     import mir.math.common;
     import mir.sparse;
 
-    private alias Vector = Slice!(Contiguous, [1], F*);
-    private alias Matrix = Slice!(Contiguous, [2], F*);
+    private alias Vector = Slice!(F*);
+    private alias Matrix = Slice!(F*, 2);
 
     private size_t D;
     private F alpha;
@@ -99,7 +99,7 @@ struct LdaHoffman(F)
     /++
     Posterior over the topics
     +/
-    Slice!(Contiguous, [2], F*) beta() @property
+    Slice!(F*, 2) beta() @property
     {
         return _beta;
     }
@@ -107,7 +107,7 @@ struct LdaHoffman(F)
     /++
     Parameterized posterior over the topics.
     +/
-    Slice!(Contiguous, [2], F*) lambda() @property
+    Slice!(F*, 2) lambda() @property
     {
         return _lambda;
     }
@@ -142,7 +142,7 @@ struct LdaHoffman(F)
         return putBatchImpl(n.recompress!F, maxIterations);
     }
 
-    private size_t putBatchImpl(CompressedTensor!(2, F) n, size_t maxIterations)
+    private size_t putBatchImpl(CompressedTensor!(F, 2) n, size_t maxIterations)
     {
         import std.math: isFinite;
         import mir.sparse.blas.dot;
@@ -204,7 +204,7 @@ struct LdaHoffman(F)
         {
             auto lambdaTemp = _lambdaTemp[tp.workerIndex];
             gemtv!F(F(1), n, thetat[k], F(0), lambdaTemp.sliced);
-            import mir.ndslice.algorithm: each;
+            import mir.algorithm.iteration: each;
             each!((ref l, bk, lt) {l = (1 - rho) * l +
                 rho * (eta + (F(D) / F(S)) * bk * lt);})(_lambda[k], _beta[k],lambdaTemp.sliced);
             unparameterize(_lambda[k], _beta[k]);
@@ -212,7 +212,7 @@ struct LdaHoffman(F)
         return ret;
     }
 
-    private auto saveN(CompressedTensor!(2, F) n)
+    private auto saveN(CompressedTensor!(F, 2) n)
     {
         import mir.ndslice.topology: universal;
         return

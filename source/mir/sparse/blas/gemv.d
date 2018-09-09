@@ -30,10 +30,10 @@ void gemv(
     SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
 (
     in CR alpha,
-    Slice!(kind1, [1], FieldIterator!(CompressedField!(T1, I1, J1))) a,
-    Slice!(kind2, [1], Iterator2) x,
+    Slice!(FieldIterator!(CompressedField!(T1, I1, J1)), 1, kind1) a,
+    Slice!(Iterator2, 1, kind2) x,
     in CL beta,
-    Slice!(kind3, [1], Iterator3)  y)
+    Slice!(Iterator3, 1, kind3)  y)
 in
 {
     assert(a.length == y.length);
@@ -99,17 +99,17 @@ void gemtv(
     SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
 (
     in CR alpha,
-    Slice!(kind1, [1], FieldIterator!(CompressedField!(T1, I1, J1))) a,
-    Slice!(kind2, [1], Iterator2) x,
+    Slice!(FieldIterator!(CompressedField!(T1, I1, J1)), 1, kind1) a,
+    Slice!(Iterator2, 1, kind2) x,
     in CL beta,
-    Slice!(kind3, [1], Iterator3)  y)
+    Slice!(Iterator3, 1, kind3)  y)
 in
 {
     assert(a.length == x.length);
 }
 body
 {
-    alias T3 = Unqual!(DeepElementType!(Slice!(kind3, [1], Iterator3)));
+    alias T3 = Unqual!(DeepElementType!(Slice!(Iterator3, 1, kind3)));
 
     if (beta == 0)
     {
@@ -172,7 +172,7 @@ void gemv(
     T2, I2,
     SliceKind kind3, Iterator3,
     )
-(in CR alpha, Slice!(kind1, [2], Iterator1) a, CompressedArray!(T2, I2) x, in CL beta, Slice!(kind3, [1], Iterator3) y)
+(in CR alpha, Slice!(Iterator1, 2, kind1) a, CompressedArray!(T2, I2) x, in CL beta, Slice!(Iterator3, 1, kind3) y)
 in
 {
     assert(a.length == y.length);
@@ -231,7 +231,7 @@ Returns:
     `y[available indexes] <op>= (alpha * a × x)[available indexes]`.
 +/
 void selectiveGemv(string op = "", SliceKind kind1, SliceKind kind2, T, T3, I3)
-(Slice!(kind1, [2], T*) a, Slice!(kind2, [1], T*) x, CompressedArray!(T3, I3) y)
+(Slice!(T*, 2, kind1) a, Slice!(T*, 1, kind2) x, CompressedArray!(T3, I3) y)
 in
 {
     assert(a.length!1 == x.length);

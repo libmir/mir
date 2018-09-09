@@ -36,8 +36,8 @@ __gshared F result;
 __gshared n = 8000;
 __gshared F[] a;
 __gshared F[] b;
-__gshared Slice!(Contiguous, [1], F*) asl;
-__gshared Slice!(Contiguous, [1], F*) bsl;
+__gshared Slice!(F*) asl;
+__gshared Slice!(F*) bsl;
 
 void main()
 {

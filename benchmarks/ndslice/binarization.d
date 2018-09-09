@@ -30,7 +30,7 @@ import mir.ndslice.internal : fastmath;
 
 alias F = double;
 
-void binarizationLockstep(Slice!(Contiguous, [2], F*) input, F threshold, Slice!(Contiguous, [2], F*) output)
+void binarizationLockstep(Slice!(F*, 2) input, F threshold, Slice!(F*, 2) output)
 {
     import std.range : lockstep;
     foreach(i, ref o; lockstep(input.flattened, output.flattened))
@@ -39,9 +39,9 @@ void binarizationLockstep(Slice!(Contiguous, [2], F*) input, F threshold, Slice!
     }
 }
 
-void binarizationAssumeSameStructure(Slice!(Contiguous, [2], F*) input, F threshold, Slice!(Contiguous, [2], F*) output)
+void binarizationAssumeSameStructure(Slice!(F*, 2) input, F threshold, Slice!(F*, 2) output)
 {
-    import mir.ndslice.algorithm : each;
+    import mir.algorithm.iteration : each;
     import mir.ndslice.topology : zip;
 
     zip(input, output).each!( (p) {
@@ -51,8 +51,8 @@ void binarizationAssumeSameStructure(Slice!(Contiguous, [2], F*) input, F thresh
 
 // __gshared is used to prevent specialized optimization for input data
 __gshared n = 256; // image size
-__gshared Slice!(Contiguous, [2], F*) a;
-__gshared Slice!(Contiguous, [2], F*) b;
+__gshared Slice!(F*, 2) a;
+__gshared Slice!(F*, 2) b;
 __gshared F t; // threshold
 
 void main()

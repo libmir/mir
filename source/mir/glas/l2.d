@@ -36,10 +36,7 @@ import mir.ndslice.slice;
 
 import mir.glas.l1;
 
-version(LDC)
-    import ldc.attributes : fastmath;
-else
-    enum fastmath;
+import mir.math.common: fastmath;
 
 @fastmath:
 
@@ -72,10 +69,10 @@ void gemv(A, B, C,
     )
 (
     C alpha,
-        Slice!(kindA, [2], const(A)*) asl,
-        Slice!(kindB, [1], const(B)*) xsl,
+        Slice!(const(A)*,  2, kindA) asl,
+        Slice!(const(B)*,  1, kindB) xsl,
     C beta,
-        Slice!(kindC, [1], C*) ysl,
+        Slice!(C*,  1, kindC) ysl,
 )
     if (allSatisfy!(isNumeric, A, B, C))
 in

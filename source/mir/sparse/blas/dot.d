@@ -125,7 +125,7 @@ Unqual!(CommonType!(T1, ForeachType!V2)) dot(
     V1 : CompressedArray!(T1, I1),
     T1, I1, V2)
 (V1 x, V2 y)
-    if (isDynamicArray!V2 || isSlice!V2 == [1])
+    if (isDynamicArray!V2 || isSlice!V2)
 {
     return dot!(typeof(return))(x, y);
 }
@@ -136,7 +136,7 @@ D dot(
     V1 : CompressedArray!(T1, I1),
     T1, I1, V2)
 (V1 x, V2 y)
-    if (isDynamicArray!V2 || isSlice!V2 == [1])
+    if (isDynamicArray!V2 || isSlice!V2)
 in
 {
     if (x.indexes.length)
