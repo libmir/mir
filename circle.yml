@@ -30,7 +30,6 @@ test:
     - git clone https://github.com/libmir/mir-random
     - git clone https://github.com/libmir/mir-algorithm
     - make -f doc/Makefile html
-    - dub fetch imageformats --version=6.1.0 && dub build --compiler=ldmd2 imageformats
     - dub build --compiler=ldmd2 --single examples/lda_hoffman_sparse.d
     - dub build --compiler=dmd --single examples/median_filter.d
     - dub build --compiler=ldmd2 --single examples/means_of_columns.d
