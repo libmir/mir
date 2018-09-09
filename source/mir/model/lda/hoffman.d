@@ -137,7 +137,7 @@ struct LdaHoffman(F)
         n = mini-batch, a collection of compressed documents.
         maxIterations = maximal number of iterations for single document in a batch for E-step.
     +/
-    size_t putBatch(SliceKind kind, C, I, J)(Slice!(kind, [1], FieldIterator!(CompressedField!(C, I, J))) n, size_t maxIterations)
+    size_t putBatch(SliceKind kind, C, I, J)(Slice!(FieldIterator!(CompressedField!(C, I, J)), 1, kind) n, size_t maxIterations)
     {
         return putBatchImpl(n.recompress!F, maxIterations);
     }

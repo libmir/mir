@@ -2,7 +2,7 @@ platform: x64
 environment:
  matrix:
   - DC: ldc
-    DVersion: 1.7.0
+    DVersion: '1.10.0'
     arch: x64
 
 skip_tags: true
@@ -14,23 +14,41 @@ branches:
 install:
   - ps: function SetUpDCompiler
         {
-          echo "downloading ...";
-          if($env:arch -eq "x86"){
-            $env:DConf = "m32";
-          }
-          elseif($env:arch -eq "x64"){
-            $env:DConf = "m64";
-          }
-          $env:toolchain = "msvc";
-          $version = $env:DVersion;
-          Invoke-WebRequest "http://downloads.dlang.org/releases/2.x/$($version)/dmd.$($version).windows.7z" -OutFile "c:\dmd.7z";
-          echo "finished.";
-          pushd c:\\;
-          7z x ldc.zip > $null;
-          popd;
+            if($env:DC -eq "dmd"){
+              if($env:arch -eq "x86"){
+                $env:DConf = "m32";
+              }
+              elseif($env:arch -eq "x64"){
+                $env:DConf = "m64";
+              }
+              echo "downloading ...";
+              $env:toolchain = "msvc";
+              $version = $env:DVersion;
+              Invoke-WebRequest "http://downloads.dlang.org/releases/2.x/$($version)/dmd.$($version).windows.7z" -OutFile "c:\dmd.7z";
+              echo "finished.";
+              pushd c:\\;
+              7z x dmd.7z > $null;
+              popd;
+            }
+            elseif($env:DC -eq "ldc"){
+              echo "downloading ...";
+              if($env:arch -eq "x86"){
+                $env:DConf = "m32";
+              }
+              elseif($env:arch -eq "x64"){
+                $env:DConf = "m64";
+              }
+              $env:toolchain = "msvc";
+              $version = $env:DVersion;
+              Invoke-WebRequest "https://github.com/ldc-developers/ldc/releases/download/v$($version)/ldc2-$($version)-windows-x64.7z" -OutFile "c:\ldc.7z";
+              echo "finished.";
+              pushd c:\\;
+              7z x ldc.7z > $null;
+              popd;
+            }
         }
   - ps: SetUpDCompiler
-  - powershell -Command Invoke-WebRequest https://code.dlang.org/files/dub-1.7.2-windows-x86.zip -OutFile dub.zip
+  - powershell -Command Invoke-WebRequest https://code.dlang.org/files/dub-1.9.0-windows-x86.zip -OutFile dub.zip
   - 7z x dub.zip -odub > nul
   - set PATH=%CD%\%binpath%;%CD%\dub;%PATH%
   - dub --version
@@ -44,10 +62,14 @@ before_build:
             $env:compilersetupargs = "amd64";
             $env:Darch = "x86_64";
         }
-  - ps:
-        $version = $env:DVersion;
-        $env:PATH += ";C:\ldc2-$($version)-win64-msvc\bin";
-        $env:DC = "ldmd2";
+  - ps : if($env:DC -eq "dmd"){
+           $env:PATH += ";C:\dmd2\windows\bin;";
+         }
+         elseif($env:DC -eq "ldc"){
+           $version = $env:DVersion;
+           $env:PATH += ";C:\ldc2-$($version)-windows-x64\bin";
+           $env:DC = "ldc2";
+         }
   - ps: $env:compilersetup = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall";
   - '"%compilersetup%" %compilersetupargs%'
 

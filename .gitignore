@@ -48,3 +48,4 @@ benchmarks/glas/gemm_report
 *.dylib
 
 mir-test-unittest
+examples/lda_hoffman_sparse
