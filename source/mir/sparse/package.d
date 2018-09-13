@@ -589,9 +589,9 @@ CompressedTensor!(V, N + 1, I, J)
     {
         auto row = elems.front;
         elems.popFront;
-        vapp.put(row.values.sliced.as!V);
-        iapp.put(row.indexes.sliced.as!I);
-        j += cast(J) row.indexes.length;
+        iapp.put(row.index.as!I);
+        vapp.put(row.value.as!V);
+        j += cast(J) row.index.length;
         pointer = j;
     }
     auto m = CompressedField!(V, I, J)(
@@ -639,22 +639,7 @@ See_also: $(LREF CompressedField)
 +/
 alias CompressedTensor(T, size_t N, I = uint, J = size_t) = Slice!(FieldIterator!(CompressedField!(T, I, J)), N - 1, Universal);
 
-/++
-Compressed array is just a structure of values array and indexes array.
-
-See_also: $(LREF CompressedTensor), $(LREF CompressedField)
-+/
-struct CompressedArray(T, I = uint)
-    if (is(I : size_t) && isUnsigned!I)
-{
-    /++
-    +/
-    T[] values;
-
-    /++
-    +/
-    I[] indexes;
-}
+import mir.series;
 
 /++
 `CompressedField` is used internally by `Slice` type to represent $(LREF CompressedTensor).
@@ -694,7 +679,7 @@ struct CompressedField(T, I = uint, J = size_t)
 
     /++
     +/
-    inout(CompressedArray!(T, I)) opIndex(size_t index) inout
+    Series!(I*, T*) opIndex(size_t index)
     in
     {
         assert(index < pointers.length - 1);
@@ -703,6 +688,6 @@ struct CompressedField(T, I = uint, J = size_t)
     {
         auto a = pointers[index];
         auto b = pointers[index + 1];
-        return typeof(return)(values[a .. b], indexes[a .. b]);
+        return typeof(return)(indexes[a .. b].sliced, values[a .. b].sliced);
     }
 }

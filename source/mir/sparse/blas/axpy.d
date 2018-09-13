@@ -8,6 +8,7 @@ module mir.sparse.blas.axpy;
 import std.traits;
 import mir.ndslice.slice;
 import mir.sparse;
+import mir.series;
 
 /++
 Constant times a vector plus a vector.
@@ -21,30 +22,30 @@ Returns:
 +/
 void axpy(
     CR,
-    V1 : CompressedArray!(T1, I1),
-    T1, I1, V2)
+    V1 : Series!(I1, T1),
+    I1, T1, V2)
 (in CR alpha, V1 x, V2 y)
     if (isDynamicArray!V2 || isSlice!V2)
 in
 {
-    if (x.indexes.length)
-        assert(x.indexes[$-1] < y.length);
+    if (x.index.length)
+        assert(x.index[$-1] < y.length);
 }
 body
 {
     import mir.internal.utility;
 
-    foreach (size_t i; 0 .. x.indexes.length)
+    foreach (size_t i; 0 .. x.index.length)
     {
-        auto j = x.indexes[i];
-        y[j] = alpha * x.values[i] + y[j];
+        auto j = x.index[i];
+        y[j] = alpha * x.value[i] + y[j];
     }
 }
 
 ///
 unittest
 {
-    auto x = CompressedArray!(double, uint)([1.0, 3, 4, 9, 13], [0, 3, 5, 9, 10]);
+    auto x = series([0, 3, 5, 9, 10], [1.0, 3, 4, 9, 13]);
     auto y = [0.0, 1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     axpy(2.0, x, y);
     assert(y == [2.0, 1.0, 2, 9, 4, 13, 6, 7, 8, 27, 36, 11, 12]);
@@ -52,7 +53,7 @@ unittest
 
 unittest
 {
-    auto x = CompressedArray!(double, uint)([1.0, 3, 4, 9, 13], [0, 3, 5, 9, 10]);
+    auto x = series([0, 3, 5, 9, 10], [1.0, 3, 4, 9, 13]);
     auto y = [0.0, 1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     axpy(2.0, x, y.sliced);
     assert(y == [2.0, 1.0, 2, 9, 4, 13, 6, 7, 8, 27, 36, 11, 12]);
@@ -60,8 +61,7 @@ unittest
 
 unittest
 {
-    import std.typecons: No;
-    auto x = CompressedArray!(double, uint)([1.0, 3, 4, 9, 13], [0, 3, 5, 9, 10]);
+    auto x = series([0, 3, 5, 9, 10], [1.0, 3, 4, 9, 13]);
     auto y = [0.0, 1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     axpy(2.0, x, y.slicedField);
     assert(y == [2.0, 1.0, 2, 9, 4, 13, 6, 7, 8, 27, 36, 11, 12]);

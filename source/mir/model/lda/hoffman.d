@@ -191,7 +191,7 @@ struct LdaHoffman(F)
                 }
                 if (c < maxIterations && sum > eps * K)
                 {
-                    nd.values[] = nsave[d].values;
+                    nd.value[] = nsave[d].value;
                     continue;
                 }
                 import core.atomic;
