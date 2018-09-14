@@ -135,14 +135,15 @@ struct LdaHoffman(F)
 
     Params:
         n = mini-batch, a collection of compressed documents.
-        maxIterations = maximal number of iterations for single document in a batch for E-step.
+        maxIterations = maximal number of iterations for s    This implementation is optimized for sparse documents,
+ingle document in a batch for E-step.
     +/
-    size_t putBatch(SliceKind kind, C, I, J)(Slice!(FieldIterator!(CompressedField!(C, I, J)), 1, kind) n, size_t maxIterations)
+    size_t putBatch(SliceKind kind, C, I, J)(Slice!(ChopIterator!(J*, Series!(I*, C*)), 1, kind) n, size_t maxIterations)
     {
         return putBatchImpl(n.recompress!F, maxIterations);
     }
 
-    private size_t putBatchImpl(CompressedTensor!(F, 2) n, size_t maxIterations)
+    private size_t putBatchImpl(Slice!(ChopIterator!(size_t*, Series!(uint*, F*))) n, size_t maxIterations)
     {
         import std.math: isFinite;
         import mir.sparse.blas.dot;
@@ -212,16 +213,13 @@ struct LdaHoffman(F)
         return ret;
     }
 
-    private auto saveN(CompressedTensor!(F, 2) n)
+    private auto saveN(Slice!(ChopIterator!(size_t*, Series!(uint*, F*))) n)
     {
-        import mir.ndslice.topology: universal;
-        return
-            CompressedField!(F)(
-                n.iterator._field.compressedLength,
-                n.iterator._field.values.dup,
-                n.iterator._field.indexes,
-                n.iterator._field.pointers)
-            .slicedField(n.length).universal;
+        import mir.series: series;
+        import mir.ndslice.topology: chopped, universal;
+        return n.iterator._sliceable.index
+            .series(n.iterator._sliceable.value.dup)
+            .chopped(n.iterator._iterator.sliced(n.length + 1));
     }
 
     private static void unparameterize(Vector param, Vector posterior)

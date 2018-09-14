@@ -31,7 +31,7 @@ void gemv(
     SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
 (
     in CR alpha,
-    Slice!(FieldIterator!(CompressedField!(T1, I1, J1)), 1, kind1) a,
+    Slice!(ChopIterator!(J1*, Series!(I1*, T1*)), 1, kind1) a,
     Slice!(Iterator2, 1, kind2) x,
     in CL beta,
     Slice!(Iterator3, 1, kind3)  y)
@@ -100,7 +100,7 @@ void gemtv(
     SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
 (
     in CR alpha,
-    Slice!(FieldIterator!(CompressedField!(T1, I1, J1)), 1, kind1) a,
+    Slice!(ChopIterator!(J1*, Series!(I1*, T1*)), 1, kind1) a,
     Slice!(Iterator2, 1, kind2) x,
     in CL beta,
     Slice!(Iterator3, 1, kind3)  y)

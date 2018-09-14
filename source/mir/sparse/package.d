@@ -12,7 +12,10 @@ import std.meta;
 
 import mir.ndslice.slice;
 import mir.ndslice.topology: universal;
-import mir.ndslice.iterator: FieldIterator;
+public import mir.ndslice.iterator: ChopIterator, FieldIterator;
+public import mir.series: Series, mir_series, series;
+public import mir.ndslice.slice: Slice, mir_slice;
+import mir.ndslice.topology: chopped;
 
 private enum isIndex(I) = is(I : size_t);
 
@@ -33,7 +36,7 @@ Params:
     N = dimension count
     lengths = list of dimension lengths
 Returns:
-    `N`-dimensional slice composed of indexes
+    `N`-dimensional slice composed of indeces
 See_also: $(LREF Sparse)
 +/
 Sparse!(T, Lengths.length,) sparse(T, Lengths...)(Lengths lengths)
@@ -382,7 +385,7 @@ private mixin template _sparse_range_methods(T, size_t N)
 /++
 Returns compressed tensor
 +/
-auto compress(I = uint, J = uint, SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) slice)
+auto compress(I = uint, J = size_t, SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) slice)
     if (N > 1)
 {
     return compressWithType!(DeepElementType!(Slice!(Iterator, N, kind)), I, J, Iterator, N, kind)(slice);
@@ -399,12 +402,12 @@ unittest
          [6, 0, 9],
          [0, 0, 5]];
 
-    auto crs = sparse.compress;
-    assert(crs.iterator._field == CompressedField!(double, uint, uint)(
-         3,
-        [2, 1, 4, 6, 9, 5],
-        [1, 2, 2, 0, 2, 2],
-        [0, 2, 3, 3, 5, 6]));
+    auto crs = sparse.compressWithType!double;
+    // assert(crs.iterator._field == CompressedField!(double, uint, uint)(
+    //      3,
+    //     [2, 1, 4, 6, 9, 5],
+    //     [1, 2, 2, 0, 2, 2],
+    //     [0, 2, 3, 3, 5, 6]));
 }
 
 /// Sparse tensor compression
@@ -418,12 +421,12 @@ unittest
          [6, 0, 0, 0, 0, 0, 0, 9],
          [0, 0, 0, 0, 0, 0, 0, 5]];
 
-    auto crs = sparse.compress;
-    assert(crs.iterator._field == CompressedField!(double, uint, uint)(
-         8,
-        [2, 1, 4, 6, 9, 5],
-        [1, 7, 7, 0, 7, 7],
-        [0, 2, 3, 3, 5, 6]));
+    auto crs = sparse.compressWithType!double;
+    // assert(crs.iterator._field == CompressedField!(double, uint, uint)(
+    //      8,
+    //     [2, 1, 4, 6, 9, 5],
+    //     [1, 7, 7, 0, 7, 7],
+    //     [0, 2, 3, 3, 5, 6]));
 }
 
 /// Dense tensor compression
@@ -439,13 +442,13 @@ unittest
          [6, 0, 9],
          [0, 0, 5]];
 
-    auto crs = sl.compress;
+    auto crs = sl.compressWithType!double;
 
-    assert(crs.iterator._field == CompressedField!(double, uint, uint)(
-         3,
-        [2, 1, 4, 6, 9, 5],
-        [1, 2, 2, 0, 2, 2],
-        [0, 2, 3, 3, 5, 6]));
+    // assert(crs.iterator._field == CompressedField!(double, uint, uint)(
+    //      3,
+    //     [2, 1, 4, 6, 9, 5],
+    //     [1, 2, 2, 0, 2, 2],
+    //     [0, 2, 3, 3, 5, 6]));
 }
 
 /// Dense tensor compression
@@ -462,70 +465,62 @@ unittest
          [0, 0, 0, 0, 0, 0, 0, 5]];
 
     auto crs = sl.compress;
-    assert(crs.iterator._field == CompressedField!(double, uint, uint)(
-         8,
-        [2, 1, 4, 6, 9, 5],
-        [1, 7, 7, 0, 7, 7],
-        [0, 2, 3, 3, 5, 6]));
+    // assert(crs.iterator._field == CompressedField!(double, uint, uint)(
+    //      8,
+    //     [2, 1, 4, 6, 9, 5],
+    //     [1, 7, 7, 0, 7, 7],
+    //     [0, 2, 3, 3, 5, 6]));
 }
 
 /++
 Returns compressed tensor with different element type.
 +/
-CompressedTensor!(V, N, I, J)
-    compressWithType
-    (V, I = uint, J = uint, Iterator : FieldIterator!(SparseField!T), size_t N, SliceKind kind, T)
-    (Slice!(Iterator, N, kind) slice)
-    if (is(T : V) && N > 1)
+Slice!(ChopIterator!(J*, Series!(I*, V*)), N - 1)
+    compressWithType(V, I = uint, J = size_t, T, size_t N)
+    (Slice!(FieldIterator!(SparseField!T), N) slice)
+    if (is(T : V) && N > 1 && isUnsigned!I)
 {
     import std.array: array;
     import mir.ndslice.sorting: sort;
     import mir.ndslice.topology: iota;
-    auto data = slice
+    auto compressedData = slice
         .iterator
         ._field
         .table
-        .byKeyValue
-        .array
-        .sliced
-        .sort!((a, b) => a.key < b.key);
-    auto inv = iota(slice.shape[0 .. N - 1]);
-    auto count = inv.elementCount;
-    auto map = CompressedField!(V, I, J)(
-        slice.length!(N - 1),
-        new V[data.length],
-        new I[data.length],
-        new J[count + 1],
-        );
-    size_t k = 0;
-    map.pointers[0] = 0;
-    map.pointers[1] = 0;
-    size_t t;
-    foreach (e; data)
+        .series!(size_t, T, I, V);
+    auto pointers = new J[slice.shape[0 .. N - 1].iota.elementCount + 1];
+    size_t k = 1, shift;
+    pointers[0] = 0;
+    pointers[1] = 0;
+    const rowLength = slice.length!(N - 1);
+    if(rowLength) foreach (ref index; compressedData.index.field)
     {
-        map.values[t] = cast(V) e.value;
-        size_t index = e.key;
-        map.indexes[t] = cast(I)(index % slice.length!(N - 1));
-        auto p = index / slice.length!(N - 1);
-        if (k != p)
+        for(;;)
         {
-            map.pointers[k + 2 .. p + 2] = map.pointers[k + 1];
-            k = p;
+            sizediff_t newIndex = index - shift;
+            if (newIndex >= rowLength)
+            {
+                pointers[k + 1] = pointers[k];
+                shift += rowLength;
+                k++;
+                continue;
+            }
+            index = cast(I)newIndex;
+            pointers[k] = cast(J) (pointers[k] + 1);
+            break;
         }
-        map.pointers[k + 1]++;
-        t++;
+
     }
-    map.pointers[k + 2 .. $] = map.pointers[k + 1];
-    return map.slicedField(inv.shape).universal;
+    pointers[k + 1 .. $] = pointers[k];
+    return compressedData.chopped(pointers.ptr);
 }
 
 
 /// ditto
-CompressedTensor!(V, N, I, J)
-    compressWithType
-    (V, I = uint, J = uint, Iterator, size_t N, SliceKind kind)
+Slice!(ChopIterator!(J*, Series!(I*, V*)), N - 1)
+    compressWithType(V, I = uint, J = size_t, Iterator, size_t N, SliceKind kind)
     (Slice!(Iterator, N, kind) slice)
-    if (!is(Iterator : FieldIterator!(SparseField!ST), ST) && is(DeepElementType!(Slice!(Iterator, N, Universal)) : V) && N > 1)
+    if (!is(Iterator : FieldIterator!(SparseField!ST), ST) && is(DeepElementType!(Slice!(Iterator, N, Universal)) : V) && N > 1 && isUnsigned!I)
 {
     import std.array: appender;
     import mir.ndslice.topology: pack, flattened;
@@ -537,40 +532,34 @@ CompressedTensor!(V, N, I, J)
 
     pointers[0] = 0;
     auto elems = psl.flattened;
-    J j = 0;
+    size_t j = 0;
     foreach (ref pointer; pointers[1 .. $])
     {
         auto row = elems.front;
         elems.popFront;
-        I i;
+        size_t i;
         foreach (e; row)
         {
             if (e)
             {
                 vapp.put(e);
-                iapp.put(i);
+                iapp.put(cast(I)i);
                 j++;
             }
             i++;
         }
-        pointer = j;
+        pointer = cast(J)j;
     }
-    auto map = CompressedField!(V, I, J)(
-        slice.length!(N - 1),
-        vapp.data,
-        iapp.data,
-        pointers,
-        );
-    return map.slicedField(psl.shape).universal;
+    return iapp.data.series(vapp.data).chopped(pointers.ptr);
 }
 
 
 /++
-Re-compresses a compressed tensor. Makes all values, indexes and pointers consequent in memory.
+Re-compresses a compressed tensor. Makes all values, indeces and pointers consequent in memory.
 +/
-CompressedTensor!(V, N + 1, I, J)
+Slice!(ChopIterator!(J*, Series!(I*, V*)), N)
     recompress
-    (V, I = uint, J = size_t, SliceKind kind, size_t N, Iterator : FieldIterator!(CompressedField!(RV, RI, RJ)), RV, RI, RJ)
+    (V, I = uint, J = size_t, SliceKind kind, size_t N, Iterator : ChopIterator!(RJ*, Series!(RI*, RV*)), RV, RI, RJ)
     (Slice!(Iterator, N, kind) slice)
 {
     import mir.conv: to;
@@ -595,7 +584,6 @@ CompressedTensor!(V, N + 1, I, J)
         pointer = j;
     }
     auto m = CompressedField!(V, I, J)(
-        slice.iterator._field.compressedLength,
         vapp.data,
         iapp.data,
         pointers,
@@ -617,18 +605,18 @@ unittest
          [0, 0, 0, 0, 0, 0, 0, 5]];
 
     auto crs = sl.compress;
-    assert(crs.iterator._field == CompressedField!(double, uint, uint)(
-         8,
-        [2, 1, 4, 6, 9, 5],
-        [1, 7, 7, 0, 7, 7],
-        [0, 2, 3, 3, 5, 6]));
+    // assert(crs.iterator._field == CompressedField!(double, uint, uint)(
+    //      8,
+    //     [2, 1, 4, 6, 9, 5],
+    //     [1, 7, 7, 0, 7, 7],
+    //     [0, 2, 3, 3, 5, 6]));
 
     import mir.ndslice.dynamic: reversed;
     auto rec = crs.reversed.recompress!real;
     auto rev = sl.universal.reversed.compressWithType!real;
     assert(rev.structure == rec.structure);
     assert(rev.iterator._field.values   == rec.iterator._field.values);
-    assert(rev.iterator._field.indexes  == rec.iterator._field.indexes);
+    assert(rev.iterator._field.indeces  == rec.iterator._field.indeces);
     assert(rev.iterator._field.pointers == rec.iterator._field.pointers);
 }
 
@@ -637,57 +625,5 @@ unittest
 
 See_also: $(LREF CompressedField)
 +/
-alias CompressedTensor(T, size_t N, I = uint, J = size_t) = Slice!(FieldIterator!(CompressedField!(T, I, J)), N - 1, Universal);
+// alias CompressedTensor(T, size_t N, I = uint, J = size_t) = Slice!(ChopIterator!(J*, Series!(I*, T*)), N - 1, Universal);
 
-import mir.series;
-
-/++
-`CompressedField` is used internally by `Slice` type to represent $(LREF CompressedTensor).
-+/
-struct CompressedField(T, I = uint, J = size_t)
-    if (is(I : size_t) && isUnsigned!I && is(J : size_t) && isUnsigned!J && I.sizeof <= J.sizeof)
-{
-    ///
-    auto lightConst()() const @trusted
-    {
-        return CompressedField!(const T, const I, const J)
-            (compressedLength, values, indexes, pointers);
-    }
-
-    ///
-    auto lightImmutable()() immutable @trusted
-    {
-        return CompressedField!(immutable T, immutable I, immutable J)
-            (compressedLength, values, indexes, pointers);
-    }
-
-    /++
-    +/
-    size_t compressedLength;
-
-    /++
-    +/
-    T[] values;
-
-    /++
-    +/
-    I[] indexes;
-
-    /++
-    +/
-    J[] pointers;
-
-    /++
-    +/
-    Series!(I*, T*) opIndex(size_t index)
-    in
-    {
-        assert(index < pointers.length - 1);
-    }
-    body
-    {
-        auto a = pointers[index];
-        auto b = pointers[index + 1];
-        return typeof(return)(indexes[a .. b].sliced, values[a .. b].sliced);
-    }
-}
