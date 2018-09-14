@@ -17,7 +17,6 @@ public import mir.series: isSeries, Series, mir_series, series;
 public import mir.ndslice.slice: CoordinateValue, Slice, mir_slice;
 public import mir.ndslice.topology: chopped;
 
-private enum isIndex(I) = is(I : size_t);
 
 //TODO: replace with `static foreach`
 private template Iota(size_t i, size_t j)
@@ -39,14 +38,7 @@ Returns:
     `N`-dimensional slice composed of indeces
 See_also: $(LREF Sparse)
 +/
-Sparse!(T, Lengths.length) sparse(T, Lengths...)(Lengths lengths)
-    if (allSatisfy!(isIndex, Lengths))
-{
-    return .sparse!(T, Lengths.length)([lengths]);
-}
-
-/// ditto
-Sparse!(T, N) sparse(T, size_t N)(auto ref size_t[N] lengths)
+Sparse!(T, N) sparse(T, size_t N)(size_t[N] lengths...)
 {
     T[size_t] table;
     table[0] = 0;
@@ -73,11 +65,6 @@ pure unittest
     static assert(is(Sparse!(double, 2) : Slice!(FieldIterator!(SparseField!double), 2)));
     static assert(is(DeepElementType!(Sparse!(double, 2)) == double));
 }
-
-/++
-Sparse Slice in Dictionary of Keys (DOK) format.
-+/
-alias Sparse(T, size_t N = 1) = Slice!(FieldIterator!(SparseField!T), N);
 
 /++
 Returns unsorted forward range of (coordinate, value) pairs.
@@ -504,9 +491,18 @@ unittest
 }
 
 /++
-`CompressedTensor!(T, N, I, J)` is  `Slice!(N - 1, CompressedField!(T, I, J))`.
-
-See_also: $(LREF CompressedField)
+Sparse Slice in Dictionary of Keys (DOK) format.
 +/
-// alias CompressedTensor(T, size_t N, I = uint, J = size_t) = Slice!(ChopIterator!(J*, Series!(I*, T*)), N - 1);
+alias Sparse(T, size_t N = 1) = Slice!(FieldIterator!(SparseField!T), N);
 
+///
+alias CompressedVector(T, I = uint) = Series!(T*, I*);
+
+///
+alias CompressedMatrix(T, I = uint) = Slice!(ChopIterator!(J*, Series!(T*, I*)));
+
+///
+alias CompressedTensor(T, size_t N, I = uint, J = size_t) = Slice!(ChopIterator!(J*, Series!(T*, I*)), N - 1);
+
+///ditto
+alias CompressedTensor(T, size_t N : 1, I = uint) = Series!(I*, T*);
