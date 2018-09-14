@@ -11,9 +11,8 @@ import std.traits;
 import std.meta;
 
 import mir.ndslice.slice;
-import mir.ndslice.topology: universal;
 public import mir.ndslice.iterator: ChopIterator, FieldIterator;
-public import mir.series: Series, mir_series, series;
+public import mir.series: isSeries, Series, mir_series, series;
 public import mir.ndslice.slice: Slice, mir_slice;
 import mir.ndslice.topology: chopped;
 
@@ -39,7 +38,7 @@ Returns:
     `N`-dimensional slice composed of indeces
 See_also: $(LREF Sparse)
 +/
-Sparse!(T, Lengths.length,) sparse(T, Lengths...)(Lengths lengths)
+Sparse!(T, Lengths.length) sparse(T, Lengths...)(Lengths lengths)
     if (allSatisfy!(isIndex, Lengths))
 {
     return .sparse!(T, Lengths.length)([lengths]);
@@ -52,7 +51,7 @@ Sparse!(T, N) sparse(T, size_t N)(auto ref size_t[N] lengths)
     table[0] = 0;
     table.remove(0);
     assert(table !is null);
-    with (typeof(return)) return FieldIterator!(SparseField!T)(0, SparseField!T(table)).sliced(lengths).universal;
+    with (typeof(return)) return FieldIterator!(SparseField!T)(0, SparseField!T(table)).sliced(lengths);
 }
 
 ///
@@ -70,14 +69,14 @@ pure unittest
     static assert(isRandomAccessRange!(Sparse!(double, 2)));
 
     import mir.ndslice.slice: Slice, DeepElementType;
-    static assert(is(Sparse!(double, 2) : Slice!(FieldIterator!(SparseField!double), 2, Universal)));
+    static assert(is(Sparse!(double, 2) : Slice!(FieldIterator!(SparseField!double), 2)));
     static assert(is(DeepElementType!(Sparse!(double, 2)) == double));
 }
 
 /++
 Sparse Slice in Dictionary of Keys (DOK) format.
 +/
-alias Sparse(T, size_t N = 1) = Slice!(FieldIterator!(SparseField!T), N, Universal);
+alias Sparse(T, size_t N = 1) = Slice!(FieldIterator!(SparseField!T), N);
 
 /++
 `SparseField` is used internally by `Slice` type to represent $(LREF Sparse).
@@ -211,7 +210,7 @@ Returns unsorted forward range of (coordinate, value) pairs.
 Params:
     slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
-auto byCoordinateValue(S : Slice!(Iterator, N, Universal), size_t N, Iterator : FieldIterator!(SparseField!T), T)(S slice)
+auto byCoordinateValue(size_t N, T)(Slice!(FieldIterator!(SparseField!T), N) slice)
 {
     static struct CoordinateValues
     {
@@ -270,7 +269,7 @@ Returns unsorted forward range of coordinates.
 Params:
     slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
-auto byCoordinate(S : Slice!(Iterator, N, Universal), size_t N, Iterator : FieldIterator!(SparseField!T), T)(S slice)
+auto byCoordinate(S : Slice!(Iterator, N), size_t N, Iterator : FieldIterator!(SparseField!T), T)(S slice)
 {
     static struct Coordinates
     {
@@ -326,7 +325,7 @@ Returns unsorted forward range of values.
 Params:
     slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
-auto byValueOnly(S : Slice!(Iterator, N, Universal), size_t N, Iterator : FieldIterator!(SparseField!T), T)(S slice)
+auto byValueOnly(S : Slice!(Iterator, N), size_t N, Iterator : FieldIterator!(SparseField!T), T)(S slice)
 {
     static struct Values
     {
@@ -383,12 +382,13 @@ private mixin template _sparse_range_methods(T, size_t N)
 }
 
 /++
-Returns compressed tensor
+Returns compressed tensor.
+Note: allocates using GC.
 +/
 auto compress(I = uint, J = size_t, SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) slice)
     if (N > 1)
 {
-    return compressWithType!(DeepElementType!(Slice!(Iterator, N, kind)), I, J, Iterator, N, kind)(slice);
+    return compressWithType!(DeepElementType!(Slice!(Iterator, N, kind)), I, J)(slice);
 }
 
 /// Sparse tensor compression
@@ -474,6 +474,7 @@ unittest
 
 /++
 Returns compressed tensor with different element type.
+Note: allocates using GC.
 +/
 Slice!(ChopIterator!(J*, Series!(I*, V*)), N - 1)
     compressWithType(V, I = uint, J = size_t, T, size_t N)
@@ -512,7 +513,7 @@ Slice!(ChopIterator!(J*, Series!(I*, V*)), N - 1)
 
     }
     pointers[k + 1 .. $] = pointers[k];
-    return compressedData.chopped(pointers.ptr);
+    return compressedData.chopped(pointers);
 }
 
 
@@ -520,7 +521,7 @@ Slice!(ChopIterator!(J*, Series!(I*, V*)), N - 1)
 Slice!(ChopIterator!(J*, Series!(I*, V*)), N - 1)
     compressWithType(V, I = uint, J = size_t, Iterator, size_t N, SliceKind kind)
     (Slice!(Iterator, N, kind) slice)
-    if (!is(Iterator : FieldIterator!(SparseField!ST), ST) && is(DeepElementType!(Slice!(Iterator, N, Universal)) : V) && N > 1 && isUnsigned!I)
+    if (!is(Iterator : FieldIterator!(SparseField!ST), ST) && is(DeepElementType!(Slice!(Iterator, N, kind)) : V) && N > 1 && isUnsigned!I)
 {
     import std.array: appender;
     import mir.ndslice.topology: pack, flattened;
@@ -550,50 +551,57 @@ Slice!(ChopIterator!(J*, Series!(I*, V*)), N - 1)
         }
         pointer = cast(J)j;
     }
-    return iapp.data.series(vapp.data).chopped(pointers.ptr);
+    return iapp.data.series(vapp.data).chopped(pointers);
 }
 
 
 /++
 Re-compresses a compressed tensor. Makes all values, indeces and pointers consequent in memory.
+
+Sparse slice is iterated twice. The first tine it is iterated to get length of each sparse row, the second time - to copy the data.
+
+Note: allocates using GC.
 +/
 Slice!(ChopIterator!(J*, Series!(I*, V*)), N)
     recompress
-    (V, I = uint, J = size_t, SliceKind kind, size_t N, Iterator : ChopIterator!(RJ*, Series!(RI*, RV*)), RV, RI, RJ)
-    (Slice!(Iterator, N, kind) slice)
+    (V, I = uint, J = size_t, Iterator, size_t N, SliceKind kind)
+    (Slice!(Iterator, N, kind) sparseSlice)
+    if (isSeries!(DeepElementType!(Slice!(Iterator, N, kind))))
 {
+    import mir.algorithm.iteration: each;
     import mir.conv: to;
-    import mir.ndslice.topology: as;
-    import std.array: appender;
+    import mir.ndslice.allocation: uninitSlice;
+    import mir.ndslice.topology: as, member, zip;
     import mir.ndslice. topology: pack, flattened;
-    auto vapp = appender!(V[]);
-    auto iapp = appender!(I[]);
-    auto count = slice.elementCount;
-    auto pointers = new J[count + 1];
+    import std.backdoor: emplaceRef;
+    
+    size_t count = sparseSlice.elementCount;
+    size_t length;
+    auto pointers = uninitSlice!J(count + 1);
+    pointers.front = 0;
+    sparseSlice
+        .member!"data"
+        .member!"elementCount"
+        .each!((len, ref ptr) {ptr = length += len;})(pointers[1 .. $]);
 
-    pointers[0] = 0;
-    auto elems = slice.flattened;
-    J j = 0;
-    foreach (ref pointer; pointers[1 .. $])
-    {
-        auto row = elems.front;
-        elems.popFront;
-        iapp.put(row.index.as!I);
-        vapp.put(row.value.as!V);
-        j += cast(J) row.index.length;
-        pointer = j;
-    }
-    auto m = CompressedField!(V, I, J)(
-        vapp.data,
-        iapp.data,
-        pointers,
-        );
-    return m.slicedField(slice.shape).universal;
+    auto i = uninitSlice!I(length);
+    auto v = uninitSlice!V(length);
+
+    auto ret = i.series(v).chopped(pointers);
+
+    sparseSlice
+        .each!((a, b) {
+            b.index[] = a.index.as!I;
+            b.value.each!(emplaceRef!V)(a.value.as!V);
+        })(ret);
+
+    return ret;
 }
 
 ///
 unittest
 {
+    import mir.ndslice.topology: universal;
     import mir.ndslice.allocation: slice;
 
     auto sl = slice!double(5, 8);
@@ -615,9 +623,9 @@ unittest
     auto rec = crs.reversed.recompress!real;
     auto rev = sl.universal.reversed.compressWithType!real;
     assert(rev.structure == rec.structure);
-    assert(rev.iterator._field.values   == rec.iterator._field.values);
-    assert(rev.iterator._field.indeces  == rec.iterator._field.indeces);
-    assert(rev.iterator._field.pointers == rec.iterator._field.pointers);
+    // assert(rev.iterator._field.values   == rec.iterator._field.values);
+    // assert(rev.iterator._field.indeces  == rec.iterator._field.indeces);
+    // assert(rev.iterator._field.pointers == rec.iterator._field.pointers);
 }
 
 /++
@@ -625,5 +633,5 @@ unittest
 
 See_also: $(LREF CompressedField)
 +/
-// alias CompressedTensor(T, size_t N, I = uint, J = size_t) = Slice!(ChopIterator!(J*, Series!(I*, T*)), N - 1, Universal);
+// alias CompressedTensor(T, size_t N, I = uint, J = size_t) = Slice!(ChopIterator!(J*, Series!(I*, T*)), N - 1);
 
