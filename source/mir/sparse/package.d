@@ -74,19 +74,22 @@ Params:
 +/
 auto byCoordinateValue(size_t N, T)(Slice!(FieldIterator!(SparseField!T), N) slice)
 {
-    static struct CoordinateValues
+    struct ByCoordinateValue
     {
-        static if (N > 1)
-            private sizediff_t[N-1] _strides;
-        mixin _sparse_range_methods!(T, N);
-        private typeof(Sparse!(T, N).init.iterator._field.table.byKeyValue()) _range;
+        private sizediff_t[N-1] _strides;
+        mixin _sparse_range_methods!(typeof(slice._iterator._field._table.byKeyValue()));
 
         auto front() @property
-        {
+        {S:
             assert(!_range.empty);
             auto iv = _range.front;
             size_t index = iv.key;
-            CoordinateValue!(T, N) ret = void;
+            if (!(_l <= index && index < _r))
+            {
+                _range.popFront;
+                goto S;
+            }
+            CoordinateValue!(T, N) ret;
             foreach (i; Iota!(0, N - 1))
             {
                 ret.index[i] = index / _strides[i];
@@ -97,28 +100,22 @@ auto byCoordinateValue(size_t N, T)(Slice!(FieldIterator!(SparseField!T), N) sli
             return ret;
         }
     }
-    static if (N > 1)
-    {
-        CoordinateValues ret = void;
-        ret._strides = slice.structure.strides[0..N-1];
-        ret._length = slice.iterator._field.table.length;
-        ret._range = slice.iterator._field.table.byKeyValue;
-        return ret;
-    }
-    else
-        return CoordinateValues(slice.iterator._field.table.byKeyValue);
+    size_t l = slice._iterator._index;
+    size_t r = l + slice.elementCount;
+    size_t length = slice._iterator._field._table.byKey.countInInterval(l, r);
+    return ByCoordinateValue(slice.strides[0..N-1], length, l, r, slice._iterator._field._table.byKeyValue);
 }
 
 ///
 pure unittest
 {
-    import std.array: array;
-    import std.algorithm.sorting: sort;
+    import mir.array.allocation: array;
+    import mir.ndslice.sorting: sort;
     alias CV = CoordinateValue!(double, 2);
 
     auto slice = sparse!double(3, 3);
     slice[] = [[0, 2, 1], [0, 0, 4], [6, 7, 0]];
-    assert(slice.byCoordinateValue.array.sort().release == [
+    assert(slice.byCoordinateValue.array.sort() == [
         CV([0, 1], 2),
         CV([0, 2], 1),
         CV([1, 2], 4),
@@ -131,20 +128,23 @@ Returns unsorted forward range of coordinates.
 Params:
     slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
-auto byCoordinate(S : Slice!(Iterator, N), size_t N, Iterator : FieldIterator!(SparseField!T), T)(S slice)
+auto byCoordinate(T, size_t N)(Slice!(FieldIterator!(SparseField!T), N) slice)
 {
-    static struct Coordinates
+    struct ByCoordinate
     {
-        static if (N > 1)
-            private sizediff_t[N-1] _strides;
-        mixin _sparse_range_methods!(T, N);
-        private typeof(Sparse!(T, N).init.iterator._field.table.byKey()) _range;
+        private sizediff_t[N-1] _strides;
+        mixin _sparse_range_methods!(typeof(slice._iterator._field._table.byKey()));
 
         auto front() @property
-        {
+        {S:
             assert(!_range.empty);
             size_t index = _range.front;
-            size_t[N] ret = void;
+            if (!(_l <= index && index < _r))
+            {
+                _range.popFront;
+                goto S;
+            }
+            size_t[N] ret;
             foreach (i; Iota!(0, N - 1))
             {
                 ret[i] = index / _strides[i];
@@ -154,27 +154,21 @@ auto byCoordinate(S : Slice!(Iterator, N), size_t N, Iterator : FieldIterator!(S
             return ret;
         }
     }
-    static if (N > 1)
-    {
-        Coordinates ret = void;
-        ret._strides = slice.structure.strides[0..N-1];
-        ret._length = slice.iterator._field.table.length;
-        ret._range = slice.iterator._field.table.byKey;
-        return ret;
-    }
-    else
-        return Coordinates(slice.iterator._field.table.byKey);
+    size_t l = slice._iterator._index;
+    size_t r = l + slice.elementCount;
+    size_t length = slice._iterator._field._table.byKey.countInInterval(l, r);
+    return ByCoordinate(slice.strides[0 .. N - 1], length, l, r, slice._iterator._field._table.byKey);
 }
 
 ///
 pure unittest
 {
-    import std.array: array;
-    import std.algorithm.sorting: sort;
+    import mir.array.allocation: array;
+    import mir.ndslice.sorting: sort;
 
     auto slice = sparse!double(3, 3);
     slice[] = [[0, 2, 1], [0, 0, 4], [6, 7, 0]];
-    assert(slice.byCoordinate.array.sort().release == [
+    assert(slice.byCoordinate.array.sort() == [
         [0, 1],
         [0, 2],
         [1, 2],
@@ -187,36 +181,52 @@ Returns unsorted forward range of values.
 Params:
     slice = sparse slice with pure structure. Any operations on structure of a slice are not allowed.
 +/
-auto byValueOnly(S : Slice!(Iterator, N), size_t N, Iterator : FieldIterator!(SparseField!T), T)(S slice)
+auto onlyByValue(T, size_t N)(Slice!(FieldIterator!(SparseField!T), N) slice)
 {
-    static struct Values
+    struct ByValue
     {
-        mixin _sparse_range_methods!(T, N);
-        private typeof(Sparse!(T, N).init.iterator._field.table.byValue) _range;
+        mixin _sparse_range_methods!(typeof(slice._iterator._field._table.byKeyValue()));
 
         auto front() @property
-        {
+        {S:
             assert(!_range.empty);
-            return _range.front;
+            auto iv = _range.front;
+            size_t index = iv.key;
+            if (!(_l <= index && index < _r))
+            {
+                _range.popFront;
+                goto S;
+            }
+            return iv.value;
         }
     }
-    return Values(slice.iterator._field.table.length, slice.iterator._field.table.byValue);
+    size_t l = slice._iterator._index;
+    size_t r = l + slice.elementCount;
+    size_t length = slice._iterator._field._table.byKey.countInInterval(l, r);
+    return ByValue(length, l, r, slice._iterator._field._table.byKeyValue);
 }
 
 ///
 pure unittest
 {
-    import std.array: array;
-    import std.algorithm.sorting: sort;
+    import mir.array.allocation: array;
+    import mir.ndslice.sorting: sort;
 
     auto slice = sparse!double(3, 3);
     slice[] = [[0, 2, 1], [0, 0, 4], [6, 7, 0]];
-    assert(slice.byValueOnly.array.sort().release == [1, 2, 4, 6, 7]);
+    assert(slice.onlyByValue.array.sort() == [1, 2, 4, 6, 7]);
 }
 
-private mixin template _sparse_range_methods(T, size_t N)
+private size_t countInInterval(Range)(Range range, size_t l, size_t r)
 {
-    private size_t _length;
+    import mir.algorithm.iteration: count;
+    return range.count!(i => l <= i && i < r);
+}
+
+private mixin template _sparse_range_methods(Range)
+{
+    private size_t _length, _l, _r;
+    private Range _range;
 
     void popFront()
     {
@@ -343,13 +353,13 @@ Slice!(ChopIterator!(J*, Series!(I*, V*)), N - 1)
     (Slice!(FieldIterator!(SparseField!T), N) slice)
     if (is(T : V) && N > 1 && isUnsigned!I)
 {
-    import std.array: array;
+    import mir.array.allocation: array;
     import mir.ndslice.sorting: sort;
     import mir.ndslice.topology: iota;
     auto compressedData = slice
         .iterator
         ._field
-        .table
+        ._table
         .series!(size_t, T, I, V);
     auto pointers = new J[slice.shape[0 .. N - 1].iota.elementCount + 1];
     size_t k = 1, shift;
