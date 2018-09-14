@@ -29,8 +29,8 @@
 */
 
 import std.datetime.stopwatch;
-import std.conv : to;
 import std.stdio;
+import mir.conv : to;
 import mir.ndslice;
 
 enum testCount = 10_000;
