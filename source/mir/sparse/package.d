@@ -11,10 +11,11 @@ import std.traits;
 import std.meta;
 
 import mir.ndslice.slice;
+public import mir.ndslice.field: SparseField;
 public import mir.ndslice.iterator: ChopIterator, FieldIterator;
 public import mir.series: isSeries, Series, mir_series, series;
-public import mir.ndslice.slice: Slice, mir_slice;
-import mir.ndslice.topology: chopped;
+public import mir.ndslice.slice: CoordinateValue, Slice, mir_slice;
+public import mir.ndslice.topology: chopped;
 
 private enum isIndex(I) = is(I : size_t);
 
@@ -77,132 +78,6 @@ pure unittest
 Sparse Slice in Dictionary of Keys (DOK) format.
 +/
 alias Sparse(T, size_t N = 1) = Slice!(FieldIterator!(SparseField!T), N);
-
-/++
-`SparseField` is used internally by `Slice` type to represent $(LREF Sparse).
-+/
-struct SparseField(T)
-{
-    ///
-    T[size_t] table;
-
-    ///
-    auto lightConst()() const @trusted
-    {
-        return SparseField!(const T)(cast(const(T)[size_t])table);
-    }
-
-    ///
-    auto lightImmutable()() immutable @trusted
-    {
-        return SparseField!(immutable T)(cast(immutable(T)[size_t])table);
-    }
-
-    ///
-    auto save()() @property
-    {
-        return this;
-    }
-
-    ///
-    T opIndex()(size_t index)
-    {
-        static if (isScalarType!T)
-            return table.get(index, cast(T)0);
-        else
-            return table.get(index, null);
-    }
-
-    ///
-    T opIndexAssign()(T value, size_t index)
-    {
-        static if (isScalarType!T)
-        {
-            if (value != 0)
-            {
-                table[index] = value;
-            }
-        }
-        else
-        {
-            if (value !is null)
-            {
-                table[index] = value;
-            }
-        }
-        return value;
-    }
-
-    ///
-    T opIndexUnary(string op)(size_t index)
-        if (op == `++` || op == `--`)
-    {
-        mixin (`auto value = ` ~ op ~ `table[index];`);
-        static if (isScalarType!T)
-        {
-            if (value == 0)
-            {
-                table.remove(index);
-            }
-        }
-        else
-        {
-            if (value is null)
-            {
-                table.remove(index);
-            }
-        }
-        return value;
-    }
-
-    ///
-    T opIndexOpAssign(string op)(T value, size_t index)
-        if (op == `+` || op == `-`)
-    {
-        mixin (`value = table[index] ` ~ op ~ `= value;`); // this works
-        static if (isScalarType!T)
-        {
-            if (value == 0)
-            {
-                table.remove(index);
-            }
-        }
-        else
-        {
-            if (value is null)
-            {
-                table.remove(index);
-            }
-        }
-        return value;
-    }
-}
-
-/++
-Combination of coordinate(s) and value.
-+/
-struct CoordinateValue(T, size_t N = 1)
-{
-    ///
-    size_t[N] index;
-
-    ///
-    T value;
-
-    ///
-    sizediff_t opCmp()(auto ref const typeof(this) rht) const
-    {
-        return cmpCoo(this.index, rht.index);
-    }
-}
-
-private sizediff_t cmpCoo(size_t N)(const auto ref size_t[N] a, const auto ref size_t[N] b)
-{
-    foreach (i; Iota!(0, N))
-        if (auto d = a[i] - b[i])
-            return d;
-    return 0;
-}
 
 /++
 Returns unsorted forward range of (coordinate, value) pairs.
