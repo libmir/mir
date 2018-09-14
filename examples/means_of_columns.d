@@ -41,7 +41,6 @@ void main() {
     sl = iota!int(100, 1000).slice;
     auto r = benchmark!({
     	means = sl
-        .universal
         .transposed
         .pack!1
         .map!(col => reduce!"a + b"(0L, col) / double(col.length))
