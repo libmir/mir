@@ -217,10 +217,14 @@ pure unittest
     assert(slice.onlyByValue.array.sort() == [1, 2, 4, 6, 7]);
 }
 
+pragma(inline, false)
 private size_t countInInterval(Range)(Range range, size_t l, size_t r)
 {
-    import mir.algorithm.iteration: count;
-    return range.count!(i => l <= i && i < r);
+    size_t count;
+    foreach(ref i; range)
+        if (l <= i && i < r)
+            count++;
+    return count;
 }
 
 private mixin template _sparse_range_methods(Range)
