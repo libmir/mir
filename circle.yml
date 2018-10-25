@@ -17,16 +17,11 @@ dependencies:
     - ldmd2 --version
     - curl -fsSL --retry 3 http://code.dlang.org/files/dub-${DUB}-linux-x86_64.tar.gz | tar -C ~/ldc2-$LDC-linux-x86_64/bin -zxf -
     - dub --version
-    # - wget -q -O dscanner "http://releases.dlang.io/dscanner/0.3.0-git/dscanner"
-    # - chmod +x dscanner
-    # - wget "https://raw.githubusercontent.com/dlang/dmd/master/src/checkwhitespace.d"
 test:
   override:
-    # - dscanResult=$(./dscanner --config .dscanner.ini --styleCheck source 2> /dev/null ) ; if [ -z "${dscanResult}" ] ; then echo "No warnings found" ; else echo $dscanResult && $(exit 1); fi
-    - grep -nE "(for|foreach|foreach_reverse|if|while)\(" $(find source -name '*.d'); test $? -eq 1
-    # - ldmd2 -O -release -run ./checkwhitespace.d $(find source -name '*.d')
     - dub test --compiler=ldmd2
     - dub test --compiler=ldmd2 --build=unittest-release
+    - git clone https://github.com/libmir/mir-core
     - git clone https://github.com/libmir/mir-random
     - git clone https://github.com/libmir/mir-algorithm
     - make -f doc/Makefile html

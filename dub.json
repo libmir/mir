@@ -13,23 +13,22 @@
     "configurations": [
         {
             "name": "source",
-            "targetType": "sourceLibrary",
+            "targetType": "sourceLibrary"
         },
         {
             "name": "static",
-            "targetType": "staticLibrary",
+            "targetType": "staticLibrary"
         },
         {
             "name": "dynamic",
-            "targetType": "dynamicLibrary",
+            "targetType": "dynamicLibrary"
         },
         {
             "name": "unittest",
-            "versions": ["to_be_filled"],
+            "versions": ["to_be_filled"]
         }
     ],
     "dependencies": {
-        "mir-random": ">=1.0.0 <2.0.0",
-        "mir-algorithm": ">=2.0.1 <2.5.0"
+        "mir-random": "~>2.0.0"
     }
 }

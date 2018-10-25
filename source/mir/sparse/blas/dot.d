@@ -8,6 +8,7 @@ module mir.sparse.blas.dot;
 import std.traits;
 import mir.ndslice.slice;
 import mir.sparse;
+import mir.series;
 
 /++
 Dot product of two vectors
@@ -19,8 +20,8 @@ Returns:
     scalar `xᵀ × y`
 +/
 Unqual!(CommonType!(T1, T2)) dot(
-    V1 : CompressedArray!(T1, I1),
-    V2 : CompressedArray!(T2, I2),
+    V1 : Series!(I1*, T1*),
+    V2 : Series!(I2*, T2*),
     T1, T2, I1, I2)
 (V1 x, V2 y)
 {
@@ -30,8 +31,8 @@ Unqual!(CommonType!(T1, T2)) dot(
 /// ditto
 D dot(
     D,
-    V1 : CompressedArray!(T1, I1),
-    V2 : CompressedArray!(T2, I2),
+    V1 : Series!(I1*, T1*),
+    V2 : Series!(I2*, T2*),
     T1, T2, I1, I2)
 (V1 x, V2 y)
 {
@@ -42,40 +43,38 @@ D dot(
     Unqual!I1 ai0 = void;
     Unqual!I2 bi0 = void;
 
-    if (x.indexes.length && y.indexes.length) for (;;)
+    if (x.length && y.length) for (;;)
     {
-        bi0 = y.indexes[0];
-        if (x.indexes[0] < bi0)
+        bi0 = y.index[0];
+        if (x.index[0] < bi0)
         {
             do
             {
-                x.values = x.values[1 .. $];
-                x.indexes = x.indexes[1 .. $];
-                if (x.indexes.length == 0)
+                x.popFront;
+                if (x.length == 0)
                 {
                     break;
                 }
             }
-            while (x.indexes[0] < bi0);
+            while (x.index[0] < bi0);
             done = 2;
         }
         if (--done == 0)
         {
             goto L;
         }
-        ai0 = x.indexes[0];
-        if (y.indexes[0] < ai0)
+        ai0 = x.index[0];
+        if (y.index[0] < ai0)
         {
             do
             {
-                y.values = y.values[1 .. $];
-                y.indexes = y.indexes[1 .. $];
-                if (y.indexes.length == 0)
+                y.popFront;
+                if (y.length == 0)
                 {
                     break;
                 }
             }
-            while (y.indexes[0] < ai0);
+            while (y.index[0] < ai0);
             done = 2;
         }
         if (--done == 0)
@@ -84,19 +83,17 @@ D dot(
         }
         continue;
         L:
-        s = x.values[0] * y.values[0] + s;
-        x.indexes = x.indexes[1 .. $];
-        if (x.indexes.length == 0)
+        s = x.value[0] * y.value[0] + s;
+        x.popFront;
+        if (x.length == 0)
         {
             break;
         }
-        y.indexes = y.indexes[1 .. $];
-        if (y.indexes.length == 0)
+        y.popFront;
+        if (y.length == 0)
         {
             break;
         }
-        x.values = x.values[1 .. $];
-        y.values = y.values[1 .. $];
     }
 
     return s;
@@ -105,8 +102,8 @@ D dot(
 ///
 unittest
 {
-    auto x = CompressedArray!(int, uint)([1, 3, 4, 9, 10], [0, 3, 5, 9, 100]);
-    auto y = CompressedArray!(int, uint)([1, 10, 100, 1000], [1, 3, 4, 9]);
+    auto x = series([0u, 3, 5, 9, 100], [1, 3, 4, 9, 10]);
+    auto y = series([1u, 3, 4, 9], [1, 10, 100, 1000]);
     // x = [1, 0, 0,  3, 0, 4, 0, 0, 0, 9, ... ,10]
     // y = [0, 1, 0, 10, 0, 0, 0, 0, 0, 1000]
     assert(dot(x, y) == 9030);
@@ -122,7 +119,7 @@ Returns:
     scalar `x × y`
 +/
 Unqual!(CommonType!(T1, ForeachType!V2)) dot(
-    V1 : CompressedArray!(T1, I1),
+    V1 : Series!(I1*, T1*),
     T1, I1, V2)
 (V1 x, V2 y)
     if (isDynamicArray!V2 || isSlice!V2)
@@ -133,14 +130,14 @@ Unqual!(CommonType!(T1, ForeachType!V2)) dot(
 ///ditto
 D dot(
     D,
-    V1 : CompressedArray!(T1, I1),
+    V1 : Series!(I1*, T1*),
     T1, I1, V2)
 (V1 x, V2 y)
     if (isDynamicArray!V2 || isSlice!V2)
 in
 {
-    if (x.indexes.length)
-        assert(x.indexes[$-1] < y.length);
+    if (x.length)
+        assert(x.index[$-1] < y.length);
 }
 body
 {
@@ -151,9 +148,9 @@ body
 
     alias F = Unqual!(CommonType!(T1, T2));
     F s = 0;
-    foreach (size_t i; 0 .. x.indexes.length)
+    foreach (size_t i; 0 .. x.index.length)
     {
-        s = y[x.indexes[i]] * x.values[i] + s;
+        s = y[x.index[i]] * x.value[i] + s;
     }
 
     return s;
@@ -163,7 +160,7 @@ body
 unittest
 {
     import std.typecons: No;
-    auto x = CompressedArray!(double, uint)([1.0, 3, 4, 9, 13], [0, 3, 5, 9, 10]);
+    auto x = [0u, 3, 5, 9, 10].series([1.0, 3, 4, 9, 13]);
     auto y = [0.0, 1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     // x: [1, 0, 0, 3, 0, 4, 0, 0, 0, 9, 13,  0,  0,  0]
     // y: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]

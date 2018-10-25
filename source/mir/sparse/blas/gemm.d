@@ -10,6 +10,7 @@ import mir.ndslice.slice;
 import mir.ndslice.iterator;
 import mir.ndslice.allocation: slice;
 import mir.sparse;
+import mir.series;
 
 /++
 General matrix-matrix multiplication.
@@ -29,7 +30,7 @@ void gemm(
     SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
 (
     in CR alpha,
-    Slice!(FieldIterator!(CompressedField!(T1, I1, J1)), 1, kind1) a,
+    Slice!(ChopIterator!(J1*, Series!(I1*, T1*)), 1, kind1) a,
     Slice!(Iterator2, 2, kind2) b,
     in CL beta,
     Slice!(Iterator3, 2, kind3)  c)
@@ -99,7 +100,7 @@ void gemtm(
     SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
 (
     in CR alpha,
-    Slice!(FieldIterator!(CompressedField!(T1, I1, J1)), 1, kind1) a,
+    Slice!(ChopIterator!(J1*, Series!(I1*, T1*)), 1, kind1) a,
     Slice!(Iterator2, 2, kind2) b,
     in CL beta,
     Slice!(Iterator3, 2, kind3)  c)
@@ -163,14 +164,14 @@ Returns:
     `c[available indexes] <op>= (a × b)[available indexes]`.
 +/
 void selectiveGemm(string op = "", SliceKind kind1, SliceKind kind2, SliceKind kind3, T, T3, I3, J3)
-(Slice!(T*, 2, kind1) a, Slice!(T*, 2, kind2) b, Slice!(FieldIterator!(CompressedField!(T3, I3, J3)), 1, kind3) c)
+(Slice!(T*, 2, kind1) a, Slice!(T*, 2, kind2) b, Slice!(ChopIterator!(J3*, Series!(I3*, T3*)), 1, kind3) c)
 in
 {
     assert(a.length!1 == b.length!0);
     assert(c.length!0 == a.length!0);
     foreach (r; c)
-        if (r.indexes.length)
-            assert(r.indexes[$-1] < b.length!1);
+        if (r.index.length)
+            assert(r.index[$-1] < b.length!1);
 }
 body
 {
@@ -217,10 +218,9 @@ unittest
 
     selectiveGemm!"*"(a, b, c);
     assert(c.length == 3);
-    assert(c[0].indexes == [1, 2]);
-    assert(c[0].values == [105, -7]);
-    assert(c[1].indexes == []);
-    assert(c[1].values == []);
-    assert(c[2].indexes == [3]);
-    assert(c[2].values == [58]);
+    assert(c[0].index == [1, 2]);
+    assert(c[0].value == [105, -7]);
+    assert(c[1].empty);
+    assert(c[2].index == [3]);
+    assert(c[2].value == [58]);
 }

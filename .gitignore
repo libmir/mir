@@ -52,3 +52,4 @@ examples/lda_hoffman_sparse
 benchmarks/ndslice/binarization
 benchmarks/ndslice/convolution
 benchmarks/ndslice/euclidean_distance
+mir-test-unittest.exe

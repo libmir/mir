@@ -29,8 +29,8 @@
 */
 
 import std.datetime.stopwatch;
-import std.conv : to;
 import std.stdio;
+import mir.conv : to;
 import mir.ndslice;
 
 enum testCount = 10_000;
@@ -41,7 +41,6 @@ void main() {
     sl = iota!int(100, 1000).slice;
     auto r = benchmark!({
     	means = sl
-        .universal
         .transposed
         .pack!1
         .map!(col => reduce!"a + b"(0L, col) / double(col.length))

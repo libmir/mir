@@ -11,6 +11,7 @@ import mir.ndslice.slice;
 import mir.ndslice.iterator;
 import mir.internal.utility;
 import mir.sparse;
+import mir.series;
 
 /++
 General matrix-vector multiplication.
@@ -30,7 +31,7 @@ void gemv(
     SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
 (
     in CR alpha,
-    Slice!(FieldIterator!(CompressedField!(T1, I1, J1)), 1, kind1) a,
+    Slice!(ChopIterator!(J1*, Series!(I1*, T1*)), 1, kind1) a,
     Slice!(Iterator2, 1, kind2) x,
     in CL beta,
     Slice!(Iterator3, 1, kind3)  y)
@@ -99,7 +100,7 @@ void gemtv(
     SliceKind kind1, T1, I1, J1, SliceKind kind2, Iterator2, SliceKind kind3, Iterator3)
 (
     in CR alpha,
-    Slice!(FieldIterator!(CompressedField!(T1, I1, J1)), 1, kind1) a,
+    Slice!(ChopIterator!(J1*, Series!(I1*, T1*)), 1, kind1) a,
     Slice!(Iterator2, 1, kind2) x,
     in CL beta,
     Slice!(Iterator3, 1, kind3)  y)
@@ -172,7 +173,7 @@ void gemv(
     T2, I2,
     SliceKind kind3, Iterator3,
     )
-(in CR alpha, Slice!(Iterator1, 2, kind1) a, CompressedArray!(T2, I2) x, in CL beta, Slice!(Iterator3, 1, kind3) y)
+(in CR alpha, Slice!(Iterator1, 2, kind1) a, Series!(I2*, T2*) x, in CL beta, Slice!(Iterator3, 1, kind3) y)
 in
 {
     assert(a.length == y.length);
@@ -231,21 +232,21 @@ Returns:
     `y[available indexes] <op>= (alpha * a × x)[available indexes]`.
 +/
 void selectiveGemv(string op = "", SliceKind kind1, SliceKind kind2, T, T3, I3)
-(Slice!(T*, 2, kind1) a, Slice!(T*, 1, kind2) x, CompressedArray!(T3, I3) y)
+(Slice!(T*, 2, kind1) a, Slice!(T*, 1, kind2) x, Series!(I3*, T3*) y)
 in
 {
     assert(a.length!1 == x.length);
-    if (y.indexes.length)
-        assert(y.indexes[$-1] < a.length);
+    if (y.index.length)
+        assert(y.index[$-1] < a.length);
 }
 body
 {
     import mir.ndslice.dynamic: transposed;
 
-    foreach (i, j; y.indexes)
+    foreach (i, j; y.index.field)
     {
         import mir.glas.l1 : dot;
         auto d = dot(a[j], x);
-        mixin(`y.values[i] ` ~ op ~ `= d;`);
+        mixin(`y.value[i] ` ~ op ~ `= d;`);
     }
 }
