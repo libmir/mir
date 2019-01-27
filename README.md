@@ -26,7 +26,8 @@ Generic Numerical Library for Science and Machine Learning.
 - [Mir GLAS](https://github.com/libmir/mir-glas) - Linear Algebra Library (Experimental, not supported for now)
 - [Mir BLAS](https://github.com/libmir/mir-blas) - Bindings to libraries with CBLAS API like OpenBLAS and Intel MKL.
 - [Mir LAPACK](https://github.com/libmir/mir-lapack) - Bindings to libraries with LAPACK API like OpenBLAS and Intel MKL.
-- [Mir Runtime](https://github.com/libmir/mir-runtime) - Mir Runtime (experimental).
+- [Mir 
+time](https://github.com/libmir/mir-runtime) - Mir Runtime (experimental).
 - [Mir CPUID](https://github.com/libmir/mir-cpuid) - CPU Identification routines (less buggy then Phobos).
 
 
@@ -69,7 +70,7 @@ Example
 
 ```d
 /+dub.sdl:
-dependency "mir" version="~>1.1.1"
+dependency "mir" version="~>3.1.0"
 +/
 import std.stdio;
 import mir.combinatorics;
@@ -78,8 +79,6 @@ void main(string[] args)
     writeln([1, 2].combinations);
 }
 ```
-
-[![Open on run.dlang.io](https://img.shields.io/badge/run.dlang.io-open-blue.svg)](https://run.dlang.io/is/FIc6rd)
 
 Fast setup with the dub package manager
 ------------
