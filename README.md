@@ -1,5 +1,5 @@
 
-#### ❗ ndslice was reworked and moved to [Mir-Algorithm](https://github.com/libmir/mir-algorithm).
+#### ❗️ ndslice was reworked and moved to [Mir-Algorithm](https://github.com/libmir/mir-algorithm).
 The last Mir version with old ndslice is `v0.22.1`.
 #### ❗️ Mir GLAS was moved to https://github.com/libmir/mir-glas.
 
@@ -23,8 +23,11 @@ Generic Numerical Library for Science and Machine Learning.
 ##### Separated Mir Projects
 - [Mir Algorithm](https://github.com/libmir/mir-algorithm) - Multidimensional arrays (ndslice), iterators, algorithms.
 - [Mir Random](https://github.com/libmir/mir-random) - Professional Random Number Generators
-- [Mir GLAS](https://github.com/libmir/mir-glas) - Linear Algebra Library
-- [Mir CPUID](https://github.com/libmir/mir-cpuid) - CPU identification
+- [Mir GLAS](https://github.com/libmir/mir-glas) - Linear Algebra Library (Experimental, not supported for now)
+- [Mir BLAS](https://github.com/libmir/mir-blas) - Bindings to libraries with CBLAS API like OpenBLAS and Intel MKL.
+- [Mir LAPACK](https://github.com/libmir/mir-lapack) - Bindings to libraries with LAPACK API like OpenBLAS and Intel MKL.
+- [Mir Runtime](https://github.com/libmir/mir-runtime) - Mir Runtime (experimental).
+- [Mir CPUID](https://github.com/libmir/mir-cpuid) - CPU Identification routines (less buggy then Phobos).
 
 
 ##### Open Source Projects based on Mir
