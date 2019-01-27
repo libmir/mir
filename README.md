@@ -30,10 +30,6 @@ Generic Numerical Library for Science and Machine Learning.
 time](https://github.com/libmir/mir-runtime) - Mir Runtime (experimental).
 - [Mir CPUID](https://github.com/libmir/mir-cpuid) - CPU Identification routines (less buggy then Phobos).
 
-
-##### Open Source Projects based on Mir
-- [Computer Vision Library for D Programming Language](https://github.com/libmir/dcv)
-
 Documentation
 -------------
 
