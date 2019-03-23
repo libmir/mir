@@ -58,10 +58,10 @@ struct LdaHoffman(F)
         D = approximate total number of documents in a collection.
         alpha = Dirichlet document-topic prior (0.1)
         eta = Dirichlet word-topic prior (0.1)
-        tau0 = 𝞽0 ≧ 0 slows down the early iterations of the algorithm.
-        kappa = `𝞳 ∈ $(LPAREN)0.5, 1]`, controls the rate at which old values of 𝝺 are forgotten.
-            `𝝺 = (1 - 𝞀(𝞽)) 𝝺 + 𝞀 𝝺',  𝞀(𝞽) = (𝞽0 + 𝞽)^(-𝞳)`. Use `𝞳 = 0` for Batch variational Bayes LDA.
-        eps = Stop iterations if `||𝝺 - 𝝺'||_l1 < s * eps`, where `s` is a documents count in a batch.
+        tau0 = tau0 ≧ 0 slows down the early iterations of the algorithm.
+        kappa = `kappa belongs to $(LPAREN)0.5, 1]`, controls the rate at which old values of lambda are forgotten.
+            `lambda = (1 - rho(tau)) lambda + rho lambda',  rho(tau) = (tau0 + tau)^(-kappa)`. Use `kappa = 0` for Batch variational Bayes LDA.
+        eps = Stop iterations if `||lambda - lambda'||_l1 < s * eps`, where `s` is a documents count in a batch.
         tp = task pool
     +/
     this(size_t K, size_t W, size_t D, F alpha, F eta, F tau0, F kappa, F eps = 1e-5, TaskPool tp = taskPool())
