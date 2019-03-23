@@ -1,6 +1,6 @@
-/++
-$(H3 Online variational Bayes for latent Dirichlet allocation)
+/**
 
+$(H3 Online variational Bayes for latent Dirichlet allocation)
 
 References:
     Hoffman, Matthew D., Blei, David M. and Bach, Francis R..
@@ -10,7 +10,7 @@ References:
 License:   $(HTTP boost.org/LICENSE_1_0.txt, Boost License 1.0).
 Copyright: Copyright © 2016-, Ilya Yaroshenko
 Authors:   Ilya Yaroshenko
-+/
+*/
 module mir.model.lda.hoffman;
 
 import std.traits;
