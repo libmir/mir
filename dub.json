@@ -29,7 +29,7 @@
         }
     ],
     "dependencies": {
-        "mir-random": ">=2.1.0 <2.3.0"
+        "mir-random": "~>2.2.4"
     },
 	"subConfigurations": {
 		"mir-random": "extended"

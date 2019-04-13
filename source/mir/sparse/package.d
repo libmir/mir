@@ -17,7 +17,6 @@ public import mir.series: isSeries, Series, mir_series, series;
 public import mir.ndslice.slice: CoordinateValue, Slice, mir_slice;
 public import mir.ndslice.topology: chopped;
 
-
 //TODO: replace with `static foreach`
 private template Iota(size_t i, size_t j)
 {
@@ -445,11 +444,9 @@ Slice!(ChopIterator!(J*, Series!(I*, V*)), N)
     if (isSeries!(DeepElementType!(Slice!(Iterator, N, kind))))
 {
     import mir.algorithm.iteration: each;
-    import mir.conv: to;
+    import mir.conv: to, emplaceRef;
     import mir.ndslice.allocation: uninitSlice;
-    import mir.ndslice.topology: as, member, zip;
-    import mir.ndslice. topology: pack, flattened;
-    import std.backdoor: emplaceRef;
+    import mir.ndslice.topology: pack, flattened, as, member, zip;
     
     size_t count = sparseSlice.elementCount;
     size_t length;
