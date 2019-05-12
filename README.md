@@ -24,7 +24,7 @@ Generic Numerical Library for Science and Machine Learning.
 - [Mir BLAS](https://github.com/libmir/mir-blas) - Bindings to libraries with CBLAS API like OpenBLAS and Intel MKL.
 - [Mir LAPACK](https://github.com/libmir/mir-lapack) - Bindings to libraries with LAPACK API like OpenBLAS and Intel MKL.
 - [Mir 
-time](https://github.com/libmir/mir-runtime) - Mir Runtime (experimental).
+Runtime](https://github.com/libmir/mir-runtime) - Mir Runtime (experimental).
 - [Mir CPUID](https://github.com/libmir/mir-cpuid) - CPU Identification routines (less buggy then Phobos).
 
 Documentation
