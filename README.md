@@ -30,8 +30,7 @@ Runtime](https://github.com/libmir/mir-runtime) - Mir Runtime (experimental).
 Documentation
 -------------
 
-Documentation API can be found [here](http://docs.mir.dlang.io/latest/index.html).
-Read also the [Mir blog](http://blog.mir.dlang.io/).
+Documentation API can be found [here](http://mir.libmir.org).
 
 Contents
 --------
