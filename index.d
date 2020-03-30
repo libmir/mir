@@ -1,9 +1,6 @@
 Ddoc
 
-$(P Numerical library and mirror for upcoming numeric packages for the Dlang
-standard library.)
-
-$(P The following table is a quick reference guide for which mir modules to
+$(P The following table is a quick reference guide for which mir (backports) modules to
 use for a given category of functionality.)
 
 $(BOOKTABLE ,
@@ -33,7 +30,7 @@ $(BOOKTABLE ,
 )
 
 Macros:
-        TITLE=Mir
-        WIKI=Mir
+        TITLE=Mir (backports)
+        WIKI=Mir (backports)
         DDOC_BLANKLINE=
         _=

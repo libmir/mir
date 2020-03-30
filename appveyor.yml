@@ -2,7 +2,7 @@ platform: x64
 environment:
  matrix:
   - DC: ldc
-    DVersion: '1.13.0'
+    DVersion: '1.20.0'
     arch: x64
 
 skip_tags: true
@@ -89,13 +89,3 @@ test_script:
 #  - dub fetch imageformats --version 7.0.0 && dub build --arch %Darch% imageformats
 #  - dub build --single --arch %Darch% examples/median_filter.d
  - dub build --single --arch %Darch% examples/means_of_columns.d
-
-notifications:
- - provider: Webhook
-   url: https://webhooks.gitter.im/e/56aae174f8cc81f4eda4
- - provider: Email
-   to:
-    - devteam@mir.rocks
-   on_build_success: false
-   on_build_failure: true
-   on_build_status_changed: true

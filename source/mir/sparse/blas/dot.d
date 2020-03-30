@@ -102,6 +102,8 @@ D dot(
 ///
 unittest
 {
+    import mir.series;
+
     auto x = series([0u, 3, 5, 9, 100], [1, 3, 4, 9, 10]);
     auto y = series([1u, 3, 4, 9], [1, 10, 100, 1000]);
     // x = [1, 0, 0,  3, 0, 4, 0, 0, 0, 9, ... ,10]
@@ -159,7 +161,8 @@ body
 ///
 unittest
 {
-    import std.typecons: No;
+    import mir.series;
+
     auto x = [0u, 3, 5, 9, 10].series([1.0, 3, 4, 9, 13]);
     auto y = [0.0, 1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     // x: [1, 0, 0, 3, 0, 4, 0, 0, 0, 9, 13,  0,  0,  0]

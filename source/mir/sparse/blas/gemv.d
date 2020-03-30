@@ -64,6 +64,9 @@ body
 ///
 unittest
 {
+    import mir.ndslice;
+    import mir.sparse;
+
     auto slice = sparse!double(3, 5);
     slice[] =
         [[ 0.0, 2.0,  3.0, 0.0, 0.0],
@@ -134,6 +137,9 @@ body
 ///
 unittest
 {
+    import mir.ndslice;
+    import mir.sparse;
+
     auto slice = sparse!double(5, 3);
     slice[] =
         [[0.0,  6.0,  6.0],
@@ -203,6 +209,9 @@ body
 ///
 unittest
 {
+    import mir.ndslice;
+    import mir.sparse;
+
     auto slice = sparse!double(3, 5);
     slice[] =
         [[ 0.0, 2.0,  3.0, 0.0, 0.0],

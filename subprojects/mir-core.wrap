@@ -1,0 +1,4 @@
+[wrap-git]
+directory=mir-core
+url=https://github.com/libmir/mir-core.git
+revision=head

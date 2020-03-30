@@ -1,0 +1,4 @@
+[wrap-git]
+directory=mir-linux-kernel
+url=https://github.com/libmir/mir-linux-kernel.git
+revision=head

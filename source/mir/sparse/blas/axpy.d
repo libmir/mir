@@ -45,6 +45,7 @@ body
 ///
 unittest
 {
+    import mir.series;
     auto x = series([0, 3, 5, 9, 10], [1.0, 3, 4, 9, 13]);
     auto y = [0.0, 1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     axpy(2.0, x, y);
@@ -53,6 +54,7 @@ unittest
 
 unittest
 {
+    import mir.series;
     auto x = series([0, 3, 5, 9, 10], [1.0, 3, 4, 9, 13]);
     auto y = [0.0, 1.0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     axpy(2.0, x, y.sliced);

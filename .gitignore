@@ -22,8 +22,10 @@ __test__d_source_library__
 *.sublime-project
 
 __test__source__
-
+build
+subprojects/*/
 *.s
+docgen
 
 *.out
 

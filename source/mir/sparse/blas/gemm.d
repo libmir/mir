@@ -55,6 +55,9 @@ body
 ///
 unittest
 {
+    import mir.ndslice;
+    import mir.sparse;
+
     auto sp = sparse!int(3, 5);
     sp[] =
         [[-5, 1, 7, 7, -4],
@@ -126,6 +129,9 @@ body
 ///
 unittest
 {
+    import mir.ndslice;
+    import mir.sparse;
+
     auto sp = sparse!int(5, 3);
     sp[] =
         [[-5, -1, -5],
@@ -190,6 +196,9 @@ body
 ///
 unittest
 {
+    import mir.ndslice;
+    import mir.sparse;
+
     auto a = slice!double(3, 5);
     a[] =
         [[-5, 1, 7, 7, -4],

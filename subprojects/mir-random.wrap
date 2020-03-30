@@ -1,0 +1,4 @@
+[wrap-git]
+directory=mir-random
+url=https://github.com/libmir/mir-random.git
+revision=head

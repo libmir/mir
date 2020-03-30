@@ -1,0 +1,22 @@
+version: 2.1
+
+orbs:
+  mirci: libmir/upload_docs@0.1.4
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - mirci/test_and_build_docs:
+          filters:
+            tags:
+              only: /^v(\d)+(\.(\d)+)+$/
+      - mirci/upload_docs:
+          to: mir.libmir.org
+          requires:
+            - mirci/test_and_build_docs
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v(\d)+(\.(\d)+)+$/
