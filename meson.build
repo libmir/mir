@@ -1,6 +1,6 @@
-project('asdf', 'd', version : '0.5.5', license: 'BSL-1.0')
+project('mir', 'd', version : '3.2.1', license: 'BSL-1.0')
 
-description = 'Mir ASDF - JSON Parsing and Serialization'
+description = 'Mir Backports'
 
 subprojects = [
     'mir-core',
@@ -84,7 +84,7 @@ import('pkgconfig').generate(this_lib,
     subdirs: 'd/' + meson.project_name(),
 )
 
-asdf_dep = this_dep
-asdf_lib = this_lib
+mir_dep = this_dep
+mir_lib = this_lib
 
 test_subdirs = []
