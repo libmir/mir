@@ -6,10 +6,7 @@ The last Mir version with old ndslice is `v0.22.1`.
 [![Dub downloads](https://img.shields.io/dub/dt/mir.svg)](http://code.dlang.org/packages/mir)
 [![License](https://img.shields.io/dub/l/mir.svg)](http://code.dlang.org/packages/mir)
 [![Bountysource](https://www.bountysource.com/badge/team?team_id=145399&style=bounties_received)](https://www.bountysource.com/teams/libmir)
-[![Gitter](https://img.shields.io/gitter/room/libmir/public.svg)](https://gitter.im/libmir/public)
-
 [![Latest version](https://img.shields.io/dub/v/mir.svg)](http://code.dlang.org/packages/mir)
-
 [![codecov.io](https://codecov.io/github/libmir/mir/coverage.svg?branch=master)](https://codecov.io/github/libmir/mir?branch=master)
 [![Circle CI](https://circleci.com/gh/libmir/mir.svg?style=svg)](https://circleci.com/gh/libmir/mir)
 
@@ -24,7 +21,7 @@ Generic Numerical Library for Science and Machine Learning.
 - [Mir BLAS](https://github.com/libmir/mir-blas) - Bindings to libraries with CBLAS API like OpenBLAS and Intel MKL.
 - [Mir LAPACK](https://github.com/libmir/mir-lapack) - Bindings to libraries with LAPACK API like OpenBLAS and Intel MKL.
 - [Mir 
-Runtime](https://github.com/libmir/mir-runtime) - Mir Runtime (experimental).
+Optim](https://github.com/libmir/mir-optim) - Nonlinear Solvers.
 - [Mir CPUID](https://github.com/libmir/mir-cpuid) - CPU Identification routines (less buggy then Phobos).
 
 Documentation
