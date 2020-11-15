@@ -11,6 +11,7 @@ dub.selections.json
 docs.json
 docs
 build
+builddir
 
 .generated
 web
