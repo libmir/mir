@@ -31,7 +31,7 @@ in
     if (x.index.length)
         assert(x.index[$-1] < y.length);
 }
-body
+do
 {
     import mir.internal.utility;
 
