@@ -39,7 +39,7 @@ in
     assert(a.length!0 == c.length!0);
     assert(b.length!1 == c.length!1);
 }
-body
+do
 {
     import mir.ndslice.topology: universal;
     import mir.ndslice.dynamic: transposed;
@@ -112,7 +112,7 @@ in
     assert(a.length!0 == b.length!0);
     assert(b.length!1 == c.length!1);
 }
-body
+do
 {
     import mir.ndslice.topology: universal;
     import mir.ndslice.dynamic: transposed;
@@ -179,7 +179,7 @@ in
         if (r.index.length)
             assert(r.index[$-1] < b.length!1);
 }
-body
+do
 {
     import mir.ndslice.topology: universal;
     import mir.ndslice.dynamic: transposed;

@@ -39,7 +39,7 @@ in
 {
     assert(a.length == y.length);
 }
-body
+do
 {
     if (beta)
     {
@@ -111,7 +111,7 @@ in
 {
     assert(a.length == x.length);
 }
-body
+do
 {
     alias T3 = Unqual!(DeepElementType!(Slice!(Iterator3, 1, kind3)));
 
@@ -184,7 +184,7 @@ in
 {
     assert(a.length == y.length);
 }
-body
+do
 {
     if (beta)
     {
@@ -248,7 +248,7 @@ in
     if (y.index.length)
         assert(y.index[$-1] < a.length);
 }
-body
+do
 {
     import mir.ndslice.dynamic: transposed;
 

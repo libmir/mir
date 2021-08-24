@@ -79,7 +79,7 @@ in
     assert(asl.length!0 == ysl.length, "constraint: asl.length!0 == ysl.length");
     assert(asl.length!1 == xsl.length, "constraint: asl.length!1 == xsl.length");
 }
-body
+do
 {
     import mir.ndslice.dynamic: reversed;
     static assert(is(Unqual!C == C), msgWrongType);
