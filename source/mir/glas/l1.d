@@ -40,6 +40,8 @@ NDSLICEREF = $(REF_ALTTEXT $(TT $2), $2, mir, ndslice, $1)$(NBSP)
 +/
 module mir.glas.l1;
 
+import mir.complex;
+
 /// SWAP
 unittest
 {
@@ -99,7 +101,7 @@ template _rot(alias c, alias s)
         auto t1 = c * x + s * y;
         static if (isComplex!(typeof(c)))
         {
-            auto t2 = (c.re - c.im * 1fi) * y;
+            auto t2 = c.conj * y;
         }
         else
             auto t2 = c * y;
@@ -132,7 +134,7 @@ A _fmuladdc(A, B, C)(A a, in B b, in C c)
 {
     static if (isComplex!B)
     {
-        return a + (b.re - b.im * 1fi) * c;
+        return a + b.conj * c;
     }
     else
         return a + b * c;
@@ -265,14 +267,15 @@ unittest
 unittest
 {
     import mir.ndslice.allocation: slice;
+    import mir.complex;
 
-    auto a = 3 + 4i;
-    auto x = slice!(cdouble)(2);
-    auto y = slice!(cdouble)(2);
-    x[] = [0 + 1i, 2 + 3i];
-    y[] = [4 + 5i, 6 + 7i];
+    auto a = Complex!double(3, +4);
+    auto x = slice!(Complex!double)(2);
+    auto y = slice!(Complex!double)(2);
+    x[] = [Complex!double(0, +1), Complex!double(2, +3)];
+    y[] = [Complex!double(4, +5), Complex!double(6, +7)];
     axpy(a, x, y);
-    assert(y == [a * (0 + 1i) + (4 + 5i), a * (2 + 3i) + (6 + 7i)]);
+    assert(y == [a * (Complex!double(0, +1)) + (Complex!double(4, +5)), a * (Complex!double(2, +3)) + (Complex!double(6, +7))]);
 }
 
 /++
@@ -342,13 +345,14 @@ unittest
 unittest
 {
     import mir.ndslice.allocation: slice;
+    import mir.complex;
 
-    auto x = slice!(cdouble)(2);
-    auto y = slice!(cdouble)(2);
-    x[] = [0 + 1i, 2 + 3i];
-    y[] = [4 + 5i, 6 + 7i];
+    auto x = slice!(Complex!double)(2);
+    auto y = slice!(Complex!double)(2);
+    x[] = [Complex!double(0, +1), Complex!double(2, +3)];
+    y[] = [Complex!double(4, +5), Complex!double(6, +7)];
     version(LDC) // DMD Internal error: backend/cgxmm.c 628
-    assert(dot(x, y) == (0 + 1i) * (4 + 5i) + (2 + 3i) * (6 + 7i));
+    assert(dot(x, y) == (Complex!double(0, +1)) * (Complex!double(4, +5)) + (Complex!double(2, +3)) * (Complex!double(6, +7)));
 }
 
 /++
@@ -386,13 +390,14 @@ auto dotc(SliceKind kind1, SliceKind kind2, size_t N, Iterator1, Iterator2)(Slic
 unittest
 {
     import mir.ndslice.allocation: slice;
+    import mir.complex;
 
-    auto x = slice!(cdouble)(2);
-    auto y = slice!(cdouble)(2);
-    x[] = [0 + 1i, 2 + 3i];
-    y[] = [4 + 5i, 6 + 7i];
+    auto x = slice!(Complex!double)(2);
+    auto y = slice!(Complex!double)(2);
+    x[] = [Complex!double(0, +1), Complex!double(2, +3)];
+    y[] = [Complex!double(4, +5), Complex!double(6, +7)];
     version(LDC) // DMD Internal error: backend/cgxmm.c 628
-    assert(dotc(x, y) == (0 + -1i) * (4 + 5i) + (2 + -3i) * (6 + 7i));
+    assert(dotc(x, y) == (Complex!double(0, -1)) * (Complex!double(4, +5)) + (Complex!double(2, -3)) * (Complex!double(6, +7)));
 }
 
 /++
@@ -422,7 +427,7 @@ auto nrm2(SliceKind kind, size_t N, Iterator)(Slice!(Iterator, N, kind) x)
 unittest
 {
     import mir.ndslice.allocation: slice;
-    import std.math: sqrt, approxEqual;
+    import mir.math: sqrt, approxEqual;
     auto x = slice!double(4);
     x[] = [0, 1, 2, 3];
     assert(nrm2(x).approxEqual(sqrt(1.0 + 4 + 9)));
@@ -432,10 +437,11 @@ unittest
 unittest
 {
     import mir.ndslice.allocation: slice;
-    import std.math: sqrt, approxEqual;
+    import mir.math: sqrt, approxEqual;
+    import mir.complex;
 
-    auto x = slice!(cdouble)(2);
-    x[] = [0 + 1i, 2 + 3i];
+    auto x = slice!(Complex!double)(2);
+    x[] = [Complex!double(0, +1), Complex!double(2, +3)];
 
     assert(nrm2(x).approxEqual(sqrt(1.0 + 4 + 9)));
 }
@@ -480,9 +486,10 @@ unittest
 unittest
 {
     import mir.ndslice.allocation: slice;
+    import mir.complex;
 
-    auto x = slice!(cdouble)(2);
-    x[] = [0 + 1i, 2 + 3i];
+    auto x = slice!(Complex!double)(2);
+    x[] = [Complex!double(0, +1), Complex!double(2, +3)];
 
     assert(sqnrm2(x) == 1.0 + 4 + 9);
 }
@@ -529,9 +536,10 @@ unittest
 unittest
 {
     import mir.ndslice.allocation: slice;
+    import mir.complex;
 
-    auto x = slice!(cdouble)(2);
-    x[] = [0 - 1i, -2 + 3i];
+    auto x = slice!(Complex!double)(2);
+    x[] = [Complex!double(0, -1), -Complex!double(2, +3)];
 
     assert(asum(x) == 1 + 2 + 3);
 }
@@ -611,10 +619,11 @@ unittest
 unittest
 {
     import mir.ndslice.allocation: slice;
+    import mir.complex;
 
-    auto x = slice!(cdouble)(4);
+    auto x = slice!(Complex!double)(4);
     //        0          1          2         3
-    x[] = [0 + -1i, -2 + 3i, 2 + 3i, 2 + 2i];
+    x[] = [Complex!double(0, -1), -Complex!double(2, +3), Complex!double(2, +3), Complex!double(2, +2)];
 
     assert(iamax(x) == 1);
     // -1 for empty vectors
@@ -659,9 +668,10 @@ unittest
 unittest
 {
     import mir.ndslice.allocation: slice;
+    import mir.complex;
 
-    auto x = slice!(cdouble)(4);
-    x[] = [0 + -1i, -7 + 3i, 2 + 3i, 2 + 2i];
+    auto x = slice!(Complex!double)(4);
+    x[] = [Complex!double(0, -1), -Complex!double(7, +3), Complex!double(2, +3), Complex!double(2, +2)];
 
     assert(amax(x) == 10);
     // 0 for empty vectors

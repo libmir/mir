@@ -80,7 +80,7 @@ struct LdaHoffman(F)
         _beta = slice!F(K, W);
         _lambdaTemp = new F[][](tp.size + 1, W);
 
-        import std.math: fabs;
+        import mir.math: fabs;
         auto gen = Random(unpredictableSeed);
         foreach (r; _lambda)
             foreach (ref e; r)
