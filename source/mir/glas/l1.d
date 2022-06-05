@@ -267,8 +267,8 @@ unittest
     import mir.ndslice.allocation: slice;
 
     auto a = 3 + 4i;
-    auto x = slice!cdouble(2);
-    auto y = slice!cdouble(2);
+    auto x = slice!(cdouble)(2);
+    auto y = slice!(cdouble)(2);
     x[] = [0 + 1i, 2 + 3i];
     y[] = [4 + 5i, 6 + 7i];
     axpy(a, x, y);
@@ -343,8 +343,8 @@ unittest
 {
     import mir.ndslice.allocation: slice;
 
-    auto x = slice!cdouble(2);
-    auto y = slice!cdouble(2);
+    auto x = slice!(cdouble)(2);
+    auto y = slice!(cdouble)(2);
     x[] = [0 + 1i, 2 + 3i];
     y[] = [4 + 5i, 6 + 7i];
     version(LDC) // DMD Internal error: backend/cgxmm.c 628
@@ -387,8 +387,8 @@ unittest
 {
     import mir.ndslice.allocation: slice;
 
-    auto x = slice!cdouble(2);
-    auto y = slice!cdouble(2);
+    auto x = slice!(cdouble)(2);
+    auto y = slice!(cdouble)(2);
     x[] = [0 + 1i, 2 + 3i];
     y[] = [4 + 5i, 6 + 7i];
     version(LDC) // DMD Internal error: backend/cgxmm.c 628
@@ -434,7 +434,7 @@ unittest
     import mir.ndslice.allocation: slice;
     import std.math: sqrt, approxEqual;
 
-    auto x = slice!cdouble(2);
+    auto x = slice!(cdouble)(2);
     x[] = [0 + 1i, 2 + 3i];
 
     assert(nrm2(x).approxEqual(sqrt(1.0 + 4 + 9)));
@@ -481,7 +481,7 @@ unittest
 {
     import mir.ndslice.allocation: slice;
 
-    auto x = slice!cdouble(2);
+    auto x = slice!(cdouble)(2);
     x[] = [0 + 1i, 2 + 3i];
 
     assert(sqnrm2(x) == 1.0 + 4 + 9);
@@ -530,7 +530,7 @@ unittest
 {
     import mir.ndslice.allocation: slice;
 
-    auto x = slice!cdouble(2);
+    auto x = slice!(cdouble)(2);
     x[] = [0 - 1i, -2 + 3i];
 
     assert(asum(x) == 1 + 2 + 3);
@@ -612,7 +612,7 @@ unittest
 {
     import mir.ndslice.allocation: slice;
 
-    auto x = slice!cdouble(4);
+    auto x = slice!(cdouble)(4);
     //        0          1          2         3
     x[] = [0 + -1i, -2 + 3i, 2 + 3i, 2 + 2i];
 
@@ -660,7 +660,7 @@ unittest
 {
     import mir.ndslice.allocation: slice;
 
-    auto x = slice!cdouble(4);
+    auto x = slice!(cdouble)(4);
     x[] = [0 + -1i, -7 + 3i, 2 + 3i, 2 + 2i];
 
     assert(amax(x) == 10);

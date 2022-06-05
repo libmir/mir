@@ -228,8 +228,8 @@ unittest
     selectiveGemm!"*"(a, b, c);
     assert(c.length == 3);
     assert(c[0].index == [1, 2]);
-    assert(c[0].value == [105, -7]);
+    assert(c[0].data == [105, -7]);
     assert(c[1].empty);
     assert(c[2].index == [3]);
-    assert(c[2].value == [58]);
+    assert(c[2].data == [58]);
 }

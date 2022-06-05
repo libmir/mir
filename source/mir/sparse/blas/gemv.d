@@ -256,6 +256,6 @@ do
     {
         import mir.glas.l1 : dot;
         auto d = dot(a[j], x);
-        mixin(`y.value[i] ` ~ op ~ `= d;`);
+        mixin(`y.data[i] ` ~ op ~ `= d;`);
     }
 }

@@ -38,7 +38,7 @@ do
     foreach (size_t i; 0 .. x.index.length)
     {
         auto j = x.index[i];
-        y[j] = alpha * x.value[i] + y[j];
+        y[j] = alpha * x.data[i] + y[j];
     }
 }
 

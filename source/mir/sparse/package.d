@@ -465,7 +465,7 @@ Slice!(ChopIterator!(J*, Series!(I*, V*)), N)
     sparseSlice
         .each!((a, b) {
             b.index[] = a.index.as!I;
-            b.value.each!(emplaceRef!V)(a.value.as!V);
+            b.data.each!(emplaceRef!V)(a.data.as!V);
         })(ret);
 
     return ret;

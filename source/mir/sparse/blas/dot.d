@@ -83,7 +83,7 @@ D dot(
         }
         continue;
         L:
-        s = x.value[0] * y.value[0] + s;
+        s = x.data[0] * y.data[0] + s;
         x.popFront;
         if (x.length == 0)
         {
@@ -152,7 +152,7 @@ do
     F s = 0;
     foreach (size_t i; 0 .. x.index.length)
     {
-        s = y[x.index[i]] * x.value[i] + s;
+        s = y[x.index[i]] * x.data[i] + s;
     }
 
     return s;

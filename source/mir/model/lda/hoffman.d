@@ -192,7 +192,7 @@ ingle document in a batch for E-step.
                 }
                 if (c < maxIterations && sum > eps * K)
                 {
-                    nd.value[] = nsave[d].value;
+                    nd.data[] = nsave[d].data;
                     continue;
                 }
                 import core.atomic;
@@ -218,7 +218,7 @@ ingle document in a batch for E-step.
         import mir.series: series;
         import mir.ndslice.topology: chopped, universal;
         return n.iterator._sliceable.index
-            .series(n.iterator._sliceable.value.dup)
+            .series(n.iterator._sliceable.data.dup)
             .chopped(n.iterator._iterator.sliced(n.length + 1));
     }
 
